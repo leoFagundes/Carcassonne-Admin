@@ -138,7 +138,7 @@ export default function MenuForms({
           />
           <Checkbox
             checked={currentItem.isFocus}
-            setChecked={(e) =>
+            setChecked={() =>
               setCurrentItem({
                 ...currentItem,
                 isFocus: !currentItem.isFocus,
@@ -149,7 +149,7 @@ export default function MenuForms({
           />
           <Checkbox
             checked={currentItem.isVegan}
-            setChecked={(e) =>
+            setChecked={() =>
               setCurrentItem({
                 ...currentItem,
                 isVegan: !currentItem.isVegan,
