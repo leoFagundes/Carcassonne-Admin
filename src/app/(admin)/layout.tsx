@@ -14,7 +14,7 @@ export default function RootLayout({
   return (
     <div className="flex flex-col md:flex-row items-start w-screen h-screen p-8 gap-2">
       <Sidebar />
-      <div className="relative flex-1 bg-primary-black/60 rounded-md backdrop-blur-[1px] p-8 shadow-card h-full w-full ">
+      <div className="relative flex-1 bg-primary-black rounded-md backdrop-blur-[1px] p-8  h-full w-full ">
         {children}
       </div>
       <img

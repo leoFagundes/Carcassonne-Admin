@@ -22,17 +22,17 @@ export default function Card({
   return (
     <div
       {...props}
-      className="flex flex-col hover:brightness-110 w-[250px] h-[280px] border border-transparent hover:border-primary-gold transition-all duration-200 ease-in overflow-scroll scrollbar-none gap-2 items-center bg-primary-black/80 p-4 rounded text-primary-gold shadow-card cursor-pointer"
+      className="flex flex-col w-[200px] h-[250px] outline hover:outline-primary-gold outline-transparent border border-primary-gold transition-all duration-200 ease-in overflow-scroll scrollbar-none gap-2 items-center bg-primary-black/80 p-4 rounded text-primary-gold shadow-card cursor-pointer"
     >
       <div className="flex items-center">
         <img
-          className="w-[150px] h-[150px] rounded shadow-md"
+          className="w-[120px] h-[120px] rounded"
           src={boardgame.image}
           alt="boardgame"
         />
       </div>
       <span
-        className="font-semibold text-center text-2xl flex-1"
+        className="font-semibold text-center text-lg flex-1"
         dangerouslySetInnerHTML={{
           __html: highlightMatch(boardgame.name, searchTerm),
         }}

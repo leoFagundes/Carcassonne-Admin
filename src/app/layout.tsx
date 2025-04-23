@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Pirata_One, Saira } from "next/font/google";
 import "./globals.css";
-import carcassoneBackground from "../../public/images/carcassonne-bg.png";
 
 const pirataOne = Pirata_One({
   weight: "400",
@@ -28,16 +27,9 @@ export default function RootLayout({
   return (
     <html lang="pt-br">
       <body
-        className={` ${pirataOne.variable} ${saira.variable} antialiased text-primary-white`}
+        className={` ${pirataOne.variable} ${saira.variable} antialiased text-primary-white bg-primary-black`}
       >
-        <div
-          className="flex justify-center items-center bg-cover bg-center min-h-screen w-full"
-          style={{
-            backgroundImage: `url(${carcassoneBackground.src})`,
-          }}
-        >
-          {children}
-        </div>
+        {children}
       </body>
     </html>
   );

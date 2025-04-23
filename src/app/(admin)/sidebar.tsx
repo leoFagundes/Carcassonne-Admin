@@ -27,7 +27,7 @@ function Item({ message, icon, path, onClick }: ItemProps) {
       onClick={onClick}
       className={`flex items-center gap-2 w-full p-2 text-primary-black bg-primary-gold/60 border rounded-md cursor-pointer transition-all ease-in ${
         isActive ? "!bg-primary-gold" : ""
-      } shadow-card hover:scale-[98%]`}
+      }  hover:scale-[98%]`}
     >
       {icon}
       <h2 className="text-2xl">{message}</h2>
@@ -47,7 +47,9 @@ export default function Sidebar() {
       {/* Botão para mobile */}
       <button
         onClick={toggleSidebar}
-        className="absolute top-4 left-4 z-50 md:hidden text-primary-gold cursor-pointer"
+        className={`fixed top-4 left-4 z-50 md:hidden text-primary-gold cursor-pointer transform bg-primary-black/80 rounded-full p-2 transition-transform duration-300 ease-in-out ${
+          isOpen && "translate-x-[190px] shadow-card"
+        }`}
       >
         {isOpen ? <LuX size={30} /> : <LuMenu size={30} />}
       </button>

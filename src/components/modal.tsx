@@ -15,9 +15,10 @@ export default function Modal({ children, isOpen, onClose }: ModalProps) {
           <div className="bg-primary-black w-full h-full rounded p-12 flex flex-col items-center">
             <span
               onClick={onClose}
-              className="absolute flex items-center gap-2 cursor-pointer top-5 left-5"
+              className="absolute flex items-center gap-1 cursor-pointer top-5 left-5 text-primary-gold"
             >
-              <FiSkipBack /> Voltar
+              <FiSkipBack size={"18px"} />{" "}
+              <span className="font-semibold text-lg">Voltar</span>
             </span>
             {children}
           </div>

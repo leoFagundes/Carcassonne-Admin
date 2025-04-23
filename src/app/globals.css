@@ -6,7 +6,7 @@
 
 ::selection {
   color: var(--color-secondary-gold);
-  background-color: var(--color-primary-black);
+  background-color: var(--color-secondary-black);
 }
 
 h1,
@@ -18,17 +18,40 @@ h6 {
   font-family: var(--font-pirata-one);
 }
 
+* {
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--color-primary-gold);
+    border-radius: 2px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background-color: var(--color-secondary-black);
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
+}
+
 @theme {
-  --color-primary-black: #1a1a1a;
+  --color-primary-black: #121111;
+  --color-secondary-black: #1a1a1a;
   --color-primary-gold: #e6c56b;
   --color-secondary-gold: #d4af37;
   --color-primary-white: #f9f9f9;
   --color-brown: #2f1e0b;
+  --color-invalid-color: #cc5826;
 }
 
 @layer utilities {
   .shadow-card {
     box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.5);
+  }
+
+  .font-pirate {
+    font-family: "Pirata One", cursive;
   }
 
   .text-gradient-gold {
@@ -61,7 +84,7 @@ h6 {
 }
 
 input:-webkit-autofill {
-  -webkit-box-shadow: 0 0 0px 1000px var(--color-primary-black) inset;
+  -webkit-box-shadow: 0 0 0px 1000px var(--color-secondary-black) inset;
   -webkit-text-fill-color: var(--color-primary-gold);
   transition: background-color 5000s ease-in-out 0s;
   font-family: var(--font-saira);
