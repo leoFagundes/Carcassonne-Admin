@@ -1,7 +1,6 @@
 import Tooltip from "@/components/Tooltip";
 import { MenuItemType } from "@/types";
 import React, { ComponentProps } from "react";
-import { FiClock, FiUsers } from "react-icons/fi";
 import { LuEye, LuEyeOff, LuStar, LuVegan } from "react-icons/lu";
 
 interface MenuCardProps extends ComponentProps<"div"> {

@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import React from "react";
 import { IoIosArrowDown } from "react-icons/io";
 
 interface DropdownType {

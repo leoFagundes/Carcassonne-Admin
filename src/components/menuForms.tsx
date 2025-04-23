@@ -127,7 +127,7 @@ export default function MenuForms({
           />
           <Checkbox
             checked={currentItem.isVisible}
-            setChecked={(e) =>
+            setChecked={() =>
               setCurrentItem({
                 ...currentItem,
                 isVisible: !currentItem.isVisible,
