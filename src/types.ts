@@ -22,19 +22,10 @@ export interface MenuItemType {
   isVisible: boolean;
 }
 
-export interface CombosType {
+export interface ComboType {
   name: string;
   description: string;
   value: string;
-  activeDay: (
-    | "monday"
-    | "tuesday"
-    | "wednesday"
-    | "thursday"
-    | "friday"
-    | "saturday"
-    | "everyDay"
-  )[];
 }
 
 export interface InfoType {

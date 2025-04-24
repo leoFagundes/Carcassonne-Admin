@@ -17,9 +17,7 @@ import Dropdown from "./dropdown";
 
 interface CollectionFormsType {
   currentItem: BoardgameType;
-  setCurrentItem: React.Dispatch<
-    React.SetStateAction<BoardgameType | undefined>
-  >;
+  setCurrentItem: React.Dispatch<React.SetStateAction<BoardgameType>>;
   formType: "edit" | "add";
 }
 

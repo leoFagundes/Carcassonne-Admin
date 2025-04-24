@@ -1,23 +1,52 @@
 "use client";
 
 import Input from "@/components/input";
-import { MenuItemType } from "@/types";
+import { ComboType, InfoType, MenuItemType } from "@/types";
 import React, { useState } from "react";
 import { LuPizza } from "react-icons/lu";
-import Card from "./card";
 import Dropdown from "@/components/dropdown";
 import Checkbox from "@/components/checkbox";
 import Modal from "@/components/modal";
 
 import MenuForms from "@/components/menuForms";
+import MenuCard from "./menuCard";
+import InfoCard from "./infoCard";
+import ComboCard from "./comboCard";
+import InfoForms from "@/components/infoForms";
+import ComboForms from "@/components/comboForms";
 
 export default function MenuPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
   const [showOnlyFocus, setShowOnlyFocus] = useState(false);
   const [showOnlyVisible, setShowOnlyVisible] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentItem, setCurrentItem] = useState<MenuItemType>();
+  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
+  const [currentItem, setCurrentItem] = useState<MenuItemType>({
+    name: "",
+    description: "",
+    value: "",
+    type: "",
+    observation: [],
+    extra: [],
+    image: "",
+    isVegan: false,
+    isFocus: false,
+    isVisible: true,
+  });
+
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [currentInfo, setCurrentInfo] = useState<InfoType>({
+    name: "",
+    description: "",
+    values: [],
+  });
+
+  const [isComboModalOpen, setIsComboModalOpen] = useState(false);
+  const [currentCombo, setCurrentCombo] = useState<ComboType>({
+    name: "",
+    description: "",
+    value: "",
+  });
 
   // {
   //   name: "",
@@ -75,6 +104,36 @@ export default function MenuPage() {
     },
   ];
 
+  const infos: InfoType[] = [
+    {
+      name: "Horário de funcionamento",
+      description: "Nosso restaurante abre todos os dias das 18h às 23h.",
+      values: [],
+    },
+    {
+      name: "Taxa de entrega",
+      description: "A taxa de entrega varia conforme a região.",
+      values: [
+        "Zona Sul: R$ 5,00",
+        "Zona Norte: R$ 7,00",
+        "Plano Piloto: R$ 6,00",
+      ],
+    },
+  ];
+
+  const combos: ComboType[] = [
+    {
+      name: "Combo Pizza + Refri",
+      description: "1 Pizza grande + 1 Refrigerante de 2L.",
+      value: "R$ 59,90",
+    },
+    {
+      name: "Combo Família",
+      description: "2 Pizzas médias + 2 Refrigerantes lata.",
+      value: "R$ 89,90",
+    },
+  ];
+
   const filteredMenu = menuItems.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -86,6 +145,18 @@ export default function MenuPage() {
 
     return matchesSearch && matchesType && matchesFocus && matchesVisible;
   });
+
+  const filteredInfos = infos.filter(
+    (info) =>
+      info.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      info.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredCombos = combos.filter(
+    (combo) =>
+      combo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      combo.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <section className="flex flex-col gap-8 w-full h-full">
@@ -105,7 +176,11 @@ export default function MenuPage() {
           <Dropdown
             value={filterType}
             setValue={(e) => setFilterType(e.target.value)}
-            options={[...new Set(menuItems.map((item) => item.type))]}
+            options={[
+              "Avisos",
+              "Combos",
+              ...new Set(menuItems.map((item) => item.type)),
+            ]}
             firstLabel="Todos os tipos"
             variant
           />
@@ -125,36 +200,117 @@ export default function MenuPage() {
           />
         </div>
       </section>
-      <section className="flex flex-wrap justify-center gap-6">
-        {filteredMenu.length > 0 && !isModalOpen ? (
+      <section className="flex flex-wrap justify-center gap-x-6 gap-y-8 p-1 overflow-y-scroll overflow-x-hidden">
+        {filteredMenu.length > 0 && !isMenuModalOpen ? (
           filteredMenu.map((item, index) => (
-            <Card
+            <MenuCard
               key={index}
               item={item}
               searchTerm={searchTerm.toLowerCase()}
               onClick={() => {
-                setIsModalOpen(true);
+                setIsMenuModalOpen(true);
                 setCurrentItem(item);
               }}
             />
           ))
-        ) : (
+        ) : filteredMenu.length === 0 &&
+          filteredInfos.length === 0 &&
+          filteredCombos.length === 0 ? (
           <p className="text-xl text-primary-gold text-center">
             Nenhum item encontrado.
           </p>
-        )}
+        ) : null}
+
+        {(filterType === "Avisos" || filterType === "") &&
+          !showOnlyFocus &&
+          !showOnlyVisible &&
+          filteredInfos.map((info) => (
+            <InfoCard
+              key={info.name}
+              item={info}
+              searchTerm={searchTerm.toLowerCase()}
+              onClick={() => {
+                setIsInfoModalOpen(true);
+                setCurrentInfo(info);
+              }}
+            />
+          ))}
+
+        {(filterType === "Combos" || filterType === "") &&
+          !showOnlyFocus &&
+          !showOnlyVisible &&
+          filteredCombos.map((combo) => (
+            <ComboCard
+              key={combo.name}
+              item={combo}
+              searchTerm={searchTerm.toLowerCase()}
+              onClick={() => {
+                setIsComboModalOpen(true);
+                setCurrentCombo(combo);
+              }}
+            />
+          ))}
       </section>
       {currentItem && (
         <Modal
-          isOpen={isModalOpen}
+          isOpen={isMenuModalOpen}
           onClose={() => {
-            setIsModalOpen(false);
-            setCurrentItem(undefined);
+            setIsMenuModalOpen(false);
+            setCurrentItem({
+              name: "",
+              description: "",
+              value: "",
+              type: "",
+              observation: [],
+              extra: [],
+              image: "",
+              isVegan: false,
+              isFocus: false,
+              isVisible: true,
+            });
           }}
         >
           <MenuForms
             currentItem={currentItem}
             setCurrentItem={setCurrentItem}
+            formType="edit"
+          />
+        </Modal>
+      )}
+      {currentInfo && (
+        <Modal
+          isOpen={isInfoModalOpen}
+          onClose={() => {
+            setIsInfoModalOpen(false);
+            setCurrentInfo({
+              name: "",
+              description: "",
+              values: [],
+            });
+          }}
+        >
+          <InfoForms
+            currentInfo={currentInfo}
+            setCurrentInfo={setCurrentInfo}
+            formType="edit"
+          />
+        </Modal>
+      )}
+      {currentCombo && (
+        <Modal
+          isOpen={isComboModalOpen}
+          onClose={() => {
+            setIsComboModalOpen(false);
+            setCurrentCombo({
+              name: "",
+              description: "",
+              value: "",
+            });
+          }}
+        >
+          <ComboForms
+            currentCombo={currentCombo}
+            setCurrentCombo={setCurrentCombo}
             formType="edit"
           />
         </Modal>

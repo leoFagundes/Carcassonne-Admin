@@ -10,6 +10,7 @@ interface OptionsInputType {
   width?: string;
   placeholder: string;
   label?: string;
+  limit?: number;
 }
 
 export default function OptionsInput({
@@ -19,11 +20,14 @@ export default function OptionsInput({
   label,
   variant = false,
   width = "w-auto",
+  limit = 9999999999999,
 }: OptionsInputType) {
   const [value, setValue] = useState("");
 
   function sendValueToList() {
     if (!values || value.trim() === "") return;
+
+    if (values.length + 1 > limit) return;
 
     setValues([...values, value]);
     setValue("");

@@ -11,7 +11,16 @@ import CollectionForms from "@/components/collectionForms";
 export default function CollectionPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentItem, setCurrentItem] = useState<BoardgameType>();
+  const [currentItem, setCurrentItem] = useState<BoardgameType>({
+    name: "",
+    description: "",
+    difficulty: "",
+    minPlayers: 0,
+    maxPlayers: 0,
+    playTime: 0,
+    image: "",
+    type: "",
+  });
 
   const boardgames: BoardgameType[] = [
     {
@@ -99,7 +108,16 @@ export default function CollectionPage() {
           isOpen={isModalOpen}
           onClose={() => {
             setIsModalOpen(false);
-            setCurrentItem(undefined);
+            setCurrentItem({
+              name: "",
+              description: "",
+              difficulty: "",
+              minPlayers: 0,
+              maxPlayers: 0,
+              playTime: 0,
+              image: "",
+              type: "",
+            });
           }}
         >
           <CollectionForms

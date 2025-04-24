@@ -69,21 +69,21 @@ export default function Sidebar() {
           <div className="w-full flex flex-col flex-1 gap-4">
             <Item
               onClick={() => {
-                router.push("/menu");
-                setIsOpen(false);
-              }}
-              message="Cardápio"
-              icon={<LuPizza size={"20px"} />}
-              path="/menu"
-            />
-            <Item
-              onClick={() => {
                 router.push("/collection");
                 setIsOpen(false);
               }}
               message="Coleção"
               icon={<LuDices size={"20px"} />}
               path="/collection"
+            />
+            <Item
+              onClick={() => {
+                router.push("/menu");
+                setIsOpen(false);
+              }}
+              message="Cardápio"
+              icon={<LuPizza size={"20px"} />}
+              path="/menu"
             />
             <Item
               onClick={() => {

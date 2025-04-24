@@ -1,14 +1,18 @@
 import Tooltip from "@/components/Tooltip";
 import { MenuItemType } from "@/types";
 import React, { ComponentProps } from "react";
-import { LuEye, LuEyeOff, LuStar, LuVegan } from "react-icons/lu";
+import { LuEye, LuEyeOff, LuSparkles, LuVegan } from "react-icons/lu";
 
 interface MenuCardProps extends ComponentProps<"div"> {
   item: MenuItemType;
   searchTerm?: string;
 }
 
-export default function Card({ item, searchTerm, ...props }: MenuCardProps) {
+export default function MenuCard({
+  item,
+  searchTerm,
+  ...props
+}: MenuCardProps) {
   function highlightMatch(text: string, search: string = "") {
     if (!search) return text;
     const regex = new RegExp(`(${search})`, "gi");
@@ -46,23 +50,23 @@ export default function Card({ item, searchTerm, ...props }: MenuCardProps) {
       </div>
       <div className="flex flex-col gap-2 absolute top-4 right-3">
         {item.isVisible ? (
-          <Tooltip direction="right" content="Item visivel">
+          <Tooltip direction="left" content="Item visivel">
             <LuEye />
           </Tooltip>
         ) : (
-          <Tooltip direction="right" content="Item invisivel">
+          <Tooltip direction="left" content="Item invisivel">
             <LuEyeOff />
           </Tooltip>
         )}
 
         {item.isFocus && (
-          <Tooltip direction="right" content="Item em desatque">
-            <LuStar />
+          <Tooltip direction="left" content="Item em desatque">
+            <LuSparkles />
           </Tooltip>
         )}
 
         {item.isVegan && (
-          <Tooltip direction="right" content="Item vegano">
+          <Tooltip direction="left" content="Item vegano">
             <LuVegan />
           </Tooltip>
         )}

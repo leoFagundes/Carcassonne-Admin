@@ -16,9 +16,7 @@ import { MenuItemType } from "@/types";
 
 interface MenuFormsType {
   currentItem: MenuItemType;
-  setCurrentItem: React.Dispatch<
-    React.SetStateAction<MenuItemType | undefined>
-  >;
+  setCurrentItem: React.Dispatch<React.SetStateAction<MenuItemType>>;
   formType: "edit" | "add";
 }
 
