@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { LuPizza, LuBookOpenText, LuDollarSign } from "react-icons/lu";
+import { LuBookOpenText, LuDollarSign, LuBoxes } from "react-icons/lu";
 import Button from "./button";
 import Input from "./input";
 import { ComboType } from "@/types";
@@ -32,7 +32,7 @@ export default function ComboForms({
               setCurrentCombo({ ...currentCombo, name: e.target.value })
             }
             variant
-            icon={<LuPizza size={"20px"} />}
+            icon={<LuBoxes size={"20px"} />}
             width="!w-[250px]"
           />
           <Input

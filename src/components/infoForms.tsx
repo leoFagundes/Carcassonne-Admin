@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { LuPizza, LuBookOpenText } from "react-icons/lu";
+import { LuBookOpenText, LuClipboardPenLine } from "react-icons/lu";
 import Button from "./button";
 import Input from "./input";
 import { InfoType } from "@/types";
@@ -33,7 +33,7 @@ export default function InfoForms({
               setCurrentInfo({ ...currentInfo, name: e.target.value })
             }
             variant
-            icon={<LuPizza size={"20px"} />}
+            icon={<LuClipboardPenLine size={"20px"} />}
             width="!w-[250px]"
           />
           <Input
