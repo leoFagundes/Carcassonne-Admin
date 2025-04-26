@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Pirata_One, Saira } from "next/font/google";
 import "./globals.css";
+import ScrollUp from "@/components/scrollUp";
 
 const pirataOne = Pirata_One({
   weight: "400",
@@ -30,6 +31,7 @@ export default function RootLayout({
         className={` ${pirataOne.variable} ${saira.variable} antialiased text-primary-white bg-primary-black`}
       >
         {children}
+        <ScrollUp />
       </body>
     </html>
   );

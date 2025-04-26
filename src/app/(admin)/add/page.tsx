@@ -29,6 +29,7 @@ export default function AddPage() {
     minPlayers: 0,
     maxPlayers: 0,
     playTime: 0,
+    featured: false,
     image: "",
     type: "",
   });
@@ -106,6 +107,7 @@ export default function AddPage() {
             minPlayers: 0,
             maxPlayers: 0,
             playTime: 0,
+            featured: false,
             image: "",
             type: "",
           });

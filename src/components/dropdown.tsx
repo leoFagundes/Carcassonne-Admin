@@ -23,7 +23,7 @@ export default function Dropdown({
 }: DropdownType) {
   return (
     <div className={` relative max-w-[400px] min-w-[200px] ${width} w-full`}>
-      {label && (
+      {label && value && (
         <span className="absolute bottom-full left-1 text-xs text-gradient-gold font-semibold">
           {label}
         </span>

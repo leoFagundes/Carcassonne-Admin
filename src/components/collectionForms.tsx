@@ -14,6 +14,7 @@ import Button from "./button";
 import Input from "./input";
 import { BoardgameType } from "@/types";
 import Dropdown from "./dropdown";
+import Checkbox from "./checkbox";
 
 interface CollectionFormsType {
   currentItem: BoardgameType;
@@ -140,6 +141,17 @@ export default function CollectionForms({
             variant
             icon={<LuSquareStack size={"18px"} />}
             width="!w-[250px]"
+          />
+          <Checkbox
+            checked={currentItem.featured}
+            setChecked={() =>
+              setCurrentItem({
+                ...currentItem,
+                featured: !currentItem.featured,
+              })
+            }
+            variant
+            label={`Jogo ${currentItem.featured ? "é" : "não é"} destaque`}
           />
         </div>
       </div>

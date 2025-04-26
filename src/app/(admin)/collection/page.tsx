@@ -18,6 +18,7 @@ export default function CollectionPage() {
     minPlayers: 0,
     maxPlayers: 0,
     playTime: 0,
+    featured: false,
     image: "",
     type: "",
   });
@@ -31,6 +32,7 @@ export default function CollectionPage() {
       minPlayers: 3,
       maxPlayers: 4,
       playTime: 60,
+      featured: true,
       image:
         "https://upload.wikimedia.org/wikipedia/en/a/a3/Catan-2015-boxart.jpg",
       type: "Estratégia",
@@ -43,6 +45,7 @@ export default function CollectionPage() {
       minPlayers: 2,
       maxPlayers: 5,
       playTime: 45,
+      featured: false,
       image:
         "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQJicnbXO03iN3eFeIFdMe1WnQ_NgnrQmaE_g&s",
       type: "Familiar",
@@ -55,6 +58,7 @@ export default function CollectionPage() {
       minPlayers: 2,
       maxPlayers: 4,
       playTime: 45,
+      featured: false,
       image:
         "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_3MGLtlntqH2ez1OoFl9pDtcHHVKwBwNIcQ&s",
       type: "Cooperativo",
@@ -115,6 +119,7 @@ export default function CollectionPage() {
               minPlayers: 0,
               maxPlayers: 0,
               playTime: 0,
+              featured: false,
               image: "",
               type: "",
             });

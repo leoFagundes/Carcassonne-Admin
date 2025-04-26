@@ -64,7 +64,7 @@ export default function Input({
         variant && "border border-primary-gold"
       } ${multiline ? "items-start" : "items-center"}`}
     >
-      {label && (
+      {label && value && (
         <span className="absolute bottom-full left-1 text-xs text-gradient-gold font-semibold">
           {label}
         </span>

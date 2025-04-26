@@ -18,7 +18,9 @@ export default function Checkbox({
   return (
     <label
       htmlFor={label}
-      className={`cursor-pointer text-primary-gold relative flex items-center max-w-[400px] min-w-[200px] ${width} bg-primary-black/80 py-2 px-3 sm:py-3 sm:px-4 rounded-sm text-sm gap-2 w-full shadow-card ${
+      className={`cursor-pointer text-primary-gold relative flex items-center max-w-[400px] min-w-[200px] ${width} bg-primary-black/80 py-2 ${
+        variant && "px-3 sm:px-4"
+      } sm:py-3 rounded-sm text-sm  w-full ${
         variant && "border border-primary-gold"
       } `}
     >
@@ -30,14 +32,14 @@ export default function Checkbox({
         checked={checked}
         onChange={(e) => setChecked(e)}
       />
-      <span className="absolute top-1/2 h-[2em] w-[2em] -translate-y-1/2 rounded-[0.25em] border-[1px] border-[#e6c56b]"></span>
+      <span className="scale-75 absolute top-1/2 h-[2em] w-[2em] -translate-y-1/2 rounded-[0.25em] border-[1px] border-[#e6c56b]"></span>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="76"
         height="86"
         fill="none"
         viewBox="0 0 76 86"
-        className="absolute top-1/2 h-[2em] w-[2em] -translate-y-1/2 duration-500 ease-out [stroke-dasharray:100] [stroke-dashoffset:100] peer-checked:[stroke-dashoffset:0]"
+        className="scale-75 absolute top-1/2 h-[2em] w-[2em] -translate-y-1/2 duration-500 ease-out [stroke-dasharray:100] [stroke-dashoffset:100] peer-checked:[stroke-dashoffset:0]"
       >
         <path
           stroke="#e6c56b"
