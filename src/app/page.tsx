@@ -42,9 +42,11 @@ export default function Home() {
     try {
       await signInWithEmailAndPassword(auth, user.email, user.password);
       router.push("/collection");
-    } catch (error: any) {
-      console.error("Erro ao fazer login:", error.message);
-      addAlert("Usuário ou senha inválidos.");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Erro ao fazer login:", error.message);
+        addAlert("Usuário ou senha inválidos.");
+      }
     }
   }
 
@@ -58,9 +60,11 @@ export default function Home() {
       }
       await sendPasswordResetEmail(auth, user.email);
       addAlert("Instruções de recuperação de senha enviadas para seu e-mail.");
-    } catch (error: any) {
-      console.error("Erro ao enviar e-mail de recuperação:", error.message);
-      addAlert(`Não encontramos o e-mail: ${user.email}.`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Erro ao enviar e-mail de recuperação:", error.message);
+        addAlert(`Não encontramos o e-mail: ${user.email}.`);
+      }
     }
   }
 
