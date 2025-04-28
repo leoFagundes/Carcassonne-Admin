@@ -27,7 +27,7 @@ export default function MenuPage() {
     value: "",
     type: "",
     observation: [],
-    extra: [],
+    sideDish: [],
     image: "",
     isVegan: false,
     isFocus: false,
@@ -54,7 +54,7 @@ export default function MenuPage() {
   //   value: "",
   //   type: "",
   //   observation: [],
-  //   extra: [],
+  //   sideDish: [],
   //   image: "",
   //   isVegan: false,
   //   isFocus: false,
@@ -69,7 +69,7 @@ export default function MenuPage() {
       observation: ["Servir quente", "Corte em 8 pedaços"],
       value: "R$ 35,00",
       type: "Pizza",
-      extra: ["Borda recheada", "Adicional de catupiry"],
+      sideDish: ["Borda recheada", "Adicional de catupiry"],
       image:
         "https://uploads.metroimg.com/wp-content/uploads/2024/09/19164943/Carcassonne-Pub.jpg",
       isVegan: false,
@@ -83,7 +83,7 @@ export default function MenuPage() {
       observation: ["Pode conter glúten", "Servir com batata frita"],
       value: "R$ 28,00",
       type: "Hambúrguer",
-      extra: ["Bacon", "Ovo", "Queijo extra"],
+      sideDish: ["Bacon", "Ovo", "Queijo extra"],
       image: "https://images.unsplash.com/photo-1550547660-d9450f859349",
       isVegan: false,
       isFocus: false,
@@ -159,13 +159,13 @@ export default function MenuPage() {
   );
 
   return (
-    <section className="flex flex-col gap-8 w-full h-full">
+    <section className="flex flex-col gap-8 w-full h-full overflow-y-scroll overflow-x-hidden outline-none">
       <section className="flex w-full justify-center items-center gap-2 text-primary-gold">
         <LuPizza size={"48px"} className="min-w-[48px]" />
         <h2 className="text-5xl text-primary-gold">Cardápio</h2>
       </section>
       {/* Input de busca */}
-      <section className="flex items-center flex-wrap justify-center gap-4">
+      <section className="flex items-center flex-wrap justify-center gap-4 ">
         <div className="flex justify-center gap-4 flex-wrap max-w-[300px]">
           <Input
             placeholder="Buscar por nome ou descrição..."
@@ -200,7 +200,7 @@ export default function MenuPage() {
           />
         </div>
       </section>
-      <section className="flex flex-wrap justify-center gap-x-6 gap-y-8 p-1 overflow-y-scroll overflow-x-hidden">
+      <section className="flex flex-wrap justify-center gap-x-6 gap-y-8 p-1">
         {filteredMenu.length > 0 && !isMenuModalOpen ? (
           filteredMenu.map((item, index) => (
             <MenuCard
@@ -262,7 +262,7 @@ export default function MenuPage() {
               value: "",
               type: "",
               observation: [],
-              extra: [],
+              sideDish: [],
               image: "",
               isVegan: false,
               isFocus: false,

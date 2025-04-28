@@ -1,3 +1,8 @@
+export interface User {
+  email: string;
+  password: string;
+}
+
 export interface BoardgameType {
   name: string;
   description: string;
@@ -16,7 +21,7 @@ export interface MenuItemType {
   value: string;
   type: string;
   observation?: string[];
-  extra?: string[];
+  sideDish?: string[];
   image: string;
   isVegan: boolean;
   isFocus: boolean;
@@ -33,4 +38,9 @@ export interface InfoType {
   name: string;
   description: string;
   values: string[];
+}
+
+export interface DescriptionTypeProps {
+  type: string;
+  description: string;
 }

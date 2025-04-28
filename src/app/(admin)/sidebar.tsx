@@ -10,6 +10,8 @@ import {
   LuMenu,
   LuX,
 } from "react-icons/lu";
+import { signOut } from "firebase/auth";
+import { auth } from "@/services/firebaseConfig";
 
 interface ItemProps {
   message: string;
@@ -41,6 +43,15 @@ export default function Sidebar() {
 
   const toggleSidebar = () => setIsOpen(!isOpen);
   const pathname = usePathname();
+
+  async function handleLogout() {
+    try {
+      await signOut(auth);
+      router.push("/");
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    }
+  }
 
   return (
     <>
@@ -97,7 +108,7 @@ export default function Sidebar() {
           </div>
           <Item
             onClick={() => {
-              router.push("/");
+              handleLogout();
               setIsOpen(false);
             }}
             message="Sair"

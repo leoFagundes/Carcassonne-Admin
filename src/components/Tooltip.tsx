@@ -32,7 +32,7 @@ export default function Tooltip({
       <div
         className={`font-medium absolute hidden group-hover:flex border border-primary-black sahdow-card bg-primary-gold text-primary-black text-sm px-3 py-1 rounded-md whitespace-nowrap transition-all z-20 ${tooltipPosition[direction]}`}
       >
-        <h4>{content}</h4>
+        <span className="text-md font-semibold">{content}</span>
         <div
           className={`absolute w-2 h-2 rotate-45 bg-primary-gold e ${arrowPosition[direction]}`}
         />

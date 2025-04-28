@@ -104,12 +104,12 @@ export default function MenuForms({
         </div>
         <div className="flex flex-col gap-6">
           <OptionsInput
-            values={currentItem.extra}
+            values={currentItem.sideDish}
             setValues={(values) =>
-              setCurrentItem({ ...currentItem, extra: values })
+              setCurrentItem({ ...currentItem, sideDish: values })
             }
-            placeholder="Extras"
-            label="Extras"
+            placeholder="Acompanhamento"
+            label="Acompanhamento"
             variant
             width="!w-[250px]"
           />

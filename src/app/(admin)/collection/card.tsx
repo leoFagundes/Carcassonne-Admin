@@ -22,7 +22,7 @@ export default function Card({
   return (
     <div
       {...props}
-      className="flex flex-col w-[200px] h-[250px] outline hover:outline-primary-gold outline-transparent border border-primary-gold transition-all duration-200 ease-in overflow-scroll scrollbar-none gap-2 items-center bg-primary-black/80 p-4 rounded text-primary-gold shadow-card cursor-pointer"
+      className="flex flex-col w-[200px] h-fit max-h-[250px] outline hover:outline-primary-gold outline-transparent border border-primary-gold transition-all duration-200 ease-in overflow-scroll scrollbar-none gap-2 items-center bg-primary-black/80 p-4 rounded text-primary-gold shadow-card cursor-pointer"
     >
       <div className="flex items-center">
         <img
@@ -32,17 +32,17 @@ export default function Card({
         />
       </div>
       <span
-        className="font-semibold text-center text-lg flex-1"
+        className="font-semibold text-center text-md"
         dangerouslySetInnerHTML={{
           __html: highlightMatch(boardgame.name, searchTerm),
         }}
       />
       <div className="flex gap-4">
-        <span className="flex items-center gap-2">
+        <span className="flex text-sm items-center gap-2">
           <FiUsers />
           {boardgame.minPlayers} - {boardgame.maxPlayers}
         </span>
-        <span className="flex items-center gap-2">
+        <span className="flex text-sm items-center gap-2">
           <FiClock />
           {boardgame.playTime} min
         </span>

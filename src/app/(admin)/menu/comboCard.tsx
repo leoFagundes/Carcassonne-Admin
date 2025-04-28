@@ -22,7 +22,7 @@ export default function ComboCard({
   return (
     <div
       {...props}
-      className={`relative flex flex-col w-[200px] h-[280px] outline hover:outline-primary-gold outline-transparent border border-primary-gold transition-all duration-200 ease-in scrollbar-none gap-2 items-center bg-primary-black/80 p-4 rounded text-primary-gold shadow-card cursor-pointer overflow-visible`}
+      className={`relative flex flex-col w-[240px] h-fit max-h-[280px] outline hover:outline-primary-gold outline-transparent border border-primary-gold transition-all duration-200 ease-in scrollbar-none gap-2 items-center bg-primary-black/80 p-4 rounded text-primary-gold shadow-card cursor-pointer overflow-visible`}
     >
       <div className="flex items-center">
         <img
@@ -32,15 +32,15 @@ export default function ComboCard({
         />
       </div>
       <span
-        className="font-semibold text-center text-lg flex-1"
+        className="font-semibold text-center text-md"
         dangerouslySetInnerHTML={{
           __html: highlightMatch(item.name, searchTerm),
         }}
       />
 
-      <div className="overflow-y-scroll">
+      <div className="overflow-y-scroll flex-1">
         <span
-          className="text-sm text-center"
+          className="text-xs text-center"
           dangerouslySetInnerHTML={{
             __html: highlightMatch(item.description, searchTerm),
           }}
