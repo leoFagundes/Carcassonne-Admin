@@ -46,8 +46,8 @@ export default function DescriptionTypeForms({
   ];
 
   return (
-    <div className="flex flex-col items-center overflow-y-scroll w-full px-2">
-      <h1 className="text-4xl text-gradient-gold">
+    <div className="flex flex-col items-center overflow-y-scroll px-2">
+      <h1 className="text-4xl text-gradient-gold text-center">
         Adicionar uma nova descrição
       </h1>
 

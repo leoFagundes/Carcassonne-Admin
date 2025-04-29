@@ -6,6 +6,7 @@ interface ModalProps {
   onClose: VoidFunction;
   children: ReactNode;
   isFixed?: boolean;
+  patternCloseButton?: boolean;
 }
 
 export default function Modal({
@@ -13,6 +14,7 @@ export default function Modal({
   isOpen,
   onClose,
   isFixed = false,
+  patternCloseButton = true,
 }: ModalProps) {
   return (
     <>
@@ -23,13 +25,15 @@ export default function Modal({
           } top-0 left-0 w-full h-full rounded backdrop-blur-[5px] z-50`}
         >
           <div className="bg-primary-black w-full h-full rounded p-12 flex flex-col items-center">
-            <span
-              onClick={onClose}
-              className="absolute flex items-center gap-1 cursor-pointer top-5 left-5 text-primary-gold"
-            >
-              <FiSkipBack size={"18px"} />{" "}
-              <span className="font-semibold text-lg">Voltar</span>
-            </span>
+            {patternCloseButton && (
+              <span
+                onClick={onClose}
+                className="absolute flex items-center gap-1 cursor-pointer top-5 left-5 text-primary-gold"
+              >
+                <FiSkipBack size={"18px"} />{" "}
+                <span className="font-semibold text-lg">Voltar</span>
+              </span>
+            )}
             {children}
           </div>
         </div>

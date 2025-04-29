@@ -15,7 +15,7 @@ export default function Card({
   return (
     <div
       {...props}
-      className="overflow-visible relative flex flex-col w-[250px] h-[130px] outline hover:outline-primary-gold outline-transparent border border-primary-gold transition-all duration-200 ease-in scrollbar-none gap-2 items-center bg-primary-black/80 p-4 rounded text-primary-gold shadow-card cursor-pointer"
+      className="overflow-visible relative flex flex-col w-[250px] h-[130px] outline hover:outline-primary-gold outline-transparent border border-primary-gold transition-all duration-200 ease-in scrollbar-none gap-2 items-center bg-primary-black/80 p-4 rounded-lg text-primary-gold shadow-card cursor-pointer"
     >
       <h2 className="text-2xl text-center">{title}</h2>
       <p className="text-center font-light text-sm italic">{description}</p>

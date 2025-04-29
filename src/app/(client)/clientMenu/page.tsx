@@ -13,13 +13,17 @@ import MenuCard from "./menuCard";
 import Modal from "@/components/modal";
 import Button from "@/components/button";
 import { LuVegan } from "react-icons/lu";
+import { useAlert } from "@/contexts/alertProvider";
 
 export default function ClientMenuPage() {
   const [types, setTypes] = useState(["Avisos", "Combos"]);
   const [isMenuFixed, setIsMenuFixed] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // const [isInfoModalOpen, setIsInfoModalOpen] = useState(true);
   const [currentItem, setCurrentItem] = useState<MenuItemType | undefined>();
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const { addAlert } = useAlert();
 
   const menuItems: MenuItemType[] = [
     {
@@ -195,6 +199,10 @@ export default function ClientMenuPage() {
         "THEY LOVE TRUTH, JUSTICE, AND A SLICE OF PIZZA AND A SLICE OF PIZZA",
     },
   ];
+
+  useEffect(() => {
+    addAlert("Bem-vindo ao Carcassonne! 🎲🖤 ");
+  }, []);
 
   const handleScroll = () => {
     const scrollTop = window.scrollY;
@@ -435,6 +443,24 @@ export default function ClientMenuPage() {
           </div>
         </Modal>
       )}
+      {/* <Modal
+        isFixed
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+        patternCloseButton={false}
+      >
+        <div className="py-2">
+          <Button
+            onClick={() => {
+              setIsInfoModalOpen(false);
+
+              toggleScrollLock(false);
+            }}
+          >
+            Ir para o Cardápio
+          </Button>
+        </div>
+      </Modal> */}
     </div>
   );
 }

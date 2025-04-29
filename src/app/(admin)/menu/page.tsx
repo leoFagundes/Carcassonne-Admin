@@ -79,7 +79,7 @@ export default function MenuPage() {
     {
       name: "Hambúrguer Artesanal",
       description:
-        "Hambúrguer de carne bovina 180g, queijo cheddar, alface e tomate.",
+        "Hambúrguer de carne bovina 180g, queijo cheddar, alface e tomate. Hambúrguer de carne bovina 180g, queijo cheddar, alface e tomate. ",
       observation: ["Pode conter glúten", "Servir com batata frita"],
       value: "R$ 28,00",
       type: "Hambúrguer",
@@ -159,7 +159,7 @@ export default function MenuPage() {
   );
 
   return (
-    <section className="flex flex-col gap-8 w-full h-full overflow-y-scroll overflow-x-hidden outline-none">
+    <section className="flex flex-col gap-8 w-full h-full overflow-y-scroll overflow-x-hidden outline-none px-3">
       <section className="flex w-full justify-center items-center gap-2 text-primary-gold">
         <LuPizza size={"48px"} className="min-w-[48px]" />
         <h2 className="text-5xl text-primary-gold">Cardápio</h2>

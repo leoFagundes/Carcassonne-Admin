@@ -54,7 +54,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.3 }}
               onClick={() => removeAlert(alert.id)}
-              className="flex items-center gap-2 shadow-card bg-primary-gold text-black px-4 py-2 rounded-md shadow-lg cursor-pointer hover:opacity-90"
+              className="flex items-center gap-2 shadow-card bg-primary-gold text-black mx-2 px-4 py-2 rounded-md shadow-lg cursor-pointer hover:opacity-90"
             >
               {alert.message} <FiX size={"16px"} className="min-w-[16px]" />
             </motion.div>

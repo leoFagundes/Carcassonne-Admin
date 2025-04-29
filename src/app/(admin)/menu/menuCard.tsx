@@ -24,52 +24,51 @@ export default function MenuCard({
       {...props}
       className={`${
         !item.isVisible && "opacity-50"
-      } relative flex flex-col w-[240px] h-fit max-h-[280px] outline hover:outline-primary-gold outline-transparent border border-primary-gold transition-all duration-200 ease-in scrollbar-none gap-2 items-center bg-primary-black/80 p-4 rounded text-primary-gold shadow-card cursor-pointer overflow-visible`}
+      } relative flex flex-col w-[240px] h-fit max-h-[280px] shadow-card-gold outline hover:outline-primary-gold outline-transparent  transition-all duration-200 ease-in scrollbar-none gap-2 items-center bg-primary-black/80 rounded-lg text-primary-gold cursor-pointer overflow-visible`}
     >
-      <div className="flex items-center">
-        <img
-          className="w-[120px] h-[120px] rounded"
-          src={item.image}
-          alt="item"
-        />
-      </div>
-      <span
-        className="font-semibold text-center text-md"
-        dangerouslySetInnerHTML={{
-          __html: highlightMatch(item.name, searchTerm),
-        }}
-      />
-
-      <div className="overflow-y-scroll flex-1">
+      <div
+        className="flex items-center w-full h-[120px] bg-cover bg-no-repeat bg-center rounded-t-lg"
+        style={{ backgroundImage: `url(${item.image})` }}
+      ></div>
+      <div className="flex flex-col gap-2 py-2 px-3">
         <span
-          className="text-xs text-center"
+          className="font-semibold text-center text-md"
           dangerouslySetInnerHTML={{
-            __html: highlightMatch(item.description, searchTerm),
+            __html: highlightMatch(item.name, searchTerm),
           }}
         />
-      </div>
-      <div className="flex flex-col gap-2 absolute top-4 right-3">
-        {item.isVisible ? (
-          <Tooltip direction="left" content="Item visivel">
-            <LuEye />
-          </Tooltip>
-        ) : (
-          <Tooltip direction="left" content="Item invisivel">
-            <LuEyeOff />
-          </Tooltip>
-        )}
 
-        {item.isFocus && (
-          <Tooltip direction="left" content="Item em desatque">
-            <LuSparkles />
-          </Tooltip>
-        )}
+        <div className="overflow-y-scroll flex-1">
+          <span
+            className="text-xs text-center"
+            dangerouslySetInnerHTML={{
+              __html: highlightMatch(item.description, searchTerm),
+            }}
+          />
+        </div>
+        <div className="flex flex-col gap-2 absolute top-1 right-1 p-2 rounded-lg backdrop-blur-[4px]">
+          {item.isVisible ? (
+            <Tooltip direction="left" content="Item visivel">
+              <LuEye />
+            </Tooltip>
+          ) : (
+            <Tooltip direction="left" content="Item invisivel">
+              <LuEyeOff />
+            </Tooltip>
+          )}
 
-        {item.isVegan && (
-          <Tooltip direction="left" content="Item vegano">
-            <LuVegan />
-          </Tooltip>
-        )}
+          {item.isFocus && (
+            <Tooltip direction="left" content="Item em desatque">
+              <LuSparkles />
+            </Tooltip>
+          )}
+
+          {item.isVegan && (
+            <Tooltip direction="left" content="Item vegano">
+              <LuVegan />
+            </Tooltip>
+          )}
+        </div>
       </div>
     </div>
   );

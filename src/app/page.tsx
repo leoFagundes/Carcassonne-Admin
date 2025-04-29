@@ -9,16 +9,19 @@ import carcassonneBackground from "../../public/images/carcassonne-bg.png";
 import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  UserCredential,
 } from "firebase/auth";
 import { auth } from "@/services/firebaseConfig";
 import { User } from "@/types";
 import { useAlert } from "@/contexts/alertProvider";
+import Loader from "@/components/loader";
 
 export default function Home() {
   const [user, setUser] = useState<User>({
     email: "",
     password: "",
   });
+  const [loading, setLoading] = useState(false);
 
   const { addAlert } = useAlert();
 
@@ -39,14 +42,26 @@ export default function Home() {
   const router = useRouter();
 
   async function validateAccount() {
+    setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, user.email, user.password);
+      const authUser: UserCredential = await signInWithEmailAndPassword(
+        auth,
+        user.email,
+        user.password
+      );
+      if (!authUser.user.emailVerified) {
+        addAlert("Você precisa verificar seu e-mail antes de fazer login.");
+        return;
+      }
+
       router.push("/collection");
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error("Erro ao fazer login:", error.message);
         addAlert("Usuário ou senha inválidos.");
       }
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -76,7 +91,7 @@ export default function Home() {
 
   return (
     <div
-      className="flex justify-center items-center bg-cover bg-center min-h-screen w-full bg-primary-black"
+      className="flex flex-col justify-center items-center gap-1 bg-cover bg-center min-h-screen w-full bg-primary-black"
       style={{
         backgroundImage: `url(${carcassonneBackground.src})`,
       }}
@@ -115,8 +130,16 @@ export default function Home() {
             </span>
           </div>
         </div>
-        <Button onClick={() => validateAccount()}>Entrar</Button>
+        <Button onClick={() => validateAccount()}>
+          {loading ? <Loader /> : "Entrar"}
+        </Button>
       </section>
+      <span
+        className="text-primary-gold text-sm cursor-pointer hover:underline bg-primary-black/60 py-1 px-2 rounded"
+        onClick={() => router.push("/signup")}
+      >
+        Criar uma conta
+      </span>
     </div>
   );
 }

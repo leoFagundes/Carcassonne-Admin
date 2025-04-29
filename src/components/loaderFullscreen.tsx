@@ -7,7 +7,6 @@ const messages = [
   "Verificando se a pizza já está pronta...",
   "Jogando dados...",
   "Quase pronto...",
-  "Eu sou o Duque e pego 3...",
 ];
 
 export default function LoaderFullscreen() {

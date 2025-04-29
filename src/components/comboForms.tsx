@@ -19,7 +19,7 @@ export default function ComboForms({
 }: ComboFormsType) {
   return (
     <>
-      <h1 className="text-4xl text-gradient-gold">
+      <h1 className="text-4xl text-gradient-gold text-center">
         {currentCombo.name ? currentCombo.name : "Combo sem nome"}
       </h1>
       <div className="flex flex-wrap justify-center py-6 text-primary-gold gap-6 my-4 overflow-y-scroll px-4">

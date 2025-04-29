@@ -27,7 +27,7 @@ export default function MenuForms({
 }: MenuFormsType) {
   return (
     <>
-      <h1 className="text-4xl text-gradient-gold">
+      <h1 className="text-4xl text-gradient-gold text-center">
         {currentItem.name ? currentItem.name : "Item sem nome"}
       </h1>
       <div className="flex flex-wrap justify-center py-6 text-primary-gold gap-6 my-4 overflow-y-scroll px-4">

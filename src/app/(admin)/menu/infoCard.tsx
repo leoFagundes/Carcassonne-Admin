@@ -22,12 +22,12 @@ export default function InfoCard({
   return (
     <div
       {...props}
-      className={`relative flex flex-col w-[240px] h-fit max-h-[280px] outline hover:outline-primary-gold outline-transparent border border-primary-gold transition-all duration-200 ease-in scrollbar-none gap-2 items-center bg-primary-black/80 p-4 rounded text-primary-gold shadow-card cursor-pointer overflow-visible`}
+      className={`relative flex flex-col w-[240px] h-fit max-h-[280px] outline hover:outline-primary-gold outline-transparent shadow-card-gold transition-all duration-200 ease-in scrollbar-none gap-2 items-center bg-primary-black/80 p-4 rounded-lg text-primary-gold cursor-pointer overflow-visible`}
     >
       <div className="flex items-center">
         <img
-          className="w-[120px] h-[120px] rounded"
-          src={"images/mascote-aviso.png"}
+          className="w-[120px] rounded"
+          src={"images/mascote-aviso-2.png"}
           alt="item"
         />
       </div>

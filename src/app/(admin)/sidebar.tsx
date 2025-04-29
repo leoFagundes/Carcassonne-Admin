@@ -12,6 +12,7 @@ import {
 } from "react-icons/lu";
 import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebaseConfig";
+import Tooltip from "@/components/Tooltip";
 
 interface ItemProps {
   message: string;
@@ -72,10 +73,18 @@ export default function Sidebar() {
         md:relative md:translate-x-0 md:flex`}
       >
         <div className="flex flex-col gap-6 items-center w-full h-full">
-          <div className="flex flex-col justify-center items-center">
-            <img className="w-[150px]" src="images/logo-gold-2.png" alt="" />
-            <h2 className="text-primary-gold -mt-2 text-xl">Carcassonne Pub</h2>
+          <div className="relative flex flex-col justify-center items-center gap-1">
+            <img
+              className="right-16 w-[150px]"
+              src="images/mascote-3.png"
+              alt="meeple"
+            />
             <h2 className="text-primary-gold -mt-1 text-lg">Administração</h2>
+            <div className="absolute top-2">
+              <Tooltip content="Eu sou o Duque e pego 3" direction="right">
+                <div className=" bg-primary-black p-[1px] h-1 w-1 rounded-full"></div>
+              </Tooltip>
+            </div>
           </div>
           <div className="w-full flex flex-col flex-1 gap-4">
             <Item
