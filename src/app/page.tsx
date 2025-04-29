@@ -15,11 +15,12 @@ import { auth } from "@/services/firebaseConfig";
 import { User } from "@/types";
 import { useAlert } from "@/contexts/alertProvider";
 import Loader from "@/components/loader";
+import Puzzle from "@/components/puzzle";
 
 export default function Home() {
   const [user, setUser] = useState<User>({
     email: "",
-    password: "",
+    password: " ",
   });
   const [loading, setLoading] = useState(false);
 
@@ -31,6 +32,7 @@ export default function Home() {
       setUser((prevUser) => ({
         ...prevUser,
         email: storedEmail,
+        password: "",
       }));
     }
   }, []);
@@ -91,7 +93,7 @@ export default function Home() {
 
   return (
     <div
-      className="flex flex-col justify-center items-center gap-1 bg-cover bg-center min-h-screen w-full bg-primary-black"
+      className="flex flex-col justify-center items-center gap-1 bg-cover bg-center min-h-screen max-h-screen h-screen w-full bg-primary-black"
       style={{
         backgroundImage: `url(${carcassonneBackground.src})`,
       }}
@@ -140,6 +142,7 @@ export default function Home() {
       >
         Criar uma conta
       </span>
+      <Puzzle />
     </div>
   );
 }

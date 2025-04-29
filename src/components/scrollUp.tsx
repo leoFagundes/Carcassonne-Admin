@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FaArrowUp } from "react-icons/fa";
+import { FaArrowUp, FaInfoCircle } from "react-icons/fa";
 
 export default function ScrollUp() {
   const [isVisible, setIsVisible] = useState(false);
@@ -32,15 +32,12 @@ export default function ScrollUp() {
 
   return (
     <div
-      className={`duration-300 ease-in-out backdrop-blur-[2px] p-2 rounded-md flex flex-col items-center justify-center ${
+      className={`duration-300 ease-in-out backdrop-blur-[2px] p-2 rounded-md gap-4 flex flex-col items-center justify-center ${
         isVisible ? "opacity-100 hover:cursor-pointer" : "opacity-0"
       } fixed bottom-2 right-2 z-10 `}
-      onClick={scrollToTop}
     >
-      <FaArrowUp size={"20px"} className="text-primary" />
-      <p className="sm:block hidden text-xs font-semibold text-primary">
-        Ir ao topo
-      </p>
+      <FaArrowUp onClick={scrollToTop} size={"20px"} className="text-primary" />
+      <FaInfoCircle size={"20px"} className="text-primary" />
     </div>
   );
 }
