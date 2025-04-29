@@ -1,10 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import { FaArrowUp, FaInfoCircle } from "react-icons/fa";
 
 export default function ScrollUp() {
   const [isVisible, setIsVisible] = useState(false);
+
+  const router = useRouter();
 
   const handleScroll = () => {
     const scrollTop = window.scrollY;
@@ -32,12 +35,20 @@ export default function ScrollUp() {
 
   return (
     <div
-      className={`duration-300 ease-in-out backdrop-blur-[2px] p-2 rounded-md gap-4 flex flex-col items-center justify-center ${
-        isVisible ? "opacity-100 hover:cursor-pointer" : "opacity-0"
-      } fixed bottom-2 right-2 z-10 `}
+      className={`backdrop-blur-[2px] p-2 rounded-md gap-4 flex flex-col items-center justify-center fixed bottom-2 right-2 z-10 `}
     >
-      <FaArrowUp onClick={scrollToTop} size={"20px"} className="text-primary" />
-      <FaInfoCircle size={"20px"} className="text-primary" />
+      <FaArrowUp
+        onClick={scrollToTop}
+        size={"20px"}
+        className={`text-primary duration-300 ease-in-out ${
+          isVisible ? "opacity-100 hover:cursor-pointer" : "opacity-0"
+        }`}
+      />
+      <FaInfoCircle
+        size={"20px"}
+        className="text-primary"
+        onClick={() => router.push("/Rules&Regulations")}
+      />
     </div>
   );
 }

@@ -14,12 +14,12 @@ import Modal from "@/components/modal";
 import Button from "@/components/button";
 import { LuVegan } from "react-icons/lu";
 import { useAlert } from "@/contexts/alertProvider";
+import ScrollUp from "@/components/scrollUp";
 
 export default function ClientMenuPage() {
   const [types, setTypes] = useState(["Avisos", "Combos"]);
   const [isMenuFixed, setIsMenuFixed] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  // const [isInfoModalOpen, setIsInfoModalOpen] = useState(true);
   const [currentItem, setCurrentItem] = useState<MenuItemType | undefined>();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -443,24 +443,7 @@ export default function ClientMenuPage() {
           </div>
         </Modal>
       )}
-      {/* <Modal
-        isFixed
-        isOpen={isInfoModalOpen}
-        onClose={() => setIsInfoModalOpen(false)}
-        patternCloseButton={false}
-      >
-        <div className="py-2">
-          <Button
-            onClick={() => {
-              setIsInfoModalOpen(false);
-
-              toggleScrollLock(false);
-            }}
-          >
-            Ir para o Cardápio
-          </Button>
-        </div>
-      </Modal> */}
+      <ScrollUp />
     </div>
   );
 }

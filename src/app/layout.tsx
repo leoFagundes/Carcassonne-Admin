@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Pirata_One, Saira } from "next/font/google";
 import "./globals.css";
-import ScrollUp from "@/components/scrollUp";
 import { AlertProvider } from "@/contexts/alertProvider";
 
 const pirataOne = Pirata_One({
@@ -32,7 +31,6 @@ export default function RootLayout({
         className={` ${pirataOne.variable} ${saira.variable} antialiased text-primary-white bg-primary-black`}
       >
         <AlertProvider>{children}</AlertProvider>
-        <ScrollUp />
       </body>
     </html>
   );

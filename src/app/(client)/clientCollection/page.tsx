@@ -10,6 +10,7 @@ import Card from "./card";
 import Modal from "@/components/modal";
 import { FiClock, FiLayers, FiTrendingUp, FiUsers } from "react-icons/fi";
 import Button from "@/components/button";
+import ScrollUp from "@/components/scrollUp";
 
 export default function ClientCollectionPage() {
   const [filterBoardgameName, setFilterBoardgameName] = useState("");
@@ -374,6 +375,7 @@ export default function ClientCollectionPage() {
           </div>
         </Modal>
       )}
+      <ScrollUp />
     </div>
   );
 }
