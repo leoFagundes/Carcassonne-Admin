@@ -18,6 +18,9 @@ export default function Puzzle() {
       setPassword("");
       return;
     }
+
+    localStorage.setItem("carcaPuzzle", "true");
+    window.location.reload();
   };
 
   return (

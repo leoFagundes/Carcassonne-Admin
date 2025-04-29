@@ -17,6 +17,43 @@ export default function RulesPage() {
         <FiSkipBack size={"18px"} />{" "}
         <span className="font-semibold text-lg">Voltar</span>
       </span>
+
+      <h1 className="text-3xl font-bold border-b border-pritext-primary-gold pb-2">
+        Contato
+      </h1>
+
+      <div className="flex flex-col max-w-4xl space-y-3 text-sm md:text-base text-justify mt-2">
+        <span>Reservas: (61) 99968-4186</span>
+
+        <a
+          href="https://www.facebook.com/CARCASSONNEPUB"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 hover:underline"
+        >
+          <FiFacebook className="min-w-[16px]" size={"16px"} /> /CARCASSONNEPUB
+        </a>
+
+        <a
+          href="https://www.instagram.com/CARCASSONNEPUB"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 hover:underline"
+        >
+          <FiInstagram className="min-w-[16px]" size={"16px"} /> @CARCASSONNEPUB
+        </a>
+
+        <a
+          href="https://www.google.com/maps/place/CLN+407+Bloco+E+-+Loja+37+-+Asa+Norte,+Brasília+-+DF"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 hover:underline"
+        >
+          <FiMapPin className="min-w-[16px]" size={"16px"} /> Endereço: CLN 407
+          BLOCO E LOJA 37 - ASA NORTE
+        </a>
+      </div>
+
       <h1 className="text-3xl font-bold border-b border-pritext-primary-gold pb-2">
         Avisos Legais & Políticas
       </h1>
@@ -56,7 +93,7 @@ export default function RulesPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl space-y-3 text-sm md:text-base text-justify mt-6">
+      <div className="max-w-4xl space-y-3 text-sm md:text-base text-justify">
         <p>Cobramos taxa de rolha. Contate um de nossos atendentes.</p>
         <p>
           Proibido o consumo de produtos alimentícios não fornecidos pela casa.
@@ -67,42 +104,9 @@ export default function RulesPage() {
 
       <footer className="text-primary-gold font-semibold">PROCON 151</footer>
 
-      <h1 className="text-3xl font-bold border-b border-pritext-primary-gold pb-2">
-        Contato
-      </h1>
-
-      <div className="flex flex-col max-w-4xl space-y-3 text-sm md:text-base text-justify mt-2">
-        <span>Reservas: (61) 99968-4186</span>
-
-        <a
-          href="https://www.facebook.com/CARCASSONNEPUB"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 hover:underline"
-        >
-          <FiFacebook className="min-w-[16px]" size={"16px"} /> /CARCASSONNEPUB
-        </a>
-
-        <a
-          href="https://www.instagram.com/CARCASSONNEPUB"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 hover:underline"
-        >
-          <FiInstagram className="min-w-[16px]" size={"16px"} /> @CARCASSONNEPUB
-        </a>
-
-        <a
-          href="https://www.google.com/maps/place/CLN+407+Bloco+E+-+Loja+37+-+Asa+Norte,+Brasília+-+DF"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 hover:underline"
-        >
-          <FiMapPin className="min-w-[16px]" size={"16px"} /> Endereço: CLN 407
-          BLOCO E LOJA 37 - ASA NORTE
-        </a>
+      <div>
+        <Button onClick={() => router.back()}>Voltar</Button>
       </div>
-      <Button onClick={() => router.back()}>Voltar</Button>
     </div>
   );
 }

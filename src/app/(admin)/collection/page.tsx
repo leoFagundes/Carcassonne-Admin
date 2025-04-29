@@ -38,7 +38,7 @@ export default function CollectionPage() {
       type: "Estratégia",
     },
     {
-      name: "Ticket to Ride Ride Ride",
+      name: "Ticket to Ride Ride Ride ",
       description:
         "Ticket to Ride é um jogo de tabuleiro de conquista de rotas de trem, onde os jogadores tentam completar cartas de destino conectando cidades através de trilhos.",
       difficulty: "Fácil",

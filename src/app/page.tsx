@@ -2,10 +2,13 @@
 
 import Input from "@/components/input";
 import { useEffect, useState } from "react";
-import { FiLock, FiUser } from "react-icons/fi";
+import { FiArrowLeft, FiLock, FiUser } from "react-icons/fi";
 import Button from "@/components/button";
 import { useRouter } from "next/navigation";
 import carcassonneBackground from "../../public/images/carcassonne-bg.png";
+import carcassonneBoardgame from "../../public/images/carcassonne-boardgame.png";
+import fabiosali from "../../public/images/fabio&sali.png";
+import klausjurgen from "../../public/images/klausjurgen.png";
 import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
@@ -23,8 +26,28 @@ export default function Home() {
     password: " ",
   });
   const [loading, setLoading] = useState(false);
+  const [carcaPuzzle, setCarcaPuzzle] = useState(false);
 
   const { addAlert } = useAlert();
+
+  useEffect(() => {
+    const storedValue = localStorage.getItem("carcaPuzzle");
+    setCarcaPuzzle(storedValue === "true");
+  }, []);
+
+  useEffect(() => {
+    const imagesToPreload = [
+      carcassonneBackground.src,
+      carcassonneBoardgame.src,
+      fabiosali.src,
+      klausjurgen.src,
+    ];
+
+    imagesToPreload.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
 
   useEffect(() => {
     const storedEmail = localStorage.getItem("carcassonneAdminEmail");
@@ -32,6 +55,12 @@ export default function Home() {
       setUser((prevUser) => ({
         ...prevUser,
         email: storedEmail,
+        password: "",
+      }));
+    } else {
+      setUser((prevUser) => ({
+        ...prevUser,
+        email: "",
         password: "",
       }));
     }
@@ -95,7 +124,9 @@ export default function Home() {
     <div
       className="flex flex-col justify-center items-center gap-1 bg-cover bg-center min-h-screen max-h-screen h-screen w-full bg-primary-black"
       style={{
-        backgroundImage: `url(${carcassonneBackground.src})`,
+        backgroundImage: `url(${
+          carcaPuzzle ? carcassonneBoardgame.src : carcassonneBackground.src
+        })`,
       }}
     >
       <section className="flex items-center justify-center flex-col bg-black/60 rounded-md backdrop-blur-[1px] p-8 shadow-card gap-5">
@@ -142,7 +173,65 @@ export default function Home() {
       >
         Criar uma conta
       </span>
-      <Puzzle />
+      {!carcaPuzzle && <Puzzle />}
+      {carcaPuzzle && (
+        <>
+          <div className="abosulute w-[240px] sm:flex hidden flex-col absolute top-4 left-4 bg-primary-black/60 rounded-md shadow-card">
+            <div
+              className="w-full h-[200px] bg-cover bg-center rounded-t-md"
+              style={{ backgroundImage: `url(${klausjurgen.src})` }}
+            />
+            <div className="flex flex-col gap-2 p-2">
+              <span className="w-full text-center font-bold text-lg">
+                Klaus-Jürgen Wrede
+              </span>
+              <p className="font-medium text-sm">
+                Klaus-Jürgen Wrede é um designer de jogos alemão, mais conhecido
+                por ter criado o famoso jogo de tabuleiro Carcassonne, lançado
+                em 2000. O jogo se destacou pela sua mecânica inovadora de
+                colocação de peças (tiles) e controle de áreas, se tornando um
+                clássico moderno e ganhando o prestigiado prêmio Spiel des
+                Jahres em 2001.
+              </p>
+            </div>
+          </div>
+
+          <div className="abosulute w-[240px] sm:flex hidden flex-col absolute bottom-4 right-4 bg-primary-black/60 rounded-md shadow-card">
+            <div className="flex flex-col gap-2 p-2">
+              <span className="w-full text-center font-bold text-lg">
+                Fábio Almeida e Salimar Morais
+              </span>
+              <p className="font-medium text-sm">
+                O Carcassonne Pub, pioneiro em jogos de tabuleiro no Distrito
+                Federal, foi fundado por Fábio Almeida e Salimar Morais em maio
+                de 2013, casal apaixonado por jogos e gastronomia. A inspiração
+                surgiu durante uma viagem à Europa, onde observaram pubs com
+                estantes de livros disponíveis para os clientes. Eles adaptaram
+                essa ideia, substituindo os livros por jogos de tabuleiro,
+                criando um ambiente que promove a interação presencial entre as
+                pessoas.
+              </p>
+            </div>
+            <div
+              className="w-full h-[200px] bg-cover bg-center rounded-b-md"
+              style={{ backgroundImage: `url(${fabiosali.src})` }}
+            />
+          </div>
+
+          <div
+            onClick={() => {
+              localStorage.setItem("carcaPuzzle", "false");
+              window.location.reload();
+            }}
+            className="absolute bottom-2 bg-primary-black/60 py-2 px-3 rounded-md shadow-card cursor-pointer"
+          >
+            <span className="flex items-center gap-1">
+              <FiArrowLeft className="min-w-[16px]" size={"16px"} /> Voltar a
+              visão padrão!
+            </span>
+          </div>
+        </>
+      )}
     </div>
   );
 }
