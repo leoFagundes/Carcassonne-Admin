@@ -39,7 +39,7 @@ export default function DescriptionTypeForms({
         const existingTypes = fecthedMenuItens.map((item) => item.type);
         setTypeOptions(existingTypes);
       } catch (error) {
-        addAlert("Erro ao carregar descrições.");
+        addAlert(`Erro ao carregar descrições: ${error}`);
       } finally {
         setFetchLoading(false);
       }
@@ -51,7 +51,7 @@ export default function DescriptionTypeForms({
         const fecthedDescriptions = await DescriptionRepository.getAll();
         setDescriptions(fecthedDescriptions);
       } catch (error) {
-        addAlert("Erro ao carregar descrições.");
+        addAlert(`Erro ao carregar descrições: ${error}`);
       } finally {
         setFetchLoading(false);
       }
@@ -94,7 +94,7 @@ export default function DescriptionTypeForms({
         },
       ]);
     } catch (error) {
-      addAlert(`Erro ao criar nova descrição.`);
+      addAlert(`Erro ao criar uma nova descrição: ${error}`);
     } finally {
       setAddLoading(false);
     }
@@ -118,7 +118,7 @@ export default function DescriptionTypeForms({
         )
       );
     } catch (error) {
-      addAlert(`Erro ao deletar jogo.`);
+      addAlert(`Erro ao deletar descrição: ${error}`);
     } finally {
       setFetchLoading(false);
     }

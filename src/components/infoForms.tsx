@@ -45,7 +45,7 @@ export default function InfoForms({
       setCurrentInfo({ name: "", description: "", values: [] });
       closeForms();
     } catch (error) {
-      addAlert("Erro ao criar a aviso.");
+      addAlert(`Erro ao criar aviso: ${error}`);
     } finally {
       setLoading(false);
     }
@@ -69,7 +69,7 @@ export default function InfoForms({
       addAlert(`Aviso "${currentInfo.name}" editado com sucesso!`);
       closeForms();
     } catch (error) {
-      addAlert("Erro ao editar a aviso.");
+      addAlert(`Erro ao editar aviso: ${error}`);
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ export default function InfoForms({
       setCurrentInfo(patternInfo);
       closeForms();
     } catch (error) {
-      addAlert("Erro ao deletar a aviso.");
+      addAlert(`Erro ao deletar aviso: ${error}`);
     } finally {
       setLoading(false);
     }
