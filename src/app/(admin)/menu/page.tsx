@@ -237,24 +237,17 @@ export default function MenuPage() {
           isOpen={isMenuModalOpen}
           onClose={() => {
             setIsMenuModalOpen(false);
-            setCurrentItem({
-              name: "",
-              description: "",
-              value: "",
-              type: "",
-              observation: [],
-              sideDish: [],
-              image: "",
-              isVegan: false,
-              isFocus: false,
-              isVisible: true,
-            });
+            setCurrentItem(patternMenuItem);
           }}
         >
           <MenuForms
             currentItem={currentItem}
             setCurrentItem={setCurrentItem}
             formType="edit"
+            closeForms={() => {
+              setIsMenuModalOpen(false);
+              setCurrentItem(patternMenuItem);
+            }}
           />
         </Modal>
       )}
