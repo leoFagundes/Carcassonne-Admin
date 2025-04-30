@@ -114,24 +114,17 @@ export default function AddPage() {
         isOpen={isAddItemModalOpen}
         onClose={() => {
           setIsAddItemModalOpen(false);
-          setNewMenuItem({
-            name: "",
-            description: "",
-            value: "",
-            type: "",
-            observation: [],
-            sideDish: [],
-            image: "",
-            isVegan: false,
-            isFocus: false,
-            isVisible: true,
-          });
+          setNewMenuItem(patternMenuItem);
         }}
       >
         <MenuForms
           currentItem={newMenuItem}
           setCurrentItem={setNewMenuItem}
           formType="add"
+          closeForms={() => {
+            setIsAddItemModalOpen(false);
+            setNewMenuItem(patternMenuItem);
+          }}
         />
       </Modal>
 
