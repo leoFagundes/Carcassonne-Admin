@@ -1,5 +1,6 @@
 "use client";
 
+import { useAlert } from "@/contexts/alertProvider";
 import React, { useState } from "react";
 import { LuSendHorizontal, LuX } from "react-icons/lu";
 
@@ -22,12 +23,17 @@ export default function OptionsInput({
   width = "w-auto",
   limit = 9999999999999,
 }: OptionsInputType) {
+  const { addAlert } = useAlert();
+
   const [value, setValue] = useState("");
 
   function sendValueToList() {
     if (!values || value.trim() === "") return;
 
-    if (values.length + 1 > limit) return;
+    if (values.length + 1 > limit) {
+      addAlert(`O limite é de ${limit} itens!`);
+      return;
+    }
 
     setValues([...values, value]);
     setValue("");

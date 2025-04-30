@@ -2,7 +2,7 @@
 
 import Input from "@/components/input";
 import { ComboType, InfoType, MenuItemType } from "@/types";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { LuPizza } from "react-icons/lu";
 import Dropdown from "@/components/dropdown";
 import Checkbox from "@/components/checkbox";
@@ -14,6 +14,15 @@ import InfoCard from "./infoCard";
 import ComboCard from "./comboCard";
 import InfoForms from "@/components/infoForms";
 import ComboForms from "@/components/comboForms";
+import {
+  patternCombo,
+  patternInfo,
+  patternMenuItem,
+} from "@/utils/patternValues";
+import InfoRepository from "@/services/repositories/InfoRepository";
+import { useAlert } from "@/contexts/alertProvider";
+import LoaderFullscreen from "@/components/loaderFullscreen";
+import ComboRepository from "@/services/repositories/ComboRepository";
 
 export default function MenuPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,45 +30,46 @@ export default function MenuPage() {
   const [showOnlyFocus, setShowOnlyFocus] = useState(false);
   const [showOnlyVisible, setShowOnlyVisible] = useState(false);
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
-  const [currentItem, setCurrentItem] = useState<MenuItemType>({
-    name: "",
-    description: "",
-    value: "",
-    type: "",
-    observation: [],
-    sideDish: [],
-    image: "",
-    isVegan: false,
-    isFocus: false,
-    isVisible: true,
-  });
-
+  const [currentItem, setCurrentItem] = useState<MenuItemType>(patternMenuItem);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
-  const [currentInfo, setCurrentInfo] = useState<InfoType>({
-    name: "",
-    description: "",
-    values: [],
-  });
-
+  const [currentInfo, setCurrentInfo] = useState<InfoType>(patternInfo);
   const [isComboModalOpen, setIsComboModalOpen] = useState(false);
-  const [currentCombo, setCurrentCombo] = useState<ComboType>({
-    name: "",
-    description: "",
-    value: "",
-  });
+  const [currentCombo, setCurrentCombo] = useState<ComboType>(patternCombo);
 
-  // {
-  //   name: "",
-  //   description: "",
-  //   value: "",
-  //   type: "",
-  //   observation: [],
-  //   sideDish: [],
-  //   image: "",
-  //   isVegan: false,
-  //   isFocus: false,
-  //   isVisible: true,
-  // }
+  const [loading, setLoading] = useState(false);
+  const [infos, setInfos] = useState<InfoType[]>([]);
+  const [combos, setCombos] = useState<ComboType[]>([]);
+
+  const { addAlert } = useAlert();
+
+  useEffect(() => {
+    const fetchInfos = async () => {
+      setLoading(true);
+      try {
+        const fetchedInfos = await InfoRepository.getAll();
+        setInfos(fetchedInfos);
+      } catch (error) {
+        addAlert(`Erro ao carregar avisos: ${error}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchCombos = async () => {
+      setLoading(true);
+      try {
+        const fetchedCombos = await ComboRepository.getAll();
+        setCombos(fetchedCombos);
+      } catch (error) {
+        addAlert(`Erro ao carregar combos: ${error}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCombos();
+    fetchInfos();
+  }, [currentInfo, currentCombo]);
 
   const menuItems: MenuItemType[] = [
     {
@@ -104,36 +114,6 @@ export default function MenuPage() {
     },
   ];
 
-  const infos: InfoType[] = [
-    {
-      name: "Horário de funcionamento",
-      description: "Nosso restaurante abre todos os dias das 18h às 23h.",
-      values: [],
-    },
-    {
-      name: "Taxa de entrega",
-      description: "A taxa de entrega varia conforme a região.",
-      values: [
-        "Zona Sul: R$ 5,00",
-        "Zona Norte: R$ 7,00",
-        "Plano Piloto: R$ 6,00",
-      ],
-    },
-  ];
-
-  const combos: ComboType[] = [
-    {
-      name: "Combo Pizza + Refri",
-      description: "1 Pizza grande + 1 Refrigerante de 2L.",
-      value: "R$ 59,90",
-    },
-    {
-      name: "Combo Família",
-      description: "2 Pizzas médias + 2 Refrigerantes lata.",
-      value: "R$ 89,90",
-    },
-  ];
-
   const filteredMenu = menuItems.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -160,6 +140,7 @@ export default function MenuPage() {
 
   return (
     <section className="flex flex-col gap-8 w-full h-full overflow-y-scroll overflow-x-hidden outline-none px-3">
+      {loading && <LoaderFullscreen />}
       <section className="flex w-full justify-center items-center gap-2 text-primary-gold">
         <LuPizza size={"48px"} className="min-w-[48px]" />
         <h2 className="text-5xl text-primary-gold">Cardápio</h2>
@@ -282,17 +263,17 @@ export default function MenuPage() {
           isOpen={isInfoModalOpen}
           onClose={() => {
             setIsInfoModalOpen(false);
-            setCurrentInfo({
-              name: "",
-              description: "",
-              values: [],
-            });
+            setCurrentInfo(patternInfo);
           }}
         >
           <InfoForms
             currentInfo={currentInfo}
             setCurrentInfo={setCurrentInfo}
             formType="edit"
+            closeForms={() => {
+              setIsInfoModalOpen(false);
+              setCurrentInfo(patternInfo);
+            }}
           />
         </Modal>
       )}
@@ -301,17 +282,17 @@ export default function MenuPage() {
           isOpen={isComboModalOpen}
           onClose={() => {
             setIsComboModalOpen(false);
-            setCurrentCombo({
-              name: "",
-              description: "",
-              value: "",
-            });
+            setCurrentCombo(patternCombo);
           }}
         >
           <ComboForms
             currentCombo={currentCombo}
             setCurrentCombo={setCurrentCombo}
             formType="edit"
+            closeForms={() => {
+              setIsComboModalOpen(false);
+              setCurrentCombo(patternCombo);
+            }}
           />
         </Modal>
       )}

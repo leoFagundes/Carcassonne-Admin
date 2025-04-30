@@ -9,7 +9,7 @@ export default function RulesPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-black text-primary-gold flex flex-col items-center p-6 space-y-8 font-sans">
+    <div className="min-h-screen bg-primary-black text-primary-gold flex flex-col items-center p-6 space-y-8 font-sans">
       <span
         onClick={() => router.back()}
         className="flex items-center w-full gap-1 cursor-pointer text-primary-gold"

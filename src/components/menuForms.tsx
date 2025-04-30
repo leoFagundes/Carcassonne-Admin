@@ -1,11 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   LuPizza,
   LuBookOpenText,
   LuDollarSign,
-  LuImage,
   LuSquareStack,
 } from "react-icons/lu";
 import Button from "./button";
@@ -13,18 +12,94 @@ import Checkbox from "./checkbox";
 import Input from "./input";
 import OptionsInput from "./optionsInput";
 import { MenuItemType } from "@/types";
+import InputImage from "./inputImage";
+import { useAlert } from "@/contexts/alertProvider";
+import Tooltip from "./Tooltip";
+import Loader from "./loader";
+import MenuItemRepository from "@/services/repositories/MenuItemRepository";
+import { patternMenuItem } from "@/utils/patternValues";
+import { uploadImage } from "@/utils/imageFunctions";
 
 interface MenuFormsType {
   currentItem: MenuItemType;
   setCurrentItem: React.Dispatch<React.SetStateAction<MenuItemType>>;
   formType: "edit" | "add";
+  closeForms: VoidFunction;
 }
 
 export default function MenuForms({
   currentItem,
   setCurrentItem,
   formType,
+  closeForms,
 }: MenuFormsType) {
+  const [loading, setLoading] = useState(false);
+  const [imageFile, setImageFile] = React.useState<File | null>(null);
+
+  const { addAlert } = useAlert();
+
+  const handleSaveItem = async () => {
+    if (
+      currentItem.name.trim() === "" ||
+      currentItem.description.trim() === "" ||
+      currentItem.value.trim() === "" ||
+      currentItem.type.trim() === ""
+    ) {
+      addAlert("Preencha todos os campos obrigatórios.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      let imageUrl = currentItem.image || "";
+      if (imageFile) {
+        const path = `menu-images/${Date.now()}-${imageFile.name}`;
+        imageUrl = await uploadImage(imageFile, path);
+      }
+
+      const itemToSave = {
+        ...currentItem,
+        image: imageUrl,
+      };
+
+      if (formType === "edit") {
+        // UPDATE
+        if (!currentItem.id) throw new Error("ID inválido");
+        await MenuItemRepository.update(currentItem.id, itemToSave);
+        addAlert(`Item "${currentItem.name}" editado com sucesso!`);
+      } else {
+        // CREATE
+        await MenuItemRepository.create(itemToSave);
+        addAlert(`Item "${currentItem.name}" criado com sucesso!`);
+        setCurrentItem(patternMenuItem);
+        setImageFile(null);
+      }
+    } catch (error) {
+      console.error(error);
+      addAlert(`Erro ao salvar o item: ${error}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteItem = async () => {
+    if (!currentItem.id) {
+      addAlert("ID inválido.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await MenuItemRepository.delete(currentItem.id);
+      addAlert(`Item "${currentItem.name}" deletado com sucesso!`);
+      closeForms();
+    } catch (error) {
+      addAlert("Erro ao deletar o item.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <h1 className="text-4xl text-gradient-gold text-center">
@@ -73,17 +148,6 @@ export default function MenuForms({
             width="!w-[250px]"
           />
           <Input
-            label="Link da imagem"
-            placeholder="URL da imagem"
-            value={currentItem.image}
-            setValue={(e) =>
-              setCurrentItem({ ...currentItem, image: e.target.value })
-            }
-            variant
-            icon={<LuImage size={"18px"} />}
-            width="!w-[250px]"
-          />
-          <Input
             label="Tipo"
             placeholder="Ex: Pizza, Entrada..."
             value={currentItem.type}
@@ -101,8 +165,6 @@ export default function MenuForms({
               "Mais um teste",
             ]}
           />
-        </div>
-        <div className="flex flex-col gap-6">
           <OptionsInput
             values={currentItem.sideDish}
             setValues={(values) =>
@@ -113,6 +175,8 @@ export default function MenuForms({
             variant
             width="!w-[250px]"
           />
+        </div>
+        <div className="flex flex-col gap-6">
           <OptionsInput
             values={currentItem.observation}
             setValues={(values) =>
@@ -132,7 +196,7 @@ export default function MenuForms({
               })
             }
             variant
-            label={`${currentItem.isVisible ? "Visivel" : "Invisivel"}`}
+            label={`${currentItem.isVisible ? "Visível" : "Invisível"}`}
           />
           <Checkbox
             checked={currentItem.isFocus}
@@ -156,11 +220,29 @@ export default function MenuForms({
             variant
             label={`Item ${currentItem.isVegan ? "" : "não"} vegano`}
           />
+
+          <InputImage
+            onChange={(file) => {
+              if (file) {
+                setImageFile(file);
+              }
+            }}
+            width="!w-[250px]"
+            previewUrl={currentItem.image}
+          />
         </div>
       </div>
       <div className="flex gap-2 m-2">
-        {formType === "edit" && <Button isHoverInvalid>Excluir</Button>}
-        <Button>{formType === "edit" ? "Salvar" : "Criar"}</Button>
+        {formType === "edit" && (
+          <Tooltip content="Cuidado, essa ação é irreversível.">
+            <Button onClick={handleDeleteItem} isHoverInvalid>
+              Excluir
+            </Button>
+          </Tooltip>
+        )}
+        <Button onClick={handleSaveItem}>
+          {loading ? <Loader /> : formType === "edit" ? "Salvar" : "Criar"}
+        </Button>
       </div>
     </>
   );

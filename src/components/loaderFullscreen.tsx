@@ -29,7 +29,7 @@ export default function LoaderFullscreen() {
   }, []);
 
   return (
-    <div className="fixed top-0 left-0 flex flex-col justify-center items-center w-full h-screen z-50 backdrop-blur-[8px] bg-primary-black/60">
+    <div className="fixed top-0 left-0 flex flex-col justify-center items-center w-full h-full z-50 backdrop-blur-[8px] bg-primary-black/60">
       <div className="flex flex-row gap-2 mb-6">
         <div className="w-4 h-4 rounded-full bg-primary-gold animate-bounce"></div>
         <div className="w-4 h-4 rounded-full bg-primary-gold animate-bounce [animation-delay:-.3s]"></div>

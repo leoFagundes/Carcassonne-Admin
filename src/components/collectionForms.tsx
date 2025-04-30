@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   LuBookOpenText,
   LuImage,
@@ -15,18 +15,111 @@ import Input from "./input";
 import { BoardgameType } from "@/types";
 import Dropdown from "./dropdown";
 import Checkbox from "./checkbox";
+import BoardgameRepository from "@/services/repositories/BoardGameRepository";
+import { patternBoardgame } from "@/utils/patternValues";
+import { useAlert } from "@/contexts/alertProvider";
+import Loader from "./loader";
+import Tooltip from "./Tooltip";
 
 interface CollectionFormsType {
   currentItem: BoardgameType;
   setCurrentItem: React.Dispatch<React.SetStateAction<BoardgameType>>;
   formType: "edit" | "add";
+  closeForms: VoidFunction;
 }
 
 export default function CollectionForms({
   currentItem,
   setCurrentItem,
   formType,
+  closeForms,
 }: CollectionFormsType) {
+  const [loading, setLoading] = useState(false);
+
+  const { addAlert } = useAlert();
+
+  const isBoardgameValid = (boardgame: BoardgameType) => {
+    const requiredFields = [
+      boardgame.name,
+      boardgame.description,
+      boardgame.difficulty,
+      boardgame.image,
+      boardgame.type,
+    ];
+
+    const playerNumbersValid =
+      boardgame.minPlayers > 0 && boardgame.maxPlayers > 0;
+    const playTimeValid = boardgame.playTime > 0;
+
+    return (
+      requiredFields.every((field) => field.trim() !== "") &&
+      playerNumbersValid &&
+      playTimeValid
+    );
+  };
+
+  const handleEditBoardgame = async () => {
+    if (!isBoardgameValid(currentItem)) {
+      addAlert("Preencha todos os campos.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (!currentItem.id) {
+        addAlert("ID inválido.");
+        return;
+      }
+
+      await BoardgameRepository.update(currentItem.id, currentItem);
+      setCurrentItem(currentItem);
+      addAlert(`Jogo ${currentItem.name} editado com sucesso!`);
+      closeForms();
+    } catch (error) {
+      addAlert(`Erro ao editar jogo. ${error}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateBoardgame = async () => {
+    if (!isBoardgameValid(currentItem)) {
+      addAlert("Preencha todos os campos.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await BoardgameRepository.create(currentItem);
+      addAlert(`Jogo ${currentItem.name} criado com sucesso!`);
+      setCurrentItem(patternBoardgame);
+      closeForms();
+    } catch (error) {
+      addAlert(`Erro ao criar novo jogo.`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteBoardgame = async () => {
+    setLoading(true);
+    try {
+      if (!currentItem.id) {
+        addAlert("ID inválido.");
+        return;
+      }
+
+      await BoardgameRepository.delete(currentItem.id);
+      addAlert(`Jogo ${currentItem.name} deletado com sucesso!`);
+      setCurrentItem(patternBoardgame);
+      closeForms();
+    } catch (error) {
+      addAlert(`Erro ao deletar jogo.`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <h1 className="text-4xl text-gradient-gold text-center">
@@ -156,8 +249,20 @@ export default function CollectionForms({
         </div>
       </div>
       <div className="flex gap-2 m-2">
-        {formType === "edit" && <Button isHoverInvalid>Excluir</Button>}
-        <Button>{formType === "edit" ? "Salvar" : "Criar"}</Button>
+        {formType === "edit" && (
+          <Tooltip content="Cuidado, essa ação é irreversível.">
+            <Button onClick={handleDeleteBoardgame} isHoverInvalid>
+              Excluir
+            </Button>
+          </Tooltip>
+        )}
+        <Button
+          onClick={
+            formType === "edit" ? handleEditBoardgame : handleCreateBoardgame
+          }
+        >
+          {loading ? <Loader /> : formType === "edit" ? "Salvar" : "Criar"}
+        </Button>
       </div>
     </>
   );

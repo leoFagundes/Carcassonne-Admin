@@ -23,6 +23,12 @@ import MenuForms from "@/components/menuForms";
 import ComboForms from "@/components/comboForms";
 import InfoForms from "@/components/infoForms";
 import DescriptionTypeForms from "@/components/descriptionTypeForms";
+import {
+  patternBoardgame,
+  patternCombo,
+  patternInfo,
+  patternMenuItem,
+} from "@/utils/patternValues";
 
 export default function AddPage() {
   const [isAddGameModalOpen, setIsAddGameModalOpen] = useState(false);
@@ -32,42 +38,14 @@ export default function AddPage() {
   const [isDescriptionTypeModalOpen, setIsDescriptionTypeModalOpen] =
     useState(false);
 
-  const [newBoardgame, setNewBoardgame] = useState<BoardgameType>({
-    name: "",
-    description: "",
-    difficulty: "",
-    minPlayers: 0,
-    maxPlayers: 0,
-    playTime: 0,
-    featured: false,
-    image: "",
-    type: "",
-  });
+  const [newBoardgame, setNewBoardgame] =
+    useState<BoardgameType>(patternBoardgame);
 
-  const [newMenuItem, setNewMenuItem] = useState<MenuItemType>({
-    name: "",
-    description: "",
-    value: "",
-    type: "",
-    observation: [],
-    sideDish: [],
-    image: "",
-    isVegan: false,
-    isFocus: false,
-    isVisible: true,
-  });
+  const [newMenuItem, setNewMenuItem] = useState<MenuItemType>(patternMenuItem);
 
-  const [newCombo, setNewCombo] = useState<ComboType>({
-    name: "",
-    description: "",
-    value: "",
-  });
+  const [newCombo, setNewCombo] = useState<ComboType>(patternCombo);
 
-  const [newInfo, setNewInfo] = useState<InfoType>({
-    name: "",
-    description: "",
-    values: [],
-  });
+  const [newInfo, setNewInfo] = useState<InfoType>(patternInfo);
 
   const [newDescriptionType, setNewDescriptionType] =
     useState<DescriptionTypeProps>({
@@ -104,7 +82,7 @@ export default function AddPage() {
           title="Adicionar Combo"
           description="Adicione um novo Combo ao cardápio do Carcassonne!"
           icon={<LuBoxes size={"32px"} className="min-w-[32px]" />}
-          onClick={() => setIsDescriptionTypeModalOpen(true)}
+          onClick={() => setIsAddComboModalOpen(true)}
         />
         <Card
           title="Adicionar Aviso"
@@ -118,23 +96,17 @@ export default function AddPage() {
         isOpen={isAddGameModalOpen}
         onClose={() => {
           setIsAddGameModalOpen(false);
-          setNewBoardgame({
-            name: "",
-            description: "",
-            difficulty: "",
-            minPlayers: 0,
-            maxPlayers: 0,
-            playTime: 0,
-            featured: false,
-            image: "",
-            type: "",
-          });
+          setNewBoardgame(patternBoardgame);
         }}
       >
         <CollectionForms
           currentItem={newBoardgame}
           setCurrentItem={setNewBoardgame}
           formType="add"
+          closeForms={() => {
+            setIsAddGameModalOpen(false);
+            setNewBoardgame(patternBoardgame);
+          }}
         />
       </Modal>
 
@@ -167,17 +139,17 @@ export default function AddPage() {
         isOpen={isAddComboModalOpen}
         onClose={() => {
           setIsAddComboModalOpen(false);
-          setNewCombo({
-            name: "",
-            description: "",
-            value: "",
-          });
+          setNewCombo(patternCombo);
         }}
       >
         <ComboForms
           currentCombo={newCombo}
           setCurrentCombo={setNewCombo}
           formType="add"
+          closeForms={() => {
+            setIsAddComboModalOpen(false);
+            setNewCombo(patternCombo);
+          }}
         />
       </Modal>
 
@@ -185,17 +157,17 @@ export default function AddPage() {
         isOpen={isAddInfoModalOpen}
         onClose={() => {
           setIsAddInfoModalOpen(false);
-          setNewInfo({
-            name: "",
-            description: "",
-            values: [],
-          });
+          setNewInfo(patternInfo);
         }}
       >
         <InfoForms
           currentInfo={newInfo}
           setCurrentInfo={setNewInfo}
           formType="add"
+          closeForms={() => {
+            setIsAddInfoModalOpen(false);
+            setNewInfo(patternInfo);
+          }}
         />
       </Modal>
 

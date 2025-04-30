@@ -15,15 +15,36 @@ import Button from "@/components/button";
 import { LuVegan } from "react-icons/lu";
 import { useAlert } from "@/contexts/alertProvider";
 import ScrollUp from "@/components/scrollUp";
+import DescriptionRepository from "@/services/repositories/DescriptionTypeRepository";
+import LoaderFullscreen from "@/components/loaderFullscreen";
 
 export default function ClientMenuPage() {
   const [types, setTypes] = useState(["Avisos", "Combos"]);
   const [isMenuFixed, setIsMenuFixed] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<MenuItemType | undefined>();
+  const [descriptions, setDescriptions] = useState<DescriptionTypeProps[]>([]);
+  const [laoding, setLoading] = useState(false);
+
   const menuRef = useRef<HTMLDivElement>(null);
 
   const { addAlert } = useAlert();
+
+  useEffect(() => {
+    const fetchDescriptions = async () => {
+      setLoading(true);
+      try {
+        const fecthedDescriptions = await DescriptionRepository.getAll();
+        setDescriptions(fecthedDescriptions);
+      } catch (error) {
+        addAlert("Erro ao carregar descrições.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDescriptions();
+  }, []);
 
   const menuItems: MenuItemType[] = [
     {
@@ -269,6 +290,7 @@ export default function ClientMenuPage() {
 
   return (
     <div className="flex flex-col items-center w-full h-screen text-primary-gold p-8">
+      {laoding && <LoaderFullscreen />}
       {isMenuFixed && <div className="min-h-[145px] w-screen"></div>}
       <div
         className={`${
@@ -333,7 +355,7 @@ export default function ClientMenuPage() {
             <span className="text-xs mb-5 text-center w-full italic">
               {'"'}
               {
-                descriptionsType.filter(
+                descriptions.filter(
                   (descriptionType) => descriptionType.type === type
                 )[0]?.description
               }
