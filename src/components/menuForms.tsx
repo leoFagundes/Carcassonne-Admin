@@ -94,7 +94,7 @@ export default function MenuForms({
       addAlert(`Item "${currentItem.name}" deletado com sucesso!`);
       closeForms();
     } catch (error) {
-      addAlert("Erro ao deletar o item.");
+      addAlert(`Erro ao deletar item: ${error}`);
     } finally {
       setLoading(false);
     }

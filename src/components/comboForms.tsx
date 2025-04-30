@@ -48,7 +48,7 @@ export default function ComboForms({
       setCurrentCombo({ name: "", description: "", value: "" });
       closeForms();
     } catch (error) {
-      addAlert("Erro ao criar o combo.");
+      addAlert(`Erro ao criar novo combo: ${error}`);
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ export default function ComboForms({
       addAlert(`Combo "${currentCombo.name}" editado com sucesso!`);
       closeForms();
     } catch (error) {
-      addAlert("Erro ao editar o combo.");
+      addAlert(`Erro ao editar combo: ${error}`);
     } finally {
       setLoading(false);
     }
@@ -90,7 +90,7 @@ export default function ComboForms({
       setCurrentCombo(patternCombo);
       closeForms();
     } catch (error) {
-      addAlert("Erro ao deletar o combo.");
+      addAlert(`Erro ao deletar combo: ${error}`);
     } finally {
       setLoading(false);
     }

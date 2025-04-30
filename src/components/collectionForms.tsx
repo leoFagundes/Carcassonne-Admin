@@ -76,7 +76,7 @@ export default function CollectionForms({
       addAlert(`Jogo ${currentItem.name} editado com sucesso!`);
       closeForms();
     } catch (error) {
-      addAlert(`Erro ao editar jogo. ${error}`);
+      addAlert(`Erro ao editar jogo: ${error}`);
     } finally {
       setLoading(false);
     }
@@ -95,7 +95,7 @@ export default function CollectionForms({
       setCurrentItem(patternBoardgame);
       closeForms();
     } catch (error) {
-      addAlert(`Erro ao criar novo jogo.`);
+      addAlert(`Erro ao criar novo jogo: ${error}`);
     } finally {
       setLoading(false);
     }
@@ -114,7 +114,7 @@ export default function CollectionForms({
       setCurrentItem(patternBoardgame);
       closeForms();
     } catch (error) {
-      addAlert(`Erro ao deletar jogo.`);
+      addAlert(`Erro ao deletar jogo: ${error}`);
     } finally {
       setLoading(false);
     }

@@ -37,7 +37,7 @@ export default function ClientMenuPage() {
         const fecthedDescriptions = await DescriptionRepository.getAll();
         setDescriptions(fecthedDescriptions);
       } catch (error) {
-        addAlert("Erro ao carregar descrições.");
+        addAlert(`Erro ao carregar descrições: ${error}`);
       } finally {
         setLoading(false);
       }
@@ -205,19 +205,6 @@ export default function ClientMenuPage() {
       name: "CARCAPROMO",
       description: "PIZZA BROTO + REFRI ou SUCO ou SPATEN + PASSAPORTE ",
       value: "R$ 72,00",
-    },
-  ];
-
-  const descriptionsType: DescriptionTypeProps[] = [
-    {
-      type: "Pizza",
-      description:
-        "THEY LOVE TRUTH, JUSTICE, AND A SLICE OF PIZZA AND A SLICE OF PIZZA",
-    },
-    {
-      type: "Teste",
-      description:
-        "THEY LOVE TRUTH, JUSTICE, AND A SLICE OF PIZZA AND A SLICE OF PIZZA",
     },
   ];
 
