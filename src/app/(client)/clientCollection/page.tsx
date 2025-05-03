@@ -64,7 +64,9 @@ export default function ClientCollectionPage() {
     new Set(boardgames.map((b) => b.difficulty))
   );
 
-  const boardgameTypes = Array.from(new Set(boardgames.map((b) => b.type)));
+  const boardgameTypes = Array.from(
+    new Set(boardgames.flatMap((b) => b.types))
+  );
 
   const filteredBoardgames = boardgames
     .filter((boardgame) => {
@@ -88,7 +90,8 @@ export default function ClientCollectionPage() {
         boardgame.difficulty === filterBoardgameDifficulty;
 
       const matchesType =
-        filterBoardgameType === "" || boardgame.type === filterBoardgameType;
+        filterBoardgameType === "" ||
+        boardgame.types.includes(filterBoardgameType);
 
       const matchesFeatured = !filterGameFeatured || boardgame.featured;
 
@@ -359,7 +362,7 @@ export default function ClientCollectionPage() {
 
               <span className="flex items-center gap-2 text-sm">
                 <FiLayers size={"16px"} className="min-w-[16px]" />
-                {currentGame.type}{" "}
+                {currentGame.types.join(", ")}
               </span>
             </div>
           </div>

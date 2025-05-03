@@ -127,7 +127,7 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
             </span>
             <span className="flex items-center gap-2 text-sm">
               <FiLayers size={"16px"} className="min-w-[16px]" />
-              {boardgame.type}{" "}
+              {boardgame.types.join(", ")}
               <span className="text-xs italic text-primary-gold/60">
                 (Tipo)
               </span>

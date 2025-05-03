@@ -21,6 +21,7 @@ import { patternBoardgame } from "@/utils/patternValues";
 import { useAlert } from "@/contexts/alertProvider";
 import Loader from "./loader";
 import Tooltip from "./Tooltip";
+import OptionsInput from "./optionsInput";
 
 interface CollectionFormsType {
   currentItem: BoardgameType;
@@ -44,7 +45,6 @@ export default function CollectionForms({
       boardgame.name,
       boardgame.description,
       boardgame.difficulty,
-      boardgame.type,
     ];
 
     const playerNumbersValid =
@@ -224,17 +224,17 @@ export default function CollectionForms({
             icon={<LuImage size={"18px"} />}
             width="!w-[250px]"
           />
-          <Input
-            label="Tipo"
-            placeholder="Ex: Estratégia, Cooperativo..."
-            value={currentItem.type}
-            setValue={(e) =>
-              setCurrentItem({ ...currentItem, type: e.target.value })
+          <OptionsInput
+            values={currentItem.types}
+            setValues={(values) =>
+              setCurrentItem({ ...currentItem, types: values })
             }
+            placeholder="Ex: Estratégia, Cooperativo..."
+            label="Tipo"
             variant
-            icon={<LuSquareStack size={"18px"} />}
             width="!w-[250px]"
           />
+
           <div className="relative">
             <Checkbox
               checked={currentItem.featured}

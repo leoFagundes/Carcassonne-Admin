@@ -10,7 +10,7 @@ export default function MenuCard({ item, ...props }: MenuCardProps) {
   return (
     <div
       {...props}
-      className={`flex gap-3 mb-1 md:w-full cursor-pointer md:transition-all px-2 py-4 rounded ${
+      className={`flex gap-3 mb-1 w-full cursor-pointer md:transition-all px-2 pb-2 rounded ${
         item.isFocus && "relative border border-primary-gold/40"
       } ${!item.isVisible && "hidden"}`}
     >

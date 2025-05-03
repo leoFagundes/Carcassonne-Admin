@@ -15,7 +15,7 @@ export const patternBoardgame: BoardgameType = {
   playTime: 0,
   featured: false,
   image: "",
-  type: "",
+  types: [],
 };
 
 export const patternMenuItem: MenuItemType = {

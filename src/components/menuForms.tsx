@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   LuPizza,
   LuBookOpenText,
@@ -10,6 +10,7 @@ import {
   LuStar,
   LuEye,
   LuEyeClosed,
+  LuImage,
 } from "react-icons/lu";
 import Button from "./button";
 import Checkbox from "./checkbox";
@@ -23,6 +24,7 @@ import Loader from "./loader";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import { patternMenuItem } from "@/utils/patternValues";
 import { uploadImage } from "@/utils/imageFunctions";
+import LoaderFullscreen from "./loaderFullscreen";
 
 interface MenuFormsType {
   currentItem: MenuItemType;
@@ -38,9 +40,28 @@ export default function MenuForms({
   closeForms,
 }: MenuFormsType) {
   const [loading, setLoading] = useState(false);
+  const [fullscreenLoading, setFullscreenLoading] = useState(false);
   const [imageFile, setImageFile] = React.useState<File | null>(null);
+  const [types, setTypes] = useState<string[]>([]);
 
   const { addAlert } = useAlert();
+
+  useEffect(() => {
+    const fetchMenuTypes = async () => {
+      setFullscreenLoading(true);
+      try {
+        const fetchedItems = await MenuItemRepository.getAll();
+        const menuTypes = Array.from(new Set(fetchedItems.map((b) => b.type)));
+        setTypes(menuTypes);
+      } catch (error) {
+        addAlert(`Erro ao carregar os tipos existentes: ${error}`);
+      } finally {
+        setFullscreenLoading(false);
+      }
+    };
+
+    fetchMenuTypes();
+  }, []);
 
   const handleSaveItem = async () => {
     if (
@@ -109,6 +130,7 @@ export default function MenuForms({
 
   return (
     <>
+      {fullscreenLoading && <LoaderFullscreen />}
       <h1 className="text-4xl text-gradient-gold text-center">
         {currentItem.name ? currentItem.name : "Item sem nome"}
       </h1>
@@ -156,7 +178,7 @@ export default function MenuForms({
           />
           <Input
             label="Tipo"
-            placeholder="Ex: Pizza, Entrada..."
+            placeholder="Tipo"
             value={currentItem.type}
             setValue={(e) =>
               setCurrentItem({ ...currentItem, type: e.target.value })
@@ -164,13 +186,7 @@ export default function MenuForms({
             variant
             icon={<LuSquareStack size={"18px"} />}
             width="!w-[250px]"
-            options={[
-              "Peste",
-              "Pizza",
-              "Hambúrguer",
-              "Bebidas",
-              "Mais um teste",
-            ]}
+            options={types}
           />
           <OptionsInput
             values={currentItem.sideDish}
@@ -253,15 +269,48 @@ export default function MenuForms({
             )}
           </div>
 
-          <InputImage
-            onChange={(file) => {
-              if (file) {
-                setImageFile(file);
-              }
-            }}
-            width="!w-[250px]"
-            previewUrl={currentItem.image}
-          />
+          <div className="flex flex-col gap-1 border p-1 rounded shadow-card border-dashed border-primary-gold/20">
+            <InputImage
+              onChange={(file) => {
+                if (file) {
+                  setImageFile(file);
+                  setCurrentItem({
+                    ...currentItem,
+                    image: URL.createObjectURL(file),
+                  });
+                }
+              }}
+              onCloseImage={() => {
+                setImageFile(null);
+                setCurrentItem({
+                  ...currentItem,
+                  image: "",
+                });
+              }}
+              width="!w-[250px]"
+              previewUrl={currentItem.image}
+            />
+
+            {!imageFile && (
+              <>
+                <span className="w-full text-center text-primary-gold/80 italic">
+                  ou
+                </span>
+
+                <Input
+                  label="Link da imagem"
+                  placeholder="URL da imagem"
+                  value={currentItem.image ?? ""}
+                  setValue={(e) =>
+                    setCurrentItem({ ...currentItem, image: e.target.value })
+                  }
+                  variant
+                  icon={<LuImage size={"18px"} />}
+                  width="!w-[250px]"
+                />
+              </>
+            )}
+          </div>
         </div>
       </div>
       <div className="flex gap-2 m-2">

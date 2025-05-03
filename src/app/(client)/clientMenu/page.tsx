@@ -17,13 +17,21 @@ import { useAlert } from "@/contexts/alertProvider";
 import ScrollUp from "@/components/scrollUp";
 import DescriptionRepository from "@/services/repositories/DescriptionTypeRepository";
 import LoaderFullscreen from "@/components/loaderFullscreen";
+import ComboRepository from "@/services/repositories/ComboRepository";
+import InfoRepository from "@/services/repositories/InfoRepository";
+import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 
 export default function ClientMenuPage() {
   const [types, setTypes] = useState(["Avisos", "Combos"]);
   const [isMenuFixed, setIsMenuFixed] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<MenuItemType | undefined>();
+
   const [descriptions, setDescriptions] = useState<DescriptionTypeProps[]>([]);
+  const [infos, setInfos] = useState<InfoType[]>([]);
+  const [combos, setCombos] = useState<ComboType[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
+
   const [laoding, setLoading] = useState(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
@@ -43,10 +51,51 @@ export default function ClientMenuPage() {
       }
     };
 
+    const fetchInfos = async () => {
+      setLoading(true);
+      try {
+        const fetchedInfos = await InfoRepository.getAll();
+        setInfos(fetchedInfos);
+      } catch (error) {
+        addAlert(`Erro ao carregar avisos: ${error}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchCombos = async () => {
+      setLoading(true);
+      try {
+        const fetchedCombos = await ComboRepository.getAll();
+        setCombos(fetchedCombos);
+      } catch (error) {
+        addAlert(`Erro ao carregar combos: ${error}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchMenuItems = async () => {
+      setLoading(true);
+      try {
+        const fetchedItems = await MenuItemRepository.getAll();
+        const menuTypes = Array.from(new Set(fetchedItems.map((b) => b.type)));
+        setTypes([...types].concat(menuTypes));
+        setMenuItems(fetchedItems);
+      } catch (error) {
+        addAlert(`Erro ao carregar itens: ${error}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMenuItems();
+    fetchCombos();
+    fetchInfos();
     fetchDescriptions();
   }, []);
 
-  const menuItems: MenuItemType[] = [
+  const menuItemsX: MenuItemType[] = [
     {
       name: "Pizza Margherita",
       description:
@@ -178,7 +227,7 @@ export default function ClientMenuPage() {
     },
   ];
 
-  const infos: InfoType[] = [
+  const infosX: InfoType[] = [
     {
       name: "PASSAPORTE",
       description: "Acesso a todos os jogos da casa!",
@@ -198,7 +247,7 @@ export default function ClientMenuPage() {
     },
   ];
 
-  const combos: ComboType[] = [
+  const combosX: ComboType[] = [
     {
       name: "CARCAPROMO",
       description: "PIZZA BROTO + REFRI ou SUCO ou SPATEN + PASSAPORTE ",
@@ -225,11 +274,6 @@ export default function ClientMenuPage() {
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
-  }, []);
-
-  useEffect(() => {
-    const menuTypes = Array.from(new Set(menuItems.map((b) => b.type)));
-    setTypes([...types].concat(menuTypes));
   }, []);
 
   const handleScrollToSection = (sectionId: string) => {
@@ -309,22 +353,26 @@ export default function ClientMenuPage() {
       </div>
 
       {/* Seções do cardápio */}
-      <section id="Avisos" className="flex flex-col items-center w-full mt-8">
-        <h2 className="text-4xl w-full text-center">Avisos</h2>
-        <div className="h-[1px] w-full bg-primary-gold mb-5 mt-2" />
+      {infos.length > 0 && (
+        <section id="Avisos" className="flex flex-col items-center w-full mt-8">
+          <h2 className="text-4xl w-full text-center">Avisos</h2>
+          <div className="h-[1px] w-full bg-primary-gold mb-5 mt-2" />
 
-        {infos.map((info, index) => (
-          <InfoCard key={index} info={info} />
-        ))}
-      </section>
+          {infos.map((info, index) => (
+            <InfoCard key={index} info={info} />
+          ))}
+        </section>
+      )}
 
-      <section id="Combos" className="flex flex-col items-center w-full mt-8">
-        <h2 className="text-4xl w-full text-center">Combos</h2>
-        <div className="h-[1px] w-full bg-primary-gold mb-5 mt-2" />
-        {combos.map((combo, index) => (
-          <ComboCard key={index} combo={combo} />
-        ))}
-      </section>
+      {combos.length > 0 && (
+        <section id="Combos" className="flex flex-col items-center w-full mt-8">
+          <h2 className="text-4xl w-full text-center">Combos</h2>
+          <div className="h-[1px] w-full bg-primary-gold mb-5 mt-2" />
+          {combos.map((combo, index) => (
+            <ComboCard key={index} combo={combo} />
+          ))}
+        </section>
+      )}
 
       {/* Seções para cada tipo de item */}
       {types

@@ -14,7 +14,7 @@ export interface BoardgameType {
   playTime: number;
   featured: boolean;
   image: string;
-  type: string;
+  types: string[];
 }
 
 export interface MenuItemType {
