@@ -32,13 +32,13 @@ export default function ComboCard({
         />
       </div>
       <span
-        className="font-semibold text-center text-md"
+        className="font-semibold text-center text-md w-full"
         dangerouslySetInnerHTML={{
           __html: highlightMatch(item.name, searchTerm),
         }}
       />
 
-      <div className="overflow-y-scroll flex-1">
+      <div className="overflow-y-scroll flex-1 w-full text-center">
         <span
           className="text-xs text-center"
           dangerouslySetInnerHTML={{

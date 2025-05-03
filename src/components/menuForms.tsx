@@ -6,6 +6,10 @@ import {
   LuBookOpenText,
   LuDollarSign,
   LuSquareStack,
+  LuVegan,
+  LuStar,
+  LuEye,
+  LuEyeClosed,
 } from "react-icons/lu";
 import Button from "./button";
 import Checkbox from "./checkbox";
@@ -66,13 +70,16 @@ export default function MenuForms({
         // UPDATE
         if (!currentItem.id) throw new Error("ID inválido");
         await MenuItemRepository.update(currentItem.id, itemToSave);
+        setCurrentItem(currentItem);
         addAlert(`Item "${currentItem.name}" editado com sucesso!`);
+        closeForms();
       } else {
         // CREATE
         await MenuItemRepository.create(itemToSave);
         addAlert(`Item "${currentItem.name}" criado com sucesso!`);
         setCurrentItem(patternMenuItem);
         setImageFile(null);
+        closeForms();
       }
     } catch (error) {
       console.error(error);
@@ -187,39 +194,64 @@ export default function MenuForms({
             variant
             width="!w-[250px]"
           />
-          <Checkbox
-            checked={currentItem.isVisible}
-            setChecked={() =>
-              setCurrentItem({
-                ...currentItem,
-                isVisible: !currentItem.isVisible,
-              })
-            }
-            variant
-            label={`${currentItem.isVisible ? "Visível" : "Invisível"}`}
-          />
-          <Checkbox
-            checked={currentItem.isFocus}
-            setChecked={() =>
-              setCurrentItem({
-                ...currentItem,
-                isFocus: !currentItem.isFocus,
-              })
-            }
-            variant
-            label={`Está em destaque: ${currentItem.isFocus ? "Sim" : "Não"}`}
-          />
-          <Checkbox
-            checked={currentItem.isVegan}
-            setChecked={() =>
-              setCurrentItem({
-                ...currentItem,
-                isVegan: !currentItem.isVegan,
-              })
-            }
-            variant
-            label={`Item ${currentItem.isVegan ? "" : "não"} vegano`}
-          />
+          <div className="relative">
+            <Checkbox
+              checked={currentItem.isVisible}
+              setChecked={() =>
+                setCurrentItem({
+                  ...currentItem,
+                  isVisible: !currentItem.isVisible,
+                })
+              }
+              variant
+              label={`${currentItem.isVisible ? "Visível" : "Invisível"}`}
+            />
+            {currentItem.isVisible ? (
+              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
+                <LuEye size={"16px"} />
+              </div>
+            ) : (
+              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
+                <LuEyeClosed size={"16px"} />
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <Checkbox
+              checked={currentItem.isFocus}
+              setChecked={() =>
+                setCurrentItem({
+                  ...currentItem,
+                  isFocus: !currentItem.isFocus,
+                })
+              }
+              variant
+              label={`Está em destaque: ${currentItem.isFocus ? "Sim" : "Não"}`}
+            />
+            {currentItem.isFocus && (
+              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
+                <LuStar size={"16px"} />
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <Checkbox
+              checked={currentItem.isVegan}
+              setChecked={() =>
+                setCurrentItem({
+                  ...currentItem,
+                  isVegan: !currentItem.isVegan,
+                })
+              }
+              variant
+              label={`Item ${currentItem.isVegan ? "" : "não"} vegano`}
+            />
+            {currentItem.isVegan && (
+              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
+                <LuVegan size={"16px"} />
+              </div>
+            )}
+          </div>
 
           <InputImage
             onChange={(file) => {

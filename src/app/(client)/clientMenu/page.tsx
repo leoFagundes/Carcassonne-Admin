@@ -120,8 +120,7 @@ export default function ClientMenuPage() {
       observation: [],
       value: "R$ 38,00",
       type: "Bebida",
-      image:
-        "https://uploads.metroimg.com/wp-content/uploads/2024/09/19164943/Carcassonne-Pub.jpg",
+      image: "images/patternMenuImage.png",
       isVegan: true,
       isFocus: false,
       isVisible: true,
@@ -159,8 +158,7 @@ export default function ClientMenuPage() {
       observation: ["Sem lactose", "Massa fina"],
       value: "R$ 38,00",
       type: "Bebida",
-      image:
-        "https://uploads.metroimg.com/wp-content/uploads/2024/09/19164943/Carcassonne-Pub.jpg",
+      image: "",
       isVegan: true,
       isFocus: true,
       isVisible: true,
@@ -388,7 +386,11 @@ export default function ClientMenuPage() {
             <div className="relative h-fit w-fit">
               <img
                 className="rounded shadow-card w-[200px]"
-                src={currentItem.image}
+                src={
+                  currentItem.image
+                    ? currentItem.image
+                    : "images/patternMenuImage.png"
+                }
                 alt="menu item"
               />
               {currentItem.isVegan && (

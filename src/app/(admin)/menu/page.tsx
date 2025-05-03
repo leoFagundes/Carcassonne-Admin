@@ -23,12 +23,13 @@ import InfoRepository from "@/services/repositories/InfoRepository";
 import { useAlert } from "@/contexts/alertProvider";
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import ComboRepository from "@/services/repositories/ComboRepository";
+import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 
 export default function MenuPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
   const [showOnlyFocus, setShowOnlyFocus] = useState(false);
-  const [showOnlyVisible, setShowOnlyVisible] = useState(false);
+  const [showOnlyInvisible, setShowOnlyInvisible] = useState(false);
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<MenuItemType>(patternMenuItem);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
@@ -39,6 +40,7 @@ export default function MenuPage() {
   const [loading, setLoading] = useState(false);
   const [infos, setInfos] = useState<InfoType[]>([]);
   const [combos, setCombos] = useState<ComboType[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
 
   const { addAlert } = useAlert();
 
@@ -67,11 +69,24 @@ export default function MenuPage() {
       }
     };
 
+    const fetchMenuItems = async () => {
+      setLoading(true);
+      try {
+        const fetchedItems = await MenuItemRepository.getAll();
+        setMenuItems(fetchedItems);
+      } catch (error) {
+        addAlert(`Erro ao carregar itens: ${error}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMenuItems();
     fetchCombos();
     fetchInfos();
-  }, [currentInfo, currentCombo]);
+  }, [currentInfo, currentCombo, currentItem]);
 
-  const menuItems: MenuItemType[] = [
+  const menuItemsX: MenuItemType[] = [
     {
       name: "Pizza Margherita",
       description:
@@ -121,9 +136,9 @@ export default function MenuPage() {
 
     const matchesType = filterType ? item.type === filterType : true;
     const matchesFocus = showOnlyFocus ? item.isFocus : true;
-    const matchesVisible = showOnlyVisible ? item.isVisible : true;
+    const matchesInvisible = showOnlyInvisible ? !item.isVisible : true;
 
-    return matchesSearch && matchesType && matchesFocus && matchesVisible;
+    return matchesSearch && matchesType && matchesFocus && matchesInvisible;
   });
 
   const filteredInfos = infos.filter(
@@ -174,9 +189,9 @@ export default function MenuPage() {
             variant
           />
           <Checkbox
-            checked={showOnlyVisible}
-            setChecked={(e) => setShowOnlyVisible(e.target.checked)}
-            label="Mostrar apenas visíveis"
+            checked={showOnlyInvisible}
+            setChecked={(e) => setShowOnlyInvisible(e.target.checked)}
+            label="Mostrar apenas invisíveis"
             variant
           />
         </div>
@@ -204,7 +219,7 @@ export default function MenuPage() {
 
         {(filterType === "Avisos" || filterType === "") &&
           !showOnlyFocus &&
-          !showOnlyVisible &&
+          !showOnlyInvisible &&
           filteredInfos.map((info) => (
             <InfoCard
               key={info.name}
@@ -219,7 +234,7 @@ export default function MenuPage() {
 
         {(filterType === "Combos" || filterType === "") &&
           !showOnlyFocus &&
-          !showOnlyVisible &&
+          !showOnlyInvisible &&
           filteredCombos.map((combo) => (
             <ComboCard
               key={combo.name}

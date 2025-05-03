@@ -297,9 +297,9 @@ export default function ClientCollectionPage() {
         <div
           className={`flex ${
             isListView
-              ? "flex-col items-center gap-4"
-              : "justify-center flex-wrap gap-10"
-          }  w-full py-6`}
+              ? "flex-col items-center gap-1 py-4"
+              : "justify-center flex-wrap gap-10 py-6"
+          }  w-full `}
         >
           {filteredBoardgames.map((boardgame, index) => (
             <Card
@@ -329,7 +329,11 @@ export default function ClientCollectionPage() {
             <h2 className="text-2xl">{currentGame.name}</h2>
             <img
               className="rounded shadow-card w-[200px]"
-              src={currentGame.image}
+              src={
+                currentGame.image
+                  ? currentGame.image
+                  : "images/patternBoardgameImage.png"
+              }
               alt="boardgame"
             />
             <p className="text-sm">{currentGame.description}</p>

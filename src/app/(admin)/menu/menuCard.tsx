@@ -26,11 +26,24 @@ export default function MenuCard({
         !item.isVisible && "opacity-50"
       } relative flex flex-col w-[240px] h-fit max-h-[280px] shadow-card-gold outline hover:outline-primary-gold outline-transparent  transition-all duration-200 ease-in scrollbar-none gap-2 items-center bg-primary-black/80 rounded-lg text-primary-gold cursor-pointer overflow-visible`}
     >
-      <div
-        className="flex items-center w-full h-[120px] bg-cover bg-no-repeat bg-center rounded-t-lg"
-        style={{ backgroundImage: `url(${item.image})` }}
-      ></div>
-      <div className="flex flex-col gap-2 py-2 px-3">
+      {item.image && (
+        <div
+          className="flex items-center w-full h-[120px] bg-cover bg-no-repeat bg-center rounded-t-lg"
+          style={{
+            backgroundImage: `url(${item.image})`,
+          }}
+        ></div>
+      )}
+
+      {!item.image && (
+        <img
+          className="h-[120px]"
+          src={"images/patternMenuImage.png"}
+          alt="Pattern Image"
+        />
+      )}
+
+      <div className="flex flex-col gap-2 py-2 px-3 w-full text-center">
         <span
           className="font-semibold text-center text-md"
           dangerouslySetInnerHTML={{
@@ -38,9 +51,9 @@ export default function MenuCard({
           }}
         />
 
-        <div className="overflow-y-scroll flex-1">
+        <div className="overflow-y-scroll flex-1 w-full">
           <span
-            className="text-xs text-center"
+            className="text-xs text-center w-full"
             dangerouslySetInnerHTML={{
               __html: highlightMatch(item.description, searchTerm),
             }}

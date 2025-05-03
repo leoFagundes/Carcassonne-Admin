@@ -24,10 +24,20 @@ export default function Card({
       {...props}
       className="flex flex-col w-[200px] h-fit max-h-[250px] outline hover:outline-primary-gold outline-transparent transition-all duration-200 ease-in overflow-scroll scrollbar-none gap-2 items-center bg-primary-black/80 rounded-lg text-primary-gold shadow-card-gold cursor-pointer"
     >
-      <div
-        className="flex items-center w-full h-[120px] bg-cover bg-no-repeat bg-center rounded-t-lg"
-        style={{ backgroundImage: `url(${boardgame.image})` }}
-      ></div>
+      {boardgame.image && (
+        <div
+          className="flex items-center w-full h-[120px] bg-cover bg-no-repeat bg-center rounded-t-lg"
+          style={{ backgroundImage: `url(${boardgame.image})` }}
+        ></div>
+      )}
+
+      {!boardgame.image && (
+        <img
+          className="h-[120px]"
+          src={"images/patternBoardgameImage.png"}
+          alt="Pattern Image"
+        />
+      )}
       <div className="flex flex-col items-center gap-2 py-2 px-3">
         <span
           className="font-semibold text-center text-md"

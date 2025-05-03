@@ -38,11 +38,21 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
           className="cursor-pointer sm:max-w-[600px] max-w-[300px] flex items-center gap-3 w-full p-3 border-b border-primary-gold/50"
         >
           <div className="relative">
-            <img
-              src={boardgame.image}
-              alt="boardgame"
-              className="h-12 w-12 rounded shadow-card"
-            />
+            {boardgame.image && (
+              <img
+                src={boardgame.image}
+                alt="boardgame"
+                className="h-12 w-12 rounded shadow-card"
+              />
+            )}
+
+            {!boardgame.image && (
+              <img
+                src={"images/patternBoardgameImage.png"}
+                alt="boardgame"
+                className="h-12 w-12 rounded shadow-card"
+              />
+            )}
             {boardgame.featured && (
               <div className="shadow-card flex items-center justify-center absolute -bottom-1 -right-1 p-1 bg-primary-black rounded-full">
                 <FiStar size={"10px"} className="min-w-[10px] " />
@@ -76,7 +86,13 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
         >
           <div
             className="relative w-full h-[150px] bg-center bg-cover rounded-t-lg"
-            style={{ backgroundImage: `url(${boardgame.image})` }}
+            style={{
+              backgroundImage: `url(${
+                boardgame.image
+                  ? boardgame.image
+                  : "images/patternBoardgameImage.png"
+              })`,
+            }}
           >
             <div className="flex py-2 px-4 items-end absolute w-full h-full bg-primary-black/40">
               <span className="font-bold text-lg text-primary-white">
@@ -84,6 +100,7 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
               </span>
             </div>
           </div>
+
           <div className="flex flex-col gap-2 p-4 relative">
             {boardgame.featured && (
               <div className="shadow-card-gold flex items-center justify-center absolute -bottom-3 -right-3 p-3 bg-primary-black rounded-full">

@@ -47,7 +47,7 @@ export default function ScrollUp() {
       <FaInfoCircle
         size={"20px"}
         className="text-primary hover:cursor-pointer"
-        onClick={() => router.push("/Rules&Regulations")}
+        onClick={() => router.push("/rules&regulations")}
       />
     </div>
   );

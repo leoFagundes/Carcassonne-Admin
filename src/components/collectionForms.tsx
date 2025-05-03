@@ -9,6 +9,7 @@ import {
   LuDices,
   LuUserRoundMinus,
   LuUserRoundPlus,
+  LuStar,
 } from "react-icons/lu";
 import Button from "./button";
 import Input from "./input";
@@ -43,7 +44,6 @@ export default function CollectionForms({
       boardgame.name,
       boardgame.description,
       boardgame.difficulty,
-      boardgame.image,
       boardgame.type,
     ];
 
@@ -235,17 +235,24 @@ export default function CollectionForms({
             icon={<LuSquareStack size={"18px"} />}
             width="!w-[250px]"
           />
-          <Checkbox
-            checked={currentItem.featured}
-            setChecked={() =>
-              setCurrentItem({
-                ...currentItem,
-                featured: !currentItem.featured,
-              })
-            }
-            variant
-            label={`Jogo ${currentItem.featured ? "é" : "não é"} destaque`}
-          />
+          <div className="relative">
+            <Checkbox
+              checked={currentItem.featured}
+              setChecked={() =>
+                setCurrentItem({
+                  ...currentItem,
+                  featured: !currentItem.featured,
+                })
+              }
+              variant
+              label={`Jogo ${currentItem.featured ? "é" : "não é"} destaque`}
+            />
+            {currentItem.featured && (
+              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
+                <LuStar size={"16px"} />
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <div className="flex gap-2 m-2">
