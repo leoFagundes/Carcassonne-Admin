@@ -86,49 +86,6 @@ export default function MenuPage() {
     fetchInfos();
   }, [currentInfo, currentCombo, currentItem]);
 
-  const menuItemsX: MenuItemType[] = [
-    {
-      name: "Pizza Margherita",
-      description:
-        "Pizza clássica com molho de tomate, mussarela e manjericão fresco.",
-      observation: ["Servir quente", "Corte em 8 pedaços"],
-      value: "R$ 35,00",
-      type: "Pizza",
-      sideDish: ["Borda recheada", "Adicional de catupiry"],
-      image:
-        "https://uploads.metroimg.com/wp-content/uploads/2024/09/19164943/Carcassonne-Pub.jpg",
-      isVegan: false,
-      isFocus: true,
-      isVisible: true,
-    },
-    {
-      name: "Hambúrguer Artesanal",
-      description:
-        "Hambúrguer de carne bovina 180g, queijo cheddar, alface e tomate. Hambúrguer de carne bovina 180g, queijo cheddar, alface e tomate. ",
-      observation: ["Pode conter glúten", "Servir com batata frita"],
-      value: "R$ 28,00",
-      type: "Hambúrguer",
-      sideDish: ["Bacon", "Ovo", "Queijo extra"],
-      image: "https://images.unsplash.com/photo-1550547660-d9450f859349",
-      isVegan: false,
-      isFocus: false,
-      isVisible: true,
-    },
-    {
-      name: "Pizza Vegana de Legumes",
-      description:
-        "Pizza com massa integral, coberta com abobrinha, berinjela e pimentões.",
-      observation: ["Sem lactose", "Massa fina"],
-      value: "R$ 38,00",
-      type: "Pizza",
-      image:
-        "https://uploads.metroimg.com/wp-content/uploads/2024/09/19164943/Carcassonne-Pub.jpg",
-      isVegan: true,
-      isFocus: false,
-      isVisible: false,
-    },
-  ];
-
   const filteredMenu = menuItems.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

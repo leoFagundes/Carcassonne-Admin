@@ -47,7 +47,7 @@ export default function InputImage({
           <div
             onClick={() => {
               setLocalPreview(undefined);
-              onCloseImage && onCloseImage();
+              if (onCloseImage) onCloseImage();
             }}
             className="absolute right-2 top-2 rounded-full p-1 bg-primary-black/60 cursor-pointer border border-transparent hover:border-primary-gold/60 transition-all"
           >
