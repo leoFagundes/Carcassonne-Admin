@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import BoardgameRepository from "@/services/repositories/BoardGameRepository";
 import { useAlert } from "@/contexts/alertProvider";
 import LoaderFullscreen from "@/components/loaderFullscreen";
+import { difficultiesOptions } from "@/utils/patternValues";
 
 export default function ClientCollectionPage() {
   const [filterBoardgameName, setFilterBoardgameName] = useState("");
@@ -59,10 +60,6 @@ export default function ClientCollectionPage() {
 
     fetchBoardgames();
   }, []);
-
-  const boardgameDifficulties = Array.from(
-    new Set(boardgames.map((b) => b.difficulty))
-  );
 
   const boardgameTypes = Array.from(
     new Set(boardgames.flatMap((b) => b.types))
@@ -238,7 +235,7 @@ export default function ClientCollectionPage() {
                 firstLabel="Dificuldade"
                 value={filterBoardgameDifficulty}
                 setValue={(e) => setFilterBoardgameDifficulty(e.target.value)}
-                options={boardgameDifficulties}
+                options={difficultiesOptions}
                 variant
                 label="Dificuldade"
                 width="!w-[250px]"

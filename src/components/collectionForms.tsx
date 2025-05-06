@@ -16,7 +16,7 @@ import { BoardgameType } from "@/types";
 import Dropdown from "./dropdown";
 import Checkbox from "./checkbox";
 import BoardgameRepository from "@/services/repositories/BoardGameRepository";
-import { patternBoardgame } from "@/utils/patternValues";
+import { difficultiesOptions, patternBoardgame } from "@/utils/patternValues";
 import { useAlert } from "@/contexts/alertProvider";
 import Loader from "./loader";
 import Tooltip from "./Tooltip";
@@ -181,7 +181,7 @@ export default function CollectionForms({
           />
           <Dropdown
             label="Dificuldade"
-            options={["Fácil", "Médio", "Difícil"]}
+            options={difficultiesOptions}
             firstLabel="-"
             value={localItem.difficulty}
             setValue={(e) =>

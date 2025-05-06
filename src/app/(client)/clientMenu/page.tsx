@@ -331,9 +331,7 @@ export default function ClientMenuPage() {
                   <span className="font-semibold">Acompanhamentos:</span>
                   <ul>
                     {currentItem.sideDish.map((item, index) => (
-                      <li key={index}>
-                        {index + 1}- {item}
-                      </li>
+                      <li key={index}>- {item}</li>
                     ))}
                   </ul>
                 </div>
@@ -346,9 +344,7 @@ export default function ClientMenuPage() {
                     <span className="font-semibold">Observações:</span>
                     <ul>
                       {currentItem.observation.map((item, index) => (
-                        <li key={index}>
-                          {index + 1}- {item}
-                        </li>
+                        <li key={index}>- {item}</li>
                       ))}
                       {currentItem.isVegan && (
                         <li>

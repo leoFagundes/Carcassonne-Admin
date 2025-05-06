@@ -7,6 +7,14 @@ import {
   GeneralConfigsType,
 } from "@/types";
 
+export const difficultiesOptions = [
+  "Muito Fácil",
+  "Fácil",
+  "Médio",
+  "Difícil",
+  "Muito Difícil",
+];
+
 export const patternBoardgame: BoardgameType = {
   name: "",
   description: "",
