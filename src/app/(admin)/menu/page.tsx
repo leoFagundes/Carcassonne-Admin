@@ -3,7 +3,7 @@
 import Input from "@/components/input";
 import { ComboType, InfoType, MenuItemType } from "@/types";
 import React, { useEffect, useState } from "react";
-import { LuPizza } from "react-icons/lu";
+import { LuLink, LuPizza } from "react-icons/lu";
 import Dropdown from "@/components/dropdown";
 import Checkbox from "@/components/checkbox";
 import Modal from "@/components/modal";
@@ -24,6 +24,8 @@ import { useAlert } from "@/contexts/alertProvider";
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import ComboRepository from "@/services/repositories/ComboRepository";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
+import { useRouter } from "next/navigation";
+import Tooltip from "@/components/Tooltip";
 
 export default function MenuPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,6 +45,8 @@ export default function MenuPage() {
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
 
   const { addAlert } = useAlert();
+
+  const router = useRouter();
 
   useEffect(() => {
     const fetchInfos = async () => {
@@ -116,6 +120,13 @@ export default function MenuPage() {
       <section className="flex w-full justify-center items-center gap-2 text-primary-gold">
         <LuPizza size={"48px"} className="min-w-[48px]" />
         <h2 className="text-5xl text-primary-gold">Cardápio</h2>
+        <Tooltip direction="bottom" content="Ir para visão do cliente">
+          <LuLink
+            onClick={() => router.push("/clientMenu")}
+            size={"16px"}
+            className="min-w-[16px] cursor-pointer"
+          />
+        </Tooltip>
       </section>
       {/* Input de busca */}
       <section className="flex items-center flex-wrap justify-center gap-4 ">

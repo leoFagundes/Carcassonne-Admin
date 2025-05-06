@@ -82,7 +82,7 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
       ) : (
         <div
           {...props}
-          className="w-full max-w-[300px] rounded-lg shadow-card-gold cursor-pointer"
+          className="w-full h-fit max-w-[300px] rounded-lg shadow-card-gold cursor-pointer"
         >
           <div
             className="relative w-full h-[150px] bg-center bg-cover rounded-t-lg"

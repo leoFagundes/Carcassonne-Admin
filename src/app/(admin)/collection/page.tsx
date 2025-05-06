@@ -2,7 +2,7 @@
 
 import { BoardgameType } from "@/types";
 import React, { useEffect, useState } from "react";
-import { LuDices } from "react-icons/lu";
+import { LuDices, LuLink } from "react-icons/lu";
 import Card from "./card";
 import Input from "@/components/input";
 import Modal from "@/components/modal";
@@ -11,6 +11,8 @@ import { useAlert } from "@/contexts/alertProvider";
 import BoardgameRepository from "@/services/repositories/BoardGameRepository";
 import { patternBoardgame } from "@/utils/patternValues";
 import LoaderFullscreen from "@/components/loaderFullscreen";
+import { useRouter } from "next/navigation";
+import Tooltip from "@/components/Tooltip";
 
 export default function CollectionPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,6 +23,8 @@ export default function CollectionPage() {
     useState<BoardgameType>(patternBoardgame);
 
   const { addAlert } = useAlert();
+
+  const router = useRouter();
 
   useEffect(() => {
     const fetchBoardgames = async () => {
@@ -47,7 +51,14 @@ export default function CollectionPage() {
       {loading && <LoaderFullscreen />}
       <section className="flex w-full justify-center items-center gap-2 text-primary-gold">
         <LuDices size={"48px"} className="min-w-[48px]" />
-        <h2 className="text-5xl text-primary-gold">Coleção de jogos</h2>
+        <h2 className="text-5xl text-primary-gold">Coleção de jogos</h2>{" "}
+        <Tooltip direction="bottom" content="Ir para visão do cliente">
+          <LuLink
+            onClick={() => router.push("/clientCollection")}
+            size={"16px"}
+            className="min-w-[16px] cursor-pointer"
+          />
+        </Tooltip>
       </section>
 
       {/* Input de busca */}

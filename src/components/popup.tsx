@@ -25,13 +25,13 @@ export default function Popup({ isOpen, onClose, url }: PopupProps) {
     >
       <button
         onClick={onClose}
-        className="absolute flex items-center gap-2 top-2 right-2 bg-secondary-black rounded-lg p-2 shadow-card cursor-pointer"
+        className="absolute flex items-center gap-2 top-2 right-2 bg-secondary-black rounded-lg p-2 shadow-card cursor-pointer "
       >
         Fechar <LuX className="min-w-[18px]" size={"18px"} />
       </button>
       <div
         ref={contentRef}
-        className="relative rounded-lg shadow-lg max-w-md w-full p-4 "
+        className="relative rounded-lg max-w-md w-full p-4 animation-popup"
       >
         <img
           src={url}

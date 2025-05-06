@@ -66,7 +66,7 @@ export default function ClientCollectionPage() {
 
   const boardgameTypes = Array.from(
     new Set(boardgames.flatMap((b) => b.types))
-  );
+  ).sort();
 
   const filteredBoardgames = boardgames
     .filter((boardgame) => {
