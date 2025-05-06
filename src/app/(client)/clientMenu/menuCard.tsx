@@ -1,4 +1,5 @@
 import { MenuItemType } from "@/types";
+import { truncateText } from "@/utils/utilFunctions";
 import React, { ComponentProps } from "react";
 import { LuVegan } from "react-icons/lu";
 
@@ -32,7 +33,7 @@ export default function MenuCard({ item, index, ...props }: MenuCardProps) {
           <span className="font-bold text-md flex-1">{item.name}</span>
           <span className="text-xs font-semibold">{item.value}</span>
         </div>
-        <p className="text-xs">{item.description}</p>
+        <p className="text-xs">{truncateText(item.description, 65)}</p>
       </div>
       {item.isFocus && (
         <div className="absolute -top-3 left-3 px-1 bg-primary-black">

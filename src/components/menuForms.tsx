@@ -43,32 +43,49 @@ export default function MenuForms({
   const [fullscreenLoading, setFullscreenLoading] = useState(false);
   const [imageFile, setImageFile] = React.useState<File | null>(null);
   const [types, setTypes] = useState<string[]>([]);
+  const [localItem, setLocalItem] = useState<MenuItemType>(currentItem);
+  const [observations, setObservations] = useState<string[]>([]);
+  const [sideDishes, setSideDishes] = useState<string[]>([]);
 
   const { addAlert } = useAlert();
 
   useEffect(() => {
-    const fetchMenuTypes = async () => {
+    setLocalItem(currentItem);
+  }, [currentItem]);
+
+  useEffect(() => {
+    const fetchMenuItems = async () => {
       setFullscreenLoading(true);
       try {
         const fetchedItems = await MenuItemRepository.getAll();
+
         const menuTypes = Array.from(new Set(fetchedItems.map((b) => b.type)));
+        const allObservations = Array.from(
+          new Set(fetchedItems.flatMap((item) => item.observation ?? []))
+        );
+        const allSideDishes = Array.from(
+          new Set(fetchedItems.flatMap((item) => item.sideDish ?? []))
+        );
+
         setTypes(menuTypes);
+        setObservations(allObservations);
+        setSideDishes(allSideDishes);
       } catch (error) {
-        addAlert(`Erro ao carregar os tipos existentes: ${error}`);
+        addAlert(`Erro ao carregar os itens existentes: ${error}`);
       } finally {
         setFullscreenLoading(false);
       }
     };
 
-    fetchMenuTypes();
+    fetchMenuItems();
   }, []);
 
   const handleSaveItem = async () => {
     if (
-      currentItem.name.trim() === "" ||
-      currentItem.description.trim() === "" ||
-      currentItem.value.trim() === "" ||
-      currentItem.type.trim() === ""
+      localItem.name.trim() === "" ||
+      localItem.description.trim() === "" ||
+      localItem.value.trim() === "" ||
+      localItem.type.trim() === ""
     ) {
       addAlert("Preencha todos os campos obrigatórios.");
       return;
@@ -76,28 +93,28 @@ export default function MenuForms({
 
     setLoading(true);
     try {
-      let imageUrl = currentItem.image || "";
+      let imageUrl = localItem.image || "";
       if (imageFile) {
         const path = `menu-images/${Date.now()}-${imageFile.name}`;
         imageUrl = await uploadImage(imageFile, path);
       }
 
       const itemToSave = {
-        ...currentItem,
+        ...localItem,
         image: imageUrl,
       };
 
       if (formType === "edit") {
         // UPDATE
-        if (!currentItem.id) throw new Error("ID inválido");
-        await MenuItemRepository.update(currentItem.id, itemToSave);
-        setCurrentItem(currentItem);
-        addAlert(`Item "${currentItem.name}" editado com sucesso!`);
+        if (!localItem.id) throw new Error("ID inválido");
+        await MenuItemRepository.update(localItem.id, itemToSave);
+        setCurrentItem(localItem);
+        addAlert(`Item "${localItem.name}" editado com sucesso!`);
         closeForms();
       } else {
         // CREATE
         await MenuItemRepository.create(itemToSave);
-        addAlert(`Item "${currentItem.name}" criado com sucesso!`);
+        addAlert(`Item "${localItem.name}" criado com sucesso!`);
         setCurrentItem(patternMenuItem);
         setImageFile(null);
         closeForms();
@@ -132,16 +149,16 @@ export default function MenuForms({
     <>
       {fullscreenLoading && <LoaderFullscreen />}
       <h1 className="text-4xl text-gradient-gold text-center">
-        {currentItem.name ? currentItem.name : "Item sem nome"}
+        {localItem.name ? localItem.name : "Item sem nome"}
       </h1>
       <div className="flex flex-wrap justify-center py-6 text-primary-gold gap-6 my-4 overflow-y-scroll px-4">
         <div className="flex flex-col gap-6">
           <Input
             label="Nome"
             placeholder="Nome"
-            value={currentItem.name}
+            value={localItem.name}
             setValue={(e) =>
-              setCurrentItem({ ...currentItem, name: e.target.value })
+              setLocalItem({ ...localItem, name: e.target.value })
             }
             variant
             icon={<LuPizza size={"20px"} />}
@@ -150,10 +167,10 @@ export default function MenuForms({
           <Input
             label="Descrição"
             placeholder="Descrição"
-            value={currentItem.description}
+            value={localItem.description}
             setValue={(e) =>
-              setCurrentItem({
-                ...currentItem,
+              setLocalItem({
+                ...localItem,
                 description: e.target.value,
               })
             }
@@ -165,10 +182,10 @@ export default function MenuForms({
           <Input
             label="Valor"
             placeholder="Valor"
-            value={currentItem.value}
+            value={localItem.value}
             setValue={(e) =>
-              setCurrentItem({
-                ...currentItem,
+              setLocalItem({
+                ...localItem,
                 value: e.target.value,
               })
             }
@@ -179,9 +196,9 @@ export default function MenuForms({
           <Input
             label="Tipo"
             placeholder="Tipo"
-            value={currentItem.type}
+            value={localItem.type}
             setValue={(e) =>
-              setCurrentItem({ ...currentItem, type: e.target.value })
+              setLocalItem({ ...localItem, type: e.target.value })
             }
             variant
             icon={<LuSquareStack size={"18px"} />}
@@ -189,40 +206,42 @@ export default function MenuForms({
             options={types}
           />
           <OptionsInput
-            values={currentItem.sideDish}
+            values={localItem.sideDish}
             setValues={(values) =>
-              setCurrentItem({ ...currentItem, sideDish: values })
+              setLocalItem({ ...localItem, sideDish: values })
             }
             placeholder="Acompanhamento"
             label="Acompanhamento"
             variant
             width="!w-[250px]"
+            options={sideDishes}
           />
         </div>
         <div className="flex flex-col gap-6">
           <OptionsInput
-            values={currentItem.observation}
+            values={localItem.observation}
             setValues={(values) =>
-              setCurrentItem({ ...currentItem, observation: values })
+              setLocalItem({ ...localItem, observation: values })
             }
             placeholder="Observações"
             label="Observações"
             variant
             width="!w-[250px]"
+            options={observations}
           />
           <div className="relative">
             <Checkbox
-              checked={currentItem.isVisible}
+              checked={localItem.isVisible}
               setChecked={() =>
-                setCurrentItem({
-                  ...currentItem,
-                  isVisible: !currentItem.isVisible,
+                setLocalItem({
+                  ...localItem,
+                  isVisible: !localItem.isVisible,
                 })
               }
               variant
-              label={`${currentItem.isVisible ? "Visível" : "Invisível"}`}
+              label={`${localItem.isVisible ? "Visível" : "Invisível"}`}
             />
-            {currentItem.isVisible ? (
+            {localItem.isVisible ? (
               <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
                 <LuEye size={"16px"} />
               </div>
@@ -234,17 +253,17 @@ export default function MenuForms({
           </div>
           <div className="relative">
             <Checkbox
-              checked={currentItem.isFocus}
+              checked={localItem.isFocus}
               setChecked={() =>
-                setCurrentItem({
-                  ...currentItem,
-                  isFocus: !currentItem.isFocus,
+                setLocalItem({
+                  ...localItem,
+                  isFocus: !localItem.isFocus,
                 })
               }
               variant
-              label={`Está em destaque: ${currentItem.isFocus ? "Sim" : "Não"}`}
+              label={`Está em destaque: ${localItem.isFocus ? "Sim" : "Não"}`}
             />
-            {currentItem.isFocus && (
+            {localItem.isFocus && (
               <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
                 <LuStar size={"16px"} />
               </div>
@@ -252,17 +271,17 @@ export default function MenuForms({
           </div>
           <div className="relative">
             <Checkbox
-              checked={currentItem.isVegan}
+              checked={localItem.isVegan}
               setChecked={() =>
-                setCurrentItem({
-                  ...currentItem,
-                  isVegan: !currentItem.isVegan,
+                setLocalItem({
+                  ...localItem,
+                  isVegan: !localItem.isVegan,
                 })
               }
               variant
-              label={`Item ${currentItem.isVegan ? "" : "não"} vegano`}
+              label={`Item ${localItem.isVegan ? "" : "não"} vegano`}
             />
-            {currentItem.isVegan && (
+            {localItem.isVegan && (
               <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
                 <LuVegan size={"16px"} />
               </div>
@@ -274,21 +293,21 @@ export default function MenuForms({
               onChange={(file) => {
                 if (file) {
                   setImageFile(file);
-                  setCurrentItem({
-                    ...currentItem,
+                  setLocalItem({
+                    ...localItem,
                     image: URL.createObjectURL(file),
                   });
                 }
               }}
               onCloseImage={() => {
                 setImageFile(null);
-                setCurrentItem({
-                  ...currentItem,
+                setLocalItem({
+                  ...localItem,
                   image: "",
                 });
               }}
               width="!w-[250px]"
-              previewUrl={currentItem.image}
+              previewUrl={localItem.image}
             />
 
             {!imageFile && (
@@ -300,9 +319,9 @@ export default function MenuForms({
                 <Input
                   label="Link da imagem"
                   placeholder="URL da imagem"
-                  value={currentItem.image ?? ""}
+                  value={localItem.image ?? ""}
                   setValue={(e) =>
-                    setCurrentItem({ ...currentItem, image: e.target.value })
+                    setLocalItem({ ...localItem, image: e.target.value })
                   }
                   variant
                   icon={<LuImage size={"18px"} />}

@@ -12,6 +12,7 @@ interface OptionsInputType {
   placeholder: string;
   label?: string;
   limit?: number;
+  options?: string[];
 }
 
 export default function OptionsInput({
@@ -22,7 +23,10 @@ export default function OptionsInput({
   variant = false,
   width = "w-auto",
   limit = 9999999999999,
+  options,
 }: OptionsInputType) {
+  const [inFocus, setInFocus] = useState(false);
+
   const { addAlert } = useAlert();
 
   const [value, setValue] = useState("");
@@ -46,6 +50,29 @@ export default function OptionsInput({
     setValues(newValues);
   }
 
+  const filteredOptions =
+    options?.filter((option) =>
+      option.toLowerCase().includes(value.toLowerCase())
+    ) || [];
+
+  function highlightMatch(text: string, search: string = "") {
+    if (!search) return <>{text}</>;
+    const parts = text.split(new RegExp(`(${search})`, "gi"));
+    return (
+      <>
+        {parts.map((part, i) =>
+          part.toLowerCase() === search.toLowerCase() ? (
+            <span key={i} className="text-secondary-gold">
+              {part}
+            </span>
+          ) : (
+            <span key={i}>{part}</span>
+          )
+        )}
+      </>
+    );
+  }
+
   return (
     <div>
       <div
@@ -63,6 +90,12 @@ export default function OptionsInput({
           onChange={(e) => setValue(e.target.value)}
           type="text"
           placeholder={placeholder}
+          onFocus={() => setInFocus(true)}
+          onBlur={() =>
+            setTimeout(() => {
+              setInFocus(false);
+            }, 150)
+          }
           className="px-1 w-full h-full rounded-md text-white placeholder:text-primary-gold/60 outline-none bg-transparent"
         />
         <LuSendHorizontal
@@ -70,6 +103,21 @@ export default function OptionsInput({
           size={"20px"}
           className="cursor-pointer"
         />
+        {filteredOptions.length > 0 && inFocus && (
+          <div className="flex flex-col gap-2 max-h-[120px] overflow-y-scroll absolute top-full z-50 border w-full left-0 rounded shadow-card p-2 bg-primary-black">
+            {filteredOptions.map((option, index) => (
+              <div
+                className="py-1 px-2 rounded-sm border border-dashed cursor-pointer hover:text-secondary-gold transition-all duration-200 ease-in"
+                key={index}
+                onClick={() => {
+                  setValue(option);
+                }}
+              >
+                <span>{highlightMatch(option, value)}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       {values && values.length > 0 && (
         <div

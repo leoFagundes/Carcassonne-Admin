@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   LuBookOpenText,
   LuImage,
@@ -36,8 +36,35 @@ export default function CollectionForms({
   closeForms,
 }: CollectionFormsType) {
   const [loading, setLoading] = useState(false);
+  const [boardgamesTypes, setBoardgamesTypes] = useState<string[]>([]);
+  const [localItem, setLocalItem] = useState<BoardgameType>(currentItem);
 
   const { addAlert } = useAlert();
+
+  useEffect(() => {
+    setLocalItem(currentItem);
+  }, [currentItem]);
+
+  useEffect(() => {
+    const fetchBoardgames = async () => {
+      setLoading(true);
+      try {
+        const fetchedBoardgames = await BoardgameRepository.getAll();
+
+        const boardgameTypes = Array.from(
+          new Set(fetchedBoardgames.flatMap((b) => b.types))
+        );
+
+        setBoardgamesTypes(boardgameTypes);
+      } catch (error) {
+        addAlert(`Erro ao carregar os tipos dos jogos: ${error}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBoardgames();
+  }, []);
 
   const isBoardgameValid = (boardgame: BoardgameType) => {
     const requiredFields = [
@@ -58,21 +85,21 @@ export default function CollectionForms({
   };
 
   const handleEditBoardgame = async () => {
-    if (!isBoardgameValid(currentItem)) {
+    if (!isBoardgameValid(localItem)) {
       addAlert("Preencha todos os campos.");
       return;
     }
 
     setLoading(true);
     try {
-      if (!currentItem.id) {
+      if (!localItem.id) {
         addAlert("ID inválido.");
         return;
       }
 
-      await BoardgameRepository.update(currentItem.id, currentItem);
-      setCurrentItem(currentItem);
-      addAlert(`Jogo ${currentItem.name} editado com sucesso!`);
+      await BoardgameRepository.update(localItem.id, localItem);
+      setCurrentItem(localItem);
+      addAlert(`Jogo ${localItem.name} editado com sucesso!`);
       closeForms();
     } catch (error) {
       addAlert(`Erro ao editar jogo: ${error}`);
@@ -82,15 +109,15 @@ export default function CollectionForms({
   };
 
   const handleCreateBoardgame = async () => {
-    if (!isBoardgameValid(currentItem)) {
+    if (!isBoardgameValid(localItem)) {
       addAlert("Preencha todos os campos.");
       return;
     }
 
     setLoading(true);
     try {
-      await BoardgameRepository.create(currentItem);
-      addAlert(`Jogo ${currentItem.name} criado com sucesso!`);
+      await BoardgameRepository.create(localItem);
+      addAlert(`Jogo ${localItem.name} criado com sucesso!`);
       setCurrentItem(patternBoardgame);
       closeForms();
     } catch (error) {
@@ -122,16 +149,16 @@ export default function CollectionForms({
   return (
     <>
       <h1 className="text-4xl text-gradient-gold text-center">
-        {currentItem.name ? currentItem.name : "Jogo sem nome"}
+        {localItem.name ? localItem.name : "Jogo sem nome"}
       </h1>
       <div className="flex flex-wrap justify-center py-6 my-4 text-primary-gold gap-6 overflow-y-scroll px-4">
         <div className="flex flex-col gap-6">
           <Input
             label="Nome"
             placeholder="Nome"
-            value={currentItem.name}
+            value={localItem.name}
             setValue={(e) =>
-              setCurrentItem({ ...currentItem, name: e.target.value })
+              setLocalItem({ ...localItem, name: e.target.value })
             }
             variant
             icon={<LuDices size={"20px"} />}
@@ -140,10 +167,10 @@ export default function CollectionForms({
           <Input
             label="Descrição"
             placeholder="Descrição"
-            value={currentItem.description}
+            value={localItem.description}
             setValue={(e) =>
-              setCurrentItem({
-                ...currentItem,
+              setLocalItem({
+                ...localItem,
                 description: e.target.value,
               })
             }
@@ -156,10 +183,10 @@ export default function CollectionForms({
             label="Dificuldade"
             options={["Fácil", "Médio", "Difícil"]}
             firstLabel="-"
-            value={currentItem.difficulty}
+            value={localItem.difficulty}
             setValue={(e) =>
-              setCurrentItem({
-                ...currentItem,
+              setLocalItem({
+                ...localItem,
                 difficulty: e.target.value,
               })
             }
@@ -169,10 +196,10 @@ export default function CollectionForms({
             label="Mínimo de jogadores"
             type="number"
             placeholder="Ex: 2"
-            value={String(currentItem.minPlayers)}
+            value={String(localItem.minPlayers)}
             setValue={(e) =>
-              setCurrentItem({
-                ...currentItem,
+              setLocalItem({
+                ...localItem,
                 minPlayers: Number(e.target.value),
               })
             }
@@ -186,10 +213,10 @@ export default function CollectionForms({
             label="Máximo de jogadores"
             type="number"
             placeholder="Ex: 4"
-            value={String(currentItem.maxPlayers)}
+            value={String(localItem.maxPlayers)}
             setValue={(e) =>
-              setCurrentItem({
-                ...currentItem,
+              setLocalItem({
+                ...localItem,
                 maxPlayers: Number(e.target.value),
               })
             }
@@ -201,10 +228,10 @@ export default function CollectionForms({
             label="Tempo de jogo (min)"
             type="number"
             placeholder="Ex: 60"
-            value={String(currentItem.playTime)}
+            value={String(localItem.playTime)}
             setValue={(e) =>
-              setCurrentItem({
-                ...currentItem,
+              setLocalItem({
+                ...localItem,
                 playTime: Number(e.target.value),
               })
             }
@@ -215,38 +242,39 @@ export default function CollectionForms({
           <Input
             label="Link da imagem"
             placeholder="URL da imagem"
-            value={currentItem.image}
+            value={localItem.image}
             setValue={(e) =>
-              setCurrentItem({ ...currentItem, image: e.target.value })
+              setLocalItem({ ...localItem, image: e.target.value })
             }
             variant
             icon={<LuImage size={"18px"} />}
             width="!w-[250px]"
           />
           <OptionsInput
-            values={currentItem.types}
+            values={localItem.types}
             setValues={(values) =>
-              setCurrentItem({ ...currentItem, types: values })
+              setLocalItem({ ...localItem, types: values })
             }
             placeholder="Ex: Estratégia, Cooperativo..."
             label="Tipo"
             variant
             width="!w-[250px]"
+            options={boardgamesTypes}
           />
 
           <div className="relative">
             <Checkbox
-              checked={currentItem.featured}
+              checked={localItem.featured}
               setChecked={() =>
-                setCurrentItem({
-                  ...currentItem,
-                  featured: !currentItem.featured,
+                setLocalItem({
+                  ...localItem,
+                  featured: !localItem.featured,
                 })
               }
               variant
-              label={`Jogo ${currentItem.featured ? "é" : "não é"} destaque`}
+              label={`Jogo ${localItem.featured ? "é" : "não é"} destaque`}
             />
-            {currentItem.featured && (
+            {localItem.featured && (
               <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
                 <LuStar size={"16px"} />
               </div>

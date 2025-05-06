@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { LuBookOpenText, LuDollarSign, LuBoxes } from "react-icons/lu";
 import Button from "./button";
 import Input from "./input";
@@ -9,7 +9,6 @@ import { useAlert } from "@/contexts/alertProvider";
 import Loader from "./loader";
 import Tooltip from "./Tooltip";
 import ComboRepository from "@/services/repositories/ComboRepository";
-import { patternCombo } from "@/utils/patternValues";
 
 interface ComboFormsType {
   currentCombo: ComboType;
@@ -25,7 +24,13 @@ export default function ComboForms({
   closeForms,
 }: ComboFormsType) {
   const [loading, setLoading] = useState(false);
+  const [localItem, setLocalItem] = useState<ComboType>(currentCombo);
+
   const { addAlert } = useAlert();
+
+  useEffect(() => {
+    setLocalItem(currentCombo);
+  }, [currentCombo]);
 
   const isComboValid = (combo: ComboType) => {
     return (
@@ -36,16 +41,15 @@ export default function ComboForms({
   };
 
   const handleCreateCombo = async () => {
-    if (!isComboValid(currentCombo)) {
+    if (!isComboValid(localItem)) {
       addAlert("Preencha todos os campos.");
       return;
     }
 
     setLoading(true);
     try {
-      await ComboRepository.create(currentCombo);
-      addAlert(`Combo "${currentCombo.name}" criado com sucesso!`);
-      setCurrentCombo({ name: "", description: "", value: "" });
+      await ComboRepository.create(localItem);
+      addAlert(`Combo "${localItem.name}" criado com sucesso!`);
       closeForms();
     } catch (error) {
       addAlert(`Erro ao criar novo combo: ${error}`);
@@ -55,20 +59,21 @@ export default function ComboForms({
   };
 
   const handleEditCombo = async () => {
-    if (!isComboValid(currentCombo)) {
+    if (!isComboValid(localItem)) {
       addAlert("Preencha todos os campos.");
       return;
     }
 
-    if (!currentCombo.id) {
+    if (!localItem.id) {
       addAlert("ID inválido.");
       return;
     }
 
     setLoading(true);
     try {
-      await ComboRepository.update(currentCombo.id, currentCombo);
-      addAlert(`Combo "${currentCombo.name}" editado com sucesso!`);
+      await ComboRepository.update(localItem.id, localItem);
+      addAlert(`Combo "${localItem.name}" editado com sucesso!`);
+      setCurrentCombo(localItem);
       closeForms();
     } catch (error) {
       addAlert(`Erro ao editar combo: ${error}`);
@@ -87,7 +92,6 @@ export default function ComboForms({
     try {
       await ComboRepository.delete(currentCombo.id);
       addAlert(`Combo "${currentCombo.name}" deletado com sucesso!`);
-      setCurrentCombo(patternCombo);
       closeForms();
     } catch (error) {
       addAlert(`Erro ao deletar combo: ${error}`);
@@ -99,16 +103,16 @@ export default function ComboForms({
   return (
     <>
       <h1 className="text-4xl text-gradient-gold text-center">
-        {currentCombo.name ? currentCombo.name : "Combo sem nome"}
+        {localItem.name ? localItem.name : "Combo sem nome"}
       </h1>
       <div className="flex flex-wrap justify-center py-6 text-primary-gold gap-6 my-4 overflow-y-scroll px-4">
         <div className="flex flex-col gap-6">
           <Input
             label="Nome"
             placeholder="Nome"
-            value={currentCombo.name}
+            value={localItem.name}
             setValue={(e) =>
-              setCurrentCombo({ ...currentCombo, name: e.target.value })
+              setLocalItem({ ...localItem, name: e.target.value })
             }
             variant
             icon={<LuBoxes size={"20px"} />}
@@ -117,10 +121,10 @@ export default function ComboForms({
           <Input
             label="Descrição"
             placeholder="Descrição"
-            value={currentCombo.description}
+            value={localItem.description}
             setValue={(e) =>
-              setCurrentCombo({
-                ...currentCombo,
+              setLocalItem({
+                ...localItem,
                 description: e.target.value,
               })
             }
@@ -132,10 +136,10 @@ export default function ComboForms({
           <Input
             label="Valor"
             placeholder="Valor"
-            value={currentCombo.value}
+            value={localItem.value}
             setValue={(e) =>
-              setCurrentCombo({
-                ...currentCombo,
+              setLocalItem({
+                ...localItem,
                 value: e.target.value,
               })
             }

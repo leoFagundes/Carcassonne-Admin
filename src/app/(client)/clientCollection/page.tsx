@@ -339,7 +339,9 @@ export default function ClientCollectionPage() {
               }
               alt="boardgame"
             />
-            <p className="text-sm">{currentGame.description}</p>
+            <p className="text-sm whitespace-pre-line">
+              {currentGame.description}
+            </p>
 
             <div className="w-full flex flex-col justify-between gap-2 flex-wrap">
               <span className="flex items-center gap-2 text-sm">

@@ -317,7 +317,9 @@ export default function ClientMenuPage() {
               )}
             </div>
 
-            <p className="text-sm">{currentItem.description}</p>
+            <p className="text-sm whitespace-pre-line">
+              {currentItem.description}
+            </p>
             <div className="flex flex-col gap-3 w-full">
               <div className="flex items-center gap-2 w-full">
                 <span className="font-semibold">Valor:</span>

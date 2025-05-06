@@ -1,5 +1,6 @@
 import Tooltip from "@/components/Tooltip";
 import { MenuItemType } from "@/types";
+import { truncateText } from "@/utils/utilFunctions";
 import React, { ComponentProps } from "react";
 import { LuEye, LuEyeOff, LuSparkles, LuVegan } from "react-icons/lu";
 
@@ -52,12 +53,9 @@ export default function MenuCard({
         />
 
         <div className="overflow-y-scroll flex-1 w-full">
-          <span
-            className="text-xs text-center w-full"
-            dangerouslySetInnerHTML={{
-              __html: highlightMatch(item.description, searchTerm),
-            }}
-          />
+          <span className="text-xs text-center w-full">
+            {truncateText(item.description, 80)}
+          </span>
         </div>
         <div className="flex flex-col gap-2 absolute top-1 right-1 p-2 rounded-lg backdrop-blur-[4px]">
           {item.isVisible ? (

@@ -41,8 +41,6 @@ export default function PopupForms({
 
         if (configs?.popUpImage) {
           setFecthedPopup(configs?.popUpImage);
-        } else {
-          addAlert("Nenhum Popup encontrado");
         }
       } catch (error) {
         addAlert(`Erro ao carregar configurações gerais: ${error}`);
@@ -94,7 +92,7 @@ export default function PopupForms({
     <div className="flex flex-col items-center overflow-y-scroll px-2">
       {fetchLoading && <LoaderFullscreen />}
       <h1 className="text-4xl text-gradient-gold text-center">
-        Adicionar um novo Popup
+        {fetchedPopup ? "Popup ativo" : "Adicionar um novo Popup"}
       </h1>
 
       {!fetchedPopup ? (

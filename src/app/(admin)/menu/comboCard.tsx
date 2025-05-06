@@ -1,5 +1,6 @@
 import Tooltip from "@/components/Tooltip";
 import { ComboType } from "@/types";
+import { truncateText } from "@/utils/utilFunctions";
 import React, { ComponentProps } from "react";
 import { LuBoxes } from "react-icons/lu";
 
@@ -39,12 +40,9 @@ export default function ComboCard({
       />
 
       <div className="overflow-y-scroll flex-1 w-full text-center">
-        <span
-          className="text-xs text-center"
-          dangerouslySetInnerHTML={{
-            __html: highlightMatch(item.description, searchTerm),
-          }}
-        />
+        <span className="text-xs text-center">
+          {truncateText(item.description, 80)}
+        </span>
       </div>
       <div className="flex flex-col gap-2 absolute top-4 right-3">
         <Tooltip direction="left" content="Este item é um Combo">

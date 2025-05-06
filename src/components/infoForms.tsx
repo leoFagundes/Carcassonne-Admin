@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { LuBookOpenText, LuClipboardPenLine } from "react-icons/lu";
 import Button from "./button";
 import Input from "./input";
@@ -10,7 +10,6 @@ import { useAlert } from "@/contexts/alertProvider";
 import Tooltip from "./Tooltip";
 import Loader from "./loader";
 import InfoRepository from "@/services/repositories/InfoRepository";
-import { patternInfo } from "@/utils/patternValues";
 
 interface InfoFormsType {
   currentInfo: InfoType;
@@ -26,23 +25,28 @@ export default function InfoForms({
   closeForms,
 }: InfoFormsType) {
   const [loading, setLoading] = useState(false);
+  const [localItem, setLocalItem] = useState<InfoType>(currentInfo);
+
   const { addAlert } = useAlert();
+
+  useEffect(() => {
+    setLocalItem(currentInfo);
+  }, [currentInfo]);
 
   const isInfoValid = (info: InfoType) => {
     return info.name.trim() !== "" && info.description.trim() !== "";
   };
 
   const handleCreateInfo = async () => {
-    if (!isInfoValid(currentInfo)) {
+    if (!isInfoValid(localItem)) {
       addAlert("Preencha todos os campos.");
       return;
     }
 
     setLoading(true);
     try {
-      await InfoRepository.create(currentInfo);
-      addAlert(`Aviso "${currentInfo.name}" criado com sucesso!`);
-      setCurrentInfo({ name: "", description: "", values: [] });
+      await InfoRepository.create(localItem);
+      addAlert(`Aviso "${localItem.name}" criado com sucesso!`);
       closeForms();
     } catch (error) {
       addAlert(`Erro ao criar aviso: ${error}`);
@@ -52,21 +56,21 @@ export default function InfoForms({
   };
 
   const handleEditInfo = async () => {
-    if (!isInfoValid(currentInfo)) {
+    if (!isInfoValid(localItem)) {
       addAlert("Preencha todos os campos.");
       return;
     }
 
-    if (!currentInfo.id) {
+    if (!localItem.id) {
       addAlert("ID inválido.");
       return;
     }
 
     setLoading(true);
     try {
-      await InfoRepository.update(currentInfo.id, currentInfo);
-      setCurrentInfo(currentInfo);
-      addAlert(`Aviso "${currentInfo.name}" editado com sucesso!`);
+      await InfoRepository.update(localItem.id, localItem);
+      setCurrentInfo(localItem);
+      addAlert(`Aviso "${localItem.name}" editado com sucesso!`);
       closeForms();
     } catch (error) {
       addAlert(`Erro ao editar aviso: ${error}`);
@@ -85,7 +89,6 @@ export default function InfoForms({
     try {
       await InfoRepository.delete(currentInfo.id);
       addAlert(`Aviso "${currentInfo.name}" deletado com sucesso!`);
-      setCurrentInfo(patternInfo);
       closeForms();
     } catch (error) {
       addAlert(`Erro ao deletar aviso: ${error}`);
@@ -97,16 +100,16 @@ export default function InfoForms({
   return (
     <>
       <h1 className="text-4xl text-gradient-gold text-center">
-        {currentInfo.name ? currentInfo.name : "Aviso sem nome"}
+        {localItem.name ? localItem.name : "Aviso sem nome"}
       </h1>
       <div className="flex flex-wrap justify-center py-6 text-primary-gold gap-6 my-4 overflow-y-scroll px-4">
         <div className="flex flex-col gap-6">
           <Input
             label="Nome"
             placeholder="Nome"
-            value={currentInfo.name}
+            value={localItem.name}
             setValue={(e) =>
-              setCurrentInfo({ ...currentInfo, name: e.target.value })
+              setLocalItem({ ...localItem, name: e.target.value })
             }
             variant
             icon={<LuClipboardPenLine size={"20px"} />}
@@ -115,10 +118,10 @@ export default function InfoForms({
           <Input
             label="Descrição"
             placeholder="Descrição"
-            value={currentInfo.description}
+            value={localItem.description}
             setValue={(e) =>
-              setCurrentInfo({
-                ...currentInfo,
+              setLocalItem({
+                ...localItem,
                 description: e.target.value,
               })
             }
@@ -128,9 +131,9 @@ export default function InfoForms({
             width="!w-[250px]"
           />
           <OptionsInput
-            values={currentInfo.values}
+            values={localItem.values}
             setValues={(values) =>
-              setCurrentInfo({ ...currentInfo, values: values })
+              setLocalItem({ ...localItem, values: values })
             }
             placeholder="Valor (limite de 2)"
             label="Valor"
