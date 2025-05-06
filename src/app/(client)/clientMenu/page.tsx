@@ -346,11 +346,7 @@ export default function ClientMenuPage() {
                       {currentItem.observation.map((item, index) => (
                         <li key={index}>- {item}</li>
                       ))}
-                      {currentItem.isVegan && (
-                        <li>
-                          {currentItem.observation.length + 1}- Item vegano
-                        </li>
-                      )}
+                      {currentItem.isVegan && <li>- Item vegano</li>}
                     </ul>
                   </div>
                 )}
