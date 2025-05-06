@@ -8,11 +8,11 @@ import {
 } from "@/types";
 
 export const difficultiesOptions = [
-  "Muito Fácil",
-  "Fácil",
+  "Muito Leve",
+  "Leve",
   "Médio",
-  "Difícil",
-  "Muito Difícil",
+  "Pesado",
+  "Muito Pesado",
 ];
 
 export const patternBoardgame: BoardgameType = {
