@@ -4,15 +4,16 @@ import { LuVegan } from "react-icons/lu";
 
 interface MenuCardProps extends ComponentProps<"div"> {
   item: MenuItemType;
+  index: number;
 }
 
-export default function MenuCard({ item, ...props }: MenuCardProps) {
+export default function MenuCard({ item, index, ...props }: MenuCardProps) {
   return (
     <div
       {...props}
-      className={`flex gap-3 mb-1 w-full cursor-pointer md:transition-all px-2 pb-2 rounded ${
-        item.isFocus && "relative border border-primary-gold/40"
-      } ${!item.isVisible && "hidden"}`}
+      className={`flex gap-3 my-3 w-full cursor-pointer md:transition-all p-2 rounded ${
+        item.isFocus && "relative border border-primary-gold/40 pt-4"
+      } ${!item.isVisible && "hidden"} ${index === 0 && "mt-0"}`}
     >
       <div className="relative h-fit w-fit">
         <img

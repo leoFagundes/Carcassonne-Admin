@@ -1,6 +1,6 @@
 import { BoardgameType } from "@/types";
 import React, { ComponentProps } from "react";
-import { FiClock, FiUsers } from "react-icons/fi";
+import { FiClock, FiStar, FiUsers } from "react-icons/fi";
 
 interface GameCardProps extends ComponentProps<"div"> {
   boardgame: BoardgameType;
@@ -22,7 +22,7 @@ export default function Card({
   return (
     <div
       {...props}
-      className="flex flex-col w-[200px] h-fit max-h-[250px] outline hover:outline-primary-gold outline-transparent transition-all duration-200 ease-in overflow-scroll scrollbar-none gap-2 items-center bg-primary-black/80 rounded-lg text-primary-gold shadow-card-gold cursor-pointer"
+      className="group relative flex flex-col w-[200px] h-fit max-h-[250px] outline hover:outline-primary-gold outline-transparent transition-all duration-200 ease-in overflow-visible scrollbar-none gap-2 items-center bg-primary-black/80 rounded-lg text-primary-gold shadow-card-gold cursor-pointer"
     >
       {boardgame.image && (
         <div
@@ -37,6 +37,12 @@ export default function Card({
           src={"images/patternBoardgameImage.png"}
           alt="Pattern Image"
         />
+      )}
+
+      {boardgame.featured && (
+        <div className="shadow-card-gold flex items-center justify-center absolute -bottom-[6px] -right-[6px] p-2 bg-primary-black rounded-full group-hover:border-b-primary-gold group-hover:border-r-primary-gold border border-transparent transition-all duration-200 ease-in">
+          <FiStar size={"16px"} className="min-w-[16px]" />
+        </div>
       )}
       <div className="flex flex-col items-center gap-2 py-2 px-3">
         <span

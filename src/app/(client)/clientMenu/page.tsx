@@ -5,6 +5,7 @@ import {
   InfoType,
   ComboType,
   DescriptionTypeProps,
+  GeneralConfigsType,
 } from "@/types";
 import React, { Fragment, useEffect, useRef, useState } from "react";
 import InfoCard from "./infoCard";
@@ -20,6 +21,8 @@ import LoaderFullscreen from "@/components/loaderFullscreen";
 import ComboRepository from "@/services/repositories/ComboRepository";
 import InfoRepository from "@/services/repositories/InfoRepository";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
+import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
+import Popup from "@/components/popup";
 
 export default function ClientMenuPage() {
   const [types, setTypes] = useState(["Avisos", "Combos"]);
@@ -31,8 +34,11 @@ export default function ClientMenuPage() {
   const [infos, setInfos] = useState<InfoType[]>([]);
   const [combos, setCombos] = useState<ComboType[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
+  const [generalConfigs, setGeneralConfigs] = useState<GeneralConfigsType>();
 
-  const [laoding, setLoading] = useState(false);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+
+  const [laoding, setLoading] = useState(true);
 
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -89,14 +95,29 @@ export default function ClientMenuPage() {
       }
     };
 
+    const fetchGeneralConfigs = async () => {
+      setLoading(true);
+      try {
+        const configs = await GeneralConfigsRepository.get();
+
+        if (configs) {
+          setGeneralConfigs(configs);
+          if (configs.popUpImage) {
+            setIsPopupOpen(true);
+          }
+        }
+      } catch (error) {
+        addAlert(`Erro ao carregar configurações gerais: ${error}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGeneralConfigs();
     fetchMenuItems();
     fetchCombos();
     fetchInfos();
     fetchDescriptions();
-  }, []);
-
-  useEffect(() => {
-    addAlert("Bem-vindo ao Carcassonne! 🎲🖤 ");
   }, []);
 
   const handleScroll = () => {
@@ -160,6 +181,13 @@ export default function ClientMenuPage() {
   return (
     <div className="flex flex-col items-center w-full h-screen text-primary-gold p-8">
       {laoding && <LoaderFullscreen />}
+      {generalConfigs?.popUpImage && isPopupOpen && (
+        <Popup
+          url={generalConfigs.popUpImage}
+          isOpen={isPopupOpen}
+          onClose={() => setIsPopupOpen(false)}
+        />
+      )}
       {isMenuFixed && <div className="min-h-[145px] w-screen"></div>}
       <div
         className={`${
@@ -239,6 +267,7 @@ export default function ClientMenuPage() {
               .map((item, index) => (
                 <Fragment key={index}>
                   <MenuCard
+                    index={index}
                     item={item}
                     onClick={() => {
                       setIsModalOpen(true);

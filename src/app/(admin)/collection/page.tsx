@@ -62,7 +62,7 @@ export default function CollectionPage() {
       </section>
 
       {/* Lista de jogos */}
-      <section className="flex justify-center flex-wrap gap-x-6 gap-y-8 p-1 overflow-y-scroll">
+      <section className="flex justify-center flex-wrap gap-x-6 gap-y-8 px-1 pt-2 pb-4 overflow-y-scroll">
         {filteredBoardgames.length > 0 && !isModalOpen ? (
           filteredBoardgames.map((boardgame, index) => (
             <Card

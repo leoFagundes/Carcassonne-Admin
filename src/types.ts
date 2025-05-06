@@ -50,3 +50,8 @@ export interface DescriptionTypeProps {
   type: string;
   description: string;
 }
+
+export interface GeneralConfigsType {
+  _id?: string;
+  popUpImage: string;
+}

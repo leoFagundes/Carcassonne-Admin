@@ -4,6 +4,7 @@ import {
   ComboType,
   InfoType,
   DescriptionTypeProps,
+  GeneralConfigsType,
 } from "@/types";
 
 export const patternBoardgame: BoardgameType = {
@@ -46,4 +47,8 @@ export const patternInfo: InfoType = {
 export const patternDescriptionType: DescriptionTypeProps = {
   description: "",
   type: "",
+};
+
+export const patternGeneralConfigs: GeneralConfigsType = {
+  popUpImage: "",
 };

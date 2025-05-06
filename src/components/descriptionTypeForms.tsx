@@ -36,8 +36,10 @@ export default function DescriptionTypeForms({
       setFetchLoading(true);
       try {
         const fecthedMenuItens = await MenuItemRepository.getAll();
-        const existingTypes = fecthedMenuItens.map((item) => item.type);
-        setTypeOptions(existingTypes);
+        const uniqueTypes = Array.from(
+          new Set(fecthedMenuItens.map((item) => item.type))
+        );
+        setTypeOptions(uniqueTypes);
       } catch (error) {
         addAlert(`Erro ao carregar descrições: ${error}`);
       } finally {

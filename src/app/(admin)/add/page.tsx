@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   LuBoxes,
   LuClipboardPenLine,
   LuDices,
+  LuGroup,
   LuPizza,
   LuPlus,
   LuText,
@@ -17,6 +18,7 @@ import {
   ComboType,
   InfoType,
   DescriptionTypeProps,
+  GeneralConfigsType,
 } from "@/types";
 import CollectionForms from "@/components/collectionForms";
 import MenuForms from "@/components/menuForms";
@@ -26,15 +28,21 @@ import DescriptionTypeForms from "@/components/descriptionTypeForms";
 import {
   patternBoardgame,
   patternCombo,
+  patternDescriptionType,
+  patternGeneralConfigs,
   patternInfo,
   patternMenuItem,
 } from "@/utils/patternValues";
+import PopupForms from "@/components/popupForms";
+import { useAlert } from "@/contexts/alertProvider";
+import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 
 export default function AddPage() {
   const [isAddGameModalOpen, setIsAddGameModalOpen] = useState(false);
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [isAddComboModalOpen, setIsAddComboModalOpen] = useState(false);
   const [isAddInfoModalOpen, setIsAddInfoModalOpen] = useState(false);
+  const [isAddPopupModalOpen, setIsAddPopupModalOpen] = useState(false);
   const [isDescriptionTypeModalOpen, setIsDescriptionTypeModalOpen] =
     useState(false);
 
@@ -47,11 +55,26 @@ export default function AddPage() {
 
   const [newInfo, setNewInfo] = useState<InfoType>(patternInfo);
 
+  const [generalConfigs, setGeneralConfigs] = useState<GeneralConfigsType>();
+
   const [newDescriptionType, setNewDescriptionType] =
-    useState<DescriptionTypeProps>({
-      type: "",
-      description: "",
-    });
+    useState<DescriptionTypeProps>(patternDescriptionType);
+
+  const { addAlert } = useAlert();
+
+  useEffect(() => {
+    const fetchGeneralConfigs = async () => {
+      try {
+        const configs = await GeneralConfigsRepository.get();
+
+        if (configs) setGeneralConfigs(configs);
+      } catch (error) {
+        addAlert(`Erro ao carregar configurações gerais: ${error}`);
+      }
+    };
+
+    fetchGeneralConfigs();
+  }, []);
 
   return (
     <section className="flex flex-col items-center gap-8 w-full h-full">
@@ -89,6 +112,12 @@ export default function AddPage() {
           description="Adicione um novo Aviso ao cardápio do Carcassonne!"
           icon={<LuClipboardPenLine size={"32px"} className="min-w-[32px]" />}
           onClick={() => setIsAddInfoModalOpen(true)}
+        />
+        <Card
+          title="Adicionar Popup"
+          description="Adicione um novo Popup ao cardápio!"
+          icon={<LuGroup size={"32px"} className="min-w-[32px]" />}
+          onClick={() => setIsAddPopupModalOpen(true)}
         />
       </section>
 
@@ -168,10 +197,7 @@ export default function AddPage() {
         isOpen={isDescriptionTypeModalOpen}
         onClose={() => {
           setIsDescriptionTypeModalOpen(false);
-          setNewDescriptionType({
-            type: "",
-            description: "",
-          });
+          setNewDescriptionType(patternDescriptionType);
         }}
       >
         <DescriptionTypeForms
@@ -179,6 +205,24 @@ export default function AddPage() {
           setcurrentDescriptionType={setNewDescriptionType}
         />
       </Modal>
+
+      {generalConfigs && (
+        <Modal
+          isOpen={isAddPopupModalOpen}
+          onClose={() => {
+            setIsAddPopupModalOpen(false);
+            setGeneralConfigs(patternGeneralConfigs);
+          }}
+        >
+          <PopupForms
+            currentConfig={generalConfigs}
+            setCurrentConfig={setGeneralConfigs}
+            closeForms={() => {
+              setIsAddPopupModalOpen(false);
+            }}
+          />
+        </Modal>
+      )}
     </section>
   );
 }
