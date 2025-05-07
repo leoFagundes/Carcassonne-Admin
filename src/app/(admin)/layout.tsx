@@ -1,7 +1,6 @@
 import { Metadata } from "next";
 import Sidebar from "./sidebar";
 import VerifyAuthState from "./verifyAuthState";
-import ScrollUp from "@/components/scrollUp";
 
 export const metadata: Metadata = {
   title: "Carcassonne Admin",
