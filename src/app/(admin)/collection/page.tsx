@@ -47,9 +47,9 @@ export default function CollectionPage() {
   );
 
   return (
-    <section className="flex flex-col gap-8 w-full h-full px-3">
+    <section className="flex flex-col gap-8 w-full h-full px-3 overflow-y-scroll">
       {loading && <LoaderFullscreen />}
-      <section className="flex w-full justify-center items-center gap-2 text-primary-gold">
+      <section className="flex w-full justify-center items-center gap-2 text-primary-gold ">
         <LuDices size={"48px"} className="min-w-[48px]" />
         <h2 className="text-5xl text-primary-gold">Coleção de jogos</h2>{" "}
         <Tooltip direction="bottom" content="Ir para visão do cliente">
@@ -73,7 +73,7 @@ export default function CollectionPage() {
       </section>
 
       {/* Lista de jogos */}
-      <section className="flex justify-center flex-wrap gap-x-6 gap-y-8 px-1 pt-2 pb-4 overflow-y-scroll">
+      <section className="flex justify-center flex-wrap gap-x-6 gap-y-8 px-1 pt-2 pb-4">
         {filteredBoardgames.length > 0 && !isModalOpen ? (
           filteredBoardgames.map((boardgame, index) => (
             <Card

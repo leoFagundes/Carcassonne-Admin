@@ -82,7 +82,7 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
       ) : (
         <div
           {...props}
-          className="w-full h-fit max-w-[300px] rounded-lg shadow-card-gold cursor-pointer"
+          className="relative w-full h-fit max-w-[300px] rounded-lg shadow-card-gold cursor-pointer"
         >
           <div
             className="relative w-full h-[150px] bg-center bg-cover rounded-t-lg"
@@ -100,13 +100,13 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
               </span>
             </div>
           </div>
+          {boardgame.featured && (
+            <div className="flex items-center gap-1 absolute top-1 left-1 p-1 text-sm bg-primary-black/70 backdrop-blur-[2px] rounded shadow-card">
+              <FiStar size={"16px"} className="min-w-[16px]" /> Destaque
+            </div>
+          )}
 
           <div className="flex flex-col gap-2 p-4 relative">
-            {boardgame.featured && (
-              <div className="shadow-card-gold flex items-center justify-center absolute -bottom-3 -right-3 p-3 bg-primary-black rounded-full">
-                <FiStar size={"20px"} className="min-w-[20px]" />
-              </div>
-            )}
             <span className="flex items-center gap-2 text-sm">
               <FiUsers size={"16px"} className="min-w-[16px]" />
               {boardgame.minPlayers === boardgame.maxPlayers

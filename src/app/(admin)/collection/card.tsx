@@ -40,8 +40,8 @@ export default function Card({
       )}
 
       {boardgame.featured && (
-        <div className="shadow-card-gold flex items-center justify-center absolute -bottom-[6px] -right-[6px] p-2 bg-primary-black rounded-full group-hover:border-b-primary-gold group-hover:border-r-primary-gold border border-transparent transition-all duration-200 ease-in">
-          <FiStar size={"16px"} className="min-w-[16px]" />
+        <div className="flex items-center gap-1 absolute top-1 left-1 p-1 text-sm bg-primary-black/70 backdrop-blur-[2px] rounded shadow-card">
+          <FiStar size={"16px"} className="min-w-[16px]" /> Destaque
         </div>
       )}
       <div className="flex flex-col items-center gap-2 py-2 px-3">

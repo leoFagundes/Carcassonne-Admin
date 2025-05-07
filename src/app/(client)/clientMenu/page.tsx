@@ -123,7 +123,7 @@ export default function ClientMenuPage() {
   const handleScroll = () => {
     const scrollTop = window.scrollY;
 
-    if (scrollTop > 10) {
+    if (scrollTop > 0) {
       setIsMenuFixed(true);
     } else {
       setIsMenuFixed(false);
@@ -179,7 +179,7 @@ export default function ClientMenuPage() {
   };
 
   return (
-    <div className="flex flex-col items-center w-full h-screen text-primary-gold p-8">
+    <div className="flex flex-col items-center w-full h-screen text-primary-gold px-8">
       {laoding && <LoaderFullscreen />}
       {generalConfigs?.popUpImage && isPopupOpen && (
         <Popup
@@ -191,8 +191,8 @@ export default function ClientMenuPage() {
       {isMenuFixed && <div className="min-h-[145px] w-screen"></div>}
       <div
         className={`${
-          isMenuFixed && "fixed w-full top-0 left-0 py-6"
-        } flex items-center flex-col gap-4 bg-primary-black z-50`}
+          isMenuFixed && "fixed w-full top-0 left-0 "
+        } flex items-center flex-col gap-4 bg-primary-black/90 backdrop-blur-[8px] z-50 pt-6`}
       >
         <section className="flex flex-col item center gap-1 w-fit">
           <h1 className="text-4xl text-center">Cardápio Digital</h1>
@@ -312,7 +312,7 @@ export default function ClientMenuPage() {
               />
               {currentItem.isVegan && (
                 <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black rounded-full z-10">
-                  <LuVegan size={"16px"} className="min-w-[16px]" />
+                  <LuVegan size={"22px"} className="min-w-[22px]" />
                 </div>
               )}
             </div>

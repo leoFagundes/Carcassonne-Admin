@@ -24,7 +24,7 @@ export default function MenuCard({ item, index, ...props }: MenuCardProps) {
         />
         {item.isVegan && (
           <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black rounded-full z-10">
-            <LuVegan size={"16px"} className="min-w-[16px]" />
+            <LuVegan size={"22px"} className="min-w-[22px]" />
           </div>
         )}
       </div>
