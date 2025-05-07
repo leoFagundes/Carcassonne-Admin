@@ -119,13 +119,16 @@ export default function MenuPage() {
       {loading && <LoaderFullscreen />}
       <section className="flex w-full justify-center items-center gap-2 text-primary-gold">
         <LuPizza size={"48px"} className="min-w-[48px]" />
-        <h2 className="text-5xl text-primary-gold">Cardápio</h2>
+        <h2 className="text-5xl text-primary-gold text-center">Cardápio</h2>
+
         <Tooltip direction="bottom" content="Ir para visão do cliente">
-          <LuLink
-            onClick={() => router.push("/clientMenu")}
-            size={"16px"}
-            className="min-w-[16px] cursor-pointer"
-          />
+          <div className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
+            <LuLink
+              onClick={() => router.push("/clientMenu")}
+              size={"16px"}
+              className="min-w-[16px]"
+            />
+          </div>
         </Tooltip>
       </section>
       {/* Input de busca */}
