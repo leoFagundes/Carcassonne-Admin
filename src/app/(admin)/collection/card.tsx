@@ -5,7 +5,7 @@ import { useAlert } from "@/contexts/alertProvider";
 import BoardgameRepository from "@/services/repositories/BoardGameRepository";
 import { BoardgameType } from "@/types";
 import React, { ComponentProps, useState } from "react";
-import { FiClock, FiStar, FiUsers } from "react-icons/fi";
+import { FiClock, FiUsers } from "react-icons/fi";
 import { LuEye, LuEyeOff, LuSparkles } from "react-icons/lu";
 
 interface GameCardProps extends ComponentProps<"div"> {
