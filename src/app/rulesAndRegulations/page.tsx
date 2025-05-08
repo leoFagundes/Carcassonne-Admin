@@ -3,7 +3,14 @@
 import Button from "@/components/button";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { FiFacebook, FiInstagram, FiMapPin, FiSkipBack } from "react-icons/fi";
+import { FaWhatsapp } from "react-icons/fa";
+import {
+  FiClipboard,
+  FiFacebook,
+  FiInstagram,
+  FiMapPin,
+  FiSkipBack,
+} from "react-icons/fi";
 
 export default function RulesPage() {
   const router = useRouter();
@@ -22,14 +29,31 @@ export default function RulesPage() {
         Contato
       </h1>
 
-      <div className="flex flex-col max-w-4xl space-y-3 text-sm md:text-base text-justify mt-2">
-        <span>Reservas: (61) 99968-4186</span>
+      <div className="flex flex-col max-w-4xl space-y-3 text-sm md:text-base text-justify mt-2 gap-2">
+        <a
+          href="https://wa.me/5561999684186"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 hover:underline border border-primary-gold/80 rounded px-3 py-2 sm:hover:border-primary-gold"
+        >
+          <FaWhatsapp /> (61) 99968-4186
+        </a>
+
+        <a
+          href="https://widget.ireserve.com.br/v2/reserva/375"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 hover:underline border border-primary-gold/80 rounded px-3 py-2 sm:hover:border-primary-gold"
+        >
+          <FiClipboard className="min-w-[16px]" size={"16px"} /> Faça sua
+          reserva
+        </a>
 
         <a
           href="https://www.facebook.com/CARCASSONNEPUB"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 hover:underline"
+          className="flex items-center gap-2 hover:underline border border-primary-gold/80 rounded px-3 py-2 sm:hover:border-primary-gold"
         >
           <FiFacebook className="min-w-[16px]" size={"16px"} /> /CARCASSONNEPUB
         </a>
@@ -38,7 +62,7 @@ export default function RulesPage() {
           href="https://www.instagram.com/CARCASSONNEPUB"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 hover:underline"
+          className="flex items-center gap-2 hover:underline border border-primary-gold/80 rounded px-3 py-2 sm:hover:border-primary-gold"
         >
           <FiInstagram className="min-w-[16px]" size={"16px"} /> @CARCASSONNEPUB
         </a>
@@ -47,7 +71,7 @@ export default function RulesPage() {
           href="https://www.google.com/maps/place/CLN+407+Bloco+E+-+Loja+37+-+Asa+Norte,+Brasília+-+DF"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 hover:underline"
+          className="flex items-center gap-2 hover:underline border border-primary-gold/80 rounded px-3 py-2 sm:hover:border-primary-gold"
         >
           <FiMapPin className="min-w-[16px]" size={"16px"} /> Endereço: CLN 407
           BLOCO E LOJA 37 - ASA NORTE
@@ -104,8 +128,10 @@ export default function RulesPage() {
 
       <footer className="text-primary-gold font-semibold">PROCON 151</footer>
 
-      <div>
-        <Button onClick={() => router.back()}>Voltar</Button>
+      <div className="flex justify-center fixed bottom-0 py-2 w-full backdrop-blur-[4px] bg-primary-black/60">
+        <div className="w-fit bg-primary-black">
+          <Button onClick={() => router.back()}>Voltar</Button>
+        </div>
       </div>
     </div>
   );

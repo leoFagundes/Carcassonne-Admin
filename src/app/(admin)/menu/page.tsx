@@ -174,6 +174,8 @@ export default function MenuPage() {
               key={index}
               item={item}
               searchTerm={searchTerm.toLowerCase()}
+              menuItems={menuItems}
+              setMenuItems={setMenuItems}
               onClick={() => {
                 setIsMenuModalOpen(true);
                 setCurrentItem(item);

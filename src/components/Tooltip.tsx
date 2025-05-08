@@ -50,6 +50,9 @@ export default function Tooltip({
       onClick={toggleTooltip}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
+      onTouchStart={() => setIsHovering(true)}
+      onTouchEnd={() => setIsHovering(false)}
+      onTouchCancel={() => setIsHovering(false)}
     >
       <div className={clickToStay ? "cursor-pointer" : ""}>{children}</div>
 

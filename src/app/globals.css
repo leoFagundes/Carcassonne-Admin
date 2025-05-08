@@ -90,6 +90,24 @@ h6 {
   .animation-popup {
     animation: fadeInPopup 0.5s ease-in forwards;
   }
+
+  .diagonal-strike::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 140%;
+    height: 2px;
+    background-color: var(--color-primary-gold);
+    transform: rotate(45deg);
+    transform-origin: top left;
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  .group:hover .icon-container:hover ~ .card-border {
+    outline-color: transparent !important;
+  }
 }
 
 input:-webkit-autofill {

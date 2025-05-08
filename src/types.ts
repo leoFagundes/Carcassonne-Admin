@@ -13,6 +13,7 @@ export interface BoardgameType {
   maxPlayers: number;
   playTime: number;
   featured: boolean;
+  isVisible: boolean;
   image: string;
   types: string[];
 }

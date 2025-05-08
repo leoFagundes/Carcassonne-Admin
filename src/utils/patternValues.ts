@@ -23,6 +23,7 @@ export const patternBoardgame: BoardgameType = {
   maxPlayers: 0,
   playTime: 0,
   featured: false,
+  isVisible: true,
   image: "",
   types: [],
 };

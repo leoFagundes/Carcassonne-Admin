@@ -13,9 +13,14 @@ import { patternBoardgame } from "@/utils/patternValues";
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import { useRouter } from "next/navigation";
 import Tooltip from "@/components/Tooltip";
+import Checkbox from "@/components/checkbox";
+import Dropdown from "@/components/dropdown";
 
 export default function CollectionPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("");
+  const [showOnlyFocus, setShowOnlyFocus] = useState(false);
+  const [showOnlyInvisible, setShowOnlyInvisible] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [boardgames, setBoardgames] = useState<BoardgameType[]>([]);
@@ -42,9 +47,21 @@ export default function CollectionPage() {
     fetchBoardgames();
   }, [currentItem]);
 
-  const filteredBoardgames = boardgames.filter((game) =>
-    game.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredBoardgames = boardgames.filter((game) => {
+    const matchesSearch =
+      game.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      game.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesType = filterType === "" || game.types.includes(filterType);
+    const matchesFocus = showOnlyFocus ? game.featured : true;
+    const matchesInvisible = showOnlyInvisible ? !game.isVisible : true;
+
+    return matchesSearch && matchesType && matchesFocus && matchesInvisible;
+  });
+
+  const boardgameTypes = Array.from(
+    new Set(boardgames.flatMap((b) => b.types))
+  ).sort();
 
   return (
     <section className="flex flex-col gap-8 w-full h-full px-3 overflow-y-scroll">
@@ -66,14 +83,36 @@ export default function CollectionPage() {
       </section>
 
       {/* Input de busca */}
-      <section className="w-full flex justify-center">
-        <Input
-          variant
-          type="text"
-          placeholder="Buscar por nome do jogo..."
-          value={searchTerm}
-          setValue={(e) => setSearchTerm(e.target.value)}
-        />
+      <section className="flex items-center flex-wrap justify-center gap-4 ">
+        <div className="flex justify-center gap-4 flex-wrap max-w-[300px]">
+          <Input
+            placeholder="Buscar por nome ou descrição..."
+            value={searchTerm}
+            setValue={(e) => setSearchTerm(e.target.value)}
+            variant
+          />
+          <Dropdown
+            value={filterType}
+            setValue={(e) => setFilterType(e.target.value)}
+            options={boardgameTypes}
+            firstLabel="Todos os tipos"
+            variant
+          />
+        </div>
+        <div className="flex justify-center gap-4 flex-wrap max-w-[300px]">
+          <Checkbox
+            checked={showOnlyFocus}
+            setChecked={(e) => setShowOnlyFocus(e.target.checked)}
+            label="Jogos em destaque"
+            variant
+          />
+          <Checkbox
+            checked={showOnlyInvisible}
+            setChecked={(e) => setShowOnlyInvisible(e.target.checked)}
+            label="Mostrar apenas invisíveis"
+            variant
+          />
+        </div>
       </section>
 
       {/* Lista de jogos */}
@@ -84,6 +123,8 @@ export default function CollectionPage() {
               key={index}
               boardgame={boardgame}
               searchTerm={searchTerm}
+              boardgames={boardgames}
+              setBoardgames={setBoardgames}
               onClick={() => {
                 setIsModalOpen(true);
                 setCurrentItem(boardgame);

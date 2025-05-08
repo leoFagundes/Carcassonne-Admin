@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import { FaArrowUp, FaInfoCircle, FaStar } from "react-icons/fa";
+import Tooltip from "./Tooltip";
 
 export default function ScrollUp() {
   const [isVisible, setIsVisible] = useState(false);
@@ -44,21 +45,27 @@ export default function ScrollUp() {
           isVisible ? "opacity-100 cursor-pointer" : "opacity-0"
         }`}
       />
-      <FaStar
-        size={"20px"}
-        className="text-primary cursor-pointer"
-        onClick={() =>
-          window.open(
-            "https://search.google.com/local/writereview?placeid=ChIJ534KOao7WpMRZ6NS_UuEtY4",
-            "_blank"
-          )
-        }
-      />
-      <FaInfoCircle
-        size={"20px"}
-        className="text-primary cursor-pointer"
-        onClick={() => router.push("/rulesAndRegulations")}
-      />
+
+      <Tooltip direction="left" content="Avalie-nos no Google">
+        <FaStar
+          size={"20px"}
+          className="text-primary cursor-pointer"
+          onClick={() =>
+            window.open(
+              "https://search.google.com/local/writereview?placeid=ChIJ534KOao7WpMRZ6NS_UuEtY4",
+              "_blank"
+            )
+          }
+        />
+      </Tooltip>
+
+      <Tooltip direction="left" content="Contato e regulamentos">
+        <FaInfoCircle
+          size={"20px"}
+          className="text-primary cursor-pointer"
+          onClick={() => router.push("/rulesAndRegulations")}
+        />
+      </Tooltip>
     </div>
   );
 }

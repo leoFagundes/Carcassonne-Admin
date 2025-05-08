@@ -232,7 +232,7 @@ export default function ClientCollectionPage() {
                 width="!w-[250px]"
               />
               <Dropdown
-                firstLabel="Dificuldade"
+                firstLabel="Dificuldade do Jogo"
                 value={filterBoardgameDifficulty}
                 setValue={(e) => setFilterBoardgameDifficulty(e.target.value)}
                 options={difficultiesOptions}

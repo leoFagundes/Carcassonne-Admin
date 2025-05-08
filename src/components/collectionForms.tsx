@@ -9,6 +9,8 @@ import {
   LuUserRoundMinus,
   LuUserRoundPlus,
   LuStar,
+  LuEye,
+  LuEyeClosed,
 } from "react-icons/lu";
 import Button from "./button";
 import Input from "./input";
@@ -182,7 +184,7 @@ export default function CollectionForms({
           <Dropdown
             label="Dificuldade"
             options={difficultiesOptions}
-            firstLabel="-"
+            firstLabel="Dificuldade do Jogo"
             value={localItem.difficulty}
             setValue={(e) =>
               setLocalItem({
@@ -207,8 +209,6 @@ export default function CollectionForms({
             icon={<LuUserRoundMinus size={"18px"} />}
             width="!w-[250px]"
           />
-        </div>
-        <div className="flex flex-col gap-6">
           <Input
             label="Máximo de jogadores"
             type="number"
@@ -224,6 +224,8 @@ export default function CollectionForms({
             icon={<LuUserRoundPlus size={"18px"} />}
             width="!w-[250px]"
           />
+        </div>
+        <div className="flex flex-col gap-6">
           <Input
             label="Tempo de jogo (min)"
             type="number"
@@ -277,6 +279,28 @@ export default function CollectionForms({
             {localItem.featured && (
               <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
                 <LuStar size={"16px"} />
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <Checkbox
+              checked={localItem.isVisible}
+              setChecked={() =>
+                setLocalItem({
+                  ...localItem,
+                  isVisible: !localItem.isVisible,
+                })
+              }
+              variant
+              label={`${localItem.isVisible ? "Visível" : "Invisível"}`}
+            />
+            {localItem.isVisible ? (
+              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
+                <LuEye size={"16px"} />
+              </div>
+            ) : (
+              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
+                <LuEyeClosed size={"16px"} />
               </div>
             )}
           </div>
