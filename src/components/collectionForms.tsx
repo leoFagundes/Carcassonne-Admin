@@ -8,9 +8,9 @@ import {
   LuDices,
   LuUserRoundMinus,
   LuUserRoundPlus,
-  LuStar,
   LuEye,
   LuEyeClosed,
+  LuSparkles,
 } from "react-icons/lu";
 import Button from "./button";
 import Input from "./input";
@@ -278,7 +278,7 @@ export default function CollectionForms({
             />
             {localItem.featured && (
               <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
-                <LuStar size={"16px"} />
+                <LuSparkles size={"16px"} />
               </div>
             )}
           </div>

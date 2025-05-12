@@ -245,6 +245,9 @@ export default function ClientMenuPage() {
       {/* Seções para cada tipo de item */}
       {types
         .filter((type) => type !== "Avisos" && type !== "Combos")
+        .filter((type) =>
+          menuItems.some((item) => item.type === type && item.isVisible)
+        )
         .map((type, index) => (
           <section
             key={index}
@@ -256,15 +259,21 @@ export default function ClientMenuPage() {
             <span className="text-xs mb-5 text-center w-full italic">
               {'"'}
               {
-                descriptions.filter(
+                descriptions.find(
                   (descriptionType) => descriptionType.type === type
-                )[0]?.description
+                )?.description
               }
               {'"'}
             </span>
             {menuItems
-              .filter((item) => item.type === type)
-              .map((item, index) => (
+              .filter((item) => item.type === type && item.isVisible)
+              .sort((a, b) => {
+                if (a.isFocus !== b.isFocus) {
+                  return b.isFocus ? 1 : -1;
+                }
+                return a.name.localeCompare(b.name);
+              })
+              .map((item, index, array) => (
                 <Fragment key={index}>
                   <MenuCard
                     index={index}
@@ -275,13 +284,9 @@ export default function ClientMenuPage() {
                       toggleScrollLock(true);
                     }}
                   />
-                  {menuItems.filter((item) => item.type === type).length !==
-                    1 &&
-                    menuItems.filter((item) => item.type === type).length -
-                      1 !==
-                      index && (
-                      <div className="h-[2px] w-full bg-secondary-black" />
-                    )}
+                  {array.length !== 1 && index !== array.length - 1 && (
+                    <div className="h-[2px] w-full bg-secondary-black" />
+                  )}
                 </Fragment>
               ))}
           </section>

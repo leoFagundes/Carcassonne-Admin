@@ -7,10 +7,10 @@ import {
   LuDollarSign,
   LuSquareStack,
   LuVegan,
-  LuStar,
   LuEye,
   LuEyeClosed,
   LuImage,
+  LuSparkles,
 } from "react-icons/lu";
 import Button from "./button";
 import Checkbox from "./checkbox";
@@ -265,7 +265,7 @@ export default function MenuForms({
             />
             {localItem.isFocus && (
               <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
-                <LuStar size={"16px"} />
+                <LuSparkles size={"16px"} />
               </div>
             )}
           </div>

@@ -115,7 +115,9 @@ export default function PopupForms({
                   popUpImage: "",
                 });
               }}
-              width="!min-w-[250px] !min-h-[250px]"
+              width={`!min-w-[250px]   ${
+                !imageFile ? "!h-[100px]" : "!min-h-[250px]"
+              }`}
               previewUrl={currentConfig.popUpImage}
             />
           </div>

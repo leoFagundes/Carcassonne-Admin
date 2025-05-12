@@ -24,7 +24,7 @@ export default function Modal({
             isFixed ? "fixed" : "absolute"
           } top-0 left-0 w-full h-full rounded backdrop-blur-[5px] z-50`}
         >
-          <div className="bg-primary-black w-full h-full rounded p-12 flex flex-col items-center">
+          <div className="bg-primary-black w-full h-full rounded pt-12 px-6 pb-3 flex flex-col items-center">
             {patternCloseButton && (
               <span
                 onClick={onClose}

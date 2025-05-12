@@ -2,7 +2,7 @@
 
 import { useAlert } from "@/contexts/alertProvider";
 import React, { useState } from "react";
-import { LuSendHorizontal, LuX } from "react-icons/lu";
+import { LuCheck, LuSendHorizontal, LuX } from "react-icons/lu";
 
 interface OptionsInputType {
   values: string[] | undefined;
@@ -26,6 +26,7 @@ export default function OptionsInput({
   options,
 }: OptionsInputType) {
   const [inFocus, setInFocus] = useState(false);
+  const [useCommaSeparator, setUseCommaSeparator] = useState(true);
 
   const { addAlert } = useAlert();
 
@@ -34,12 +35,19 @@ export default function OptionsInput({
   function sendValueToList() {
     if (!values || value.trim() === "") return;
 
-    if (values.length + 1 > limit) {
+    const newItems = useCommaSeparator
+      ? value
+          .split(",")
+          .map((item) => item.trim())
+          .filter((item) => item !== "")
+      : [value.trim()];
+
+    if (values.length + newItems.length > limit) {
       addAlert(`O limite é de ${limit} itens!`);
       return;
     }
 
-    setValues([...values, value]);
+    setValues([...values, ...newItems]);
     setValue("");
   }
 
@@ -81,9 +89,29 @@ export default function OptionsInput({
         }`}
       >
         {label && (
-          <span className="absolute bottom-full left-1 text-xs text-gradient-gold font-semibold">
-            {label}
-          </span>
+          <div className="absolute bottom-full left-1 text-xs text-gradient-gold font-semibold flex items-center gap-2">
+            <span>{label}</span>
+            <label className="flex items-center gap-1 cursor-pointer text-[10px]">
+              {useCommaSeparator && (
+                <div
+                  className="flex items-center gap-1 border-transparent border-x hover:border-primary-gold px-1 rounded-sm"
+                  onClick={() => setUseCommaSeparator(false)}
+                >
+                  <LuCheck size={12} />
+                  <span>vírgula habilitada</span>
+                </div>
+              )}
+              {!useCommaSeparator && (
+                <div
+                  className="flex items-center gap-1 border-transparent border-x hover:border-primary-gold px-1 rounded-sm"
+                  onClick={() => setUseCommaSeparator(true)}
+                >
+                  <LuX size={12} />
+                  <span>vírgula desabilitada</span>
+                </div>
+              )}
+            </label>
+          </div>
         )}
         <input
           value={value}
@@ -103,21 +131,23 @@ export default function OptionsInput({
           size={"20px"}
           className="cursor-pointer"
         />
-        {filteredOptions.length > 0 && inFocus && (
-          <div className="flex flex-col gap-2 max-h-[120px] overflow-y-scroll absolute top-full z-50 border w-full left-0 rounded shadow-card p-2 bg-primary-black">
-            {filteredOptions.map((option, index) => (
-              <div
-                className="py-1 px-2 rounded-sm border border-dashed cursor-pointer hover:text-secondary-gold transition-all duration-200 ease-in"
-                key={index}
-                onClick={() => {
-                  setValue(option);
-                }}
-              >
-                <span>{highlightMatch(option, value)}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        {filteredOptions.length > 0 &&
+          inFocus &&
+          (!value.includes(",") || useCommaSeparator) && (
+            <div className="flex flex-col gap-2 max-h-[120px] overflow-y-scroll absolute top-full z-50 border w-full left-0 rounded shadow-card p-2 bg-primary-black">
+              {filteredOptions.map((option, index) => (
+                <div
+                  className="py-1 px-2 rounded-sm border border-dashed cursor-pointer hover:text-secondary-gold transition-all duration-200 ease-in"
+                  key={index}
+                  onClick={() => {
+                    setValue(option);
+                  }}
+                >
+                  <span>{highlightMatch(option, value)}</span>
+                </div>
+              ))}
+            </div>
+          )}
       </div>
       {values && values.length > 0 && (
         <div

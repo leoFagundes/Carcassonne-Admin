@@ -170,49 +170,51 @@ export default function MenuCard({
           onMouseOver={() => setIsChildInFocus(true)}
           onMouseLeave={() => setIsChildInFocus(false)}
           onClick={(e) => e.stopPropagation()}
-          className="hover:outline-primary-gold outline outline-transparent transition-all duration-300 ease-in flex flex-col gap-3 absolute top-1 right-1 p-2 rounded-lg bg-primary-black/80 backdrop-blur-[2px]"
+          className=" flex flex-col gap-1 absolute top-2 right-2"
         >
-          {item.isVisible ? (
-            <Tooltip direction="left" content="Deixar item invisivel">
-              <LuEye
-                className="hover:scale-110 transition-all duration-200 ease-in"
-                onClick={(e) => toggleVisibility(e, "invisible")}
-              />
-            </Tooltip>
-          ) : (
-            <Tooltip direction="left" content="Deixar item visivel">
-              <LuEyeOff
-                className="hover:scale-110 transition-all duration-200 ease-in"
-                onClick={(e) => toggleVisibility(e, "visible")}
-              />
-            </Tooltip>
-          )}
+          <div className="p-2 rounded-lg bg-primary-black/80 backdrop-blur-[2px] hover:outline-primary-gold outline outline-transparent transition-all duration-300 ease-in">
+            {item.isVisible ? (
+              <Tooltip direction="left" content="Deixar item invisivel">
+                <LuEye onClick={(e) => toggleVisibility(e, "invisible")} />
+              </Tooltip>
+            ) : (
+              <Tooltip direction="left" content="Deixar item visivel">
+                <LuEyeOff onClick={(e) => toggleVisibility(e, "visible")} />
+              </Tooltip>
+            )}
+          </div>
 
-          <Tooltip
-            direction="left"
-            content={item.isFocus ? "Remover destaque" : "Colocar em destaque"}
-          >
-            <div
-              className={`relative hover:scale-110 transition-all duration-200 ease-in ${
-                !item.isFocus ? "diagonal-strike" : ""
-              } ${!item.isFocus && "opacity-50"}`}
+          <div className="p-2 rounded-lg bg-primary-black/80 backdrop-blur-[2px] hover:outline-primary-gold outline outline-transparent transition-all duration-300 ease-in">
+            <Tooltip
+              direction="left"
+              content={
+                item.isFocus ? "Remover destaque" : "Colocar em destaque"
+              }
             >
-              <LuSparkles onClick={toggleFocus} className="z-10 relative" />
-            </div>
-          </Tooltip>
+              <div
+                className={`relative ${
+                  !item.isFocus ? "diagonal-strike" : ""
+                } ${!item.isFocus && "opacity-50"}`}
+              >
+                <LuSparkles onClick={toggleFocus} className="z-10 relative" />
+              </div>
+            </Tooltip>
+          </div>
 
-          <Tooltip
-            direction="left"
-            content={item.isVegan ? "Remover vegano" : "Marcar como vegano"}
-          >
-            <div
-              className={`relative hover:scale-110 transition-all duration-200 ease-in ${
-                !item.isVegan ? "diagonal-strike" : ""
-              } ${!item.isVegan && "opacity-50"}`}
+          <div className="p-2 rounded-lg bg-primary-black/80 backdrop-blur-[2px] hover:outline-primary-gold outline outline-transparent transition-all duration-300 ease-in">
+            <Tooltip
+              direction="left"
+              content={item.isVegan ? "Remover vegano" : "Marcar como vegano"}
             >
-              <LuVegan onClick={toggleVegan} className={`z-10 relative`} />
-            </div>
-          </Tooltip>
+              <div
+                className={`relative ${
+                  !item.isVegan ? "diagonal-strike" : ""
+                } ${!item.isVegan && "opacity-50"}`}
+              >
+                <LuVegan onClick={toggleVegan} className={`z-10 relative`} />
+              </div>
+            </Tooltip>
+          </div>
         </div>
       </div>
     </div>

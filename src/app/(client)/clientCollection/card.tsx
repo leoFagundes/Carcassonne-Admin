@@ -1,15 +1,16 @@
 "use client";
 
 import { BoardgameType } from "@/types";
+import { truncateText } from "@/utils/utilFunctions";
 import React, { ComponentProps, useEffect, useState } from "react";
 import {
   FiArrowRight,
   FiClock,
   FiLayers,
-  FiStar,
   FiTrendingUp,
   FiUsers,
 } from "react-icons/fi";
+import { LuSparkles } from "react-icons/lu";
 
 interface CardProps extends ComponentProps<"div"> {
   boardgame: BoardgameType;
@@ -56,8 +57,8 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
               />
             )}
             {boardgame.featured && (
-              <div className="shadow-card flex items-center justify-center absolute -bottom-1 -right-1 p-1 bg-primary-black rounded-full">
-                <FiStar size={"10px"} className="min-w-[10px] " />
+              <div className="shadow-card flex items-center justify-center absolute -bottom-2 -right-2 p-1 bg-primary-black rounded-full">
+                <LuSparkles size={"14px"} className="min-w-[14px] " />
               </div>
             )}
           </div>
@@ -105,8 +106,8 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
             </div>
           </div>
           {boardgame.featured && (
-            <div className="flex items-center gap-1 absolute top-1 left-1 p-1 text-sm bg-primary-black/70 backdrop-blur-[2px] rounded shadow-card">
-              <FiStar size={"16px"} className="min-w-[16px]" /> Destaque
+            <div className="flex items-center gap-1 absolute top-1 left-1 p-2 text-sm bg-primary-black/70 backdrop-blur-[2px] rounded-full shadow-card">
+              <LuSparkles size={"16px"} className="min-w-[16px]" />
             </div>
           )}
 
@@ -131,7 +132,8 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
             </span>
             <span className="flex items-center gap-2 text-sm">
               <FiLayers size={"16px"} className="min-w-[16px]" />
-              {boardgame.types.join(", ")}
+              {truncateText(boardgame.types.join(", "), 22)}
+
               <span className="text-xs italic text-primary-gold/60">
                 (Tipo)
               </span>

@@ -67,6 +67,8 @@ export default function ClientCollectionPage() {
 
   const filteredBoardgames = boardgames
     .filter((boardgame) => {
+      if (!boardgame.isVisible) return false;
+
       const matchesName =
         filterBoardgameName === "" ||
         boardgame.name
@@ -106,7 +108,14 @@ export default function ClientCollectionPage() {
         matchesFowTwo
       );
     })
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => {
+      // Primeiro, destaque (featured)
+      if (a.featured !== b.featured) {
+        return b.featured ? 1 : -1;
+      }
+      // Depois, ordem alfabética
+      return a.name.localeCompare(b.name);
+    });
 
   function handleClearFilters() {
     setFilterBoardgameName("");
@@ -325,7 +334,7 @@ export default function ClientCollectionPage() {
           }}
           isFixed
         >
-          <div className="flex flex-col items-center gap-4 my-2 max-w-[400px] h-full px-2 overflow-y-scroll">
+          <div className="flex flex-col items-center gap-4 my-2 max-w-[500px] w-full h-full px-2 overflow-y-scroll">
             <h2 className="text-2xl">{currentGame.name}</h2>
             <img
               className="rounded shadow-card w-[200px]"
@@ -359,10 +368,18 @@ export default function ClientCollectionPage() {
                 {currentGame.difficulty}{" "}
               </span>
 
-              <span className="flex items-center gap-2 text-sm">
-                <FiLayers size={"16px"} className="min-w-[16px]" />
-                {currentGame.types.join(", ")}
-              </span>
+              <div className="flex flex-col gap-1">
+                {currentGame.types.map((type, index) => (
+                  <span key={index} className="flex items-center gap-2 text-sm">
+                    {index === 0 ? (
+                      <FiLayers size={"16px"} className="min-w-[16px]" />
+                    ) : (
+                      <div className="w-[16px]" />
+                    )}{" "}
+                    {type}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
           <div className="py-2">

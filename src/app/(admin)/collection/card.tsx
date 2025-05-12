@@ -143,38 +143,35 @@ export default function Card({
         onMouseOver={() => setIsChildInFocus(true)}
         onMouseLeave={() => setIsChildInFocus(false)}
         onClick={(e) => e.stopPropagation()}
-        className="hover:outline-primary-gold outline outline-transparent transition-all duration-300 ease-in flex flex-col gap-3 absolute top-1 right-1 p-2 rounded-lg bg-primary-black/80 backdrop-blur-[2px]"
+        className="flex flex-col gap-1 absolute top-2 right-2"
       >
-        {boardgame.isVisible ? (
-          <Tooltip direction="left" content="Deixar jogo invisivel">
-            <LuEye
-              className="hover:scale-110 transition-all duration-200 ease-in"
-              onClick={(e) => toggleVisibility(e, "invisible")}
-            />
-          </Tooltip>
-        ) : (
-          <Tooltip direction="left" content="Deixar jogo visivel">
-            <LuEyeOff
-              className="hover:scale-110 transition-all duration-200 ease-in"
-              onClick={(e) => toggleVisibility(e, "visible")}
-            />
-          </Tooltip>
-        )}
-
-        <Tooltip
-          direction="left"
-          content={
-            boardgame.featured ? "Remover destaque" : "Colocar em destaque"
-          }
-        >
-          <div
-            className={`relative hover:scale-110 transition-all duration-200 ease-in ${
-              !boardgame.featured ? "diagonal-strike" : ""
-            } ${!boardgame.featured && "opacity-50"}`}
+        <div className="p-2 rounded-lg bg-primary-black/80 backdrop-blur-[2px] hover:outline-primary-gold outline outline-transparent transition-all duration-300 ease-in">
+          {boardgame.isVisible ? (
+            <Tooltip direction="left" content="Deixar jogo invisivel">
+              <LuEye onClick={(e) => toggleVisibility(e, "invisible")} />
+            </Tooltip>
+          ) : (
+            <Tooltip direction="left" content="Deixar jogo visivel">
+              <LuEyeOff onClick={(e) => toggleVisibility(e, "visible")} />
+            </Tooltip>
+          )}
+        </div>
+        <div className="p-2 rounded-lg bg-primary-black/80 backdrop-blur-[2px] hover:outline-primary-gold outline outline-transparent transition-all duration-300 ease-in">
+          <Tooltip
+            direction="left"
+            content={
+              boardgame.featured ? "Remover destaque" : "Colocar em destaque"
+            }
           >
-            <LuSparkles onClick={toggleFeatured} className="z-10 relative" />
-          </div>
-        </Tooltip>
+            <div
+              className={`${!boardgame.featured ? "diagonal-strike" : ""} ${
+                !boardgame.featured && "opacity-50"
+              }`}
+            >
+              <LuSparkles onClick={toggleFeatured} className="z-10 relative" />
+            </div>
+          </Tooltip>
+        </div>
       </div>
     </div>
   );
