@@ -9,6 +9,7 @@ import {
   LuSkipBack,
   LuMenu,
   LuX,
+  LuSettings,
 } from "react-icons/lu";
 import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebaseConfig";
@@ -114,6 +115,17 @@ export default function Sidebar() {
               icon={<LuPlus size={"20px"} />}
               path="/add"
             />
+            {pathname === "/carcassonne" && (
+              <Item
+                onClick={() => {
+                  router.push("/carcassonne");
+                  setIsOpen(false);
+                }}
+                message="Extras"
+                icon={<LuSettings size={"20px"} />}
+                path={pathname}
+              />
+            )}
           </div>
           <Item
             onClick={() => {

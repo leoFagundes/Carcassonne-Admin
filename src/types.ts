@@ -55,4 +55,18 @@ export interface DescriptionTypeProps {
 export interface GeneralConfigsType {
   _id?: string;
   popUpImage: string;
+  clickEffect: boolean;
+  followCursor: boolean;
+  canvasCursor: boolean;
+}
+
+export interface CarcaImageType {
+  id?: string;
+  src: string;
+  description: string;
+  top: string;
+  left: string;
+  width: string;
+  height: string;
+  rotate: string;
 }

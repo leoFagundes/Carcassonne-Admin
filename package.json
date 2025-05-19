@@ -9,12 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "firebase": "^11.6.1",
-    "framer-motion": "^12.9.2",
+    "firebase-admin": "^13.4.0",
+    "framer-motion": "^12.11.3",
+    "html2canvas": "^1.4.1",
+    "lucide-react": "^0.510.0",
     "next": "15.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-icons": "^5.5.0"
+    "react-icons": "^5.5.0",
+    "tailwind-merge": "^3.3.0",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -24,6 +30,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.1",
+    "random": "^5.4.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

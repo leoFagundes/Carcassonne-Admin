@@ -13,7 +13,7 @@ export default function Puzzle() {
   const { addAlert } = useAlert();
 
   const validatePuzzle = () => {
-    if (password.toLowerCase() !== "klaus jurgen") {
+    if (password.toLowerCase() !== "klaus jürgen") {
       addAlert("Tente novamente, você errou!");
       setPassword("");
       return;
@@ -178,7 +178,7 @@ export default function Puzzle() {
               6 - O <span className="font-bold text-primary-gold">J</span>ogo
               Carcassonne simula a construção de cidades medievais com muralhas,
               estradas, mosteiros e fazendas, remetendo diretamente à paisagem e
-              estr<span className="font-bold text-primary-gold">U</span>tura da
+              estr<span className="font-bold text-primary-gold">Ü</span>tura da
               cidade real.
             </p>
           }
