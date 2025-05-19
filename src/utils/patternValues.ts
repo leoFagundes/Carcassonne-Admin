@@ -5,6 +5,7 @@ import {
   InfoType,
   DescriptionTypeProps,
   GeneralConfigsType,
+  CarcaImageType,
 } from "@/types";
 
 export const difficultiesOptions = [
@@ -60,4 +61,17 @@ export const patternDescriptionType: DescriptionTypeProps = {
 
 export const patternGeneralConfigs: GeneralConfigsType = {
   popUpImage: "",
+  clickEffect: false,
+  followCursor: false,
+  canvasCursor: false,
+};
+
+export const patternCarcaImage: CarcaImageType = {
+  src: "",
+  description: "",
+  width: "224px",
+  height: "224px",
+  left: "",
+  top: "",
+  rotate: "",
 };

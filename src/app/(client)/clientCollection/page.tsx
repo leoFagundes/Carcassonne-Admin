@@ -23,6 +23,7 @@ import BoardgameRepository from "@/services/repositories/BoardGameRepository";
 import { useAlert } from "@/contexts/alertProvider";
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import { difficultiesOptions } from "@/utils/patternValues";
+import Counter from "@/components/mage-ui/text/counter";
 
 export default function ClientCollectionPage() {
   const [filterBoardgameName, setFilterBoardgameName] = useState("");
@@ -295,7 +296,7 @@ export default function ClientCollectionPage() {
         <div className="flex items-center gap-2 justify-center text-center italic font-light w-full">
           <div className="h-[1px] flex-1 bg-primary-gold max-w-[30px]" />
           <span className="text-center">
-            {filteredBoardgames.length}{" "}
+            <Counter targetValue={filteredBoardgames.length} />{" "}
             {filteredBoardgames.length === 1
               ? "jogo encontrado"
               : "jogos encontrados"}

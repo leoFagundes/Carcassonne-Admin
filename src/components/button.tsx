@@ -13,9 +13,9 @@ export default function Button({
   return (
     <button
       {...props}
-      className={`${
-        isHoverInvalid && "hover:text-invalid-color"
-      } flex items-center gap-2 justify-center min-w-[120px] transition-all ease-in duration-75 cursor-pointer border shadow-card text-primary-gold rounded-sm px-2 py-1 w-full`}
+      className={` flex items-center gap-2 justify-center min-w-[120px] transition-all ease-in duration-75 cursor-pointer border shadow-card text-primary-gold hover:text-primary-gold/80 rounded-sm px-2 py-1 w-full ${
+        isHoverInvalid && "hover:!text-invalid-color"
+      }`}
     >
       {children}
     </button>

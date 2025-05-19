@@ -114,7 +114,6 @@ export default function CollectionPage() {
           />
         </div>
       </section>
-
       {/* Lista de jogos */}
       <section className="flex justify-center flex-wrap gap-x-6 gap-y-8 px-1 pt-2 pb-4">
         {filteredBoardgames.length > 0 && !isModalOpen ? (

@@ -176,6 +176,16 @@ export default function Home() {
       {!carcaPuzzle && <Puzzle />}
       {carcaPuzzle && (
         <>
+          <div
+            onClick={() => {
+              const fullUrl = `${window.location.origin}/carcassonne`;
+              navigator.clipboard.writeText(fullUrl);
+              addAlert("Endereço copiado para a área de transferência");
+            }}
+            className="absolute bottom-2 left-16 text-primary-gold/50 cursor-pointer hover:text-primary-gold transition"
+          >
+            {`${window.location.origin}/carcassonne`}
+          </div>
           <div className="abosulute w-[240px] sm:flex hidden flex-col absolute top-4 left-4 bg-primary-black/60 rounded-md shadow-card">
             <div
               className="w-full h-[200px] bg-cover bg-center rounded-t-md"
