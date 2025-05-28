@@ -43,6 +43,7 @@ export default function MenuForms({
   const [fullscreenLoading, setFullscreenLoading] = useState(false);
   const [imageFile, setImageFile] = React.useState<File | null>(null);
   const [types, setTypes] = useState<string[]>([]);
+  const [subtypes, setSubtypes] = useState<string[]>([]);
   const [localItem, setLocalItem] = useState<MenuItemType>(currentItem);
   const [observations, setObservations] = useState<string[]>([]);
   const [sideDishes, setSideDishes] = useState<string[]>([]);
@@ -60,6 +61,13 @@ export default function MenuForms({
         const fetchedItems = await MenuItemRepository.getAll();
 
         const menuTypes = Array.from(new Set(fetchedItems.map((b) => b.type)));
+        const menuSubTypes = Array.from(
+          new Set(
+            fetchedItems
+              .map((b) => b.subtype)
+              .filter((subtype): subtype is string => subtype !== undefined)
+          )
+        );
         const allObservations = Array.from(
           new Set(fetchedItems.flatMap((item) => item.observation ?? []))
         );
@@ -68,6 +76,7 @@ export default function MenuForms({
         );
 
         setTypes(menuTypes);
+        setSubtypes(menuSubTypes);
         setObservations(allObservations);
         setSideDishes(allSideDishes);
       } catch (error) {
@@ -204,6 +213,18 @@ export default function MenuForms({
             icon={<LuSquareStack size={"18px"} />}
             width="!w-[250px]"
             options={types}
+          />
+          <Input
+            label="SubTipo"
+            placeholder="SubTipo"
+            value={localItem.subtype || ""}
+            setValue={(e) =>
+              setLocalItem({ ...localItem, subtype: e.target.value })
+            }
+            variant
+            icon={<LuSquareStack size={"18px"} />}
+            width="!w-[250px]"
+            options={subtypes}
           />
           <OptionsInput
             values={localItem.sideDish}

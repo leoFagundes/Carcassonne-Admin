@@ -24,6 +24,7 @@ export interface MenuItemType {
   description: string;
   value: string;
   type: string;
+  subtype?: string;
   observation?: string[];
   sideDish?: string[];
   image?: string;

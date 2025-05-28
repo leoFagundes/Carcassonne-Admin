@@ -34,6 +34,7 @@ export const patternMenuItem: MenuItemType = {
   description: "",
   value: "",
   type: "",
+  subtype: "",
   observation: [],
   sideDish: [],
   image: "",

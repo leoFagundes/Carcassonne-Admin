@@ -86,6 +86,7 @@ export default function ClientMenuPage() {
       try {
         const fetchedItems = await MenuItemRepository.getAll();
         const menuTypes = Array.from(new Set(fetchedItems.map((b) => b.type)));
+
         setTypes([...types].concat(menuTypes));
         setMenuItems(fetchedItems);
       } catch (error) {
@@ -242,39 +243,55 @@ export default function ClientMenuPage() {
         </section>
       )}
 
-      {/* Seções para cada tipo de item */}
       {types
         .filter((type) => type !== "Avisos" && type !== "Combos")
         .filter((type) =>
           menuItems.some((item) => item.type === type && item.isVisible)
         )
-        .map((type, index) => (
-          <section
-            key={index}
-            id={type}
-            className="flex flex-col items-center w-full mt-8"
-          >
-            <h2 className="text-4xl w-full text-center">{type}</h2>
-            <div className="h-[1px] w-full bg-primary-gold my-2" />
-            <span className="text-xs mb-5 text-center w-full italic">
-              {'"'}
-              {
-                descriptions.find(
-                  (descriptionType) => descriptionType.type === type
-                )?.description
+        .map((type, index) => {
+          const filteredItems = menuItems
+            .filter((item) => item.type === type && item.isVisible)
+            .sort((a, b) => {
+              if (a.isFocus !== b.isFocus) {
+                return b.isFocus ? 1 : -1;
               }
-              {'"'}
-            </span>
-            {menuItems
-              .filter((item) => item.type === type && item.isVisible)
-              .sort((a, b) => {
-                if (a.isFocus !== b.isFocus) {
-                  return b.isFocus ? 1 : -1;
+              return a.name.localeCompare(b.name);
+            });
+
+          const itemsWithoutSubtype = filteredItems.filter(
+            (item) => !item.subtype
+          );
+          const itemsWithSubtype = filteredItems.filter((item) => item.subtype);
+
+          // Agrupar os com subtype por nome
+          const groupedBySubtype = itemsWithSubtype.reduce((acc, item) => {
+            const key = item.subtype as string;
+            if (!acc[key]) acc[key] = [];
+            acc[key].push(item);
+            return acc;
+          }, {} as Record<string, typeof menuItems>);
+
+          return (
+            <section
+              key={index}
+              id={type}
+              className="flex flex-col items-center w-full mt-8"
+            >
+              <h2 className="text-4xl w-full text-center">{type}</h2>
+              <div className="h-[1px] w-full bg-primary-gold my-2" />
+              <span className="text-xs mb-5 text-center w-full italic">
+                {'"'}
+                {
+                  descriptions.find(
+                    (descriptionType) => descriptionType.type === type
+                  )?.description
                 }
-                return a.name.localeCompare(b.name);
-              })
-              .map((item, index, array) => (
-                <Fragment key={index}>
+                {'"'}
+              </span>
+
+              {/* Itens sem subtype */}
+              {itemsWithoutSubtype.map((item, index, array) => (
+                <Fragment key={`no-subtype-${index}`}>
                   <MenuCard
                     index={index}
                     item={item}
@@ -289,8 +306,35 @@ export default function ClientMenuPage() {
                   )}
                 </Fragment>
               ))}
-          </section>
-        ))}
+
+              {/* Agrupamento por subtype */}
+              {Object.entries(groupedBySubtype).map(([subtype, items]) => (
+                <div key={subtype} className="w-full">
+                  <span className="text-xl font-semibold text-center">
+                    {subtype}
+                  </span>
+                  {items.map((item, index, array) => (
+                    <div className="mt-3" key={`${subtype}-${index}`}>
+                      <MenuCard
+                        index={index}
+                        item={item}
+                        onClick={() => {
+                          setIsModalOpen(true);
+                          setCurrentItem(item);
+                          toggleScrollLock(true);
+                        }}
+                      />
+                      {array.length !== 1 && index !== array.length - 1 && (
+                        <div className="h-[2px] w-full bg-secondary-black" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </section>
+          );
+        })}
+
       {currentItem && (
         <Modal
           isOpen={isModalOpen}
