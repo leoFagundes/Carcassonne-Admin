@@ -75,22 +75,6 @@ class MenuItemRepository {
         return false;
       }
 
-      const currentData = currentSnap.data() as MenuItemType;
-
-      if (
-        data.image &&
-        data.image !== currentData.image &&
-        typeof currentData.image === "string"
-      ) {
-        const publicId = extractPublicIdFromUrl(currentData.image);
-        await deleteImageFromCloudinary(
-          publicId,
-          API_KEY,
-          API_SECRET,
-          CLOUD_NAME
-        );
-      }
-
       await updateDoc(docRef, data);
       console.log("Item do cardápio atualizado com sucesso.");
       return true;

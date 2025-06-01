@@ -132,14 +132,21 @@ export default function MenuForms({
         const previousItem = currentItem;
         const newImageIsDifferent = imageUrl !== previousItem.image;
 
-        if (newImageIsDifferent && previousItem.image) {
+        if (
+          newImageIsDifferent &&
+          previousItem.image &&
+          previousItem.image.trim() !== ""
+        ) {
           const publicIdToDelete = extractPublicIdFromUrl(previousItem.image);
-          await deleteImageFromCloudinary(
-            publicIdToDelete,
-            API_KEY,
-            API_SECRET,
-            CLOUD_NAME
-          );
+
+          if (publicIdToDelete) {
+            await deleteImageFromCloudinary(
+              publicIdToDelete,
+              API_KEY,
+              API_SECRET,
+              CLOUD_NAME
+            );
+          }
         }
 
         await MenuItemRepository.update(localItem.id, itemToSave);
