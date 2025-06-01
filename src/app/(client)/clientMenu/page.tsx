@@ -351,7 +351,7 @@ export default function ClientMenuPage() {
           }}
           isFixed
         >
-          <div className="flex flex-col items-center gap-4 my-2 max-w-[400px] h-full px-2 overflow-y-scroll w-full">
+          <div className="flex flex-col items-center gap-4 my-2 max-w-[400px] h-full px-2 overflow-y-scroll w-full sm:bg-secondary-black/60 py-3 sm:px-6 sm:h-fit sm:shadow-2xl rounded-sm">
             <h2 className="text-2xl text-center my-2 px-2">
               {currentItem.name}
             </h2>

@@ -38,7 +38,7 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
           {...props}
           className={`${
             !boardgame.isVisible && "hidden"
-          } cursor-pointer sm:max-w-[600px] max-w-[300px] flex items-center gap-3 w-full p-3 border-b border-primary-gold/50`}
+          } cursor-pointer sm:max-w-[600px] max-w-[300px] flex items-center gap-3 w-full p-3 border-b border-primary-gold/50 sm:hover:bg-secondary-black sm:hover:shadow-lg transition-all ease-in duration-200`}
         >
           <div className="relative">
             {boardgame.image && (
@@ -87,7 +87,7 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
           {...props}
           className={`${
             !boardgame.isVisible && "hidden"
-          } relative w-full h-fit max-w-[300px] rounded-lg shadow-card-gold cursor-pointer`}
+          } relative w-full h-fit max-w-[300px] rounded-lg shadow-card-gold cursor-pointer sm:hover:border-primary-gold/50 sm:border sm:border-transparent transition-all ease-in duration-200`}
         >
           <div
             className="relative w-full h-[150px] bg-center bg-cover rounded-t-lg"

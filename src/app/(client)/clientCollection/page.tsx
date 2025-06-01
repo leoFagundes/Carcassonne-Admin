@@ -335,7 +335,7 @@ export default function ClientCollectionPage() {
           }}
           isFixed
         >
-          <div className="flex flex-col items-center gap-4 my-2 max-w-[500px] w-full h-full px-2 overflow-y-scroll">
+          <div className="flex flex-col items-center gap-4 my-2 max-w-[500px] w-full h-full px-2 overflow-y-scroll sm:bg-secondary-black/60 py-3 sm:px-6 sm:h-fit sm:shadow-2xl rounded-sm">
             <h2 className="text-2xl">{currentGame.name}</h2>
             <img
               className="rounded shadow-card w-[200px]"
