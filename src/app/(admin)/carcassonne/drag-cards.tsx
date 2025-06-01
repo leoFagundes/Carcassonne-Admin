@@ -3,7 +3,13 @@
 import React, { MutableRefObject, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { twMerge } from "tailwind-merge";
-import { LuExpand, LuMinimize2, LuPlus, LuTrash2 } from "react-icons/lu";
+import {
+  LuExpand,
+  LuImage,
+  LuMinimize2,
+  LuPlus,
+  LuTrash2,
+} from "react-icons/lu";
 import Modal from "@/components/modal";
 import Button from "@/components/button";
 import Input from "@/components/input";
@@ -12,12 +18,25 @@ import CarcaImageRepository from "@/services/repositories/CarcaImageRepository";
 import { useAlert } from "@/contexts/alertProvider";
 import { CarcaImageType } from "@/types";
 import random from "random";
+import {
+  deleteImageFromCloudinary,
+  extractPublicIdFromUrl,
+  uploadImageToCloudinary,
+} from "@/services/repositories/cloudinaryImagesService";
+import InputImage from "@/components/inputImage";
+
+const UPLOAD_PRESET = process.env
+  .NEXT_PUBLIC_CLOUDNINARY_UPLOAD_PRESET as string;
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDNINARY_CLOUD_NAME as string;
+const API_KEY = process.env.NEXT_PUBLIC_CLOUDNINARY_API_KEY as string;
+const API_SECRET = process.env.NEXT_PUBLIC_CLOUDNINARY_API_SECRET as string;
 
 export const DragCards = () => {
   const sectionRef = useRef<HTMLElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCarcaImage, setNewCarcaImage] = useState(patternCarcaImage);
+  const [imageFile, setImageFile] = React.useState<File | null>(null);
 
   const { addAlert } = useAlert();
 
@@ -37,6 +56,15 @@ export const DragCards = () => {
     }
 
     try {
+      let imageUrl = newCarcaImage.src || "";
+      if (imageFile) {
+        imageUrl = await uploadImageToCloudinary(
+          imageFile,
+          UPLOAD_PRESET,
+          CLOUD_NAME
+        );
+      }
+
       const top = `${random.int(10, 60)}%`;
       const left = `${random.int(10, 60)}%`;
       const rotate = `${(Math.random() * 32 - 16).toFixed(2)}deg`;
@@ -46,6 +74,7 @@ export const DragCards = () => {
         top,
         left,
         rotate,
+        src: imageUrl,
       });
       addAlert("Imagem criada com sucesso");
       setIsModalOpen(false);
@@ -100,16 +129,51 @@ export const DragCards = () => {
           <h2 className="text-3xl text-center">Adicionar uma nova foto</h2>
           <section className="flex justify-center gap-6 w-full my-6">
             <div className="flex flex-col items-center gap-5 p-2">
-              <Input
-                placeholder="url da imagem"
-                label="url da imagem"
-                setValue={(e) =>
-                  setNewCarcaImage({ ...newCarcaImage, src: e.target.value })
-                }
-                value={newCarcaImage.src}
-                variant
-                width="!w-[250px]"
-              />
+              <div className="flex flex-col gap-1 border p-1 rounded shadow-card border-dashed border-primary-gold/20">
+                <InputImage
+                  onChange={(file) => {
+                    if (file) {
+                      setImageFile(file);
+                      setNewCarcaImage({
+                        ...newCarcaImage,
+                        src: URL.createObjectURL(file),
+                      });
+                    }
+                  }}
+                  onCloseImage={() => {
+                    setImageFile(null);
+                    setNewCarcaImage({
+                      ...newCarcaImage,
+                      src: "",
+                    });
+                  }}
+                  width="!w-[250px]"
+                  previewUrl={newCarcaImage.src}
+                />
+
+                {!imageFile && (
+                  <>
+                    <span className="w-full text-center text-primary-gold/80 italic">
+                      ou
+                    </span>
+
+                    <Input
+                      label="Link da imagem"
+                      placeholder="URL da imagem"
+                      value={newCarcaImage.src ?? ""}
+                      setValue={(e) =>
+                        setNewCarcaImage({
+                          ...newCarcaImage,
+                          src: e.target.value,
+                        })
+                      }
+                      variant
+                      icon={<LuImage size={"18px"} />}
+                      width="!w-[250px]"
+                    />
+                  </>
+                )}
+              </div>
               <Input
                 multiline
                 placeholder="descrição da imagem"
@@ -170,10 +234,10 @@ export const DragCards = () => {
                   width: newCarcaImage.width,
                   height: newCarcaImage.height,
                 }}
-                className={
-                  "text-primary-gold border w-48 bg-primary-white p-1 pb-4"
-                }
-                src={newCarcaImage.src}
+                className={`text-primary-gold border w-48 ${
+                  newCarcaImage.src ? "bg-primary-white" : "bg-primary-black "
+                } p-1 pb-4`}
+                src={newCarcaImage.src || "images/mascote-3.png"}
                 alt={"preview carcaimage"}
               />
             </div>
@@ -299,6 +363,16 @@ const Card = ({
       if (confirmDelete) {
         setOpacityLow(true);
         console.log("Imagem caiu na zona! Executando função...", img.id);
+
+        const publicIdToDelete = extractPublicIdFromUrl(img.src);
+        if (publicIdToDelete) {
+          await deleteImageFromCloudinary(
+            publicIdToDelete,
+            API_KEY,
+            API_SECRET,
+            CLOUD_NAME
+          );
+        }
         await CarcaImageRepository.delete(img.id);
         window.location.reload();
       } else {
