@@ -23,8 +23,12 @@ import Tooltip from "./Tooltip";
 import Loader from "./loader";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import { patternMenuItem } from "@/utils/patternValues";
-import { uploadImage } from "@/utils/imageFunctions";
 import LoaderFullscreen from "./loaderFullscreen";
+import {
+  deleteImageFromCloudinary,
+  extractPublicIdFromUrl,
+  uploadImageToCloudinary,
+} from "@/services/repositories/cloudinaryImagesService";
 
 interface MenuFormsType {
   currentItem: MenuItemType;
@@ -32,6 +36,12 @@ interface MenuFormsType {
   formType: "edit" | "add";
   closeForms: VoidFunction;
 }
+
+const UPLOAD_PRESET = process.env
+  .NEXT_PUBLIC_CLOUDNINARY_UPLOAD_PRESET as string;
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDNINARY_CLOUD_NAME as string;
+const API_KEY = process.env.NEXT_PUBLIC_CLOUDNINARY_API_KEY as string;
+const API_SECRET = process.env.NEXT_PUBLIC_CLOUDNINARY_API_SECRET as string;
 
 export default function MenuForms({
   currentItem,
@@ -104,8 +114,11 @@ export default function MenuForms({
     try {
       let imageUrl = localItem.image || "";
       if (imageFile) {
-        const path = `menu-images/${Date.now()}-${imageFile.name}`;
-        imageUrl = await uploadImage(imageFile, path);
+        imageUrl = await uploadImageToCloudinary(
+          imageFile,
+          UPLOAD_PRESET,
+          CLOUD_NAME
+        );
       }
 
       const itemToSave = {
@@ -114,10 +127,23 @@ export default function MenuForms({
       };
 
       if (formType === "edit") {
-        // UPDATE
         if (!localItem.id) throw new Error("ID inválido");
+
+        const previousItem = currentItem;
+        const newImageIsDifferent = imageUrl !== previousItem.image;
+
+        if (newImageIsDifferent && previousItem.image) {
+          const publicIdToDelete = extractPublicIdFromUrl(previousItem.image);
+          await deleteImageFromCloudinary(
+            publicIdToDelete,
+            API_KEY,
+            API_SECRET,
+            CLOUD_NAME
+          );
+        }
+
         await MenuItemRepository.update(localItem.id, itemToSave);
-        setCurrentItem(localItem);
+        setCurrentItem(itemToSave);
         addAlert(`Item "${localItem.name}" editado com sucesso!`);
         closeForms();
       } else {
@@ -144,6 +170,16 @@ export default function MenuForms({
 
     setLoading(true);
     try {
+      if (currentItem.image) {
+        const publicId = extractPublicIdFromUrl(currentItem.image);
+
+        await deleteImageFromCloudinary(
+          publicId,
+          API_KEY,
+          API_SECRET,
+          CLOUD_NAME
+        );
+      }
       await MenuItemRepository.delete(currentItem.id);
       addAlert(`Item "${currentItem.name}" deletado com sucesso!`);
       closeForms();

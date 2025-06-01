@@ -11,7 +11,15 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { MenuItemType } from "@/types";
-import { deleteImageFromStorage } from "@/utils/imageFunctions";
+import {
+  deleteImageFromCloudinary,
+  extractPublicIdFromUrl,
+} from "./cloudinaryImagesService";
+
+// const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDNINARY_UPLOAD_PRESET as string;
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDNINARY_CLOUD_NAME as string;
+const API_KEY = process.env.NEXT_PUBLIC_CLOUDNINARY_API_KEY as string;
+const API_SECRET = process.env.NEXT_PUBLIC_CLOUDNINARY_API_SECRET as string;
 
 class MenuItemRepository {
   static collectionName = "menuItems";
@@ -74,7 +82,13 @@ class MenuItemRepository {
         data.image !== currentData.image &&
         typeof currentData.image === "string"
       ) {
-        await deleteImageFromStorage(currentData.image);
+        const publicId = extractPublicIdFromUrl(currentData.image);
+        await deleteImageFromCloudinary(
+          publicId,
+          API_KEY,
+          API_SECRET,
+          CLOUD_NAME
+        );
       }
 
       await updateDoc(docRef, data);
@@ -96,7 +110,13 @@ class MenuItemRepository {
         const imageUrl = data.image;
 
         if (imageUrl) {
-          await deleteImageFromStorage(imageUrl);
+          const publicId = extractPublicIdFromUrl(imageUrl);
+          await deleteImageFromCloudinary(
+            publicId,
+            API_KEY,
+            API_SECRET,
+            CLOUD_NAME
+          );
         }
       }
 

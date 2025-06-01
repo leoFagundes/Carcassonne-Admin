@@ -109,6 +109,17 @@ h6 {
   .group:hover .icon-container:hover ~ .card-border {
     outline-color: transparent !important;
   }
+
+  .linear-background-black {
+    background: linear-gradient(
+      135deg,
+      var(--color-dark-black),
+      var(--color-secondary-black),
+      var(--color-primary-black)
+    );
+    background-attachment: fixed;
+    background-size: cover;
+  }
 }
 
 input:-webkit-autofill {

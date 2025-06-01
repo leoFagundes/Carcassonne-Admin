@@ -12,13 +12,13 @@ export default function MenuCard({ item, index, ...props }: MenuCardProps) {
   return (
     <div
       {...props}
-      className={`flex gap-3 my-3 w-full cursor-pointer md:transition-all p-2 rounded ${
+      className={`group flex gap-3 my-3 w-full cursor-pointer md:transition-all p-2 rounded sm:hover:bg-secondary-black sm:hover:shadow-lg transition-all ease-in duration-200 ${
         item.isFocus && "relative border border-primary-gold/40 pt-4"
       } ${!item.isVisible && "hidden"} ${index === 0 && "mt-0"}`}
     >
       <div className="relative h-fit w-fit">
         <img
-          className="w-[100px] h-[100px] rounded shadow-card"
+          className="w-[100px] h-[100px] rounded shadow-card sm:group-hover:shadow-none transition-all ease-in duration-200"
           src={item.image ? item.image : "images/patternMenuImage.png"}
           alt="menu item"
         />

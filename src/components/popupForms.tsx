@@ -9,6 +9,11 @@ import Button from "./button";
 import Loader from "./loader";
 import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 import Tooltip from "./Tooltip";
+import {
+  uploadImageToCloudinary,
+  extractPublicIdFromUrl,
+  deleteImageFromCloudinary,
+} from "@/services/repositories/cloudinaryImagesService";
 
 interface DescriptionTypeFormsProps {
   currentConfig: GeneralConfigsType;
@@ -17,6 +22,12 @@ interface DescriptionTypeFormsProps {
   >;
   closeForms: VoidFunction;
 }
+
+const UPLOAD_PRESET = process.env
+  .NEXT_PUBLIC_CLOUDNINARY_UPLOAD_PRESET as string;
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDNINARY_CLOUD_NAME as string;
+const API_KEY = process.env.NEXT_PUBLIC_CLOUDNINARY_API_KEY as string;
+const API_SECRET = process.env.NEXT_PUBLIC_CLOUDNINARY_API_SECRET as string;
 
 export default function PopupForms({
   currentConfig,
@@ -53,16 +64,31 @@ export default function PopupForms({
   }, []);
 
   const handleSavePopup = async () => {
-    setLoading(true);
+    if (!currentConfig.popUpImage) {
+      addAlert("Adicione uma imagem antes de continuar.");
+      return;
+    }
 
+    setLoading(true);
     try {
-      const teste =
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ_FnIe-JaWZxuyL5w727A-ytWlwoLG6dBaug&s";
-      await GeneralConfigsRepository.update({
+      let imageUrl = currentConfig.popUpImage || "";
+
+      if (imageFile) {
+        imageUrl = await uploadImageToCloudinary(
+          imageFile,
+          UPLOAD_PRESET,
+          CLOUD_NAME
+        );
+      }
+
+      const updatedConfig = {
         ...currentConfig,
-        popUpImage: teste,
-      });
-      addAlert(`Popup criado com sucesso!`);
+        popUpImage: imageUrl,
+      };
+
+      await GeneralConfigsRepository.update(updatedConfig);
+      setCurrentConfig(updatedConfig);
+      addAlert(`Popup salvo com sucesso!`);
       closeForms();
     } catch (error) {
       addAlert(`Erro ao salvar Popup: ${error}`);
@@ -75,7 +101,22 @@ export default function PopupForms({
     setLoading(true);
 
     try {
-      const generalConfigsWhitNoPopup = { ...currentConfig, popUpImage: "" };
+      const imageUrl = currentConfig.popUpImage;
+
+      if (imageUrl) {
+        const publicId = extractPublicIdFromUrl(imageUrl);
+        await deleteImageFromCloudinary(
+          publicId,
+          API_KEY,
+          API_SECRET,
+          CLOUD_NAME
+        );
+      }
+
+      const generalConfigsWhitNoPopup = {
+        ...currentConfig,
+        popUpImage: "",
+      };
 
       await GeneralConfigsRepository.update(generalConfigsWhitNoPopup);
       setCurrentConfig(generalConfigsWhitNoPopup);
@@ -123,11 +164,11 @@ export default function PopupForms({
           </div>
         </>
       ) : (
-        <div className="flex flex-col items-center gap-6 my-6 text-primary-gold max-w-[400px]">
+        <div className="flex flex-col items-center gap-6 my-6 text-primary-gold max-w-[400px] overflow-auto">
           <img src={fetchedPopup} alt="popup" className="w-[200px]" />
           <a
             href={fetchedPopup}
-            className="italic text-center hover:underline"
+            className="italic text-center hover:underline break-all"
             target="_blank"
           >
             {fetchedPopup}
@@ -135,20 +176,18 @@ export default function PopupForms({
         </div>
       )}
       <div className="flex gap-2 m-2">
-        {!fetchedPopup && (
+        {!fetchedPopup ? (
           <Button onClick={handleSavePopup} disabled={loading}>
-            {loading && !fetchedPopup ? <Loader /> : "Salvar"}
+            {loading ? <Loader /> : "Salvar"}
           </Button>
-        )}
-
-        {fetchedPopup && (
+        ) : (
           <Tooltip content="Cuidado, essa ação é irreversível.">
             <Button
               onClick={handleDeletePopup}
               isHoverInvalid
               disabled={loading}
             >
-              {loading && fetchedPopup ? <Loader /> : "Excluir"}
+              {loading ? <Loader /> : "Excluir"}
             </Button>
           </Tooltip>
         )}

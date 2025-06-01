@@ -223,7 +223,10 @@ export default function ClientMenuPage() {
 
       {/* Seções do cardápio */}
       {infos.length > 0 && (
-        <section id="Avisos" className="flex flex-col items-center w-full mt-8">
+        <section
+          id="Avisos"
+          className="flex flex-col items-center w-full mt-8 bg-secondary-black/60 p-3 rounded-sm shadow-card"
+        >
           <h2 className="text-4xl w-full text-center">Avisos</h2>
           <div className="h-[1px] w-full bg-primary-gold mb-5 mt-2" />
 
@@ -234,7 +237,10 @@ export default function ClientMenuPage() {
       )}
 
       {combos.length > 0 && (
-        <section id="Combos" className="flex flex-col items-center w-full mt-8">
+        <section
+          id="Combos"
+          className="flex flex-col items-center w-full mt-8 bg-secondary-black/60 p-3 rounded-sm shadow-card"
+        >
           <h2 className="text-4xl w-full text-center">Combos</h2>
           <div className="h-[1px] w-full bg-primary-gold mb-5 mt-2" />
           {combos.map((combo, index) => (

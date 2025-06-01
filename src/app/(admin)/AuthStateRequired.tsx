@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import { useAlert } from "@/contexts/alertProvider";
 
-export default function VerifyAuthState() {
+export default function AuthStateRequired() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 

@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="pt-br">
       <body
-        className={` ${pirataOne.variable} ${saira.variable} antialiased text-primary-white bg-primary-black`}
+        className={` ${pirataOne.variable} ${saira.variable} antialiased text-primary-white linear-background-black`}
       >
         <AlertProvider>{children}</AlertProvider>
       </body>
