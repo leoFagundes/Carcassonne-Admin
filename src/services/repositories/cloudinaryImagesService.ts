@@ -52,7 +52,8 @@ export const deleteImageFromCloudinary = async (
   console.log("Cloudinary delete result:", result);
 
   if (result.result !== "ok") {
-    throw new Error(`Erro ao deletar imagem: ${result.result}`);
+    // throw new Error(`Erro ao deletar imagem: ${result.result}`);
+    return;
   }
 };
 
