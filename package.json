@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.5.0",
     "browser-image-compression": "^2.0.2",
     "clsx": "^2.1.1",
     "firebase": "^11.6.1",

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Pirata_One, Saira } from "next/font/google";
 import "./globals.css";
 import { AlertProvider } from "@/contexts/alertProvider";
+import { Analytics } from "@vercel/analytics/next";
 
 const pirataOne = Pirata_One({
   weight: "400",
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body
         className={` ${pirataOne.variable} ${saira.variable} antialiased text-primary-white linear-background-black`}
       >
+        <Analytics />
         <AlertProvider>{children}</AlertProvider>
       </body>
     </html>
