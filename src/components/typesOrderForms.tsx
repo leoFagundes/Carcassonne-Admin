@@ -85,9 +85,10 @@ export default function TypesOrderForms({
     }
 
     try {
-      await TypesOrderRepository.create(typeInOrder);
+      const createdTypeOrder = await TypesOrderRepository.create(typeInOrder);
+      console.log(createdTypeOrder);
       setTypeInOrder(patternTypeOrder);
-      setTypesOrder([...typesOrder].concat(typeInOrder));
+      setTypesOrder([...typesOrder].concat(createdTypeOrder || typeInOrder));
       addAlert(`${typeInOrder.type.name} adicionado com sucesso!`);
     } catch (error) {
       addAlert(`Erro ao criar tipo: ${error}`);

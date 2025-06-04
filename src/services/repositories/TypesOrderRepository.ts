@@ -51,10 +51,14 @@ class TypesOrderRepository {
     try {
       const docRef = await addDoc(collection(db, this.collectionName), data);
       console.log("Ordenação criada com ID:", docRef.id);
-      return true;
+
+      return {
+        id: docRef.id,
+        ...data,
+      };
     } catch (error) {
       console.error("Erro ao criar ordenação:", error);
-      return false;
+      return null;
     }
   }
 
