@@ -6,6 +6,7 @@ import {
   DescriptionTypeProps,
   GeneralConfigsType,
   CarcaImageType,
+  TypeOrderType,
 } from "@/types";
 
 export const difficultiesOptions = [
@@ -75,4 +76,12 @@ export const patternCarcaImage: CarcaImageType = {
   left: "",
   top: "",
   rotate: "",
+};
+
+export const patternTypeOrder: TypeOrderType = {
+  type: {
+    name: "",
+    order: 0,
+    subtypes: [],
+  },
 };

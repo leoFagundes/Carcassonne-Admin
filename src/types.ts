@@ -71,3 +71,15 @@ export interface CarcaImageType {
   height: string;
   rotate: string;
 }
+
+export interface TypeOrderType {
+  id?: string;
+  type: {
+    name: string;
+    order: number;
+    subtypes: {
+      name: string;
+      order: number;
+    }[];
+  };
+}

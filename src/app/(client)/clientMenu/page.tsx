@@ -6,6 +6,7 @@ import {
   ComboType,
   DescriptionTypeProps,
   GeneralConfigsType,
+  TypeOrderType,
 } from "@/types";
 import React, { Fragment, useEffect, useRef, useState } from "react";
 import InfoCard from "./infoCard";
@@ -23,6 +24,7 @@ import InfoRepository from "@/services/repositories/InfoRepository";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 import Popup from "@/components/popup";
+import TypesOrderRepository from "@/services/repositories/TypesOrderRepository";
 
 export default function ClientMenuPage() {
   const [types, setTypes] = useState(["Avisos", "Combos"]);
@@ -35,6 +37,7 @@ export default function ClientMenuPage() {
   const [combos, setCombos] = useState<ComboType[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
   const [generalConfigs, setGeneralConfigs] = useState<GeneralConfigsType>();
+  const [typesOrder, setTypesOrder] = useState<TypeOrderType[]>([]);
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
@@ -45,6 +48,18 @@ export default function ClientMenuPage() {
   const { addAlert } = useAlert();
 
   useEffect(() => {
+    const fetchTypesOrder = async () => {
+      setLoading(true);
+      try {
+        const fecthedTypesOrder = await TypesOrderRepository.getAll();
+        setTypesOrder(fecthedTypesOrder);
+      } catch (error) {
+        addAlert(`Erro ao carregar tipos: ${error}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const fetchDescriptions = async () => {
       setLoading(true);
       try {
@@ -86,9 +101,10 @@ export default function ClientMenuPage() {
       try {
         const fetchedItems = await MenuItemRepository.getAll();
         const menuTypes = Array.from(new Set(fetchedItems.map((b) => b.type)));
-
-        setTypes([...types].concat(menuTypes));
         setMenuItems(fetchedItems);
+
+        const allTypes = Array.from(new Set([...menuTypes]));
+        setTypes(allTypes);
       } catch (error) {
         addAlert(`Erro ao carregar itens: ${error}`);
       } finally {
@@ -114,12 +130,32 @@ export default function ClientMenuPage() {
       }
     };
 
+    fetchTypesOrder();
     fetchGeneralConfigs();
     fetchMenuItems();
     fetchCombos();
     fetchInfos();
     fetchDescriptions();
   }, []);
+
+  useEffect(() => {
+    if (types.length > 0 && typesOrder.length > 0) {
+      const orderedTypes = [...types].sort((a, b) => {
+        const orderA =
+          typesOrder.find((t) => t.type.name === a)?.type.order ?? 999;
+        const orderB =
+          typesOrder.find((t) => t.type.name === b)?.type.order ?? 999;
+        return orderA - orderB;
+      });
+
+      const baseTypes = ["Avisos", "Combos"];
+      setTypes([...baseTypes, ...orderedTypes]);
+    } else {
+      const baseTypes = ["Avisos", "Combos"];
+
+      setTypes([...baseTypes, ...types]);
+    }
+  }, [typesOrder]);
 
   const handleScroll = () => {
     const scrollTop = window.scrollY;
@@ -277,6 +313,34 @@ export default function ClientMenuPage() {
             return acc;
           }, {} as Record<string, typeof menuItems>);
 
+          // Obter o objeto do type atual em typesOrder
+          const typeOrder = typesOrder.find((t) => t.type.name === type);
+
+          // Ordenar os subtypes de acordo com a ordem definida, subtypes não encontrados vêm primeiro (e por ordem alfabética)
+          const orderedSubtypeEntries = Object.entries(groupedBySubtype).sort(
+            ([a], [b]) => {
+              const aOrder = typeOrder?.type.subtypes.find(
+                (s) => s.name === a
+              )?.order;
+              const bOrder = typeOrder?.type.subtypes.find(
+                (s) => s.name === b
+              )?.order;
+
+              const aHasOrder = aOrder !== undefined;
+              const bHasOrder = bOrder !== undefined;
+
+              if (aHasOrder && !bHasOrder) return -1;
+              if (!aHasOrder && bHasOrder) return 1;
+
+              if (aHasOrder && bHasOrder) {
+                return aOrder! - bOrder!;
+              }
+
+              // Ambos sem ordem → ordem alfabética
+              return a.localeCompare(b);
+            }
+          );
+
           return (
             <section
               key={index}
@@ -314,7 +378,7 @@ export default function ClientMenuPage() {
               ))}
 
               {/* Agrupamento por subtype */}
-              {Object.entries(groupedBySubtype).map(([subtype, items]) => (
+              {orderedSubtypeEntries.map(([subtype, items]) => (
                 <div key={subtype} className="w-full">
                   <span className="text-xl font-semibold text-center">
                     {subtype}

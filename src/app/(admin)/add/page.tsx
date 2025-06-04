@@ -6,6 +6,7 @@ import {
   LuClipboardPenLine,
   LuDices,
   LuGroup,
+  LuListOrdered,
   LuPizza,
   LuPlus,
   LuText,
@@ -19,6 +20,7 @@ import {
   InfoType,
   DescriptionTypeProps,
   GeneralConfigsType,
+  TypeOrderType,
 } from "@/types";
 import CollectionForms from "@/components/collectionForms";
 import MenuForms from "@/components/menuForms";
@@ -32,10 +34,12 @@ import {
   patternGeneralConfigs,
   patternInfo,
   patternMenuItem,
+  patternTypeOrder,
 } from "@/utils/patternValues";
 import PopupForms from "@/components/popupForms";
 import { useAlert } from "@/contexts/alertProvider";
 import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
+import TypesOrderForms from "@/components/typesOrderForms";
 
 export default function AddPage() {
   const [isAddGameModalOpen, setIsAddGameModalOpen] = useState(false);
@@ -43,6 +47,8 @@ export default function AddPage() {
   const [isAddComboModalOpen, setIsAddComboModalOpen] = useState(false);
   const [isAddInfoModalOpen, setIsAddInfoModalOpen] = useState(false);
   const [isAddPopupModalOpen, setIsAddPopupModalOpen] = useState(false);
+  const [isAddTypesOrderModalOpen, setIsAddTypesOrderModalOpen] =
+    useState(false);
   const [isDescriptionTypeModalOpen, setIsDescriptionTypeModalOpen] =
     useState(false);
 
@@ -54,6 +60,9 @@ export default function AddPage() {
   const [newCombo, setNewCombo] = useState<ComboType>(patternCombo);
 
   const [newInfo, setNewInfo] = useState<InfoType>(patternInfo);
+
+  const [newTypeOrder, setNewTypeOrder] =
+    useState<TypeOrderType>(patternTypeOrder);
 
   const [generalConfigs, setGeneralConfigs] = useState<GeneralConfigsType>();
 
@@ -118,6 +127,12 @@ export default function AddPage() {
           description="Adicione um novo Popup ao cardápio!"
           icon={<LuGroup size={"32px"} className="min-w-[32px]" />}
           onClick={() => setIsAddPopupModalOpen(true)}
+        />
+        <Card
+          title="Ordenar tipos"
+          description="Adicione e ordene os tipos e subtipos de cada item!"
+          icon={<LuListOrdered size={"32px"} className="min-w-[32px]" />}
+          onClick={() => setIsAddTypesOrderModalOpen(true)}
         />
       </section>
 
@@ -204,6 +219,16 @@ export default function AddPage() {
           currentDescriptionType={newDescriptionType}
           setcurrentDescriptionType={setNewDescriptionType}
         />
+      </Modal>
+
+      <Modal
+        isOpen={isAddTypesOrderModalOpen}
+        onClose={() => {
+          setIsAddTypesOrderModalOpen(false);
+          setNewTypeOrder(patternTypeOrder);
+        }}
+      >
+        <TypesOrderForms currentTypeOrder={newTypeOrder} />
       </Modal>
 
       {generalConfigs && (
