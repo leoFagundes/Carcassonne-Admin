@@ -4,7 +4,7 @@ import Tooltip from "@/components/Tooltip";
 import { useAlert } from "@/contexts/alertProvider";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import { MenuItemType } from "@/types";
-import { truncateText } from "@/utils/utilFunctions";
+import { highlightMatch, truncateText } from "@/utils/utilFunctions";
 import React, { ComponentProps, useState } from "react";
 import { LuEye, LuEyeOff, LuSparkles, LuVegan } from "react-icons/lu";
 
@@ -23,12 +23,6 @@ export default function MenuCard({
   ...props
 }: MenuCardProps) {
   const [isChildInFocus, setIsChildInFocus] = useState(false);
-
-  function highlightMatch(text: string, search: string = "") {
-    if (!search) return text;
-    const regex = new RegExp(`(${search})`, "gi");
-    return text.replace(regex, `<span class='text-secondary-gold'>$1</span>`);
-  }
 
   const { addAlert } = useAlert();
 
@@ -162,9 +156,15 @@ export default function MenuCard({
         />
 
         <div className="overflow-y-scroll flex-1 w-full">
-          <span className="text-xs text-center w-full">
-            {truncateText(item.description, 80)}
-          </span>
+          <span
+            className="text-xs text-center w-full"
+            dangerouslySetInnerHTML={{
+              __html: highlightMatch(
+                truncateText(item.description, 80),
+                searchTerm
+              ),
+            }}
+          />
         </div>
         <div
           onMouseOver={() => setIsChildInFocus(true)}

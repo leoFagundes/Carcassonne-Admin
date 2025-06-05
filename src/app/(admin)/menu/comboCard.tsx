@@ -1,6 +1,6 @@
 import Tooltip from "@/components/Tooltip";
 import { ComboType } from "@/types";
-import { truncateText } from "@/utils/utilFunctions";
+import { highlightMatch, truncateText } from "@/utils/utilFunctions";
 import React, { ComponentProps } from "react";
 import { LuBoxes } from "react-icons/lu";
 
@@ -14,12 +14,6 @@ export default function ComboCard({
   searchTerm,
   ...props
 }: ComboCardProps) {
-  function highlightMatch(text: string, search: string = "") {
-    if (!search) return text;
-    const regex = new RegExp(`(${search})`, "gi");
-    return text.replace(regex, `<span class='text-secondary-gold'>$1</span>`);
-  }
-
   return (
     <div
       {...props}
@@ -40,9 +34,15 @@ export default function ComboCard({
       />
 
       <div className="overflow-y-scroll flex-1 w-full text-center">
-        <span className="text-xs text-center">
-          {truncateText(item.description, 80)}
-        </span>
+        <span
+          className="text-xs text-center w-full"
+          dangerouslySetInnerHTML={{
+            __html: highlightMatch(
+              truncateText(item.description, 80),
+              searchTerm
+            ),
+          }}
+        />
       </div>
       <div className="flex flex-col gap-2 absolute top-4 right-3">
         <Tooltip direction="left" content="Este item é um Combo">

@@ -16,6 +16,7 @@ interface InputProps extends ComponentProps<"input"> {
   options?: string[];
   rows?: number;
   width?: string;
+  smallInput?: boolean;
 }
 
 export default function Input({
@@ -30,6 +31,7 @@ export default function Input({
   options,
   rows = 5,
   width = "w-auto",
+  smallInput = false,
   ...props
 }: InputProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -60,7 +62,9 @@ export default function Input({
 
   return (
     <div
-      className={`relative flex items-center max-w-[400px] min-w-[200px] ${width} bg-primary-black/80 py-2 px-3 sm:py-3 sm:px-4 rounded-sm text-sm gap-2 w-full shadow-card ${
+      className={`relative flex items-center max-w-[400px] min-w-[200px] ${width} bg-primary-black/80 ${
+        smallInput ? "py-[5px] px-2" : "py-2 sm:py-3 px-3 sm:px-4"
+      }   rounded-sm text-sm gap-2 w-full shadow-card ${
         variant && "border border-primary-gold"
       } ${multiline ? "items-start" : "items-center"}`}
     >

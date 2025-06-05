@@ -4,6 +4,7 @@ import Tooltip from "@/components/Tooltip";
 import { useAlert } from "@/contexts/alertProvider";
 import BoardgameRepository from "@/services/repositories/BoardGameRepository";
 import { BoardgameType } from "@/types";
+import { highlightMatch } from "@/utils/utilFunctions";
 import React, { ComponentProps, useState } from "react";
 import { FiClock, FiUsers } from "react-icons/fi";
 import { LuEye, LuEyeOff, LuSparkles } from "react-icons/lu";
@@ -25,13 +26,6 @@ export default function Card({
   const [isChildInFocus, setIsChildInFocus] = useState(false);
 
   const { addAlert } = useAlert();
-
-  function highlightMatch(name: string, search: string = "") {
-    if (!search) return name;
-
-    const regex = new RegExp(`(${search})`, "gi");
-    return name.replace(regex, `<span class='text-secondary-gold '>$1</span>`);
-  }
 
   const toggleVisibility = async (
     event: React.MouseEvent<SVGElement, MouseEvent>,

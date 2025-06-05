@@ -8,7 +8,7 @@ import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import Input from "./input";
 import { TypeOrderType } from "@/types";
 import Loader from "./loader";
-import { LuListOrdered } from "react-icons/lu";
+import { LuListOrdered, LuPlus } from "react-icons/lu";
 import TypesOrderRepository from "@/services/repositories/TypesOrderRepository";
 import RecorderTypesOrderList from "./recorderTypesOrderList";
 import { patternTypeOrder } from "@/utils/patternValues";
@@ -132,7 +132,7 @@ export default function TypesOrderForms({
         Adicionar tipo{" "}
       </h1>
 
-      <div className="flex flex-col gap-6 my-6 text-primary-gold">
+      <div className="flex items-center gap-2 my-6 text-primary-gold">
         <Input
           label="Tipo"
           placeholder="Ex: Pizza, Entrada..."
@@ -147,15 +147,17 @@ export default function TypesOrderForms({
           icon={<LuListOrdered />}
           width="!w-[250px]"
           options={types}
+          smallInput
         />
-      </div>
-      <div className="flex gap-2 m-2">
-        <Button onClick={handleCreateTypeOrder}>
-          {fetchLoading ? <Loader /> : "Adicionar"}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleCreateTypeOrder}>
+            <LuPlus size={14} />
+            {fetchLoading ? <Loader /> : "Adicionar"}
+          </Button>
+        </div>
       </div>
       {typesOrder.length > 0 && (
-        <>
+        <div className="bg-dark-black/50 mt-2 py-2 px-4 rounded shadow-card">
           <h1 className="text-4xl text-gradient-gold text-center mt-4">
             Ordenar Tipos e Subtipos
           </h1>
@@ -170,7 +172,7 @@ export default function TypesOrderForms({
               {loading ? <Loader /> : "Salvar"}
             </Button>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
