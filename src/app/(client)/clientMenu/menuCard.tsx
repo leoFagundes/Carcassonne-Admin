@@ -18,7 +18,7 @@ export default function MenuCard({ item, index, ...props }: MenuCardProps) {
     >
       <div className="relative h-fit w-fit">
         <img
-          className="w-[100px] h-[100px] rounded shadow-card sm:group-hover:shadow-none transition-all ease-in duration-200"
+          className="w-[100px] h-[100px] object-cover rounded shadow-card sm:group-hover:shadow-none transition-all ease-in duration-200"
           src={item.image ? item.image : "images/patternMenuImage.png"}
           alt="menu item"
         />
@@ -36,7 +36,7 @@ export default function MenuCard({ item, index, ...props }: MenuCardProps) {
         <p className="text-xs">{truncateText(item.description, 65)}</p>
       </div>
       {item.isFocus && (
-        <div className="absolute -top-3 left-3 px-1 bg-primary-black">
+        <div className="absolute -top-3 left-3 px-1 bg-primary-black/40 backdrop-blur-2xl">
           <span className="text-sm font-semibold">Destaque</span>
         </div>
       )}
