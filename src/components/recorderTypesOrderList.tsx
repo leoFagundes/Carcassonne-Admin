@@ -108,7 +108,7 @@ export default function RecorderTypesOrderList({
         <Reorder.Item
           key={item.id ?? item.type.name}
           value={item}
-          className="my-4 p-2 border border-primary-gold rounded shadow-card bg-primary-black border-dashed"
+          className="my-4 p-2 border border-primary-gold rounded shadow-card bg-primary-black border-dashed w-[200px] sm: w-full"
         >
           <div className="flex justify-between text-lg text-primary-gold font-semibold">
             <span className="hover:cursor-grab">
@@ -151,7 +151,7 @@ export default function RecorderTypesOrderList({
 
             <div className="h-[1px] w-full bg-primary-gold my-4"></div>
 
-            <div className="flex items-center gap-2 mt-2 text-primary-gold">
+            <div className="flex items-center flex-wrap sm:flex-nowrap gap-2 mt-2 text-primary-gold">
               <Input
                 label="Subtipo"
                 placeholder="Novo subtipo"

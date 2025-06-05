@@ -62,8 +62,8 @@ export default function Input({
 
   return (
     <div
-      className={`relative flex items-center max-w-[400px] min-w-[200px] ${width} bg-primary-black/80 ${
-        smallInput ? "py-[5px] px-2" : "py-2 sm:py-3 px-3 sm:px-4"
+      className={`relative flex items-center max-w-[400px]  ${width} bg-primary-black/80 ${
+        smallInput ? "py-[5px] px-2" : "py-2 sm:py-3 px-3 sm:px-4 min-w-[200px]"
       }   rounded-sm text-sm gap-2 w-full shadow-card ${
         variant && "border border-primary-gold"
       } ${multiline ? "items-start" : "items-center"}`}

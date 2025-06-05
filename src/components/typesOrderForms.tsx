@@ -132,7 +132,7 @@ export default function TypesOrderForms({
         Adicionar tipo{" "}
       </h1>
 
-      <div className="flex items-center gap-2 my-6 text-primary-gold">
+      <div className="flex items-center flex-wrap justify-center gap-x-2 gap-y-4 my-6 text-primary-gold">
         <Input
           label="Tipo"
           placeholder="Ex: Pizza, Entrada..."
@@ -157,7 +157,7 @@ export default function TypesOrderForms({
         </div>
       </div>
       {typesOrder.length > 0 && (
-        <div className="bg-dark-black/50 mt-2 py-2 px-4 rounded shadow-card">
+        <div className="bg-dark-black/50 my-2 mx-4 py-2 px-4 rounded shadow-card">
           <h1 className="text-4xl text-gradient-gold text-center mt-4">
             Ordenar Tipos e Subtipos
           </h1>
