@@ -157,7 +157,7 @@ export default function TypesOrderForms({
         </div>
       </div>
       {typesOrder.length > 0 && (
-        <div className="bg-dark-black/50 my-2 mx-4 py-2 px-4 rounded shadow-card">
+        <div className="flex flex-col items-center bg-dark-black/50 my-2 mx-4 py-2 px-4 rounded shadow-card">
           <h1 className="text-4xl text-gradient-gold text-center mt-4">
             Ordenar Tipos e Subtipos
           </h1>
