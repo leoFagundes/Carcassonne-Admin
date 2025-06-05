@@ -29,9 +29,10 @@ export default function RootLayout({
   return (
     <html lang="pt-br">
       <body
-        className={` ${pirataOne.variable} ${saira.variable} antialiased text-primary-white linear-background-black`}
+        className={` ${pirataOne.variable} ${saira.variable} antialiased text-primary-white bg-primary-black`}
       >
         <Analytics />
+        <div className="background-fixed" />
         <AlertProvider>{children}</AlertProvider>
       </body>
     </html>
