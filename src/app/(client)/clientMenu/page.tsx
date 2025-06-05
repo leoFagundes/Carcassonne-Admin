@@ -350,13 +350,11 @@ export default function ClientMenuPage() {
               <h2 className="text-4xl w-full text-center">{type}</h2>
               <div className="h-[1px] w-full bg-primary-gold my-2" />
               <span className="text-xs mb-5 text-center w-full italic">
-                {'"'}
                 {
                   descriptions.find(
                     (descriptionType) => descriptionType.type === type
                   )?.description
                 }
-                {'"'}
               </span>
 
               {/* Itens sem subtype */}
