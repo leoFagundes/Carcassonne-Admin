@@ -2,7 +2,7 @@
 
 import { BoardgameType } from "@/types";
 import React, { useEffect, useState } from "react";
-import { LuDices, LuLink } from "react-icons/lu";
+import { LuDices, LuDollarSign, LuLink } from "react-icons/lu";
 import Card from "./card";
 import Input from "@/components/input";
 import Modal from "@/components/modal";
@@ -80,7 +80,7 @@ export default function CollectionPage() {
       {loading && <LoaderFullscreen />}
       <section className="flex w-full justify-center items-center gap-2 text-primary-gold ">
         <LuDices size={"48px"} className="min-w-[48px]" />
-        <h2 className="text-5xl text-primary-gold text-center">
+        <h2 className="sm:text-5xl text-3xl text-primary-gold text-center">
           Coleção de jogos
         </h2>{" "}
         <Tooltip direction="bottom" content="Ir para visão do cliente">
@@ -97,7 +97,7 @@ export default function CollectionPage() {
           content="Ir para visão do cliente (Jogos à venda)"
         >
           <div className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
-            <LuLink
+            <LuDollarSign
               onClick={() => router.push("/clientCollection/forSale")}
               size={"16px"}
               className="min-w-[16px]"

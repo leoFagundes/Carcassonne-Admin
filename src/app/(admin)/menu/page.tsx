@@ -119,7 +119,9 @@ export default function MenuPage() {
       {loading && <LoaderFullscreen />}
       <section className="flex w-full justify-center items-center gap-2 text-primary-gold">
         <LuPizza size={"48px"} className="min-w-[48px]" />
-        <h2 className="text-5xl text-primary-gold text-center">Cardápio</h2>
+        <h2 className="sm:text-5xl text-3xl text-primary-gold text-center">
+          Cardápio
+        </h2>
 
         <Tooltip direction="bottom" content="Ir para visão do cliente">
           <div className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">

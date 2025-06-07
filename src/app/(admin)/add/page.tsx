@@ -89,7 +89,7 @@ export default function AddPage() {
     <section className="flex flex-col items-center gap-8 w-full h-full">
       <section className="flex w-full justify-center items-center gap-2 text-primary-gold">
         <LuPlus size={"48px"} className="min-w-[48px]" />
-        <h2 className="text-5xl text-primary-gold">Adicionar</h2>
+        <h2 className="sm:text-5xl text-3xl text-primary-gold">Adicionar</h2>
       </section>
       <section className=" sm:scrollbar-none flex justify-center flex-wrap gap-6 px-2 py-4 overflow-y-scroll overflow-x-hidden">
         <Card
