@@ -16,6 +16,8 @@ export interface BoardgameType {
   isVisible: boolean;
   image: string;
   types: string[];
+  isForSale: boolean;
+  value?: string;
 }
 
 export interface MenuItemType {

@@ -28,6 +28,8 @@ export const patternBoardgame: BoardgameType = {
   isVisible: true,
   image: "",
   types: [],
+  isForSale: false,
+  value: "",
 };
 
 export const patternMenuItem: MenuItemType = {

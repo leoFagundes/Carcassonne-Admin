@@ -6,12 +6,13 @@ import Input from "@/components/input";
 import { BoardgameType } from "@/types";
 import React, { useEffect, useState } from "react";
 import { LuClock, LuDices, LuUsers, LuX } from "react-icons/lu";
-import Card from "./card";
+import Card from "../card";
 import Modal from "@/components/modal";
 import {
   FiChevronDown,
   FiChevronUp,
   FiClock,
+  FiDollarSign,
   FiLayers,
   FiTrendingUp,
   FiUsers,
@@ -24,6 +25,7 @@ import { useAlert } from "@/contexts/alertProvider";
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import { difficultiesOptions } from "@/utils/patternValues";
 import Counter from "@/components/mage-ui/text/counter";
+import patternBoardGameImage from "../../../../../public/images/patternBoardgameImage.png";
 
 export default function ClientCollectionPage() {
   const [filterBoardgameName, setFilterBoardgameName] = useState("");
@@ -40,7 +42,7 @@ export default function ClientCollectionPage() {
   const [filterGameFeatured, setFilterGameFeatured] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentGame, setCurrentGame] = useState<BoardgameType | undefined>();
-  const [isFilterVisible, setIsFilterVisible] = useState(true);
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [boardgames, setBoardgames] = useState<BoardgameType[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -51,10 +53,10 @@ export default function ClientCollectionPage() {
       setLoading(true);
       try {
         const fetchedBoardgames = await BoardgameRepository.getAll();
-        const boardgamesNotForSale = fetchedBoardgames.filter(
-          (boardgame) => !boardgame.isForSale
+        const boardgamesForSale = fetchedBoardgames.filter(
+          (boardgame) => boardgame.isForSale
         );
-        setBoardgames(boardgamesNotForSale);
+        setBoardgames(boardgamesForSale);
       } catch (error) {
         addAlert(`Erro ao carregar jogos: ${error}`);
       } finally {
@@ -144,7 +146,7 @@ export default function ClientCollectionPage() {
     <div className="flex flex-col items-center gap-6 w-full h-screen text-primary-gold p-8">
       {loading && <LoaderFullscreen />}
       <section className="flex flex-col item center gap-1">
-        <h1 className="text-4xl text-center">Coleção de Jogos</h1>
+        <h1 className="text-4xl text-center">Jogos à venda</h1>
         <div className="flex items-center gap-2 justify-center text-center italic font-light w-full">
           <div className="h-[1px] flex-1 bg-primary-gold" />
           <span>Carcassonne Pub</span>
@@ -153,7 +155,7 @@ export default function ClientCollectionPage() {
       </section>
       <div className="flex flex-col gap-2 items-center">
         <span className="text-center sm:text-lg text-sm">
-          Encontre o jogo ideal para a sua mesa!
+          Encontre um jogo para chamar de seu!
         </span>
         <button
           onClick={() => setIsFilterVisible(!isFilterVisible)}
@@ -345,7 +347,7 @@ export default function ClientCollectionPage() {
               src={
                 currentGame.image
                   ? currentGame.image
-                  : "images/patternBoardgameImage.png"
+                  : patternBoardGameImage.src
               }
               alt="boardgame"
             />
@@ -354,6 +356,12 @@ export default function ClientCollectionPage() {
             </p>
 
             <div className="w-full flex flex-col justify-between gap-2 flex-wrap">
+              {currentGame.isForSale && (
+                <span className="flex items-center gap-2 text-sm">
+                  <FiDollarSign size={"16px"} className="min-w-[16px]" />
+                  {currentGame.value}
+                </span>
+              )}
               <span className="flex items-center gap-2 text-sm">
                 <FiUsers size={"16px"} className="min-w-[16px]" />
                 {currentGame.minPlayers === currentGame.maxPlayers

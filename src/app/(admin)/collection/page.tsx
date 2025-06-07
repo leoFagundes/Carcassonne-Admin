@@ -9,7 +9,7 @@ import Modal from "@/components/modal";
 import CollectionForms from "@/components/collectionForms";
 import { useAlert } from "@/contexts/alertProvider";
 import BoardgameRepository from "@/services/repositories/BoardGameRepository";
-import { patternBoardgame } from "@/utils/patternValues";
+import { difficultiesOptions, patternBoardgame } from "@/utils/patternValues";
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import { useRouter } from "next/navigation";
 import Tooltip from "@/components/Tooltip";
@@ -19,8 +19,10 @@ import Dropdown from "@/components/dropdown";
 export default function CollectionPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
+  const [filterDifficulty, setFilterDifficulty] = useState("");
   const [showOnlyFocus, setShowOnlyFocus] = useState(false);
   const [showOnlyInvisible, setShowOnlyInvisible] = useState(false);
+  const [showOnlyIsForSale, setShowOnlyIsForSale] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [boardgames, setBoardgames] = useState<BoardgameType[]>([]);
@@ -53,10 +55,20 @@ export default function CollectionPage() {
       game.description.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesType = filterType === "" || game.types.includes(filterType);
+    const matchesDifficulty =
+      filterDifficulty === "" || game.difficulty.includes(filterDifficulty);
     const matchesFocus = showOnlyFocus ? game.featured : true;
     const matchesInvisible = showOnlyInvisible ? !game.isVisible : true;
+    const matchesIsForSale = showOnlyIsForSale ? game.isForSale : true;
 
-    return matchesSearch && matchesType && matchesFocus && matchesInvisible;
+    return (
+      matchesSearch &&
+      matchesType &&
+      matchesFocus &&
+      matchesInvisible &&
+      matchesIsForSale &&
+      matchesDifficulty
+    );
   });
 
   const boardgameTypes = Array.from(
@@ -80,6 +92,18 @@ export default function CollectionPage() {
             />
           </div>
         </Tooltip>
+        <Tooltip
+          direction="bottom"
+          content="Ir para visão do cliente (Jogos à venda)"
+        >
+          <div className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
+            <LuLink
+              onClick={() => router.push("/clientCollection/forSale")}
+              size={"16px"}
+              className="min-w-[16px]"
+            />
+          </div>
+        </Tooltip>
       </section>
 
       {/* Input de busca */}
@@ -98,6 +122,13 @@ export default function CollectionPage() {
             firstLabel="Todos os tipos"
             variant
           />
+          <Dropdown
+            value={filterDifficulty}
+            setValue={(e) => setFilterDifficulty(e.target.value)}
+            options={difficultiesOptions}
+            firstLabel="Todos as Dificuldades"
+            variant
+          />
         </div>
         <div className="flex justify-center gap-4 flex-wrap max-w-[300px]">
           <Checkbox
@@ -110,6 +141,12 @@ export default function CollectionPage() {
             checked={showOnlyInvisible}
             setChecked={(e) => setShowOnlyInvisible(e.target.checked)}
             label="Mostrar apenas invisíveis"
+            variant
+          />
+          <Checkbox
+            checked={showOnlyIsForSale}
+            setChecked={(e) => setShowOnlyIsForSale(e.target.checked)}
+            label="Mostrar apenas jogos à venda"
             variant
           />
         </div>

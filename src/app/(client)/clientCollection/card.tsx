@@ -6,11 +6,13 @@ import React, { ComponentProps, useEffect, useState } from "react";
 import {
   FiArrowRight,
   FiClock,
+  FiDollarSign,
   FiLayers,
   FiTrendingUp,
   FiUsers,
 } from "react-icons/fi";
 import { LuSparkles } from "react-icons/lu";
+import patternBoardGameImage from "../../../../public/images/patternBoardgameImage.png";
 
 interface CardProps extends ComponentProps<"div"> {
   boardgame: BoardgameType;
@@ -51,7 +53,7 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
 
             {!boardgame.image && (
               <img
-                src={"images/patternBoardgameImage.png"}
+                src={patternBoardGameImage.src}
                 alt="boardgame"
                 className="h-12 w-12 rounded shadow-card"
               />
@@ -65,6 +67,11 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
           <span className="max-w-[100px] sm:max-w-[300px]">
             {boardgame.name}
           </span>
+          {boardgame.isForSale && (
+            <span className="max-w-[100px] sm:max-w-[300px]">
+              {boardgame.value}
+            </span>
+          )}
           {!isSmallScreen && (
             <span className="flex items-center gap-2 text-sm flex-1 justify-end text-nowrap">
               <FiUsers size={"16px"} className="min-w-[16px]" />
@@ -93,9 +100,7 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
             className="relative w-full h-[150px] bg-center bg-cover rounded-t-lg"
             style={{
               backgroundImage: `url(${
-                boardgame.image
-                  ? boardgame.image
-                  : "images/patternBoardgameImage.png"
+                boardgame.image ? boardgame.image : patternBoardGameImage.src
               })`,
             }}
           >
@@ -112,6 +117,12 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
           )}
 
           <div className="flex flex-col gap-2 p-4 relative">
+            {boardgame.isForSale && (
+              <span className="flex items-center gap-2 text-sm">
+                <FiDollarSign size={"16px"} className="min-w-[16px]" />
+                {boardgame.value}
+              </span>
+            )}
             <span className="flex items-center gap-2 text-sm">
               <FiUsers size={"16px"} className="min-w-[16px]" />
               {boardgame.minPlayers === boardgame.maxPlayers

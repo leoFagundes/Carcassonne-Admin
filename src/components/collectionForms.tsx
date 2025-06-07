@@ -11,6 +11,7 @@ import {
   LuEye,
   LuEyeClosed,
   LuSparkles,
+  LuDollarSign,
 } from "react-icons/lu";
 import Button from "./button";
 import Input from "./input";
@@ -304,6 +305,44 @@ export default function CollectionForms({
               </div>
             )}
           </div>
+          <div className="relative">
+            <Checkbox
+              checked={localItem.isForSale}
+              setChecked={() =>
+                setLocalItem({
+                  ...localItem,
+                  isForSale: !localItem.isForSale,
+                })
+              }
+              variant
+              label={`${
+                localItem.isForSale
+                  ? "Jogo está à venda"
+                  : "Jogo não está à venda"
+              }`}
+            />
+            {localItem.isForSale && (
+              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
+                <LuDollarSign size={"16px"} />
+              </div>
+            )}
+          </div>
+          {localItem.isForSale && (
+            <Input
+              label="Valor"
+              placeholder="Valor"
+              value={localItem.value || ""}
+              setValue={(e) =>
+                setLocalItem({
+                  ...localItem,
+                  value: e.target.value,
+                })
+              }
+              variant
+              icon={<LuDollarSign size={"18px"} />}
+              width="!w-[250px]"
+            />
+          )}
         </div>
       </div>
       <div className="flex gap-2 m-2">
