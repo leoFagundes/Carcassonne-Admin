@@ -34,7 +34,7 @@ export default function ClientCollectionPage() {
   >();
   const [filterBoardgameDifficulty, setFilterBoardgameDifficulty] =
     useState("");
-  const [filterBoardgameType, setFilterBoardgameType] = useState("");
+  const [chosenTypesList, setChosenTypesList] = useState<string[]>([]);
   const [isListView, setIsListView] = useState(false);
   const [filterJustForTow, setFilterJustForTwo] = useState(false);
   const [filterGameFeatured, setFilterGameFeatured] = useState(false);
@@ -93,8 +93,8 @@ export default function ClientCollectionPage() {
         boardgame.difficulty === filterBoardgameDifficulty;
 
       const matchesType =
-        filterBoardgameType === "" ||
-        boardgame.types.includes(filterBoardgameType);
+        chosenTypesList.length === 0 ||
+        chosenTypesList.every((type) => boardgame.types.includes(type));
 
       const matchesFeatured = !filterGameFeatured || boardgame.featured;
 
@@ -126,7 +126,7 @@ export default function ClientCollectionPage() {
     setFilterBoardgameQuantityPlayers(undefined);
     setFilterBoardgamePlayTime(undefined);
     setFilterBoardgameDifficulty("");
-    setFilterBoardgameType("");
+    setChosenTypesList([]);
     setIsListView(false);
     setFilterJustForTwo(false);
     setFilterGameFeatured(false);
@@ -255,15 +255,37 @@ export default function ClientCollectionPage() {
               />
             </div>
             <div className="flex flex-col gap-6">
-              <Dropdown
-                firstLabel="Tipo"
-                value={filterBoardgameType}
-                setValue={(e) => setFilterBoardgameType(e.target.value)}
-                options={boardgameTypes}
-                variant
-                label="Tipo"
-                width="!w-[250px]"
-              />
+              <div>
+                <Dropdown
+                  firstLabel="Tipo"
+                  value={""}
+                  setValue={(e) =>
+                    setChosenTypesList([...chosenTypesList, e.target.value])
+                  }
+                  options={boardgameTypes}
+                  variant
+                  label="Tipo"
+                  width="!w-[250px]"
+                />
+                {chosenTypesList.length > 0 && (
+                  <div className="flex flex-col p-2 border border-t-0 border-dashed rounded shadow-card">
+                    {chosenTypesList.map((type, index) => (
+                      <span
+                        key={index}
+                        className="flex gap-2 items-center p-1 cursor-pointer sm:hover:underline"
+                        onClick={() =>
+                          setChosenTypesList((prev) =>
+                            prev.filter((t) => t !== type)
+                          )
+                        }
+                      >
+                        {type}
+                        <LuX />
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="flex flex-col gap-2 -mt-2">
                 <Checkbox
                   checked={filterGameFeatured}
