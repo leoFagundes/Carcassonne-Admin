@@ -23,7 +23,7 @@ export default function LoaderFullscreen() {
         );
         setFade(true);
       }, 500);
-    }, 3000);
+    }, 1000);
 
     return () => clearInterval(interval);
   }, []);

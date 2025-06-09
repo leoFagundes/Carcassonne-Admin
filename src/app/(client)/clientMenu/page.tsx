@@ -39,6 +39,9 @@ export default function ClientMenuPage() {
   const [generalConfigs, setGeneralConfigs] = useState<GeneralConfigsType>();
   const [typesOrder, setTypesOrder] = useState<TypeOrderType[]>([]);
 
+  const [currentMenuItem, setCurrentMenuItem] = useState("");
+  const [isAutoScrolling, setIsAutoScrolling] = useState(false);
+
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
   const [laoding, setLoading] = useState(true);
@@ -175,6 +178,7 @@ export default function ClientMenuPage() {
   }, []);
 
   const handleScrollToSection = (sectionId: string) => {
+    setIsAutoScrolling(true);
     const section = document.getElementById(sectionId);
     if (section) {
       window.scrollTo({
@@ -182,6 +186,10 @@ export default function ClientMenuPage() {
         behavior: "smooth",
       });
     }
+
+    setTimeout(() => {
+      setIsAutoScrolling(false);
+    }, 800);
   };
 
   const centralizeMenuItem = (itemId: string) => {
@@ -214,6 +222,46 @@ export default function ClientMenuPage() {
     handleScrollToSection(type); // Rola para a seção
     centralizeMenuItem(id); // Centraliza o tipo no menu horizontal
   };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !isAutoScrolling) {
+            const id = entry.target.getAttribute("id");
+            const index = types.findIndex((type) => type === id);
+            if (id && index !== -1) {
+              centralizeMenuItem(`${id}-${index}`);
+              setTimeout(() => {
+                setCurrentMenuItem(id);
+              }, 300);
+            }
+          }
+        });
+      },
+      {
+        root: null,
+        rootMargin: "0px 0px -10% 0px",
+        threshold: 0.1, // % da seção visível
+      }
+    );
+
+    types.forEach((type) => {
+      const section = document.getElementById(type);
+      if (section) {
+        observer.observe(section);
+      }
+    }, []);
+
+    return () => {
+      types.forEach((type) => {
+        const section = document.getElementById(type);
+        if (section) {
+          observer.unobserve(section);
+        }
+      });
+    };
+  });
 
   return (
     <div className="flex flex-col items-center w-full h-screen text-primary-gold px-8">
@@ -248,7 +296,9 @@ export default function ClientMenuPage() {
                 id={`${type}-${index}`}
                 key={index}
                 onClick={() => handleTypeClick(type, `${type}-${index}`)}
-                className="bg-secondary-black/60 rounded py-1 px-2 cursor-pointer hover:bg-secondary-black transition-all"
+                className={`bg-secondary-black/60 rounded py-1 px-2 cursor-pointer hover:bg-secondary-black transition-all ${
+                  currentMenuItem === type && "shadow-card-gold font-bold"
+                }`}
               >
                 {type}
               </span>
