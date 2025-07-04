@@ -221,6 +221,7 @@ export default function ClientMenuPage() {
   const handleTypeClick = (type: string, id: string) => {
     handleScrollToSection(type); // Rola para a seção
     centralizeMenuItem(id); // Centraliza o tipo no menu horizontal
+    setCurrentMenuItem(type);
   };
 
   useEffect(() => {
@@ -234,7 +235,7 @@ export default function ClientMenuPage() {
               centralizeMenuItem(`${id}-${index}`);
               setTimeout(() => {
                 setCurrentMenuItem(id);
-              }, 300);
+              }, 100);
             }
           }
         });
@@ -296,8 +297,9 @@ export default function ClientMenuPage() {
                 id={`${type}-${index}`}
                 key={index}
                 onClick={() => handleTypeClick(type, `${type}-${index}`)}
-                className={`bg-secondary-black/60 rounded py-1 px-2 cursor-pointer hover:bg-secondary-black transition-all ${
-                  currentMenuItem === type && "shadow-card-gold font-bold"
+                className={`flex items-center justify-center bg-secondary-black/60 rounded py-1 px-2 cursor-pointer hover:bg-secondary-black transition-all ${
+                  currentMenuItem === type &&
+                  "font-semibold -translate-y-1 !bg-secondary-black shadow-card text-md mx-1 px-3"
                 }`}
               >
                 {type}

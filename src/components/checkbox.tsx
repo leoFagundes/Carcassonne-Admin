@@ -6,6 +6,7 @@ interface CheckboxType {
   label: string;
   variant?: boolean;
   width?: string;
+  withoutBackground?: boolean;
 }
 
 export default function Checkbox({
@@ -14,6 +15,7 @@ export default function Checkbox({
   label,
   variant = false,
   width = "w-auto",
+  withoutBackground = false,
 }: CheckboxType) {
   return (
     <label
@@ -22,7 +24,7 @@ export default function Checkbox({
         variant && "px-3 sm:px-4"
       } sm:py-3 rounded-sm text-sm  w-full ${
         variant && "border border-primary-gold"
-      } `}
+      } ${withoutBackground && "!bg-transparent"}`}
     >
       <input
         name={label}
