@@ -18,18 +18,12 @@ import CarcaImageRepository from "@/services/repositories/CarcaImageRepository";
 import { useAlert } from "@/contexts/alertProvider";
 import { CarcaImageType } from "@/types";
 import random from "random";
-import {
-  deleteImageFromCloudinary,
-  extractPublicIdFromUrl,
-  uploadImageToCloudinary,
-} from "@/services/repositories/cloudinaryImagesService";
 import InputImage from "@/components/inputImage";
-
-const UPLOAD_PRESET = process.env
-  .NEXT_PUBLIC_CLOUDNINARY_UPLOAD_PRESET as string;
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDNINARY_CLOUD_NAME as string;
-const API_KEY = process.env.NEXT_PUBLIC_CLOUDNINARY_API_KEY as string;
-const API_SECRET = process.env.NEXT_PUBLIC_CLOUDNINARY_API_SECRET as string;
+import {
+  deleteImageFromFirebase,
+  getPathFromFirebaseUrl,
+  uploadImageToFirebase,
+} from "@/services/repositories/FirebaseImageUtils";
 
 export const DragCards = () => {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -50,19 +44,17 @@ export const DragCards = () => {
   };
 
   const addCarcaImage = async () => {
-    if (!newCarcaImage.src.trim()) {
-      addAlert("Adicione uma url a imagem!");
+    if (!newCarcaImage.src.trim() && !imageFile) {
+      addAlert("Adicione uma imagem!");
       return;
     }
 
     try {
       let imageUrl = newCarcaImage.src || "";
+
       if (imageFile) {
-        imageUrl = await uploadImageToCloudinary(
-          imageFile,
-          UPLOAD_PRESET,
-          CLOUD_NAME
-        );
+        const { url } = await uploadImageToFirebase(imageFile, "carca-images");
+        imageUrl = url;
       }
 
       const top = `${random.int(10, 60)}%`;
@@ -76,10 +68,12 @@ export const DragCards = () => {
         rotate,
         src: imageUrl,
       });
+
       addAlert("Imagem criada com sucesso");
       setIsModalOpen(false);
       setNewCarcaImage(patternCarcaImage);
     } catch (error) {
+      console.error(error);
       addAlert(`Erro ao adicionar imagem: ${error}`);
     }
   };
@@ -364,15 +358,11 @@ const Card = ({
         setOpacityLow(true);
         console.log("Imagem caiu na zona! Executando função...", img.id);
 
-        const publicIdToDelete = extractPublicIdFromUrl(img.src);
-        if (publicIdToDelete) {
-          await deleteImageFromCloudinary(
-            publicIdToDelete,
-            API_KEY,
-            API_SECRET,
-            CLOUD_NAME
-          );
+        const imagePath = getPathFromFirebaseUrl(img.src);
+        if (imagePath) {
+          await deleteImageFromFirebase(imagePath);
         }
+
         await CarcaImageRepository.delete(img.id);
         window.location.reload();
       } else {

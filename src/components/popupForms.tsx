@@ -10,10 +10,10 @@ import Loader from "./loader";
 import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 import Tooltip from "./Tooltip";
 import {
-  uploadImageToCloudinary,
-  extractPublicIdFromUrl,
-  deleteImageFromCloudinary,
-} from "@/services/repositories/cloudinaryImagesService";
+  deleteImageFromFirebase,
+  getPathFromFirebaseUrl,
+  uploadImageToFirebase,
+} from "@/services/repositories/FirebaseImageUtils";
 
 interface DescriptionTypeFormsProps {
   currentConfig: GeneralConfigsType;
@@ -22,12 +22,6 @@ interface DescriptionTypeFormsProps {
   >;
   closeForms: VoidFunction;
 }
-
-const UPLOAD_PRESET = process.env
-  .NEXT_PUBLIC_CLOUDNINARY_UPLOAD_PRESET as string;
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDNINARY_CLOUD_NAME as string;
-const API_KEY = process.env.NEXT_PUBLIC_CLOUDNINARY_API_KEY as string;
-const API_SECRET = process.env.NEXT_PUBLIC_CLOUDNINARY_API_SECRET as string;
 
 export default function PopupForms({
   currentConfig,
@@ -64,7 +58,7 @@ export default function PopupForms({
   }, []);
 
   const handleSavePopup = async () => {
-    if (!currentConfig.popUpImage) {
+    if (!currentConfig.popUpImage && !imageFile) {
       addAlert("Adicione uma imagem antes de continuar.");
       return;
     }
@@ -74,11 +68,8 @@ export default function PopupForms({
       let imageUrl = currentConfig.popUpImage || "";
 
       if (imageFile) {
-        imageUrl = await uploadImageToCloudinary(
-          imageFile,
-          UPLOAD_PRESET,
-          CLOUD_NAME
-        );
+        const { url } = await uploadImageToFirebase(imageFile, "popup");
+        imageUrl = url;
       }
 
       const updatedConfig = {
@@ -91,6 +82,7 @@ export default function PopupForms({
       addAlert(`Popup salvo com sucesso!`);
       closeForms();
     } catch (error) {
+      console.error(error);
       addAlert(`Erro ao salvar Popup: ${error}`);
     } finally {
       setLoading(false);
@@ -104,25 +96,23 @@ export default function PopupForms({
       const imageUrl = currentConfig.popUpImage;
 
       if (imageUrl) {
-        const publicId = extractPublicIdFromUrl(imageUrl);
-        await deleteImageFromCloudinary(
-          publicId,
-          API_KEY,
-          API_SECRET,
-          CLOUD_NAME
-        );
+        const imagePath = getPathFromFirebaseUrl(imageUrl);
+        if (imagePath) {
+          await deleteImageFromFirebase(imagePath);
+        }
       }
 
-      const generalConfigsWhitNoPopup = {
+      const generalConfigsWithNoPopup = {
         ...currentConfig,
         popUpImage: "",
       };
 
-      await GeneralConfigsRepository.update(generalConfigsWhitNoPopup);
-      setCurrentConfig(generalConfigsWhitNoPopup);
+      await GeneralConfigsRepository.update(generalConfigsWithNoPopup);
+      setCurrentConfig(generalConfigsWithNoPopup);
       closeForms();
       addAlert(`Popup deletado com sucesso!`);
     } catch (error) {
+      console.error(error);
       addAlert(`Erro ao deletar Popup: ${error}`);
     } finally {
       setLoading(false);
