@@ -11,15 +11,6 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { MenuItemType } from "@/types";
-import {
-  deleteImageFromCloudinary,
-  extractPublicIdFromUrl,
-} from "./cloudinaryImagesService";
-
-// const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDNINARY_UPLOAD_PRESET as string;
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDNINARY_CLOUD_NAME as string;
-const API_KEY = process.env.NEXT_PUBLIC_CLOUDNINARY_API_KEY as string;
-const API_SECRET = process.env.NEXT_PUBLIC_CLOUDNINARY_API_SECRET as string;
 
 class MenuItemRepository {
   static collectionName = "menuItems";
@@ -87,23 +78,6 @@ class MenuItemRepository {
   static async delete(id: string) {
     try {
       const docRef = doc(db, this.collectionName, id);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const imageUrl = data.image;
-
-        if (imageUrl) {
-          const publicId = extractPublicIdFromUrl(imageUrl);
-          await deleteImageFromCloudinary(
-            publicId,
-            API_KEY,
-            API_SECRET,
-            CLOUD_NAME
-          );
-        }
-      }
-
       await deleteDoc(docRef);
       console.log("Item do cardápio deletado com sucesso.");
       return true;

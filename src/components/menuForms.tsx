@@ -25,10 +25,10 @@ import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import { patternMenuItem } from "@/utils/patternValues";
 import LoaderFullscreen from "./loaderFullscreen";
 import {
-  deleteImageFromCloudinary,
-  extractPublicIdFromUrl,
-  uploadImageToCloudinary,
-} from "@/services/repositories/cloudinaryImagesService";
+  deleteImageFromFirebase,
+  getPathFromFirebaseUrl,
+  uploadImageToFirebase,
+} from "@/services/repositories/FirebaseImageUtils";
 
 interface MenuFormsType {
   currentItem: MenuItemType;
@@ -36,12 +36,6 @@ interface MenuFormsType {
   formType: "edit" | "add";
   closeForms: VoidFunction;
 }
-
-const UPLOAD_PRESET = process.env
-  .NEXT_PUBLIC_CLOUDNINARY_UPLOAD_PRESET as string;
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDNINARY_CLOUD_NAME as string;
-const API_KEY = process.env.NEXT_PUBLIC_CLOUDNINARY_API_KEY as string;
-const API_SECRET = process.env.NEXT_PUBLIC_CLOUDNINARY_API_SECRET as string;
 
 export default function MenuForms({
   currentItem,
@@ -113,12 +107,10 @@ export default function MenuForms({
     setLoading(true);
     try {
       let imageUrl = localItem.image || "";
+
       if (imageFile) {
-        imageUrl = await uploadImageToCloudinary(
-          imageFile,
-          UPLOAD_PRESET,
-          CLOUD_NAME
-        );
+        const { url } = await uploadImageToFirebase(imageFile, "menu-items");
+        imageUrl = url;
       }
 
       const itemToSave = {
@@ -137,15 +129,9 @@ export default function MenuForms({
           previousItem.image &&
           previousItem.image.trim() !== ""
         ) {
-          const publicIdToDelete = extractPublicIdFromUrl(previousItem.image);
-
-          if (publicIdToDelete) {
-            await deleteImageFromCloudinary(
-              publicIdToDelete,
-              API_KEY,
-              API_SECRET,
-              CLOUD_NAME
-            );
+          const imagePathToDelete = getPathFromFirebaseUrl(previousItem.image);
+          if (imagePathToDelete) {
+            await deleteImageFromFirebase(imagePathToDelete);
           }
         }
 
@@ -178,19 +164,17 @@ export default function MenuForms({
     setLoading(true);
     try {
       if (currentItem.image) {
-        const publicId = extractPublicIdFromUrl(currentItem.image);
-
-        await deleteImageFromCloudinary(
-          publicId,
-          API_KEY,
-          API_SECRET,
-          CLOUD_NAME
-        );
+        const imagePath = getPathFromFirebaseUrl(currentItem.image);
+        if (imagePath) {
+          await deleteImageFromFirebase(imagePath);
+        }
       }
+
       await MenuItemRepository.delete(currentItem.id);
       addAlert(`Item "${currentItem.name}" deletado com sucesso!`);
       closeForms();
     } catch (error) {
+      console.error(error);
       addAlert(`Erro ao deletar item: ${error}`);
     } finally {
       setLoading(false);
