@@ -85,3 +85,13 @@ export interface TypeOrderType {
     }[];
   };
 }
+
+export interface ReserveTypes {
+  id?: string;
+  bookingDate: Date;
+  phone: string;
+  email: string;
+  observation: string;
+  adults: number;
+  childs: number;
+}
