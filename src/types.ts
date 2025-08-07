@@ -89,9 +89,12 @@ export interface TypeOrderType {
 export interface ReserveTypes {
   id?: string;
   bookingDate: Date;
+  time: string;
+  name: string;
   phone: string;
   email: string;
   observation: string;
   adults: number;
   childs: number;
+  status: string;
 }
