@@ -30,3 +30,21 @@ export function randomCodeGenerator(tamanho: number = 6) {
   }
   return codigo;
 }
+
+export const openWhatsApp = (rawPhone: string) => {
+  const cleanedPhone = rawPhone.replace(/\D/g, "");
+  const url = `https://wa.me/${cleanedPhone}`;
+  window.open(url, "_blank");
+};
+
+export const openEmail = (
+  email: string,
+  subjectProps: string,
+  bodyProps: string
+) => {
+  const subject = encodeURIComponent(subjectProps);
+  const body = encodeURIComponent(bodyProps);
+  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
+
+  window.open(gmailUrl, "_blank");
+};

@@ -104,3 +104,11 @@ export interface ReserveType {
   status: "confirmed" | "canceled";
   table?: string;
 }
+
+export interface TableType {
+  id?: string;
+  code: string;
+  capacity: number;
+  combinableWith?: string[];
+  priority: number;
+}
