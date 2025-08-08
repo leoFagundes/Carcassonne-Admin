@@ -5,7 +5,7 @@ import { Calendar } from "@heroui/react";
 import { today, getLocalTimeZone, getDayOfWeek } from "@internationalized/date";
 import { useLocale } from "@react-aria/i18n";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
-import { ReserveType, TableType } from "@/types";
+import { ReserveType } from "@/types";
 import {
   LuBookCheck,
   LuBookX,
@@ -18,14 +18,12 @@ import {
 import Tooltip from "@/components/Tooltip";
 import { useAlert } from "@/contexts/alertProvider";
 import LoaderFullscreen from "@/components/loaderFullscreen";
-import TableRepository from "@/services/repositories/TableRepository";
 import { openEmail, openWhatsApp } from "@/utils/utilFunctions";
 import Input from "@/components/input";
 
 export default function Rerserve() {
   const [date, setDate] = useState(today(getLocalTimeZone()));
   const [reserves, setReserves] = useState<ReserveType[]>([]);
-  const [tables, setTables] = useState<TableType[]>([]);
   const [loading, setLoading] = useState(false);
   const { locale } = useLocale();
 
@@ -85,20 +83,6 @@ export default function Rerserve() {
 
     getReserves();
   }, [date]);
-
-  useEffect(() => {
-    async function getTables() {
-      try {
-        const fetchedTables = await TableRepository.getAll();
-        setTables(fetchedTables);
-      } catch (error) {
-        addAlert("Erro ao carregar as mesas.");
-        console.error(error);
-      }
-    }
-
-    getTables();
-  }, []);
 
   async function changeReserveStatus(
     id: string | undefined,
