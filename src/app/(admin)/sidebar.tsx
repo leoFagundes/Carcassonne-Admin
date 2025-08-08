@@ -116,17 +116,17 @@ export default function Sidebar() {
               icon={<LuPlus size={"20px"} />}
               path="/add"
             />
-            {pathname === "/reserve" && (
-              <Item
-                onClick={() => {
-                  router.push("/reserve");
-                  setIsOpen(false);
-                }}
-                message="Reservas"
-                icon={<LuCalendar size={"20px"} />}
-                path="/reserve"
-              />
-            )}
+
+            <Item
+              onClick={() => {
+                router.push("/reserve");
+                setIsOpen(false);
+              }}
+              message="Reservas"
+              icon={<LuCalendar size={"20px"} />}
+              path="/reserve"
+            />
+
             {pathname === "/carcassonne" && (
               <Item
                 onClick={() => {

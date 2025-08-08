@@ -19,3 +19,14 @@ export function highlightMatch(text: string, search: string = "") {
     return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 }
+
+export function randomCodeGenerator(tamanho: number = 6) {
+  const caracteres =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let codigo = "";
+  for (let i = 0; i < tamanho; i++) {
+    const indice = Math.floor(Math.random() * caracteres.length);
+    codigo += caracteres[indice];
+  }
+  return codigo;
+}
