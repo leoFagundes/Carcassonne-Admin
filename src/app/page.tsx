@@ -85,7 +85,7 @@ export default function Home() {
         return;
       }
 
-      router.push("/reserve");
+      router.push("/myreserves");
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error("Erro ao fazer login:", error.message);

@@ -9,12 +9,17 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@fullcalendar/core": "^6.1.18",
+    "@fullcalendar/daygrid": "^6.1.18",
+    "@fullcalendar/react": "^6.1.18",
     "@heroui/calendar": "^2.2.24",
     "@heroui/react": "^2.8.2",
     "@heroui/system": "^2.4.20",
     "@heroui/theme": "^2.4.20",
+    "@radix-ui/react-slot": "^1.2.3",
     "@vercel/analytics": "^1.5.0",
     "browser-image-compression": "^2.0.2",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "firebase": "^11.6.1",
@@ -25,9 +30,13 @@
     "motion": "^12.16.0",
     "next": "15.3.1",
     "react": "^19.1.1",
+    "react-calendar": "^6.0.0",
+    "react-confetti": "^6.4.0",
     "react-dom": "^19.1.1",
     "react-icons": "^5.5.0",
-    "tailwind-merge": "^3.3.0",
+    "react-use": "^17.6.0",
+    "resend": "^6.0.1",
+    "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
@@ -40,6 +49,7 @@
     "eslint-config-next": "15.3.1",
     "random": "^5.4.0",
     "tailwindcss": "^4",
+    "tw-animate-css": "^1.3.6",
     "typescript": "^5"
   }
 }

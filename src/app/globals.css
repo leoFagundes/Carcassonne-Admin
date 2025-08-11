@@ -152,6 +152,159 @@ input:-webkit-autofill {
   font-family: var(--font-saira);
 }
 
+/* FULLCALENDAR STYLES - start */
+
+/* Título do mês/semana/dia */
+.fc-toolbar-title {
+  color: var(--color-primary-gold); /* cor do texto */
+  font-size: 20px;
+  font-weight: 500;
+  font-family: var(--font-saira);
+}
+
+/* Botões (Today, Prev, Next) */
+.fc .fc-button {
+  background-color: transparent; /* fundo */
+  border: none;
+  color: var(--color-primary-gold); /* texto */
+}
+
+.fc .fc-button:hover {
+  background-color: var(--color-primary-gold); /* hover */
+  color: var(--color-primary-black);
+  cursor: pointer;
+}
+
+/* Setas (prev/next) */
+.fc-icon {
+  color: var(--color-primary-gold);
+}
+
+.fc-icon:hover {
+  color: var(--color-primary-black);
+}
+
+/* Cabeçalho dos dias da semana */
+.fc-col-header-cell {
+  background-color: var(--color-primary-gold);
+  color: var(--color-primary-black);
+  font-weight: bold;
+}
+
+/* Fundo dos dias */
+.fc-daygrid-day {
+  background-color: var(--color-secondary-black);
+}
+
+/* Dia atual */
+.fc-day-today {
+  background-color: var(--color-primary-black) !important;
+  color: var(--color-primary-gold);
+  font-weight: 500;
+}
+
+/* Borda dos dias e do grid */
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border-color: var(--color-primary-gold);
+}
+
+/* Borda do evento */
+.fc-daygrid-event {
+  border-color: transparent;
+}
+
+/* Remove ou muda a borda externa da tabela principal */
+.fc-theme-standard .fc-scrollgrid {
+  border-top-color: #bfa14a; /* cor do seu tema */
+  border-left-color: #bfa14a; /* cor do seu tema */
+}
+
+/* Se quiser remover de vez */
+.fc-theme-standard .fc-scrollgrid {
+  border-color: var(--color-primary-gold) !important;
+}
+
+.fc-event {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* FULLCALENDAR STYLES - end */
+
+/* REACT CALENDAR STYLES - start */
+.react-calendar {
+  border: none;
+  max-width: 600px;
+}
+
+.react-calendar__navigation {
+  background-color: transparent;
+  color: var(--color-primary-gold);
+}
+
+.react-calendar__navigation__label {
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.react-calendar__tile {
+  max-width: 100%;
+  padding: 10px 6px;
+  background: var(--color-primary-black);
+  border: 1px solid var(--color-primary-gold);
+  color: var(--color-primary-gold);
+  cursor: pointer;
+}
+
+.react-calendar__tile--active {
+  background: var(--color-primary-gold) !important;
+  color: var(--color-primary-black) !important;
+}
+
+.react-calendar__tile--now {
+  background: var(--color-dark-black);
+
+  color: var(--color-primary-white);
+  font-weight: bold;
+}
+
+.react-calendar__month-view__weekdays__weekday {
+  font-weight: bold;
+  color: var(--color-primary-gold);
+}
+
+.react-calendar__month-view__days__day--neighboringMonth {
+  color: #ccc;
+  background-color: var(--color-secondary-black);
+  cursor: not-allowed;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.my-disabled-day {
+  color: #ccc;
+  background-color: var(--color-secondary-black);
+  cursor: not-allowed;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.react-calendar__navigation {
+  display: flex;
+  justify-content: center; /* centraliza */
+  gap: 40px; /* espaço entre os botões */
+}
+
+.react-calendar__navigation__arrow {
+  flex: 0 0 auto;
+  margin: 0 10px; /* margem lateral */
+  font-size: 1.5em; /* deixa as setas maiores, opcional */
+}
+
+/* REACT CALENDAR STYLES - end */
+
 @keyframes fadeInPopup {
   from {
     opacity: 0;

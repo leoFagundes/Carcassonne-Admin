@@ -98,7 +98,7 @@ export interface ReserveType {
   name: string;
   phone: string;
   email: string;
-  observation: string;
+  observation?: string;
   adults: number;
   childs: number;
   status: "confirmed" | "canceled";

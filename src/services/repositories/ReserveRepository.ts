@@ -27,6 +27,62 @@ class ReserveRepository {
     );
   }
 
+  static async getFromTodayOn(): Promise<(ReserveType & { id: string })[]> {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Zera horário pra pegar só a data exata
+
+      const colRef = collection(db, this.collectionName);
+      const snapshot = await getDocs(colRef);
+
+      return snapshot.docs
+        .map((docSnap) => {
+          const data = docSnap.data() as ReserveType;
+          return {
+            id: docSnap.id,
+            ...data,
+          };
+        })
+        .filter((reserva) => {
+          const reservaDate = this.parseBookingDate(reserva.bookingDate);
+          reservaDate.setHours(0, 0, 0, 0);
+          return reservaDate >= today;
+        });
+    } catch (error) {
+      console.error("Erro ao buscar reservas a partir de hoje: ", error);
+      return [];
+    }
+  }
+
+  static async getByMonth(
+    year: number,
+    month: number // 1 = Janeiro, 12 = Dezembro
+  ): Promise<(ReserveType & { id: string })[]> {
+    try {
+      const colRef = collection(db, this.collectionName);
+      const snapshot = await getDocs(colRef);
+
+      return snapshot.docs
+        .map((docSnap) => {
+          const data = docSnap.data() as ReserveType;
+          return {
+            id: docSnap.id,
+            ...data,
+          };
+        })
+        .filter((reserva) => {
+          const reservaDate = this.parseBookingDate(reserva.bookingDate);
+          return (
+            reservaDate.getFullYear() === year &&
+            reservaDate.getMonth() === month - 1 // JS começa em 0
+          );
+        });
+    } catch (error) {
+      console.error("Erro ao buscar reservas por mês: ", error);
+      return [];
+    }
+  }
+
   static async getByDate(
     date: Date
   ): Promise<(ReserveType & { id: string })[]> {
@@ -127,6 +183,27 @@ class ReserveRepository {
       return true;
     } catch (error) {
       console.error("Erro ao deletar reserva: ", error);
+      return false;
+    }
+  }
+
+  static async deleteByMonth(year: number, month: number) {
+    try {
+      const reservasDoMes = await this.getByMonth(year, month);
+
+      if (reservasDoMes.length === 0) {
+        console.log("Nenhuma reserva encontrada para o mês especificado.");
+        return false;
+      }
+
+      await Promise.all(
+        reservasDoMes.map((reserva) => this.delete(reserva.id))
+      );
+
+      console.log(`Todas as reservas de ${month}/${year} foram deletadas.`);
+      return true;
+    } catch (error) {
+      console.error("Erro ao deletar reservas do mês especificado:", error);
       return false;
     }
   }
