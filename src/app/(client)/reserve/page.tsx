@@ -241,7 +241,7 @@ export default function Reserve() {
           </div>
           <div className="flex flex-col items-center gap-2">
             <span className="text-primary-gold">
-              Selecione a quantidade de adultos
+              Selecione a quantidade de crianças
             </span>
             <NumberPicker
               currentNumber={childs}
