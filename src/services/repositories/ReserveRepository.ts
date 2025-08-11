@@ -153,9 +153,7 @@ class ReserveRepository {
 
   static async create(data: ReserveType) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { id, ...reserveData } = data;
-      await addDoc(collection(db, this.collectionName), reserveData);
+      await addDoc(collection(db, this.collectionName), data);
       console.log("Reserva criada com sucesso.");
       return true;
     } catch (error) {

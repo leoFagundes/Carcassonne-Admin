@@ -35,7 +35,6 @@ export default function Reserve() {
   const [date, setDate] = useState<Value>();
   const [allReserves, setAllReserves] = useState<ReserveType[]>([]);
   const [reserve, setReserve] = useState<ReserveType>({
-    id: "",
     name: "",
     code: randomCodeGenerator(),
     bookingDate: {
@@ -191,11 +190,11 @@ export default function Reserve() {
 
     try {
       await ReserveRepository.create(reserve);
-      setPage(5);
       addAlert("Reserva realizada com sucesso.");
+      setPage(5);
     } catch (error) {
       console.error(error);
-      addAlert("Erro ao realizar a reserva.");
+      addAlert(`Erro ao realizar a reserva.`);
     }
   }
 
