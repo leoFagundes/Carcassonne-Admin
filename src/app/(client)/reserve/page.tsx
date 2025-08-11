@@ -212,7 +212,7 @@ export default function Reserve() {
               Carcassonne Pub
             </span>
             <span className="sm:text-sm text-xs italic">
-              CLN 407 BLOCO E LOJA 37, 37 ASA NORTE, BRASILIA - DF
+              CLN 407 BLOCO E LOJA 37, ASA NORTE, BRASILIA - DF
             </span>
           </div>
         </div>
