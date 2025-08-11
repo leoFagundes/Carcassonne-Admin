@@ -7,10 +7,12 @@ import ReserveRepository from "@/services/repositories/ReserveRepository";
 import { ReserveType } from "@/types";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { LuCalendar, LuClock } from "react-icons/lu";
 
 export default function CancelReserve() {
   const [code, setCode] = useState("");
   const [allReserves, setAllReserves] = useState<ReserveType[]>([]);
+  const [reserve, setReserve] = useState<ReserveType>();
 
   const { addAlert } = useAlert();
   const router = useRouter();
@@ -28,6 +30,20 @@ export default function CancelReserve() {
 
     fetchReserves();
   }, []);
+
+  useEffect(() => {
+    const findReserve = allReserves.filter(
+      (reserve) =>
+        reserve.code.replace(/^#/, "").toLowerCase() ===
+        code.replace(/^#/, "").toLowerCase()
+    );
+
+    if (findReserve.length >= 1) {
+      setReserve(findReserve[0]);
+    } else {
+      setReserve(undefined);
+    }
+  }, [code]);
 
   async function handleCancelReserve() {
     const normalizedCode = code.trim().replace(/^#/, "").toLowerCase();
@@ -77,6 +93,29 @@ export default function CancelReserve() {
           value={code}
           setValue={(e) => setCode(e.target.value)}
         />
+        {reserve ? (
+          <div>
+            <div className="flex flex-col gap-2 p-3 border border-dashed rounded">
+              <span className="font-semibold">#{reserve.code}</span>
+              <span className="flex items-center gap-2">
+                <LuCalendar size={18} className="min-w-[18px]" />
+                Reserva de {reserve.name}
+              </span>
+              <span className="flex items-center gap-2">
+                <LuClock size={18} className="min-w-[18px]" />
+                <span className="text-primary-gold">
+                  {reserve.bookingDate.day}/{reserve.bookingDate.month}/
+                  {reserve.bookingDate.year} - {reserve.time}
+                </span>
+              </span>
+            </div>
+          </div>
+        ) : code ? (
+          <span>Nenhuma reserva encontrada...</span>
+        ) : (
+          ""
+        )}
+
         <div className="flex gap-2">
           <Button onClick={() => router.push("/reserve")}>Voltar</Button>
           <Button onClick={handleCancelReserve}>Confirmar</Button>

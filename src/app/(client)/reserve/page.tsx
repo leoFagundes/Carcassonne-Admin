@@ -13,6 +13,7 @@ import {
   LuCalendar,
   LuCalendarOff,
   LuClock,
+  LuCopy,
   LuUsers,
 } from "react-icons/lu";
 import Input from "@/components/input";
@@ -435,16 +436,17 @@ export default function Reserve() {
       )}
       {page === 5 && (
         <div className="flex flex-col items-center text-primary-gold p-6">
-          <span className="text-lg font-semibold mt-4 text-center">
+          <span className="flex items-center gap-2 text-lg font-semibold mt-4 text-center">
             Código da reserva:{" "}
             <strong
-              className="underline cursor-pointer"
+              className="underline cursor-pointer flex items-center gap-2"
               onClick={() => {
                 navigator.clipboard.writeText(reserve.code);
                 addAlert("Código copiado!");
               }}
             >
               #{reserve.code}
+              <LuCopy />
             </strong>
           </span>
           <img
