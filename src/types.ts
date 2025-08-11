@@ -86,15 +86,29 @@ export interface TypeOrderType {
   };
 }
 
-export interface ReserveTypes {
+export interface ReserveType {
   id?: string;
-  bookingDate: Date;
+  code: string;
+  bookingDate: {
+    day: string;
+    month: string;
+    year: string;
+  };
   time: string;
   name: string;
   phone: string;
   email: string;
-  observation: string;
+  observation?: string;
   adults: number;
   childs: number;
-  status: string;
+  status: "confirmed" | "canceled";
+  table?: string;
+}
+
+export interface TableType {
+  id?: string;
+  code: string;
+  capacity: number;
+  combinableWith?: string[];
+  priority: number;
 }
