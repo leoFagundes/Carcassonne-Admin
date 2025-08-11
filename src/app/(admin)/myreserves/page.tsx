@@ -542,27 +542,34 @@ Equipe Carcassonne Pub`
         onClose={() => setExpandedCalendarModal(false)}
         backgroundTransparent
       >
-        <div className="flex flex-col gap-3 items-center justify-center w-full h-full max-w-[800px]">
-          <FullCalendar
-            plugins={[dayGridPlugin]}
-            initialView="dayGridMonth"
-            height="auto"
-            events={events}
-            eventContent={(arg) => (
-              <div className="flex items-center justify-center w-full bg-primary-gold outline outline-primary-gold text-primary-black font-semibold rounded my-1">
-                {arg.event.title}
-              </div>
-            )}
-            locale={ptBrLocale}
-            datesSet={(info) => {
-              const data = info.view.currentStart;
-              const year = data.getFullYear();
-              const month = data.getMonth() + 1;
-              const day = data.getDate();
+        <div className="flex flex-col gap-3 items-center justify-center w-full h-full max-h-screen ">
+          <div className="p-4 max-w-[80%] max-h-[80%] overflow-y-auto">
+            <FullCalendar
+              plugins={[dayGridPlugin]}
+              initialView="dayGridMonth"
+              height="auto"
+              events={events}
+              eventContent={(arg) => (
+                <div className="flex items-center justify-center w-full bg-primary-gold outline outline-primary-gold text-primary-black font-semibold rounded my-1">
+                  {arg.event.title}
+                </div>
+              )}
+              locale={ptBrLocale}
+              datesSet={(info) => {
+                const data = info.view.currentStart;
+                const year = data.getFullYear();
+                const month = data.getMonth() + 1;
+                const day = data.getDate();
 
-              setFullCalendarDate(new CalendarDate(year, month, day));
-            }}
-          />
+                setFullCalendarDate(new CalendarDate(year, month, day));
+              }}
+              headerToolbar={{
+                left: "",
+                center: "title",
+                right: "prev,next",
+              }}
+            />
+          </div>
 
           <div
             onClick={() =>

@@ -225,7 +225,7 @@ export default function Reserve() {
       </div>
       {page === 1 && (
         <div className="flex flex-col items-center gap-6">
-          <span className="sm:text-2xl text-xl font-semibold text-primary-gold ">
+          <span className="sm:text-2xl text-xl font-semibold text-primary-gold text-center">
             Informe a quantidade de pessoas
           </span>
           <div className="flex flex-col items-center gap-2">
