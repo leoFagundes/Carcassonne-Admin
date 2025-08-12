@@ -115,7 +115,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <section className="flex flex-col gap-8 w-full h-full px-3 overflow-y-scroll">
+    <section className="flex flex-col gap-8 w-full h-full px-3 overflow-y-scroll outline-none">
       {loading && <LoaderFullscreen />}
 
       <section className="flex w-full justify-center items-center gap-2 text-primary-gold">
