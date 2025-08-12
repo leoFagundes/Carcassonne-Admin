@@ -20,6 +20,7 @@ import { today, getLocalTimeZone } from "@internationalized/date";
 import Button from "./button";
 import { useAlert } from "@/contexts/alertProvider";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
+import YelpRecentLoginEmail from "./react-email/clientResponseTemplate";
 
 interface ReserveAdminFormsType {
   onClose: VoidFunction;
@@ -103,6 +104,7 @@ export default function ReserveAdminForms({ onClose }: ReserveAdminFormsType) {
       onClose();
 
       const clientSubject = `🍻 Sobre a sua reserva no Carcassonne Pub`;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const clientMessage = `
         <div style="font-family: Arial, sans-serif; line-height: 1.5; font-size: 16px; color: #333;">
           <p>Olá <strong>${localReserve.name}</strong>!</p>
@@ -115,8 +117,8 @@ export default function ReserveAdminForms({ onClose }: ReserveAdminFormsType) {
           <p>
             <strong>Código:</strong> #${localReserve.code}<br/>
             🗓️ <strong>Data:</strong> ${localReserve.bookingDate.day}/${
-        localReserve.bookingDate.month
-      }/${localReserve.bookingDate.year}<br/>
+              localReserve.bookingDate.month
+            }/${localReserve.bookingDate.year}<br/>
             ⏰ <strong>Horário:</strong> ${localReserve.time}h<br/>
             👥 <strong>Quantidade de pessoas:</strong> ${
               localReserve.childs + localReserve.adults
@@ -137,7 +139,9 @@ export default function ReserveAdminForms({ onClose }: ReserveAdminFormsType) {
         </div>
       `;
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const staffSubject = `📩 Nova reserva recebida - Carcassonne Pub`;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const staffMessage = `
   <div style="font-family: Arial, sans-serif; line-height: 1.5; font-size: 16px; color: #333;">
     <h2>📢 Nova solicitação de reserva recebida!</h2>
@@ -178,22 +182,22 @@ export default function ReserveAdminForms({ onClose }: ReserveAdminFormsType) {
         body: JSON.stringify({
           to: localReserve.email,
           subject: clientSubject,
-          message: clientMessage,
+          react: YelpRecentLoginEmail,
         }),
       });
 
-      const res2 = await fetch("/api/send-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: "carcassonnepub@gmail.com",
-          subject: staffSubject,
-          message: staffMessage,
-        }),
-      });
+      // const res2 = await fetch("/api/send-email", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     to: "carcassonnepub@gmail.com",
+      //     subject: staffSubject,
+      //     message: staffMessage,
+      //   }),
+      // });
 
       const data = await res.json();
-      const data2 = await res2.json();
+      // const data2 = await res2.json();
 
       if (!data.success) {
         addAlert(data.error);
@@ -201,11 +205,11 @@ export default function ReserveAdminForms({ onClose }: ReserveAdminFormsType) {
         addAlert("Email para o cliente enviado com sucesso!");
       }
 
-      if (!data2.success) {
-        addAlert(data2.error);
-      } else {
-        addAlert("Email interno enviado com sucesso!");
-      }
+      // if (!data2.success) {
+      //   addAlert(data2.error);
+      // } else {
+      //   addAlert("Email interno enviado com sucesso!");
+      // }
     } catch (error) {
       addAlert("Erro ao criar uma nova reserva!");
       console.error(error);
