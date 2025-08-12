@@ -8,6 +8,7 @@ import {
   LuImage,
   LuMinimize2,
   LuPlus,
+  LuText,
   LuTrash2,
 } from "react-icons/lu";
 import Modal from "@/components/modal";
@@ -31,6 +32,8 @@ export const DragCards = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCarcaImage, setNewCarcaImage] = useState(patternCarcaImage);
   const [imageFile, setImageFile] = React.useState<File | null>(null);
+  const [allDescriptionsVisible, setAllDescriptionsVisible] = useState(false);
+  const [carcaImages, setCarcaImages] = useState<CarcaImageType[]>([]);
 
   const { addAlert } = useAlert();
 
@@ -42,6 +45,19 @@ export const DragCards = () => {
       document.exitFullscreen();
     }
   };
+
+  useEffect(() => {
+    const fetchCarcaImages = async () => {
+      try {
+        const fetchedCarcaImages = await CarcaImageRepository.getAll();
+        setCarcaImages(fetchedCarcaImages);
+      } catch (error) {
+        addAlert(`Erro ao carregar imagens: ${error}`);
+      }
+    };
+
+    fetchCarcaImages();
+  }, []);
 
   const addCarcaImage = async () => {
     if (!newCarcaImage.src.trim() && !imageFile) {
@@ -92,9 +108,15 @@ export const DragCards = () => {
   return (
     <section
       ref={sectionRef}
-      className="border relative grid min-h-[600px] max-w-[900px] w-full place-content-center overflow-hidden bg-dark-black rounded-lg shadow-card"
+      className="border relative grid min-h-[600px] max-w-[90%] h-screen w-full place-content-center overflow-hidden bg-dark-black rounded-lg shadow-card"
     >
       <div className="absolute z-20 top-4 right-4 flex gap-2">
+        <button
+          onClick={() => setAllDescriptionsVisible(!allDescriptionsVisible)}
+          className="cursor-pointer p-2 text-sm bg-primary-gold text-primary-black font-semibold rounded hover:bg-primary-gold/80 transition"
+        >
+          <LuText size={18} />
+        </button>
         <button
           onClick={() => setIsModalOpen(true)}
           className="cursor-pointer p-2 text-sm bg-primary-gold text-primary-black font-semibold rounded hover:bg-primary-gold/80 transition"
@@ -108,9 +130,21 @@ export const DragCards = () => {
           {isFullscreen ? <LuMinimize2 size={18} /> : <LuExpand size={18} />}
         </button>
       </div>
+      {allDescriptionsVisible && (
+        <div className="absolute top-0 left-0 flex gap-2 flex-col p-4 bg-dark-black/30 backdrop-blur-[4px] z-30 rounded">
+          {carcaImages.map(({ description }, index) => (
+            <span
+              className="p-2 max-w-[500px] rounded-lg border border-dashed bg-dark-black"
+              key={index}
+            >
+              {description}
+            </span>
+          ))}
+        </div>
+      )}
       <h1 className="text-5xl opacity-25 text-center">Carcassonne Pub</h1>
 
-      <Cards />
+      <Cards carcaImages={carcaImages} />
 
       {isModalOpen && (
         <Modal
@@ -121,7 +155,7 @@ export const DragCards = () => {
           }}
         >
           <h2 className="text-3xl text-center">Adicionar uma nova foto</h2>
-          <section className="flex justify-center gap-6 w-full my-6">
+          <section className="flex justify-center gap-6 w-full my-6 flex-wrap overflow-y-auto">
             <div className="flex flex-col items-center gap-5 p-2">
               <div className="flex flex-col gap-1 border p-1 rounded shadow-card border-dashed border-primary-gold/20">
                 <InputImage
@@ -245,25 +279,8 @@ export const DragCards = () => {
   );
 };
 
-const Cards = () => {
-  const [carcaImages, setCarcaImages] = useState<CarcaImageType[]>([]);
-
+const Cards = ({ carcaImages }: { carcaImages: CarcaImageType[] }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
-
-  const { addAlert } = useAlert();
-
-  useEffect(() => {
-    const fetchCarcaImages = async () => {
-      try {
-        const fetchedCarcaImages = await CarcaImageRepository.getAll();
-        setCarcaImages(fetchedCarcaImages);
-      } catch (error) {
-        addAlert(`Erro ao carregar imagens: ${error}`);
-      }
-    };
-
-    fetchCarcaImages();
-  });
 
   return (
     <div className="absolute inset-0 z-10" ref={containerRef}>
@@ -376,15 +393,15 @@ const Card = ({
   return (
     <>
       {isMouseOver && (
-        <div className="absolute top-4 left-4 p-2 max-w-[200px] rounded-lg border border-dashed z-20 bg-dark-black">
+        <div className="absolute top-4 left-4 p-2 max-w-[500px] rounded-lg border border-dashed z-20 bg-dark-black">
           {description}
         </div>
       )}
       <div
         ref={dropZoneRef}
-        className="flex items-center justify-center absolute bottom-4 text-primary-gold/60 left-4 w-20 h-20 border border-dashed rounded-md"
+        className="hidden sm:flex items-center justify-center absolute bottom-4 text-primary-gold/60 left-4 w-15 h-15 border border-dashed rounded-md"
       >
-        <LuTrash2 size={32} className="opacity-25" />
+        <LuTrash2 size={25} className="opacity-25" />
       </div>
       <motion.img
         id={id}
@@ -403,7 +420,7 @@ const Card = ({
           opacity: opacityLow ? 0.4 : 1, // muda a opacidade ao soltar na zona
         }}
         className={twMerge(
-          "drag-elements absolute w-48 bg-primary-white p-1 pb-4 transition-opacity duration-300"
+          "drag-elements absolute w-48 bg-primary-white p-1 pb-4 transition-opacity duration-300 md:scale-90 scale-50"
         )}
         src={src}
         alt={alt}
