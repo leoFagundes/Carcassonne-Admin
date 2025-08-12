@@ -31,7 +31,6 @@ export default function ReserveAdminForms({ onClose }: ReserveAdminFormsType) {
   const { addAlert } = useAlert();
 
   const [localReserve, setLocalReserve] = useState<ReserveType>({
-    id: "",
     name: "",
     code: randomCodeGenerator(),
     bookingDate: {
