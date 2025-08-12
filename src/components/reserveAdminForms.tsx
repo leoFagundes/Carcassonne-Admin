@@ -20,7 +20,6 @@ import { today, getLocalTimeZone } from "@internationalized/date";
 import Button from "./button";
 import { useAlert } from "@/contexts/alertProvider";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
-import YelpRecentLoginEmail from "./react-email/clientResponseTemplate";
 
 interface ReserveAdminFormsType {
   onClose: VoidFunction;
@@ -182,7 +181,7 @@ export default function ReserveAdminForms({ onClose }: ReserveAdminFormsType) {
         body: JSON.stringify({
           to: localReserve.email,
           subject: clientSubject,
-          react: YelpRecentLoginEmail({ userFirstName: "Leozinho" }),
+          props: { userFirstName: "Leozinho" },
         }),
       });
 
