@@ -182,15 +182,7 @@ export default function ReserveAdminForms({ onClose }: ReserveAdminFormsType) {
         body: JSON.stringify({
           to: localReserve.email,
           subject: clientSubject,
-          react: (
-            <YelpRecentLoginEmail
-              userFirstName="Alan"
-              loginDate={new Date("September 7, 2022, 10:58 am")}
-              loginDevice="Chrome on Mac OS X"
-              loginLocation="Upland, California, United States"
-              loginIp="47.149.53.167"
-            />
-          ),
+          react: YelpRecentLoginEmail({ userFirstName: "Leozinho" }),
         }),
       });
 
