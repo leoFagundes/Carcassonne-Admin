@@ -32,6 +32,7 @@ import { useRouter } from "next/navigation";
 type EventFullCalendar = {
   title: string;
   start: string;
+  extendedProps?: { status: "confirmed" | "canceled" };
 };
 
 const TODAY = today(getLocalTimeZone());
@@ -59,12 +60,19 @@ export default function Rerserve() {
     reserves: (ReserveType & { id: string })[]
   ): EventFullCalendar[] {
     const confirmedReserves = reserves.filter((r) => r.status === "confirmed");
+    const canceledReserves = reserves.filter((r) => r.status === "canceled");
 
-    const groupedByDate: Record<
+    const groupedByDateConfirmed: Record<
       string,
       { totalPeople: number; totalReserves: number }
     > = {};
 
+    const groupedByDateCanceled: Record<
+      string,
+      { totalPeople: number; totalReserves: number }
+    > = {};
+
+    // Agrupa reservas confirmadas
     confirmedReserves.forEach((r) => {
       const { year, month, day } = r.bookingDate;
       const dateKey = `${year}-${month.toString().padStart(2, "0")}-${day
@@ -73,25 +81,52 @@ export default function Rerserve() {
 
       const totalPeople = (r.adults ?? 0) + (r.childs ?? 0);
 
-      if (!groupedByDate[dateKey]) {
-        groupedByDate[dateKey] = { totalPeople: 0, totalReserves: 0 };
+      if (!groupedByDateConfirmed[dateKey]) {
+        groupedByDateConfirmed[dateKey] = { totalPeople: 0, totalReserves: 0 };
       }
-      groupedByDate[dateKey].totalPeople += totalPeople;
-      groupedByDate[dateKey].totalReserves += 1;
+      groupedByDateConfirmed[dateKey].totalPeople += totalPeople;
+      groupedByDateConfirmed[dateKey].totalReserves += 1;
     });
 
-    // Monta dois eventos diferentes para cada data
+    // Agrupa reservas canceladas
+    canceledReserves.forEach((r) => {
+      const { year, month, day } = r.bookingDate;
+      const dateKey = `${year}-${month.toString().padStart(2, "0")}-${day
+        .toString()
+        .padStart(2, "0")}`;
+
+      const totalPeople = (r.adults ?? 0) + (r.childs ?? 0);
+
+      if (!groupedByDateCanceled[dateKey]) {
+        groupedByDateCanceled[dateKey] = { totalPeople: 0, totalReserves: 0 };
+      }
+      groupedByDateCanceled[dateKey].totalPeople += totalPeople;
+      groupedByDateCanceled[dateKey].totalReserves += 1;
+    });
+
     const events: EventFullCalendar[] = [];
 
-    Object.entries(groupedByDate).forEach(
+    // Eventos das reservas confirmadas
+    Object.entries(groupedByDateConfirmed).forEach(
       ([date, { totalPeople, totalReserves }]) => {
         events.push({
-          title: `${totalPeople} ${isLargeScreen ? "pessoas" : "p"}`,
+          title: `${totalPeople} ${isLargeScreen ? "Pessoas" : "P"}`,
           start: `${date}T09:00:00`,
         });
         events.push({
-          title: `${totalReserves} ${isLargeScreen ? "reservas" : "r"}`,
+          title: `${totalReserves} ${isLargeScreen ? "Reservas Ati." : "ra"}`,
           start: `${date}T10:00:00`,
+        });
+      }
+    );
+
+    // Eventos das reservas canceladas
+    Object.entries(groupedByDateCanceled).forEach(
+      ([date, { totalReserves }]) => {
+        events.push({
+          title: `${totalReserves} ${isLargeScreen ? "Reservas Can." : "rc"}`,
+          start: `${date}T12:00:00`,
+          extendedProps: { status: "canceled" },
         });
       }
     );
@@ -104,7 +139,7 @@ export default function Rerserve() {
 
     useEffect(() => {
       function handleResize() {
-        setIsLargeScreen(window.innerWidth > 600);
+        setIsLargeScreen(window.innerWidth > 1200);
       }
 
       handleResize();
@@ -543,17 +578,28 @@ Equipe Carcassonne Pub`
         backgroundTransparent
       >
         <div className="flex flex-col gap-3 items-center justify-center w-full h-full max-h-screen ">
-          <div className="p-4 max-w-[80%] max-h-[80%] overflow-y-auto">
+          <div className="p-4 sm:max-w-[80%] max-w-[100%] max-h-[80%] overflow-y-auto">
             <FullCalendar
               plugins={[dayGridPlugin]}
               initialView="dayGridMonth"
               height="auto"
               events={events}
-              eventContent={(arg) => (
-                <div className="flex items-center justify-center w-full bg-primary-gold outline outline-primary-gold text-primary-black font-semibold rounded my-1">
-                  {arg.event.title}
-                </div>
-              )}
+              eventContent={(arg) => {
+                const status = arg.event.extendedProps.status;
+                const isCanceled = status === "canceled";
+
+                return (
+                  <div
+                    className={`min-w-[30px] flex items-center justify-center w-full font-semibold rounded my-1 ${
+                      isCanceled
+                        ? "bg-invalid-color text-white outline outline-invalid-color"
+                        : "bg-primary-gold text-primary-black outline outline-primary-gold"
+                    }`}
+                  >
+                    {arg.event.title}
+                  </div>
+                );
+              }}
               locale={ptBrLocale}
               datesSet={(info) => {
                 const data = info.view.currentStart;
