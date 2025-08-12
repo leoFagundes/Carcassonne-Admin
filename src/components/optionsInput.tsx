@@ -13,6 +13,7 @@ interface OptionsInputType {
   label?: string;
   limit?: number;
   options?: string[];
+  withIndex?: boolean;
 }
 
 export default function OptionsInput({
@@ -24,6 +25,7 @@ export default function OptionsInput({
   width = "w-auto",
   limit = 9999999999999,
   options,
+  withIndex = true,
 }: OptionsInputType) {
   const [inFocus, setInFocus] = useState(false);
   const [useCommaSeparator, setUseCommaSeparator] = useState(true);
@@ -160,7 +162,8 @@ export default function OptionsInput({
               className="hover:text-invalid-color cursor-pointer transition-all duration-100 ease-in flex items-center gap-1 border-dashed border rounded py-1 px-2"
             >
               <span>
-                {index + 1}- {value}
+                {withIndex && `${index + 1}- `}
+                {value}
               </span>
               <LuX size={"16px"} className="min-w-[16px]" />
             </div>

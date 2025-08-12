@@ -74,7 +74,7 @@ export default function Sidebar() {
         ${isOpen ? "translate-x-0" : "-translate-x-full"} 
         md:relative md:translate-x-0 md:flex`}
       >
-        <div className="flex flex-col gap-6 items-center w-full h-full overflow-y-auto">
+        <div className="flex flex-col gap-6 items-center w-full h-full overflow-y-auto px-1 py-2">
           <div className="relative flex flex-col justify-center items-center gap-1">
             <img
               className="right-16 w-[150px]"
@@ -88,7 +88,7 @@ export default function Sidebar() {
               </Tooltip>
             </div>
           </div>
-          <div className="w-full flex flex-col flex-1 gap-4">
+          <div className="w-full flex flex-col flex-1 gap-3">
             <Item
               onClick={() => {
                 router.push("/myreserves");
@@ -125,18 +125,18 @@ export default function Sidebar() {
               icon={<LuPlus size={"20px"} />}
               path="/add"
             />
-            {pathname === "/carcassonne" && (
-              <Item
-                onClick={() => {
-                  router.push("/carcassonne");
-                  setIsOpen(false);
-                }}
-                message="Extras"
-                icon={<LuSettings size={"20px"} />}
-                path={pathname}
-              />
-            )}
+
+            <Item
+              onClick={() => {
+                router.push("/carcassonne");
+                setIsOpen(false);
+              }}
+              message="Extras"
+              icon={<LuSettings size={"20px"} />}
+              path={"/carcassonne"}
+            />
           </div>
+
           <Item
             onClick={() => {
               handleLogout();
