@@ -9,7 +9,7 @@ export async function POST(req) {
     const { to, subject, message } = await req.json();
 
     const data = await resend.emails.send({
-      from: "Carcassonne <carcassonnepub@gmail.com>",
+      from: "Carcassonne Pub <reservas@carcassonnepub.com.br>",
       to,
       subject: subject,
       html: `<div>${message}</div>`,
