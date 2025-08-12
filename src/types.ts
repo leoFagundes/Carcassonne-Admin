@@ -61,6 +61,10 @@ export interface GeneralConfigsType {
   clickEffect: boolean;
   followCursor: boolean;
   canvasCursor: boolean;
+  maxCapacityInDay: number;
+  maxCapacityInReserve: number;
+  enabledTimes: string[];
+  disabledDays: number[];
 }
 
 export interface CarcaImageType {

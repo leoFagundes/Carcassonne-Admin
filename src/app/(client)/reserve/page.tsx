@@ -5,9 +5,9 @@ import NumberPicker from "./numberPicker";
 import Button from "@/components/button";
 import Calendar from "react-calendar";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
-import { ReserveType } from "@/types";
+import { GeneralConfigsType, ReserveType } from "@/types";
 import { randomCodeGenerator } from "@/utils/utilFunctions";
-import { longMonths } from "@/utils/patternValues";
+import { longMonths, patternGeneralConfigs } from "@/utils/patternValues";
 import {
   LuBadgeInfo,
   LuCalendar,
@@ -21,12 +21,10 @@ import { useAlert } from "@/contexts/alertProvider";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 import { useRouter } from "next/navigation";
+import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
-
-const MAX_CAPACITY = 75;
-const ENABLED_TIME = ["17:00", "17:30", "18:00", "18:30", "19:00", "19:30"];
 
 export default function Reserve() {
   const [page, setPage] = useState(1);
@@ -35,6 +33,8 @@ export default function Reserve() {
   const [inLimit, setInLimit] = useState(false);
   const [date, setDate] = useState<Value>();
   const [allReserves, setAllReserves] = useState<ReserveType[]>([]);
+  const [localGeneralConfigs, setLocalGeneralConfigs] =
+    useState<GeneralConfigsType>(patternGeneralConfigs);
   const [reserve, setReserve] = useState<ReserveType>({
     name: "",
     code: randomCodeGenerator(),
@@ -109,12 +109,31 @@ export default function Reserve() {
   }, []);
 
   useEffect(() => {
-    if (adults + childs >= 24) {
+    if (adults + childs >= localGeneralConfigs.maxCapacityInReserve) {
       setInLimit(true);
     } else {
       setInLimit(false);
     }
   }, [adults, childs]);
+
+  useEffect(() => {
+    const fetchGeneralConfigs = async () => {
+      try {
+        const generalConfigs = await GeneralConfigsRepository.get();
+
+        if (!generalConfigs || !generalConfigs._id) {
+          addAlert("ID Inválido.");
+          return;
+        }
+
+        setLocalGeneralConfigs(generalConfigs);
+      } catch (error) {
+        addAlert(`Erro ao buscar configurações: ${error}`);
+      }
+    };
+
+    fetchGeneralConfigs();
+  }, []);
 
   // Function to sum total people booked on a specific date
   function getTotalPeopleOnDate(date: Date, bookings: ReserveType[]): number {
@@ -151,7 +170,8 @@ export default function Reserve() {
 
     // Desabilita segundas (1) e terças (2)
     const dayOfWeek = date.getDay();
-    if (dayOfWeek === 1 || dayOfWeek === 2) return true;
+    // if (dayOfWeek === 1 || dayOfWeek === 2) return true;
+    if (localGeneralConfigs.disabledDays.includes(dayOfWeek)) return true;
 
     if (date < today) return true;
     if (date > maxDate) return true;
@@ -159,7 +179,7 @@ export default function Reserve() {
     const totalBooked = getTotalPeopleOnDate(date, allReserves);
     const totalWithNewBooking = totalBooked + adults + childs;
 
-    return totalWithNewBooking > MAX_CAPACITY;
+    return totalWithNewBooking > localGeneralConfigs.maxCapacityInDay;
   }
 
   function isValidEmail(email: string) {
@@ -255,9 +275,10 @@ export default function Reserve() {
               O grupo mínimo para reservas no nosso ambiente é de 2 pessoas.
             </span>
           )}
-          {childs + adults >= 24 && (
+          {childs + adults >= localGeneralConfigs.maxCapacityInReserve && (
             <span className="text-invalid-color text-center">
-              O grupo máximo para reservas no nosso ambiente é de 24 pessoas.
+              O grupo máximo para reservas no nosso ambiente é de{" "}
+              {localGeneralConfigs.maxCapacityInReserve} pessoas.
             </span>
           )}
           <div>
@@ -302,7 +323,7 @@ export default function Reserve() {
               </span>
             )}
           <div className="flex gap-2 flex-wrap justify-center">
-            {ENABLED_TIME.map((time, index) => (
+            {localGeneralConfigs.enabledTimes.map((time, index) => (
               <div
                 onClick={() => setReserve({ ...reserve, time })}
                 key={index}

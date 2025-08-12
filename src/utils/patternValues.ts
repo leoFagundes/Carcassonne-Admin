@@ -33,6 +33,28 @@ export const longMonths: { [key: string]: string } = {
   "12": "dezembro",
 };
 
+export const daysMap: Record<string, number> = {
+  domingo: 0,
+  segunda: 1,
+  terça: 2,
+  terca: 2,
+  quarta: 3,
+  quinta: 4,
+  sexta: 5,
+  sábado: 6,
+  sabado: 6,
+};
+
+export const daysArray = [
+  "Domingo",
+  "Segunda",
+  "Terça",
+  "Quarta",
+  "Quinta",
+  "Sexta",
+  "Sábado",
+];
+
 export const difficultiesOptions = [
   "Muito Leve",
   "Leve",
@@ -92,6 +114,10 @@ export const patternGeneralConfigs: GeneralConfigsType = {
   clickEffect: false,
   followCursor: false,
   canvasCursor: false,
+  maxCapacityInDay: 0,
+  maxCapacityInReserve: 0,
+  enabledTimes: [],
+  disabledDays: [],
 };
 
 export const patternCarcaImage: CarcaImageType = {

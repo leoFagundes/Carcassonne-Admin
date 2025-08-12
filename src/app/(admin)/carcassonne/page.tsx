@@ -5,7 +5,11 @@ import Checkbox from "@/components/checkbox";
 import { useAlert } from "@/contexts/alertProvider";
 import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 import { GeneralConfigsType } from "@/types";
-import { patternGeneralConfigs } from "@/utils/patternValues";
+import {
+  daysArray,
+  daysMap,
+  patternGeneralConfigs,
+} from "@/utils/patternValues";
 import { auth } from "@/services/firebaseConfig";
 
 import React, { useEffect, useState } from "react";
@@ -18,6 +22,8 @@ import ComboRepository from "@/services/repositories/ComboRepository";
 import Counter from "@/components/mage-ui/text/counter";
 import { DragCards } from "@/app/(admin)/carcassonne/drag-cards";
 import LoaderFullscreen from "@/components/loaderFullscreen";
+import Input from "@/components/input";
+import OptionsInput from "@/components/optionsInput";
 
 export default function SettingsPage() {
   const [localGeneralConfigs, setLocalGeneralConfigs] =
@@ -179,6 +185,93 @@ export default function SettingsPage() {
               label="Ativar efeito de cursor"
             />
           </div>
+          <div className="flex flex-col items-center gap-6 p-3 rounded-lg w-full |">
+            <span className="text-lg font-semibold">
+              Configurações de reserva
+            </span>
+            <div className="flex w-full gap-8 flex-wrap justify-center">
+              <div className="flex flex-col gap-8">
+                <OptionsInput
+                  label="Horários disponíveis"
+                  placeholder="Horários disponíveis"
+                  values={localGeneralConfigs.enabledTimes}
+                  setValues={(values) =>
+                    setLocalGeneralConfigs({
+                      ...localGeneralConfigs,
+                      enabledTimes: values,
+                    })
+                  }
+                  withIndex={false}
+                  variant
+                  width="!w-[300px]"
+                />
+                <OptionsInput
+                  label="Dias da semana inválidos"
+                  placeholder="Dias da semana inválidos"
+                  values={localGeneralConfigs.disabledDays.map(
+                    (day) => daysArray[day]
+                  )}
+                  options={daysArray}
+                  setValues={(values) => {
+                    const validNumbers = values
+                      .map((v) => {
+                        if (typeof v === "string") {
+                          const lower = v.toLowerCase();
+                          if (daysMap.hasOwnProperty(lower)) {
+                            return daysMap[lower];
+                          } else {
+                            addAlert(`Dia digitado é inválido: "${v}"`);
+                            return null;
+                          }
+                        }
+                        if (typeof v === "number" && v >= 0 && v <= 6) {
+                          return v;
+                        }
+                        console.warn(`Número inválido digitado: "${v}"`);
+                        return null;
+                      })
+                      .filter((v): v is number => v !== null);
+
+                    setLocalGeneralConfigs({
+                      ...localGeneralConfigs,
+                      disabledDays: validNumbers,
+                    });
+                  }}
+                  withIndex={false}
+                  variant
+                  width="!w-[300px]"
+                />
+              </div>
+              <div className="flex flex-col gap-8">
+                <Input
+                  placeholder="Capacidade máxima em um dia"
+                  label="Capacidade máxima em um dia"
+                  value={localGeneralConfigs.maxCapacityInDay.toString()}
+                  setValue={(e) =>
+                    setLocalGeneralConfigs({
+                      ...localGeneralConfigs,
+                      maxCapacityInDay: Number(e.target.value),
+                    })
+                  }
+                  variant
+                  width="!w-[300px]"
+                />
+                <Input
+                  placeholder="Capacidade máxima em uma reserva"
+                  label="Capacidade máxima em uma reserva"
+                  value={localGeneralConfigs.maxCapacityInReserve.toString()}
+                  setValue={(e) =>
+                    setLocalGeneralConfigs({
+                      ...localGeneralConfigs,
+                      maxCapacityInReserve: Number(e.target.value),
+                    })
+                  }
+                  variant
+                  width="!w-[300px]"
+                />
+              </div>
+            </div>
+          </div>
           <div className="w-full flex flex-col items-center gap-1">
             <span className="text-center font-semibold text-lg">
               Mural de fotos do Carcassonne
@@ -186,9 +279,9 @@ export default function SettingsPage() {
             <DragCards />
           </div>
         </div>
-        <div className="flex justify-center w-full absolute bg-primary-black bottom-0 z-80 py-2 ">
+        <div className="flex justify-center w-full absolute bg-primary-black/50 backdrop-blur-[5px] bottom-0 z-80 py-4 ">
           <div className="w-fit">
-            <Button onClick={saveGeneralConfigs}>Salvar</Button>
+            <Button onClick={saveGeneralConfigs}>Salvar configurações</Button>
           </div>
         </div>
       </section>
