@@ -118,6 +118,7 @@ export const patternGeneralConfigs: GeneralConfigsType = {
   maxCapacityInReserve: 0,
   enabledTimes: [],
   disabledDays: [],
+  maxMonthsInAdvance: 0,
 };
 
 export const patternCarcaImage: CarcaImageType = {

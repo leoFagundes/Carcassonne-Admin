@@ -9,7 +9,7 @@ interface NumberPickProps {
 }
 
 export default function NumberPicker({
-  inLimit,
+  inLimit = false,
   initialNumber,
   currentNumber,
   setCurrentNumber,

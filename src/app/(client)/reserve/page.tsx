@@ -114,7 +114,7 @@ export default function Reserve() {
     } else {
       setInLimit(false);
     }
-  }, [adults, childs]);
+  }, [adults, childs, localGeneralConfigs]);
 
   useEffect(() => {
     const fetchGeneralConfigs = async () => {
@@ -166,7 +166,9 @@ export default function Reserve() {
     today.setHours(0, 0, 0, 0);
 
     const maxDate = new Date(today);
-    maxDate.setFullYear(maxDate.getFullYear() + 1);
+    maxDate.setMonth(
+      maxDate.getMonth() + localGeneralConfigs.maxMonthsInAdvance
+    );
 
     // Desabilita segundas (1) e terças (2)
     const dayOfWeek = date.getDay();
@@ -275,12 +277,13 @@ export default function Reserve() {
               O grupo mínimo para reservas no nosso ambiente é de 2 pessoas.
             </span>
           )}
-          {childs + adults >= localGeneralConfigs.maxCapacityInReserve && (
-            <span className="text-invalid-color text-center">
-              O grupo máximo para reservas no nosso ambiente é de{" "}
-              {localGeneralConfigs.maxCapacityInReserve} pessoas.
-            </span>
-          )}
+          {localGeneralConfigs.maxCapacityInReserve != 0 &&
+            childs + adults >= localGeneralConfigs.maxCapacityInReserve && (
+              <span className="text-invalid-color text-center">
+                O grupo máximo para reservas no nosso ambiente é de{" "}
+                {localGeneralConfigs.maxCapacityInReserve} pessoas.
+              </span>
+            )}
           <div>
             <Button
               disabled={childs + adults === 1 ? true : false}
@@ -456,29 +459,35 @@ export default function Reserve() {
         </div>
       )}
       {page === 5 && (
-        <div className="flex flex-col items-center text-primary-gold p-6">
-          <span className="flex items-center gap-2 text-lg font-semibold mt-4 text-center">
-            Código da reserva:{" "}
-            <strong
-              className="underline cursor-pointer flex items-center gap-2"
+        <div className="flex flex-col items-center text-primary-gold p-1 gap-2 ">
+          <div className="flex gap-2 flex-wrap justify-center">
+            <span className="flex items-center gap-2 sm:text-lg text-base font-semiboldtext-center">
+              Código da reserva:
+            </span>
+            <span
               onClick={() => {
                 navigator.clipboard.writeText(reserve.code);
                 addAlert("Código copiado!");
               }}
+              className="font-bold flex items-center gap-2 sm:text-lg text-base underline cursor-pointer text-center"
             >
               #{reserve.code}
               <LuCopy />
-            </strong>
-          </span>
+            </span>
+          </div>
           <img
             src="images/mascote-feliz.png"
             alt="Mascote feliz comemorando reserva realizada"
             className="w-48 max-w-full"
           />
-          <span className="sm:text-2xl text-xl font-semibold mt-4 text-center">
-            Reserva realizada com sucesso!
-          </span>
-          <p className="text-lg mt-2 text-center">Esperamos por você 🍺</p>
+          <div className="flex flex-col ">
+            <span className="sm:text-2xl text-lg font-semibold mt-3 text-center">
+              Reserva realizada com sucesso!
+            </span>
+            <span className="sm:text-lg text-sm mt-2 text-center">
+              Esperamos por você 🍺
+            </span>
+          </div>
           <Confetti width={width} height={height} numberOfPieces={40} />
         </div>
       )}

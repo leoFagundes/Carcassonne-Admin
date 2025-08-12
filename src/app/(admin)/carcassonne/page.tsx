@@ -269,6 +269,19 @@ export default function SettingsPage() {
                   variant
                   width="!w-[300px]"
                 />
+                <Input
+                  placeholder="Permitido fazer reserva em até (meses)"
+                  label="Permitido fazer reserva em até (meses)"
+                  value={localGeneralConfigs.maxMonthsInAdvance.toString()}
+                  setValue={(e) =>
+                    setLocalGeneralConfigs({
+                      ...localGeneralConfigs,
+                      maxMonthsInAdvance: Number(e.target.value),
+                    })
+                  }
+                  variant
+                  width="!w-[300px]"
+                />
               </div>
             </div>
           </div>

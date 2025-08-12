@@ -65,6 +65,7 @@ export interface GeneralConfigsType {
   maxCapacityInReserve: number;
   enabledTimes: string[];
   disabledDays: number[];
+  maxMonthsInAdvance: number;
 }
 
 export interface CarcaImageType {
