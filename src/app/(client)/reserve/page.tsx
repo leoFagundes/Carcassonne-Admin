@@ -22,6 +22,8 @@ import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 import { useRouter } from "next/navigation";
 import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
+import LoaderFullscreen from "@/components/loaderFullscreen";
+import Loader from "@/components/loader";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
@@ -33,6 +35,8 @@ export default function Reserve() {
   const [inLimit, setInLimit] = useState(false);
   const [date, setDate] = useState<Value>();
   const [allReserves, setAllReserves] = useState<ReserveType[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [componentLoading, setcomponentLoading] = useState(false);
   const [localGeneralConfigs, setLocalGeneralConfigs] =
     useState<GeneralConfigsType>(patternGeneralConfigs);
   const [reserve, setReserve] = useState<ReserveType>({
@@ -96,12 +100,15 @@ export default function Reserve() {
 
   useEffect(() => {
     async function fetchReserves() {
+      setPageLoading(true);
       try {
         const reserves = await ReserveRepository.getAll();
         setAllReserves(reserves);
         console.log(reserves);
       } catch (error) {
         console.error(error);
+      } finally {
+        setPageLoading(false);
       }
     }
 
@@ -211,6 +218,7 @@ export default function Reserve() {
       return;
     }
 
+    setcomponentLoading(true);
     try {
       await ReserveRepository.create(reserve);
       addAlert("Reserva realizada com sucesso.");
@@ -266,11 +274,18 @@ export default function Reserve() {
     } catch (error) {
       console.error(error);
       addAlert(`Erro ao realizar a reserva.`);
+    } finally {
+      setcomponentLoading(false);
     }
   }
 
   return (
     <div className="flex flex-col items-center p-8 gap-4 ">
+      {pageLoading && (
+        <LoaderFullscreen
+          messages={["Carregando Reservas", "Preparando o Ambiente"]}
+        />
+      )}
       <div className="flex flex-col gap-3 max-w-[400px]">
         <div className="flex sm:gap-8 gap-4 items-center justify-center">
           <img
@@ -496,11 +511,12 @@ export default function Reserve() {
                 disabled={
                   !reserve.name.trim() ||
                   !reserve.email.trim() ||
-                  !reserve.phone.trim()
+                  !reserve.phone.trim() ||
+                  componentLoading
                 }
                 onClick={() => setPage(4)}
               >
-                Finalizar
+                {componentLoading ? <Loader /> : "Finalizar"}
               </Button>
             </div>
           </form>

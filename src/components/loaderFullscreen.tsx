@@ -2,14 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 
-const messages = [
+const patternMessages = [
   "Adicionando jogos...",
   "Verificando se a pizza já está pronta...",
   "Jogando dados...",
   "Quase pronto...",
 ];
 
-export default function LoaderFullscreen() {
+export default function LoaderFullscreen({
+  messages = patternMessages,
+}: {
+  messages?: string[];
+}) {
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [fade, setFade] = useState(true);
 
@@ -23,7 +27,7 @@ export default function LoaderFullscreen() {
         );
         setFade(true);
       }, 500);
-    }, 1000);
+    }, 1500);
 
     return () => clearInterval(interval);
   }, []);
