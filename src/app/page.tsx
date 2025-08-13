@@ -10,6 +10,7 @@ import carcassonneBoardgame from "../../public/images/carcassonne-boardgame.png"
 import fabiosali from "../../public/images/fabio&sali.png";
 import klausjurgen from "../../public/images/klausjurgen.png";
 import {
+  onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   UserCredential,
@@ -27,6 +28,8 @@ export default function Home() {
   });
   const [loading, setLoading] = useState(false);
   const [carcaPuzzle, setCarcaPuzzle] = useState(false);
+
+  const router = useRouter();
 
   const { addAlert } = useAlert();
 
@@ -70,7 +73,18 @@ export default function Home() {
     localStorage.setItem("carcassonneAdminEmail", user.email);
   }, [user.email]);
 
-  const router = useRouter();
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        if (currentUser.emailVerified) {
+          addAlert("Sua sessão está ativa.");
+          router.push("/myreserves");
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
 
   async function validateAccount() {
     setLoading(true);
