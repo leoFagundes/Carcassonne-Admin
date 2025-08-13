@@ -10,7 +10,7 @@ resend.domains.verify("d91cd9bd-1176-453e-8fc1-35364d380206");
 
 export async function POST(req) {
   try {
-    const { to, subject, props } = await req.json();
+    const { to, subject, props, template } = await req.json();
 
     const component =
       template === "staff" ? (
