@@ -20,7 +20,7 @@ export async function POST(req) {
       );
 
     const data = await resend.emails.send({
-      from: "Carcassonne Pub <reservas@carcassonnepub.com.br>",
+      from: "Carcassonne Reservas <reservas@carcassonnepub.com.br>",
       to,
       subject: subject,
       react: component,

@@ -214,6 +214,54 @@ export default function Reserve() {
     try {
       await ReserveRepository.create(reserve);
       addAlert("Reserva realizada com sucesso.");
+
+      const res = await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: reserve.email,
+          subject: `🍻 Sobre a sua reserva no Carcassonne Pub`,
+          props: {
+            name: reserve.name,
+            code: reserve.code,
+            bookingDate: reserve.bookingDate,
+            time: reserve.time,
+            adults: reserve.adults,
+            childs: reserve.childs,
+          },
+          template: "client",
+        }),
+      });
+
+      await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: "carcassonnepub@gmail.com",
+          subject: `Nova reserva recebida - Carcassonne Pub`,
+          props: {
+            name: reserve.name,
+            code: reserve.code,
+            bookingDate: reserve.bookingDate,
+            time: reserve.time,
+            adults: reserve.adults,
+            childs: reserve.childs,
+            email: reserve.email,
+            phone: reserve.phone,
+            observation: reserve.observation,
+          },
+          template: "staff",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        addAlert(data.error);
+      } else {
+        addAlert("Os detalhes da sua reserva foram enviados para o seu e-mail");
+      }
+
       setPage(5);
     } catch (error) {
       console.error(error);

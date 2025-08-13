@@ -100,80 +100,6 @@ export default function ReserveAdminForms({ onClose }: ReserveAdminFormsType) {
     try {
       await ReserveRepository.create(localReserve);
       addAlert(`Reserva de ${localReserve.name} criada com sucesso!`);
-      onClose();
-
-      //       const clientSubject = `🍻 Sobre a sua reserva no Carcassonne Pub`;
-      //       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      //       const clientMessage = `
-      //         <div style="font-family: Arial, sans-serif; line-height: 1.5; font-size: 16px; color: #333;">
-      //           <p>Olá <strong>${localReserve.name}</strong>!</p>
-
-      //           <p>
-      //             Recebemos sua solicitação de reserva no <strong>Carcassonne Pub</strong> e estamos muito felizes
-      //             por você querer passar esse momento conosco!
-      //           </p>
-
-      //           <p>
-      //             <strong>Código:</strong> #${localReserve.code}<br/>
-      //             🗓️ <strong>Data:</strong> ${localReserve.bookingDate.day}/${
-      //               localReserve.bookingDate.month
-      //             }/${localReserve.bookingDate.year}<br/>
-      //             ⏰ <strong>Horário:</strong> ${localReserve.time}h<br/>
-      //             👥 <strong>Quantidade de pessoas:</strong> ${
-      //               localReserve.childs + localReserve.adults
-      //             } pessoas
-      //           </p>
-
-      //           <p style="color: #d9534f;">
-      //             ⚠️ Lembramos que as reservas são válidas até <strong>19:30</strong>.
-      //             Após esse horário, não conseguimos garantir a disponibilidade da mesa.
-      //           </p>
-
-      //           <p>
-      //             Caso precise alterar ou cancelar sua reserva, por favor nos avise com antecedência respondendo a este e-mail.
-      //           </p>
-
-      //           <p>Nos vemos em breve! 🍺<br/>
-      //           <strong>Equipe Carcassonne Pub</strong></p>
-      //         </div>
-      //       `;
-
-      //       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      //       const staffSubject = `📩 Nova reserva recebida - Carcassonne Pub`;
-      //       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      //       const staffMessage = `
-      //   <div style="font-family: Arial, sans-serif; line-height: 1.5; font-size: 16px; color: #333;">
-      //     <h2>📢 Nova solicitação de reserva recebida!</h2>
-
-      //     <p>
-      //       <strong>Nome do cliente:</strong> ${localReserve.name}<br/>
-      //       📧 <strong>Email:</strong> ${localReserve.email}<br/>
-      //       📱 <strong>Telefone:</strong> ${localReserve.phone}
-      //     </p>
-
-      //     <p>
-      //       <strong>Código da reserva:</strong> #${localReserve.code}<br/>
-      //       🗓️ <strong>Data:</strong> ${localReserve.bookingDate.day}/${
-      //         localReserve.bookingDate.month
-      //       }/${localReserve.bookingDate.year}<br/>
-      //       ⏰ <strong>Horário:</strong> ${localReserve.time}h<br/>
-      //       👥 <strong>Quantidade de pessoas:</strong> ${
-      //         localReserve.adults + localReserve.childs
-      //       }
-      //         (Adultos: ${localReserve.adults} | Crianças: ${localReserve.childs})
-      //     </p>
-
-      //     ${
-      //       localReserve.observation
-      //         ? `<p>📝 <strong>Observações do cliente:</strong> ${localReserve.observation}</p>`
-      //         : ""
-      //     }
-
-      //     <p>
-      //       <strong>Enviado automaticamente pelo sistema de reservas</strong>
-      //     </p>
-      //   </div>
-      // `;
 
       const res = await fetch("/api/send-email", {
         method: "POST",
@@ -193,29 +119,29 @@ export default function ReserveAdminForms({ onClose }: ReserveAdminFormsType) {
         }),
       });
 
-      // const res2 = await fetch("/api/send-email", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     to: "carcassonnepub@gmail.com",
-      //     subject: `📩 Nova reserva recebida - Carcassonne Pub`,
-      //     props: {
-      //       name: localReserve.name,
-      //       code: localReserve.code,
-      //       bookingDate: localReserve.bookingDate,
-      //       time: localReserve.time,
-      //       adults: localReserve.adults,
-      //       childs: localReserve.childs,
-      //       email: localReserve.email,
-      //       phone: localReserve.phone,
-      //       observation: localReserve.observation,
-      //     },
-      //     template: "staff",
-      //   }),
-      // });
+      const res2 = await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: "carcassonnepub@gmail.com",
+          subject: `Nova reserva recebida - Carcassonne Pub`,
+          props: {
+            name: localReserve.name,
+            code: localReserve.code,
+            bookingDate: localReserve.bookingDate,
+            time: localReserve.time,
+            adults: localReserve.adults,
+            childs: localReserve.childs,
+            email: localReserve.email,
+            phone: localReserve.phone,
+            observation: localReserve.observation,
+          },
+          template: "staff",
+        }),
+      });
 
       const data = await res.json();
-      // const data2 = await res2.json();
+      const data2 = await res2.json();
 
       if (!data.success) {
         addAlert(data.error);
@@ -223,11 +149,13 @@ export default function ReserveAdminForms({ onClose }: ReserveAdminFormsType) {
         addAlert("Email para o cliente enviado com sucesso!");
       }
 
-      // if (!data2.success) {
-      //   addAlert(data2.error);
-      // } else {
-      //   addAlert("Email interno enviado com sucesso!");
-      // }
+      if (!data2.success) {
+        addAlert(data2.error);
+      } else {
+        addAlert("Email interno enviado com sucesso!");
+      }
+
+      onClose();
     } catch (error) {
       addAlert("Erro ao criar uma nova reserva!");
       console.error(error);
