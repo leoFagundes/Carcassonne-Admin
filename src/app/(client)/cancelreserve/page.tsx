@@ -35,9 +35,7 @@ export default function CancelReserve() {
 
   useEffect(() => {
     const findReserve = allReserves.filter(
-      (reserve) =>
-        reserve.code.replace(/^#/, "").toLowerCase() ===
-        code.replace(/^#/, "").toLowerCase()
+      (reserve) => reserve.code.replace(/^#/, "") === code.replace(/^#/, "")
     );
 
     if (findReserve.length >= 1) {
@@ -48,7 +46,7 @@ export default function CancelReserve() {
   }, [code]);
 
   async function handleCancelReserve() {
-    const normalizedCode = code.trim().replace(/^#/, "").toLowerCase();
+    const normalizedCode = code.trim().replace(/^#/, "");
 
     const reserveFound = allReserves.find(
       (reserve) => reserve.code.toLowerCase() === normalizedCode

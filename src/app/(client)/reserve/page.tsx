@@ -449,8 +449,9 @@ export default function Reserve() {
                   </strong>
                 </span>
                 <span>
-                  <strong>2 - Valor da entrada é de 25 reais por pessoa</strong>
-                  , e dá acesso à casa e aos jogos.
+                  <strong>2 - Valor da entrada: </strong>
+                  R$ 20 por pessoa às quartas-feiras e R$ 25 nos demais dias,
+                  dando acesso à casa e aos jogos.
                 </span>
               </div>
             </div>
