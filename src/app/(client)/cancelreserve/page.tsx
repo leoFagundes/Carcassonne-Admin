@@ -2,6 +2,7 @@
 
 import Button from "@/components/button";
 import Input from "@/components/input";
+import Loader from "@/components/loader";
 import { useAlert } from "@/contexts/alertProvider";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
 import { ReserveType } from "@/types";
@@ -13,6 +14,7 @@ export default function CancelReserve() {
   const [code, setCode] = useState("");
   const [allReserves, setAllReserves] = useState<ReserveType[]>([]);
   const [reserve, setReserve] = useState<ReserveType>();
+  const [componentLoading, setcomponentLoading] = useState(false);
 
   const { addAlert } = useAlert();
   const router = useRouter();
@@ -56,7 +58,7 @@ export default function CancelReserve() {
       addAlert("Nenhuma reserva encontrada com esse código.");
       return;
     }
-
+    setcomponentLoading(true);
     try {
       await ReserveRepository.update(reserveFound.id!, {
         ...reserveFound,
@@ -74,6 +76,8 @@ export default function CancelReserve() {
     } catch (error) {
       console.error(error);
       addAlert("Erro ao cancelar a reserva. Tente novamente.");
+    } finally {
+      setcomponentLoading(false);
     }
   }
 
@@ -118,7 +122,9 @@ export default function CancelReserve() {
 
         <div className="flex gap-2">
           <Button onClick={() => router.push("/reserve")}>Voltar</Button>
-          <Button onClick={handleCancelReserve}>Confirmar</Button>
+          <Button onClick={handleCancelReserve}>
+            {componentLoading ? <Loader /> : "Confirmar"}
+          </Button>
         </div>
       </div>
     </div>
