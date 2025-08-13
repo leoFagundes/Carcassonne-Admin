@@ -1,155 +1,26 @@
 import {
   Body,
-  Button,
-  Column,
   Container,
   Head,
   Heading,
   Html,
-  Img,
+  Link,
   Preview,
-  Row,
   Section,
   Text,
 } from "@react-email/components";
 
-interface YelpRecentLoginEmailProps {
-  userFirstName?: string;
-  loginDate?: Date;
-  loginDevice?: string;
-  loginLocation?: string;
-  loginIp?: string;
+interface ReservationProps {
+  name: string;
+  code: string;
+  bookingDate: { day: string; month: string; year: string };
+  time: string;
+  adults: number;
+  childs: number;
+  email?: string;
+  phone?: string;
+  observation?: string;
 }
-
-const baseUrl = `https://demo.react.email/`;
-
-export const YelpRecentLoginEmail = ({
-  userFirstName,
-  loginDate,
-  loginDevice,
-  loginLocation,
-  loginIp,
-}: YelpRecentLoginEmailProps) => {
-  const formattedDate = new Intl.DateTimeFormat("en", {
-    dateStyle: "long",
-    timeStyle: "short",
-  }).format(loginDate);
-
-  return (
-    <Html>
-      <Head />
-      <Body style={main}>
-        <Preview>Yelp recent login</Preview>
-        <Container>
-          <Section style={logo}>
-            <Img src={`${baseUrl}/static/yelp-logo.png`} alt="Yelp logo" />
-          </Section>
-
-          <Section style={content}>
-            <Row>
-              <Img
-                style={image}
-                width={620}
-                src={`${baseUrl}/static/yelp-header.png`}
-                alt="Yelp header illustration"
-              />
-            </Row>
-
-            <Row style={{ ...boxInfos, paddingBottom: "0" }}>
-              <Column>
-                <Heading
-                  style={{
-                    fontSize: 32,
-                    fontWeight: "bold",
-                    textAlign: "center",
-                  }}
-                >
-                  Hi {userFirstName},
-                </Heading>
-                <Heading
-                  as="h2"
-                  style={{
-                    fontSize: 26,
-                    fontWeight: "bold",
-                    textAlign: "center",
-                  }}
-                >
-                  We noticed a recent login to your Yelp account.
-                </Heading>
-
-                <Text style={paragraph}>
-                  <b>Time: </b>
-                  {formattedDate}
-                </Text>
-                <Text style={{ ...paragraph, marginTop: -5 }}>
-                  <b>Device: </b>
-                  {loginDevice}
-                </Text>
-                <Text style={{ ...paragraph, marginTop: -5 }}>
-                  <b>Location: </b>
-                  {loginLocation}
-                </Text>
-                <Text
-                  style={{
-                    color: "rgb(0,0,0, 0.5)",
-                    fontSize: 14,
-                    marginTop: -5,
-                  }}
-                >
-                  *Approximate geographic location based on IP address:
-                  {loginIp}
-                </Text>
-
-                <Text style={paragraph}>
-                  If this was you, theres nothing else you need to do.
-                </Text>
-                <Text style={{ ...paragraph, marginTop: -5 }}>
-                  If this wasnt you or if you have additional questions, please
-                  see our support page.
-                </Text>
-              </Column>
-            </Row>
-            <Row style={{ ...boxInfos, paddingTop: "0" }}>
-              <Column style={buttonContainer} colSpan={2}>
-                <Button style={button}>Learn More</Button>
-              </Column>
-            </Row>
-          </Section>
-
-          <Section style={containerImageFooter}>
-            <Img
-              style={image}
-              width={620}
-              src={`${baseUrl}/static/yelp-footer.png`}
-              alt="Yelp footer decoration"
-            />
-          </Section>
-
-          <Text
-            style={{
-              textAlign: "center",
-              fontSize: 12,
-              color: "rgb(0,0,0, 0.7)",
-            }}
-          >
-            © 2022 | Yelp Inc., 350 Mission Street, San Francisco, CA 94105,
-            U.S.A. | www.yelp.com
-          </Text>
-        </Container>
-      </Body>
-    </Html>
-  );
-};
-
-YelpRecentLoginEmail.PreviewProps = {
-  userFirstName: "Alan",
-  loginDate: new Date("September 7, 2022, 10:58 am"),
-  loginDevice: "Chrome on Mac OS X",
-  loginLocation: "Upland, California, United States",
-  loginIp: "47.149.53.167",
-} as YelpRecentLoginEmailProps;
-
-export default YelpRecentLoginEmail;
 
 const main = {
   backgroundColor: "#fff",
@@ -157,44 +28,125 @@ const main = {
     '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
 };
 
-const paragraph = {
-  fontSize: 16,
+const paragraph = { fontSize: 16, lineHeight: "1.5", color: "#333" };
+const warning = { ...paragraph, color: "#d9534f" };
+
+export const ClientReservationEmail = ({
+  name,
+  code,
+  bookingDate,
+  time,
+  adults,
+  childs,
+}: ReservationProps) => {
+  return (
+    <Html>
+      <Head />
+      <Preview>🍻 Sobre a sua reserva no Carcassonne Pub</Preview>
+      <Body style={main}>
+        <Container>
+          <Section>
+            <Text style={paragraph}>
+              Olá <strong>{name}</strong>!
+            </Text>
+
+            <Text style={paragraph}>
+              Recebemos sua solicitação de reserva no{" "}
+              <strong>Carcassonne Pub</strong> e estamos muito felizes por você
+              querer passar esse momento conosco!
+            </Text>
+
+            <Text style={paragraph}>
+              <strong>Código:</strong> #{code}
+              <br />
+              🗓️ <strong>Data:</strong>{" "}
+              {`${bookingDate.day}/${bookingDate.month}/${bookingDate.year}`}
+              <br />⏰ <strong>Horário:</strong> {time}h
+              <br />
+              👥 <strong>Quantidade de pessoas:</strong> {adults + childs}{" "}
+              pessoas
+            </Text>
+
+            <Text style={warning}>
+              ⚠️ Lembramos que as reservas são válidas até{" "}
+              <strong>19:30</strong>. Após esse horário, não conseguimos
+              garantir a disponibilidade da mesa.
+            </Text>
+
+            <Text style={paragraph}>
+              Caso precise cancelar sua reserva, por favor utilize o código da
+              reserva recebido neste email aqui:{" "}
+              <Link href="https://www.carcassonnepub.com.br/cancelreserve">
+                https://www.carcassonnepub.com.br/cancelreserve
+              </Link>
+              .
+            </Text>
+
+            <Text style={paragraph}>
+              Nos vemos em breve! 🍺
+              <br />
+              <strong>Equipe Carcassonne Pub</strong>
+            </Text>
+          </Section>
+        </Container>
+      </Body>
+    </Html>
+  );
 };
 
-const logo = {
-  padding: "30px 20px",
-};
+export const StaffReservationEmail = ({
+  name,
+  code,
+  bookingDate,
+  time,
+  adults,
+  childs,
+  email,
+  phone,
+  observation,
+}: ReservationProps) => {
+  return (
+    <Html>
+      <Head />
+      <Preview>📩 Nova reserva recebida - Carcassonne Pub</Preview>
+      <Body style={main}>
+        <Container>
+          <Section>
+            <Heading style={{ fontSize: 20, marginBottom: "10px" }}>
+              Nova solicitação de reserva recebida!
+            </Heading>
 
-const buttonContainer = {
-  textAlign: "center" as const,
-};
+            <Text style={paragraph}>
+              <strong>Nome do cliente:</strong> {name}
+              <br />
+              📧 <strong>Email:</strong> {email}
+              <br />
+              📱 <strong>Telefone:</strong> {phone}
+            </Text>
 
-const button = {
-  backgroundColor: "#e00707",
-  borderRadius: 3,
-  color: "#FFF",
-  fontWeight: "bold",
-  border: "1px solid rgb(0,0,0, 0.1)",
-  cursor: "pointer",
-  display: "inline-block",
-  padding: "12px 30px",
-  textDecoration: "none",
-};
+            <Text style={paragraph}>
+              <strong>Código da reserva:</strong> #{code}
+              <br />
+              🗓️ <strong>Data:</strong>{" "}
+              {`${bookingDate.day}/${bookingDate.month}/${bookingDate.year}`}
+              <br />⏰ <strong>Horário:</strong> {time}h
+              <br />
+              👥 <strong>Quantidade de pessoas:</strong> {adults + childs}{" "}
+              (Adultos: {adults} | Crianças: {childs})
+            </Text>
 
-const content = {
-  border: "1px solid rgb(0,0,0, 0.1)",
-  borderRadius: "3px",
-  overflow: "hidden",
-};
+            {observation && (
+              <Text style={paragraph}>
+                📝 <strong>Observações do cliente:</strong> {observation}
+              </Text>
+            )}
 
-const image = {
-  maxWidth: "100%",
-};
-
-const boxInfos = {
-  padding: "20px",
-};
-
-const containerImageFooter = {
-  padding: "45px 0 0 0",
+            <Text style={{ ...paragraph, fontSize: 14, color: "#777" }}>
+              <strong>Enviado automaticamente pelo sistema de reservas</strong>
+            </Text>
+          </Section>
+        </Container>
+      </Body>
+    </Html>
+  );
 };
