@@ -110,7 +110,7 @@ export const DragCards = () => {
       ref={sectionRef}
       className="border relative grid min-h-[600px] max-w-[90%] h-screen w-full place-content-center overflow-hidden bg-dark-black rounded-lg shadow-card"
     >
-      <div className="absolute z-20 top-4 right-4 flex gap-2">
+      <div className="absolute z-40 top-4 right-4 flex gap-2">
         <button
           onClick={() => setAllDescriptionsVisible(!allDescriptionsVisible)}
           className="cursor-pointer p-2 text-sm bg-primary-gold text-primary-black font-semibold rounded hover:bg-primary-gold/80 transition"
@@ -131,7 +131,7 @@ export const DragCards = () => {
         </button>
       </div>
       {allDescriptionsVisible && (
-        <div className="absolute top-0 left-0 flex gap-2 flex-col p-4 bg-dark-black/30 backdrop-blur-[4px] z-30 rounded">
+        <div className="absolute top-0 left-0 flex gap-2 flex-col sm:p-4 py-16 px-4 bg-dark-black/30 backdrop-blur-[4px] z-30 rounded max-h-full overflow-y-auto">
           {carcaImages.map(({ description }, index) => (
             <span
               className="p-2 max-w-[500px] rounded-lg border border-dashed bg-dark-black"

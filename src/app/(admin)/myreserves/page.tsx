@@ -256,17 +256,42 @@ export default function Rerserve() {
     }
   }
 
-  const groupedReservesByTime = reserves.reduce((groups, reserve) => {
-    const time = reserve.time;
+  async function deleteReserve(id: string) {
+    const confirmed = window.confirm(
+      "Tem certeza que deseja deletar essa reserva?"
+    );
+    if (!confirmed) return;
 
-    if (!groups[time]) {
-      groups[time] = [];
+    setLoading(true);
+    try {
+      await ReserveRepository.delete(id);
+      const dataBusca = new Date(date.year, date.month - 1, date.day); // mês é 0-indexado (7 = agosto)
+      const fetchedReserves = await ReserveRepository.getByDate(dataBusca);
+
+      setReserves(fetchedReserves);
+      addAlert("Reserva deletada com sucesso.");
+    } catch (error) {
+      addAlert(`Erro ao deletar reservas do dia atual.`);
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    groups[time].push(reserve);
+  const groupedReservesByTime = reserves.reduce(
+    (groups, reserve) => {
+      const time = reserve.time;
 
-    return groups;
-  }, {} as Record<string, ReserveType[]>);
+      if (!groups[time]) {
+        groups[time] = [];
+      }
+
+      groups[time].push(reserve);
+
+      return groups;
+    },
+    {} as Record<string, ReserveType[]>
+  );
 
   const confirmedPeople = reserves
     .filter((reserve) => reserve.status !== "canceled")
@@ -475,6 +500,21 @@ export default function Rerserve() {
                                       >
                                         <LuCalendarX className="text-red-900 min-w-[16px]" />{" "}
                                         cancelar reserva
+                                      </span>
+                                      <span
+                                        onClick={() => {
+                                          if (reserve.id) {
+                                            deleteReserve(reserve.id);
+                                          } else {
+                                            addAlert(
+                                              "Recarregue a página e tente novamente"
+                                            );
+                                          }
+                                        }}
+                                        className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
+                                      >
+                                        <LuTrash className="text-red-900 min-w-[16px]" />{" "}
+                                        excluir reserva
                                       </span>
                                     </div>
                                   }
