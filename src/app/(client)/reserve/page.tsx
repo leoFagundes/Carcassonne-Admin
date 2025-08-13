@@ -445,7 +445,8 @@ export default function Reserve() {
                   <strong>1 - Tolerância de 15 min de atraso</strong> de acordo
                   com o horário da sua reserva.{" "}
                   <strong>
-                    Após esse horário ela é automaticamente cancelada.
+                    Após esse horário não podemos garantir a disponibilidade da
+                    mesa.
                   </strong>
                 </span>
                 <span>
