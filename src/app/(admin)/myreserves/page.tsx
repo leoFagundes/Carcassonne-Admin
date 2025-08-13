@@ -28,6 +28,7 @@ import Modal from "@/components/modal";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import ReserveAdminForms from "@/components/reserveAdminForms";
 import { useRouter } from "next/navigation";
+import interactionPlugin from "@fullcalendar/interaction";
 
 type EventFullCalendar = {
   title: string;
@@ -620,10 +621,20 @@ Equipe Carcassonne Pub`
         <div className="flex flex-col gap-3 items-center justify-center w-full h-full max-h-screen ">
           <div className="p-4 sm:max-w-[80%] max-w-[100%] max-h-[80%] overflow-y-auto">
             <FullCalendar
-              plugins={[dayGridPlugin]}
+              plugins={[dayGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
               height="auto"
               events={events}
+              dateClick={(info) => {
+                const clickedDate = new CalendarDate(
+                  info.date.getFullYear(),
+                  info.date.getMonth() + 1, // meses no CalendarDate são 1-based
+                  info.date.getDate()
+                );
+
+                setDate(clickedDate);
+                setExpandedCalendarModal(false);
+              }}
               eventContent={(arg) => {
                 const status = arg.event.extendedProps.status;
                 const isCanceled = status === "canceled";
