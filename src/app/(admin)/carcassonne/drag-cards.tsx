@@ -1,16 +1,7 @@
 "use client";
 
-import React, { MutableRefObject, useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { twMerge } from "tailwind-merge";
-import {
-  LuExpand,
-  LuImage,
-  LuMinimize2,
-  LuPlus,
-  LuText,
-  LuTrash2,
-} from "react-icons/lu";
+import React, { useEffect, useRef, useState } from "react";
+import { LuExpand, LuImage, LuMinimize2, LuPlus, LuText } from "react-icons/lu";
 import Modal from "@/components/modal";
 import Button from "@/components/button";
 import Input from "@/components/input";
@@ -20,11 +11,8 @@ import { useAlert } from "@/contexts/alertProvider";
 import { CarcaImageType } from "@/types";
 import random from "random";
 import InputImage from "@/components/inputImage";
-import {
-  deleteImageFromFirebase,
-  getPathFromFirebaseUrl,
-  uploadImageToFirebase,
-} from "@/services/repositories/FirebaseImageUtils";
+import { uploadImageToFirebase } from "@/services/repositories/FirebaseImageUtils";
+import Tooltip from "@/components/Tooltip";
 
 export const DragCards = () => {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -107,8 +95,13 @@ export const DragCards = () => {
 
   return (
     <section
+      style={{
+        backgroundImage: "url('images/black-cardboard-texture.jpg')",
+        backgroundSize: "cover",
+        backgroundRepeat: "repeat",
+      }}
       ref={sectionRef}
-      className="border relative grid min-h-[600px] max-w-[90%] h-screen w-full place-content-center overflow-hidden bg-dark-black rounded-lg shadow-card"
+      className="saturate-110 relative grid min-h-[600px] sm:max-w-[90%] h-screen w-full place-content-center overflow-hidden bg-dark-black rounded-lg shadow-card"
     >
       <div className="absolute z-40 top-4 right-4 flex gap-2">
         <button
@@ -144,7 +137,47 @@ export const DragCards = () => {
       )}
       <h1 className="text-5xl opacity-25 text-center">Carcassonne Pub</h1>
 
-      <Cards carcaImages={carcaImages} />
+      <div className="absolute top-0 left-0 w-full h-full p-16 flex flex-wrap gap-5 justify-center overflow-y-auto">
+        {carcaImages.map((carcaImage, index) => (
+          <div
+            style={{
+              transform: `rotate(${(Math.random() * 4 - 2).toFixed(2)}deg)`,
+            }}
+            key={index}
+            className={`relative flex justify-center bg-primary-white w-fit h-fit p-2 pb-6 shadow-card`}
+          >
+            <img
+              className="absolute z-20 w-8 -translate-y-6 translate-x-4"
+              src="svg/map_pin.svg"
+              alt="map_pin"
+            />
+            <div
+              style={{
+                backgroundImage: `url(images/black-cardboard-texture.jpg)`,
+              }}
+              className="absolute z-10 p-1 rounded-full w-3 h-3 translate-x-1 border border-primary-black shadow-card "
+            ></div>
+            <Tooltip
+              textWrap
+              clickToStay
+              contentNode={carcaImage.description}
+              direction="top"
+            >
+              <img
+                key={carcaImage.id || index}
+                src={carcaImage.src}
+                alt={carcaImage.description}
+                className="shadow-card-light border border-primary-black/50"
+                style={{
+                  width: carcaImage.width,
+                  height: carcaImage.height,
+                  minWidth: carcaImage.width,
+                }}
+              />
+            </Tooltip>
+          </div>
+        ))}
+      </div>
 
       {isModalOpen && (
         <Modal
@@ -276,164 +309,5 @@ export const DragCards = () => {
         </Modal>
       )}
     </section>
-  );
-};
-
-const Cards = ({ carcaImages }: { carcaImages: CarcaImageType[] }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  return (
-    <div className="absolute inset-0 z-10" ref={containerRef}>
-      {carcaImages.map(
-        (carcaImage, index) =>
-          carcaImage.id && (
-            <Card
-              key={index}
-              id={carcaImage.id}
-              containerRef={containerRef}
-              src={carcaImage.src}
-              alt={`carcaimage ${index}`}
-              description={carcaImage.description}
-              rotate={carcaImage.rotate}
-              top={carcaImage.top}
-              left={carcaImage.left}
-              width={carcaImage.width}
-              height={carcaImage.height}
-            />
-          )
-      )}
-    </div>
-  );
-};
-
-interface Props {
-  containerRef: MutableRefObject<HTMLDivElement | null>;
-  id: string;
-  src: string;
-  alt: string;
-  top: string;
-  left: string;
-  rotate: string;
-  width: string;
-  height: string;
-  description?: string;
-}
-
-const Card = ({
-  containerRef,
-  id,
-  src,
-  alt,
-  top,
-  left,
-  rotate,
-  width,
-  height,
-  description = "",
-}: Props) => {
-  const [zIndex, setZIndex] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isMouseOver, setIsMouseOver] = useState(false);
-  const [opacityLow, setOpacityLow] = useState(false);
-
-  const imgRef = useRef<HTMLImageElement | null>(null);
-  const dropZoneRef = useRef<HTMLDivElement | null>(null); // Adapte para receber como prop se necessário
-
-  const updateZIndex = () => {
-    const els = document.querySelectorAll(".drag-elements");
-    let maxZIndex = -Infinity;
-    els.forEach((el) => {
-      const zIndex = parseInt(
-        window.getComputedStyle(el).getPropertyValue("z-index")
-      );
-      if (!isNaN(zIndex) && zIndex > maxZIndex) {
-        maxZIndex = zIndex;
-      }
-    });
-    setZIndex(maxZIndex + 1);
-  };
-
-  const checkDropInZone = async () => {
-    const img = imgRef.current;
-    const zone = dropZoneRef.current;
-    if (!img || !zone) return;
-
-    const imgRect = img.getBoundingClientRect();
-    const zoneRect = zone.getBoundingClientRect();
-
-    const isInside =
-      imgRect.left < zoneRect.right &&
-      imgRect.right > zoneRect.left &&
-      imgRect.top < zoneRect.bottom &&
-      imgRect.bottom > zoneRect.top;
-
-    if (isInside) {
-      const confirmDelete = window.confirm(
-        "Deseja realmente deletar esta imagem?"
-      );
-      if (confirmDelete) {
-        setOpacityLow(true);
-        console.log("Imagem caiu na zona! Executando função...", img.id);
-
-        const imagePath = getPathFromFirebaseUrl(img.src);
-        if (imagePath) {
-          await deleteImageFromFirebase(imagePath);
-        }
-
-        await CarcaImageRepository.delete(img.id);
-        window.location.reload();
-      } else {
-        setOpacityLow(false);
-      }
-    } else {
-      setOpacityLow(false);
-    }
-  };
-
-  return (
-    <>
-      {isMouseOver && (
-        <div className="absolute top-4 left-4 p-2 max-w-[500px] rounded-lg border border-dashed z-20 bg-dark-black">
-          {description}
-        </div>
-      )}
-      <div
-        ref={dropZoneRef}
-        className="hidden sm:flex items-center justify-center absolute bottom-4 text-primary-gold/60 left-4 w-15 h-15 border border-dashed rounded-md"
-      >
-        <LuTrash2 size={25} className="opacity-25" />
-      </div>
-      <motion.img
-        id={id}
-        ref={imgRef}
-        onMouseDown={updateZIndex}
-        onMouseOver={() => setIsMouseOver(true)}
-        onMouseLeave={() => setIsMouseOver(false)}
-        style={{
-          top,
-          left,
-          rotate,
-          zIndex,
-          width,
-          height,
-          cursor: isDragging ? "grabbing" : "grab",
-          opacity: opacityLow ? 0.4 : 1, // muda a opacidade ao soltar na zona
-        }}
-        className={twMerge(
-          "drag-elements absolute w-48 bg-primary-white p-1 pb-4 transition-opacity duration-300 md:scale-90 scale-50"
-        )}
-        src={src}
-        alt={alt}
-        drag
-        whileTap={{ cursor: "grabbing", scale: 0.98 }}
-        onDragStart={() => setIsDragging(true)}
-        onDragEnd={() => {
-          setIsDragging(false);
-          checkDropInZone();
-        }}
-        dragConstraints={containerRef}
-        dragElastic={0.65}
-      />
-    </>
   );
 };

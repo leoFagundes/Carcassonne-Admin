@@ -46,7 +46,7 @@ export default function Tooltip({
 
   return (
     <div
-      className="relative flex items-center justify-center"
+      className=" relative flex items-center justify-center"
       onClick={toggleTooltip}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
@@ -62,7 +62,7 @@ export default function Tooltip({
             textWrap
               ? "whitespace-break-spaces max-w-[300px] w-[300px] py-2"
               : "whitespace-nowrap"
-          } shadow-card bg-primary-gold text-primary-black text-sm px-3 py-1 rounded-md transition-all z-20 border ${
+          } shadow-card bg-primary-gold text-primary-black text-sm px-3 py-1 rounded-md transition-all z-40 border ${
             tooltipPosition[direction]
           }`}
         >

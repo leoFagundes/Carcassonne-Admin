@@ -77,6 +77,7 @@ export default function Home() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         if (currentUser.emailVerified) {
+          console.log(currentUser);
           addAlert("Sua sessão está ativa.");
           router.push("/myreserves");
         }

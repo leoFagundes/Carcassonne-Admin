@@ -126,7 +126,7 @@ export default function SettingsPage() {
       {/* Configs */}
       <section className="flex flex-col items-center flex-wrap gap-4 text-primary-gold">
         <div className="flex flex-wrap w-full gap-3 justify-center pb-12">
-          <div className="p-3 rounded-lg shadow-card border w-full max-w-[400px] flex flex-col gap-2">
+          <div className="p-3 rounded-lg shadow-card border w-full sm:max-w-[80%] flex flex-col gap-2">
             {" "}
             <span className="text-lg font-semibold">Banco de dados</span>
             <ul className="list-disc list-inside text-sm flex flex-col gap-1">
@@ -152,7 +152,7 @@ export default function SettingsPage() {
               </li>
             </ul>
           </div>
-          <div className="p-3 rounded-lg shadow-card border w-full max-w-[400px]">
+          <div className="p-3 rounded-lg shadow-card border w-full sm:max-w-[80%]">
             <span className="text-lg font-semibold">Efeitos de mouse</span>
             <Checkbox
               checked={localGeneralConfigs?.clickEffect}
@@ -185,7 +185,7 @@ export default function SettingsPage() {
               label="Ativar efeito de cursor"
             />
           </div>
-          <div className="flex flex-col items-center gap-6 p-3 rounded-lg w-full |">
+          <div className="flex flex-col items-center gap-6 p-3 pb-6 rounded-lg w-full sm:max-w-[80%] shadow-card border">
             <span className="text-lg font-semibold">
               Configurações de reserva
             </span>
@@ -203,7 +203,7 @@ export default function SettingsPage() {
                   }
                   withIndex={false}
                   variant
-                  width="!w-[300px]"
+                  width="!sm:w-[300px] !w-[280px]"
                 />
                 <OptionsInput
                   label="Dias da semana inválidos"
@@ -239,7 +239,7 @@ export default function SettingsPage() {
                   }}
                   withIndex={false}
                   variant
-                  width="!w-[300px]"
+                  width="!sm:w-[300px] !w-[280px]"
                 />
               </div>
               <div className="flex flex-col gap-8">
@@ -254,7 +254,7 @@ export default function SettingsPage() {
                     })
                   }
                   variant
-                  width="!w-[300px]"
+                  width="!sm:w-[300px] !w-[280px]"
                 />
                 <Input
                   placeholder="Capacidade máxima em uma reserva"
@@ -267,7 +267,7 @@ export default function SettingsPage() {
                     })
                   }
                   variant
-                  width="!w-[300px]"
+                  width="!sm:w-[300px] !w-[280px]"
                 />
                 <Input
                   placeholder="Permitido fazer reserva em até (meses)"
@@ -280,7 +280,7 @@ export default function SettingsPage() {
                     })
                   }
                   variant
-                  width="!w-[300px]"
+                  width="!sm:w-[300px] !w-[280px]"
                 />
               </div>
             </div>
