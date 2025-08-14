@@ -48,6 +48,10 @@ export default function Rerserve() {
   const [loading, setLoading] = useState(false);
   const [expandedCalendarModal, setExpandedCalendarModal] = useState(false);
   const [calendarFormsModal, setCalendarFormsModal] = useState(false);
+  const [currentFormsType, setCurrentFormsType] = useState<"edit" | "add" | "">(
+    ""
+  );
+  const [currentReserve, setCurrentReserve] = useState<ReserveType>();
   const isLargeScreen = useIsLargeScreen();
   const { addAlert } = useAlert();
 
@@ -331,7 +335,10 @@ export default function Rerserve() {
             </span>
             <Tooltip direction="bottom" content="Criar uma nova reserva">
               <div
-                onClick={() => setCalendarFormsModal(true)}
+                onClick={() => {
+                  setCalendarFormsModal(true);
+                  setCurrentFormsType("add");
+                }}
                 className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer"
               >
                 <LuCalendarPlus size={"16px"} className="min-w-[16px]" />
@@ -473,7 +480,6 @@ export default function Rerserve() {
                               <div className="flex items-center gap-1">
                                 <Tooltip
                                   direction="right"
-                                  clickToStay
                                   contentNode={
                                     <div className="flex flex-col gap-1">
                                       <span
@@ -516,6 +522,17 @@ export default function Rerserve() {
                                       >
                                         <LuTrash className="text-red-900 min-w-[16px]" />{" "}
                                         excluir reserva
+                                      </span>
+                                      <span
+                                        onClick={() => {
+                                          setCalendarFormsModal(true);
+                                          setCurrentFormsType("edit");
+                                          setCurrentReserve(reserve);
+                                        }}
+                                        className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
+                                      >
+                                        <LuCalendarX className="text-primary-black min-w-[16px]" />{" "}
+                                        editar reserva
                                       </span>
                                     </div>
                                   }
@@ -695,7 +712,11 @@ Equipe Carcassonne Pub`
         isOpen={calendarFormsModal}
         onClose={() => setCalendarFormsModal(false)}
       >
-        <ReserveAdminForms onClose={() => setCalendarFormsModal(false)} />
+        <ReserveAdminForms
+          type={currentFormsType}
+          reserve={currentReserve}
+          onClose={() => setCalendarFormsModal(false)}
+        />
       </Modal>
     </div>
   );

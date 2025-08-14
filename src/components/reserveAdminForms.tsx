@@ -12,6 +12,7 @@ import {
   LuBaby,
   LuTable,
   LuCalendarPlus,
+  LuCalendarCog,
 } from "react-icons/lu";
 import Input from "./input";
 import { randomCodeGenerator } from "@/utils/utilFunctions";
@@ -23,30 +24,40 @@ import ReserveRepository from "@/services/repositories/ReserveRepository";
 
 interface ReserveAdminFormsType {
   onClose: VoidFunction;
+  reserve: ReserveType | undefined;
+  type: "edit" | "add" | "";
 }
 
-export default function ReserveAdminForms({ onClose }: ReserveAdminFormsType) {
+export default function ReserveAdminForms({
+  onClose,
+  reserve,
+  type,
+}: ReserveAdminFormsType) {
   const [date, setDate] = useState(today(getLocalTimeZone()));
 
   const { addAlert } = useAlert();
 
-  const [localReserve, setLocalReserve] = useState<ReserveType>({
-    name: "",
-    code: randomCodeGenerator(),
-    bookingDate: {
-      day: date.day.toString(),
-      month: date.month.toString(),
-      year: date.year.toString(),
-    },
-    time: "",
-    phone: "",
-    email: "",
-    observation: "",
-    adults: 0,
-    childs: 0,
-    status: "confirmed",
-    table: "",
-  });
+  const [localReserve, setLocalReserve] = useState<ReserveType>(() =>
+    type === "edit" && reserve
+      ? reserve
+      : {
+          name: "",
+          code: randomCodeGenerator(),
+          bookingDate: {
+            day: date.day.toString(),
+            month: date.month.toString(),
+            year: date.year.toString(),
+          },
+          time: "",
+          phone: "",
+          email: "",
+          observation: "",
+          adults: 0,
+          childs: 0,
+          status: "confirmed",
+          table: "",
+        }
+  );
 
   const isReserveFormValid = () => {
     if (!localReserve.name.trim()) {
@@ -162,15 +173,41 @@ export default function ReserveAdminForms({ onClose }: ReserveAdminFormsType) {
     }
   }
 
+  async function handleEditReserve(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!isReserveFormValid()) return;
+    if (!localReserve.id) {
+      addAlert(
+        "Reserv não encontrada para edição, recarregue a página e tente novamente."
+      );
+      return;
+    }
+
+    try {
+      await ReserveRepository.update(localReserve.id, localReserve);
+      addAlert(`Reserva de ${localReserve.name} editada com sucesso!`);
+      onClose();
+    } catch (error) {
+      addAlert("Erro ao editar esta reserva!");
+      console.error(error);
+    }
+  }
+
   return (
     <div className="flex justify-center w-full h-full text-primary-gold">
       <form
-        onSubmit={handleCreateReserve}
+        onSubmit={(e) =>
+          type === "add" ? handleCreateReserve(e) : handleEditReserve(e)
+        }
         className="flex flex-col items-center w-fit  rounded px-3 py-8 sm:p-10 gap-10 overflow-y-scroll max-h-[100%] max-w-[100%] sm:max-h-[90%] sm:max-w-[90%]"
       >
         <span className="flex items-center gap-2 font-semibold sm:text-2xl text-xl">
-          <LuCalendarPlus size={"20px"} className="min-w-[16px]" />
-          Criar uma nova Reserva
+          {type === "add" ? (
+            <LuCalendarPlus size={"20px"} className="min-w-[16px]" />
+          ) : (
+            <LuCalendarCog size={"20px"} className="min-w-[16px]" />
+          )}
+          {type === "add" ? "Criar uma nova Reserva" : "Editar Reserva"}
         </span>
         <div className="flex gap-6 flex-wrap justify-center">
           <section className="flex flex-col items-center gap-2">
@@ -327,7 +364,7 @@ export default function ReserveAdminForms({ onClose }: ReserveAdminFormsType) {
         </div>
         <div className="flex gap-3">
           <Button onClick={() => onClose()}>Cancelar</Button>
-          <Button type="submit">Criar</Button>
+          <Button type="submit">{type === "add" ? "Criar" : "Editar"}</Button>
         </div>
       </form>
     </div>
