@@ -401,7 +401,21 @@ export default function Reserve() {
             ))}
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => setPage(1)}>Voltar</Button>
+            <Button
+              onClick={() => {
+                setPage(1);
+                setReserve({
+                  ...reserve,
+                  bookingDate: {
+                    day: "",
+                    month: "",
+                    year: "",
+                  },
+                });
+              }}
+            >
+              Voltar
+            </Button>
             <Button
               disabled={
                 !reserve.time ||
