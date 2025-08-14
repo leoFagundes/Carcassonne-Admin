@@ -10,6 +10,7 @@ import {
   LuBookX,
   LuCalendar,
   LuCalendarCheck,
+  LuCalendarCog,
   LuCalendarPlus,
   LuCalendarSearch,
   LuCalendarX,
@@ -531,7 +532,7 @@ export default function Rerserve() {
                                         }}
                                         className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
                                       >
-                                        <LuCalendarX className="text-primary-black min-w-[16px]" />{" "}
+                                        <LuCalendarCog className="text-primary-black min-w-[16px]" />{" "}
                                         editar reserva
                                       </span>
                                     </div>
