@@ -101,7 +101,7 @@ export const DragCards = () => {
         backgroundRepeat: "repeat",
       }}
       ref={sectionRef}
-      className="saturate-110 relative grid min-h-[600px] sm:max-w-[90%] h-screen w-full place-content-center overflow-hidden bg-dark-black rounded-lg shadow-card"
+      className={`saturate-110 relative grid min-h-[600px] sm:max-w-[90%] w-full place-content-center bg-dark-black rounded-lg shadow-card`}
     >
       <div className="absolute z-40 top-4 right-4 flex gap-2">
         <button
@@ -135,9 +135,12 @@ export const DragCards = () => {
           ))}
         </div>
       )}
-      <h1 className="text-5xl opacity-25 text-center">Carcassonne Pub</h1>
+      {/* <h1 className="text-5xl opacity-25 text-center p-6">Carcassonne Pub</h1> */}
 
-      <div className="absolute top-0 left-0 w-full h-full p-16 flex flex-wrap gap-5 justify-center overflow-y-auto">
+      <div
+        className={`relative w-full p-16 flex flex-wrap gap-5 justify-center ${isFullscreen && "overflow-y-auto"}`}
+      >
+        {" "}
         {carcaImages.map((carcaImage, index) => (
           <div
             style={{
