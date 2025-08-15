@@ -119,6 +119,7 @@ export const patternGeneralConfigs: GeneralConfigsType = {
   enabledTimes: [],
   disabledDays: [],
   maxMonthsInAdvance: 0,
+  hoursToCloseReserve: 0,
 };
 
 export const patternCarcaImage: CarcaImageType = {

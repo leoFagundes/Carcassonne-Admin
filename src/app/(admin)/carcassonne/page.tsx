@@ -282,6 +282,19 @@ export default function SettingsPage() {
                   variant
                   width="!sm:w-[300px] !w-[280px]"
                 />
+                <Input
+                  placeholder="Aceitar reservas até (hora cheia)"
+                  label="Aceitar reservas até (hora cheia)"
+                  value={localGeneralConfigs.hoursToCloseReserve.toString()}
+                  setValue={(e) =>
+                    setLocalGeneralConfigs({
+                      ...localGeneralConfigs,
+                      hoursToCloseReserve: Number(e.target.value),
+                    })
+                  }
+                  variant
+                  width="!sm:w-[300px] !w-[280px]"
+                />
               </div>
             </div>
           </div>

@@ -480,6 +480,7 @@ export default function Rerserve() {
                             <div className="flex sm:flex-row flex-col gap-1 sm:gap-2 text-sm items-start sm:items-center mb-2 sm:mb-0">
                               <div className="flex items-center gap-1">
                                 <Tooltip
+                                  clickToStay
                                   direction="right"
                                   contentNode={
                                     <div className="flex flex-col gap-1">

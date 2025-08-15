@@ -177,10 +177,16 @@ export default function Reserve() {
       maxDate.getMonth() + localGeneralConfigs.maxMonthsInAdvance
     );
 
-    // Desabilita segundas (1) e terças (2)
     const dayOfWeek = date.getDay();
-    // if (dayOfWeek === 1 || dayOfWeek === 2) return true;
     if (localGeneralConfigs.disabledDays.includes(dayOfWeek)) return true;
+
+    const now = new Date();
+    if (
+      date.getTime() === today.getTime() &&
+      now.getHours() >= localGeneralConfigs.hoursToCloseReserve
+    ) {
+      return true;
+    }
 
     if (date < today) return true;
     if (date > maxDate) return true;
@@ -404,8 +410,10 @@ export default function Reserve() {
             <Button
               onClick={() => {
                 setPage(1);
+                setDate(undefined);
                 setReserve({
                   ...reserve,
+                  time: "",
                   bookingDate: {
                     day: "",
                     month: "",

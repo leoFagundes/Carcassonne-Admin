@@ -66,6 +66,7 @@ export interface GeneralConfigsType {
   enabledTimes: string[];
   disabledDays: number[];
   maxMonthsInAdvance: number;
+  hoursToCloseReserve: number;
 }
 
 export interface CarcaImageType {
