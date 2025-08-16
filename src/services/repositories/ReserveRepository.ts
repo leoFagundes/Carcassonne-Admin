@@ -151,14 +151,36 @@ class ReserveRepository {
     }
   }
 
+  // static async create(data: ReserveType) {
+  //   try {
+  //     await addDoc(collection(db, this.collectionName), data);
+  //     console.log("Reserva criada com sucesso.");
+  //     return true;
+  //   } catch (error) {
+  //     console.error("Erro ao criar reserva: ", error);
+  //     return false;
+  //   }
+  // }
+
   static async create(data: ReserveType) {
     try {
-      await addDoc(collection(db, this.collectionName), data);
-      console.log("Reserva criada com sucesso.");
-      return true;
+      const docRef = await addDoc(collection(db, this.collectionName), data);
+
+      // Busca o documento salvo para retornar com ID
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        throw new Error("Falha ao confirmar reserva");
+      }
+
+      const createdReserve = {
+        _id: docSnap.id,
+        ...(docSnap.data() as ReserveType),
+      };
+      console.log("Reserva criada com sucesso:", createdReserve);
+      return createdReserve;
     } catch (error) {
       console.error("Erro ao criar reserva: ", error);
-      return false;
+      return null;
     }
   }
 

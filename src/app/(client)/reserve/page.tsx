@@ -226,8 +226,10 @@ export default function Reserve() {
 
     setcomponentLoading(true);
     try {
-      await ReserveRepository.create(reserve);
-      addAlert("Reserva realizada com sucesso.");
+      const createdReserve = await ReserveRepository.create(reserve);
+      if (!createdReserve || !createdReserve._id) {
+        throw new Error("Falha ao salvar reserva");
+      }
 
       const res = await fetch("/api/send-email", {
         method: "POST",
@@ -268,15 +270,19 @@ export default function Reserve() {
         }),
       });
 
+      addAlert("Reserva realizada com sucesso.");
+      setPage(5);
+
       const data = await res.json();
 
       if (!data.success) {
-        addAlert(data.error);
+        console.error(data.error);
+        addAlert(
+          "Erro ao enviar os detalhes por email, entre em contato pelo WhatsApp."
+        );
       } else {
         addAlert("Os detalhes da sua reserva foram enviados para o seu e-mail");
       }
-
-      setPage(5);
     } catch (error) {
       console.error(error);
       addAlert(`Erro ao realizar a reserva.`);
@@ -538,7 +544,6 @@ export default function Reserve() {
                   !reserve.phone.trim() ||
                   componentLoading
                 }
-                onClick={() => setPage(4)}
               >
                 {componentLoading ? <Loader /> : "Finalizar"}
               </Button>
