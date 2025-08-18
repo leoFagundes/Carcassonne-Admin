@@ -32,8 +32,14 @@ export default function SessionTimer() {
         localStorage.removeItem("session_expires_at");
         addAlert("Sua sessão expirou.");
         console.log("Sessão expirada por inatividade.");
+        return true;
       }
+      return false;
     };
+
+    if (checkSessionExpiration()) {
+      return;
+    }
 
     const activityEvents = ["mousemove", "keydown", "click", "scroll"];
     activityEvents.forEach((event) =>

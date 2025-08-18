@@ -76,6 +76,13 @@ export default function Home() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
+        const expiresAt = localStorage.getItem("session_expires_at");
+
+        // se já expirou, não mostra "sessão ativa"
+        if (expiresAt && Date.now() > Number(expiresAt)) {
+          return;
+        }
+
         if (currentUser.emailVerified) {
           console.log(currentUser);
           addAlert("Sua sessão está ativa.");
