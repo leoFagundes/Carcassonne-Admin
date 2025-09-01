@@ -7,6 +7,7 @@ import {
   GeneralConfigsType,
   CarcaImageType,
   TypeOrderType,
+  PopupType,
 } from "@/types";
 
 export const longMonths: { [key: string]: string } = {
@@ -110,7 +111,6 @@ export const patternDescriptionType: DescriptionTypeProps = {
 };
 
 export const patternGeneralConfigs: GeneralConfigsType = {
-  popUpImage: "",
   clickEffect: false,
   followCursor: false,
   canvasCursor: false,
@@ -120,6 +120,12 @@ export const patternGeneralConfigs: GeneralConfigsType = {
   disabledDays: [],
   maxMonthsInAdvance: 0,
   hoursToCloseReserve: 0,
+};
+
+export const patternPopup: PopupType = {
+  src: "",
+  label: "",
+  isActive: false,
 };
 
 export const patternCarcaImage: CarcaImageType = {

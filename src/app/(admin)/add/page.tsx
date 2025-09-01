@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   LuBoxes,
   LuClipboardPenLine,
@@ -19,7 +19,6 @@ import {
   ComboType,
   InfoType,
   DescriptionTypeProps,
-  GeneralConfigsType,
   TypeOrderType,
 } from "@/types";
 import CollectionForms from "@/components/collectionForms";
@@ -31,14 +30,11 @@ import {
   patternBoardgame,
   patternCombo,
   patternDescriptionType,
-  patternGeneralConfigs,
   patternInfo,
   patternMenuItem,
   patternTypeOrder,
 } from "@/utils/patternValues";
 import PopupForms from "@/components/popupForms";
-import { useAlert } from "@/contexts/alertProvider";
-import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 import TypesOrderForms from "@/components/typesOrderForms";
 
 export default function AddPage() {
@@ -64,26 +60,8 @@ export default function AddPage() {
   const [newTypeOrder, setNewTypeOrder] =
     useState<TypeOrderType>(patternTypeOrder);
 
-  const [generalConfigs, setGeneralConfigs] = useState<GeneralConfigsType>();
-
   const [newDescriptionType, setNewDescriptionType] =
     useState<DescriptionTypeProps>(patternDescriptionType);
-
-  const { addAlert } = useAlert();
-
-  useEffect(() => {
-    const fetchGeneralConfigs = async () => {
-      try {
-        const configs = await GeneralConfigsRepository.get();
-
-        if (configs) setGeneralConfigs(configs);
-      } catch (error) {
-        addAlert(`Erro ao carregar configurações gerais: ${error}`);
-      }
-    };
-
-    fetchGeneralConfigs();
-  }, []);
 
   return (
     <section className="flex flex-col items-center gap-8 w-full h-full">
@@ -231,23 +209,18 @@ export default function AddPage() {
         <TypesOrderForms currentTypeOrder={newTypeOrder} />
       </Modal>
 
-      {generalConfigs && (
-        <Modal
-          isOpen={isAddPopupModalOpen}
-          onClose={() => {
+      <Modal
+        isOpen={isAddPopupModalOpen}
+        onClose={() => {
+          setIsAddPopupModalOpen(false);
+        }}
+      >
+        <PopupForms
+          closeForms={() => {
             setIsAddPopupModalOpen(false);
-            setGeneralConfigs(patternGeneralConfigs);
           }}
-        >
-          <PopupForms
-            currentConfig={generalConfigs}
-            setCurrentConfig={setGeneralConfigs}
-            closeForms={() => {
-              setIsAddPopupModalOpen(false);
-            }}
-          />
-        </Modal>
-      )}
+        />
+      </Modal>
     </section>
   );
 }

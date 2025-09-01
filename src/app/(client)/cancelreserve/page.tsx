@@ -3,6 +3,7 @@
 import Button from "@/components/button";
 import Input from "@/components/input";
 import Loader from "@/components/loader";
+import LoaderFullscreen from "@/components/loaderFullscreen";
 import { useAlert } from "@/contexts/alertProvider";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
 import { ReserveType } from "@/types";
@@ -11,6 +12,7 @@ import { useEffect, useState } from "react";
 import { LuCalendar, LuClock } from "react-icons/lu";
 
 export default function CancelReserve() {
+  const [loading, setLoading] = useState(true);
   const [code, setCode] = useState("");
   const [allReserves, setAllReserves] = useState<ReserveType[]>([]);
   const [reserve, setReserve] = useState<ReserveType>();
@@ -24,6 +26,7 @@ export default function CancelReserve() {
       try {
         const reserves = await ReserveRepository.getAll();
         setAllReserves(reserves);
+        setLoading(false);
         console.log(reserves);
       } catch (error) {
         console.error(error);
@@ -81,6 +84,7 @@ export default function CancelReserve() {
 
   return (
     <div className="w-screen h-screen flex flex-col items-center justify-center text-primary-gold">
+      {loading && <LoaderFullscreen />}
       <div className="flex flex-col gap-4 max-w-[400px] p-4">
         <span className="sm:text-2xl text-xl text-center font-semibold">
           CANCELAR UMA RESERVA

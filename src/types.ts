@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase/firestore";
+
 export interface User {
   id?: string;
   email: string;
@@ -57,7 +59,6 @@ export interface DescriptionTypeProps {
 
 export interface GeneralConfigsType {
   _id?: string;
-  popUpImage: string;
   clickEffect: boolean;
   followCursor: boolean;
   canvasCursor: boolean;
@@ -67,6 +68,13 @@ export interface GeneralConfigsType {
   disabledDays: number[];
   maxMonthsInAdvance: number;
   hoursToCloseReserve: number;
+}
+
+export interface PopupType {
+  id?: string;
+  src: string;
+  label: string;
+  isActive: boolean;
 }
 
 export interface CarcaImageType {
@@ -109,6 +117,7 @@ export interface ReserveType {
   childs: number;
   status: "confirmed" | "canceled";
   table?: string;
+  createdAt?: Timestamp;
 }
 
 export interface TableType {

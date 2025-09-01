@@ -8,6 +8,7 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { ReserveType } from "@/types";
 
@@ -164,9 +165,11 @@ class ReserveRepository {
 
   static async create(data: ReserveType) {
     try {
-      const docRef = await addDoc(collection(db, this.collectionName), data);
+      const docRef = await addDoc(collection(db, this.collectionName), {
+        ...data,
+        createdAt: serverTimestamp(),
+      });
 
-      // Busca o documento salvo para retornar com ID
       const docSnap = await getDoc(docRef);
       if (!docSnap.exists()) {
         throw new Error("Falha ao confirmar reserva");
@@ -176,6 +179,7 @@ class ReserveRepository {
         _id: docSnap.id,
         ...(docSnap.data() as ReserveType),
       };
+
       console.log("Reserva criada com sucesso:", createdReserve);
       return createdReserve;
     } catch (error) {
