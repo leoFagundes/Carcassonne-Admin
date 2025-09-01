@@ -609,7 +609,7 @@ Equipe Carcassonne Pub`
                               {reserve.createdAt && (
                                 <div>
                                   <span className="font-semibold">
-                                    Criado em:{" "}
+                                    Reserva criada em{" "}
                                   </span>
                                   {reserve.createdAt
                                     .toDate()
