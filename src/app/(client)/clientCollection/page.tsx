@@ -45,6 +45,7 @@ export default function ClientCollectionPage() {
   const [loading, setLoading] = useState(false);
   const [myBoardGames, setMyBoardGames] = useState<BoardgameType[]>([]);
   const [isMyBoardGamesModalOpen, setIsMyBoardGamesModalOpen] = useState(false);
+  const [selectedGame, setSelectedGame] = useState<BoardgameType | null>(null);
   const { addAlert } = useAlert();
 
   useEffect(() => {
@@ -69,6 +70,29 @@ export default function ClientCollectionPage() {
 
     fetchBoardgames();
   }, []);
+
+  const drawGame = () => {
+    if (myBoardGames.length === 0) return;
+
+    let count = 0;
+    let delay = 50;
+
+    const spin = () => {
+      const randomIndex = Math.floor(Math.random() * myBoardGames.length);
+      setSelectedGame(myBoardGames[randomIndex]);
+      count++;
+
+      if (count >= 10) {
+        delay += 15;
+      }
+
+      if (count < 20) {
+        setTimeout(spin, delay);
+      }
+    };
+
+    spin();
+  };
 
   const updateMyBoardGamesList = () => {
     const stored = localStorage.getItem("boardgames");
@@ -518,6 +542,17 @@ export default function ClientCollectionPage() {
                 removeBoardGameFromList={removeBoardGameFromList}
               />
             ))}
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <div
+              onClick={drawGame}
+              className="absolute bottom-4 border rounded-full flex items-center justify-center gap-2 px-2 py-1 bg-primary-black/30 backdrop-blur-[4px] cursor-pointer min-w-[150px]"
+            >
+              <LuDices />
+              <span className="text-sm text-center">
+                {selectedGame ? selectedGame.name : "Sortear um jogo"}
+              </span>
+            </div>
           </div>
         </Modal>
       )}
