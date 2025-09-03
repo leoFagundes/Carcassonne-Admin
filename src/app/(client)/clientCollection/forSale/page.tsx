@@ -6,7 +6,7 @@ import Input from "@/components/input";
 import { BoardgameType } from "@/types";
 import React, { useEffect, useState } from "react";
 import { LuClock, LuDices, LuUsers, LuX } from "react-icons/lu";
-import Card from "../card";
+import Card from "./card";
 import Modal from "@/components/modal";
 import {
   FiChevronDown,
