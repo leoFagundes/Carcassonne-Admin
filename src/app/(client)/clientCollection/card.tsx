@@ -11,23 +11,45 @@ import {
   FiTrendingUp,
   FiUsers,
 } from "react-icons/fi";
-import { LuSparkles } from "react-icons/lu";
+import { LuPlus, LuSparkles, LuX } from "react-icons/lu";
 import patternBoardGameImage from "../../../../public/images/patternBoardgameImage.png";
+import Button from "@/components/button";
 
 interface CardProps extends ComponentProps<"div"> {
   boardgame: BoardgameType;
   isListView: boolean;
+
+  setMyBoardGames: React.Dispatch<React.SetStateAction<BoardgameType[]>>;
+  mode: "default" | "myList";
+  removeBoardGameFromList: (boardgame: BoardgameType) => void;
+  addBoardGameToList: (boardgame: BoardgameType) => void;
 }
 
-export default function Card({ boardgame, isListView, ...props }: CardProps) {
+export default function Card({
+  boardgame,
+  isListView,
+
+  setMyBoardGames,
+  addBoardGameToList,
+  removeBoardGameFromList,
+  mode,
+  ...props
+}: CardProps) {
   const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("boardgames");
+    if (stored) {
+      setMyBoardGames(JSON.parse(stored));
+    }
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
       setIsSmallScreen(window.innerWidth < 350);
     };
 
-    handleResize(); // Checar no carregamento
+    handleResize();
     window.addEventListener("resize", handleResize);
 
     return () => window.removeEventListener("resize", handleResize);
@@ -47,7 +69,7 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
               <img
                 src={boardgame.image}
                 alt="boardgame"
-                className="h-12 w-12 rounded shadow-card"
+                className="h-12 w-12 min-w-12 rounded shadow-card"
               />
             )}
 
@@ -82,10 +104,27 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
           )}
 
           <div
-            className={`flex items-center justify-end ${
+            className={`flex items-center justify-end gap-2 ${
               isSmallScreen && "flex-1"
             }`}
           >
+            <div className="p-1 rounded-full border cursor-pointer">
+              {mode === "default" ? (
+                <LuPlus
+                  onClick={(e) => {
+                    addBoardGameToList(boardgame);
+                    e.stopPropagation();
+                  }}
+                />
+              ) : (
+                <LuX
+                  onClick={(e) => {
+                    removeBoardGameFromList(boardgame);
+                    e.stopPropagation();
+                  }}
+                />
+              )}
+            </div>
             <FiArrowRight size={"20px"} className="min-w-[20px]" />
           </div>
         </div>
@@ -115,7 +154,6 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
               <LuSparkles size={"16px"} className="min-w-[16px]" />
             </div>
           )}
-
           <div className="flex flex-col gap-2 p-4 relative">
             {boardgame.isForSale && (
               <span className="flex items-center gap-2 text-sm">
@@ -149,6 +187,20 @@ export default function Card({ boardgame, isListView, ...props }: CardProps) {
                 (Tipo)
               </span>
             </span>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-2 pt-2 text-sm cursor-pointer"
+            >
+              {mode === "default" ? (
+                <Button onClick={() => addBoardGameToList(boardgame)}>
+                  Adicionar a minha lista
+                </Button>
+              ) : (
+                <Button onClick={() => removeBoardGameFromList(boardgame)}>
+                  Remover da minha lista
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       )}

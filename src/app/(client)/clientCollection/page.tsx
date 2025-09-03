@@ -43,8 +43,13 @@ export default function ClientCollectionPage() {
   const [isFilterVisible, setIsFilterVisible] = useState(true);
   const [boardgames, setBoardgames] = useState<BoardgameType[]>([]);
   const [loading, setLoading] = useState(false);
-
+  const [myBoardGames, setMyBoardGames] = useState<BoardgameType[]>([]);
+  const [isMyBoardGamesModalOpen, setIsMyBoardGamesModalOpen] = useState(false);
   const { addAlert } = useAlert();
+
+  useEffect(() => {
+    updateMyBoardGamesList();
+  }, []);
 
   useEffect(() => {
     const fetchBoardgames = async () => {
@@ -64,6 +69,16 @@ export default function ClientCollectionPage() {
 
     fetchBoardgames();
   }, []);
+
+  const updateMyBoardGamesList = () => {
+    const stored = localStorage.getItem("boardgames");
+    if (stored) {
+      setMyBoardGames(JSON.parse(stored));
+    }
+    if (stored?.length === 0) {
+      setIsMyBoardGamesModalOpen(false);
+    }
+  };
 
   const boardgameTypes = Array.from(
     new Set(boardgames.flatMap((b) => b.types))
@@ -139,6 +154,36 @@ export default function ClientCollectionPage() {
       document.body.style.overflow = "auto";
     }
   }
+
+  const addBoardGameToList = (boardgame: BoardgameType) => {
+    const alreadyExists = myBoardGames.some((game) => game.id === boardgame.id);
+
+    if (alreadyExists) {
+      addAlert(`${boardgame.name} já está na sua lista ❌`);
+      return;
+    }
+
+    const updatedList = [...myBoardGames, boardgame];
+
+    localStorage.setItem("boardgames", JSON.stringify(updatedList));
+    setMyBoardGames(updatedList);
+
+    addAlert(`${boardgame.name} adicionado à sua lista de jogos ✅`);
+  };
+
+  const removeBoardGameFromList = (boardgame: BoardgameType) => {
+    const updatedList = myBoardGames.filter((game) => game.id !== boardgame.id);
+
+    localStorage.setItem("boardgames", JSON.stringify(updatedList));
+    setMyBoardGames(updatedList);
+
+    addAlert(`${boardgame.name} removido da sua lista`);
+
+    if (updatedList.length === 0) {
+      setIsMyBoardGamesModalOpen(false);
+      toggleScrollLock(false);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center gap-6 w-full h-screen text-primary-gold p-8">
@@ -328,7 +373,21 @@ export default function ClientCollectionPage() {
           </span>
           <div className="h-[1px] flex-1 bg-primary-gold max-w-[30px]" />
         </div>
-
+        {myBoardGames.length > 0 && (
+          <div
+            onClick={() => {
+              setIsMyBoardGamesModalOpen(true);
+              updateMyBoardGamesList();
+              toggleScrollLock(true);
+            }}
+            className="cursor-pointer fixed bottom-2 left-2 py-1 px-2 z-20 rounded shadow-card bg-primary-black/50 backdrop-blur-[4px] border"
+          >
+            <span className="text-xs">Ver minha lista de jogos</span>
+            <div className="flex items-center justify-center absolute -top-2 -right-2 p-1 w-5 h-5 rounded-full bg-primary-black border">
+              <span className="text-xs">{myBoardGames.length}</span>
+            </div>
+          </div>
+        )}
         <div
           className={`flex ${
             isListView
@@ -346,6 +405,10 @@ export default function ClientCollectionPage() {
                 setCurrentGame(boardgame);
                 toggleScrollLock(true);
               }}
+              setMyBoardGames={setMyBoardGames}
+              mode="default"
+              addBoardGameToList={addBoardGameToList}
+              removeBoardGameFromList={removeBoardGameFromList}
             />
           ))}
         </div>
@@ -359,6 +422,7 @@ export default function ClientCollectionPage() {
             toggleScrollLock(false);
           }}
           isFixed
+          zIndex={60}
         >
           <div className="flex flex-col items-center gap-4 my-2 max-w-[500px] w-full h-full px-2 overflow-y-scroll sm:bg-secondary-black/60 py-3 sm:px-6 sm:h-fit sm:shadow-2xl rounded-sm">
             <h2 className="text-2xl">{currentGame.name}</h2>
@@ -418,6 +482,42 @@ export default function ClientCollectionPage() {
             >
               Voltar
             </Button>
+          </div>
+        </Modal>
+      )}
+      {myBoardGames.length > 0 && (
+        <Modal
+          isOpen={isMyBoardGamesModalOpen}
+          onClose={() => {
+            setIsMyBoardGamesModalOpen(false);
+            toggleScrollLock(false);
+          }}
+          isFixed
+        >
+          <h1 className="text-2xl py-2">Minha lista de jogos</h1>
+          <div
+            className={`flex overflow-y-auto p-4 ${
+              isListView
+                ? "flex-col items-center gap-1 py-4"
+                : "justify-center flex-wrap gap-10 py-6"
+            }  w-full `}
+          >
+            {myBoardGames.map((boardgame, index) => (
+              <Card
+                key={index}
+                boardgame={boardgame}
+                isListView={isListView}
+                onClick={() => {
+                  setIsModalOpen(true);
+                  setCurrentGame(boardgame);
+                  toggleScrollLock(true);
+                }}
+                setMyBoardGames={setMyBoardGames}
+                mode="myList"
+                addBoardGameToList={addBoardGameToList}
+                removeBoardGameFromList={removeBoardGameFromList}
+              />
+            ))}
           </div>
         </Modal>
       )}

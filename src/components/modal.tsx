@@ -8,6 +8,7 @@ interface ModalProps {
   isFixed?: boolean;
   patternCloseButton?: boolean;
   backgroundTransparent?: boolean;
+  zIndex?: number;
 }
 
 export default function Modal({
@@ -17,14 +18,16 @@ export default function Modal({
   isFixed = false,
   patternCloseButton = true,
   backgroundTransparent = false,
+  zIndex = 50,
 }: ModalProps) {
   return (
     <>
       {isOpen && (
         <div
+          style={{ zIndex: zIndex }}
           className={`flex justify-center items-center ${
             isFixed ? "fixed" : "absolute"
-          }  top-0 left-0 w-full h-full rounded backdrop-blur-[5px] z-50`}
+          }  top-0 left-0 w-full h-full rounded backdrop-blur-[5px]`}
         >
           <div
             className={` ${
