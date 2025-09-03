@@ -159,7 +159,7 @@ export default function ClientCollectionPage() {
     const alreadyExists = myBoardGames.some((game) => game.id === boardgame.id);
 
     if (alreadyExists) {
-      addAlert(`${boardgame.name} já está na sua lista ❌`);
+      addAlert(`${boardgame.name} já está na sua lista`);
       return;
     }
 
@@ -168,7 +168,7 @@ export default function ClientCollectionPage() {
     localStorage.setItem("boardgames", JSON.stringify(updatedList));
     setMyBoardGames(updatedList);
 
-    addAlert(`${boardgame.name} adicionado à sua lista de jogos ✅`);
+    addAlert(`${boardgame.name} adicionado`);
   };
 
   const removeBoardGameFromList = (boardgame: BoardgameType) => {
@@ -177,7 +177,7 @@ export default function ClientCollectionPage() {
     localStorage.setItem("boardgames", JSON.stringify(updatedList));
     setMyBoardGames(updatedList);
 
-    addAlert(`${boardgame.name} removido da sua lista`);
+    addAlert(`${boardgame.name} removido`);
 
     if (updatedList.length === 0) {
       setIsMyBoardGamesModalOpen(false);
