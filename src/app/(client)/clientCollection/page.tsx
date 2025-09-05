@@ -557,6 +557,10 @@ export default function ClientCollectionPage() {
                 mode="myList"
                 addBoardGameToList={addBoardGameToList}
                 removeBoardGameFromList={removeBoardGameFromList}
+                selectedGame={
+                  selectedGame ? selectedGame.name === boardgame.name : false
+                }
+                spinning={spinning}
               />
             ))}
           </div>
