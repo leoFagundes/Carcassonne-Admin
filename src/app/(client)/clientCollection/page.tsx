@@ -404,11 +404,15 @@ export default function ClientCollectionPage() {
               updateMyBoardGamesList();
               toggleScrollLock(true);
             }}
-            className="cursor-pointer fixed bottom-2 left-2 py-1 px-2 z-20 rounded shadow-card bg-primary-black/50 backdrop-blur-[4px] border"
+            className="cursor-pointer fixed bottom-2 left-2 py-1 px-2 m-1 sm:py-2 sm:px-3 z-20 rounded shadow-card bg-primary-black/50 backdrop-blur-[4px] border"
           >
-            <span className="text-xs">Ver minha lista de jogos</span>
-            <div className="flex items-center justify-center absolute -top-2 -right-2 p-1 w-5 h-5 rounded-full bg-primary-black border">
-              <span className="text-xs">{myBoardGames.length}</span>
+            <span className="text-xs sm:text-base">
+              Ver minha lista de jogos
+            </span>
+            <div className="flex items-center justify-center absolute -top-2 -right-2 sm:-top-3 sm:-right-3 p-1 w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-primary-black border">
+              <span className="text-xs sm:text-base">
+                {myBoardGames.length}
+              </span>
             </div>
           </div>
         )}
@@ -515,6 +519,7 @@ export default function ClientCollectionPage() {
           onClose={() => {
             setIsMyBoardGamesModalOpen(false);
             toggleScrollLock(false);
+            setSelectedGame(null);
           }}
           isFixed
         >
@@ -546,10 +551,10 @@ export default function ClientCollectionPage() {
           <div className="flex flex-col items-center gap-2">
             <div
               onClick={drawGame}
-              className="absolute bottom-4 border rounded-full flex items-center justify-center gap-2 px-2 py-1 bg-primary-black/30 backdrop-blur-[4px] cursor-pointer min-w-[150px]"
+              className="absolute bottom-4 border rounded flex items-center justify-center gap-2 px-3 py-1 bg-primary-black/30 backdrop-blur-[4px] cursor-pointer min-w-[150px] shadow-card"
             >
               <LuDices />
-              <span className="text-sm text-center">
+              <span className="text-base text-center">
                 {selectedGame ? selectedGame.name : "Sortear um jogo"}
               </span>
             </div>
