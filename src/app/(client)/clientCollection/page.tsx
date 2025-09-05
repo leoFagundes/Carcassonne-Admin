@@ -4,7 +4,7 @@ import Checkbox from "@/components/checkbox";
 import Dropdown from "@/components/dropdown";
 import Input from "@/components/input";
 import { BoardgameType } from "@/types";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { LuClock, LuDices, LuUsers, LuX } from "react-icons/lu";
 import Card from "./card";
 import Modal from "@/components/modal";
@@ -24,6 +24,8 @@ import { useAlert } from "@/contexts/alertProvider";
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import { difficultiesOptions } from "@/utils/patternValues";
 import Counter from "@/components/mage-ui/text/counter";
+import { GiCardRandom } from "react-icons/gi";
+import { truncateText } from "@/utils/utilFunctions";
 
 export default function ClientCollectionPage() {
   const [filterBoardgameName, setFilterBoardgameName] = useState("");
@@ -46,6 +48,9 @@ export default function ClientCollectionPage() {
   const [myBoardGames, setMyBoardGames] = useState<BoardgameType[]>([]);
   const [isMyBoardGamesModalOpen, setIsMyBoardGamesModalOpen] = useState(false);
   const [selectedGame, setSelectedGame] = useState<BoardgameType | null>(null);
+  const [spinning, setSpinning] = useState(false);
+  const lastIndexRef = useRef<number | null>(null);
+
   const { addAlert } = useAlert();
 
   useEffect(() => {
@@ -72,22 +77,29 @@ export default function ClientCollectionPage() {
   }, []);
 
   const drawGame = () => {
-    if (myBoardGames.length === 0) return;
+    if (myBoardGames.length === 0 || spinning) return;
 
+    setSpinning(true);
     let count = 0;
-    let delay = 50;
+    let delay = 150;
 
     const spin = () => {
-      const randomIndex = Math.floor(Math.random() * myBoardGames.length);
+      let randomIndex: number;
+
+      // garante que não sai igual ao último
+      do {
+        randomIndex = Math.floor(Math.random() * myBoardGames.length);
+      } while (myBoardGames.length > 1 && randomIndex === lastIndexRef.current);
+
+      lastIndexRef.current = randomIndex; // atualiza ref imediatamente
       setSelectedGame(myBoardGames[randomIndex]);
       count++;
 
-      if (count >= 10) {
-        delay += 15;
-      }
-
-      if (count < 20) {
+      if (count >= 10) delay += 5;
+      if (count < 25) {
         setTimeout(spin, delay);
+      } else {
+        setSpinning(false);
       }
     };
 
@@ -528,7 +540,7 @@ export default function ClientCollectionPage() {
             className={`flex overflow-y-auto p-4 ${
               isListView
                 ? "flex-col items-center gap-1 py-4"
-                : "justify-center flex-wrap gap-10 py-6"
+                : "justify-center flex-wrap gap-10 py-6 pb-15"
             }  w-full `}
           >
             {myBoardGames.map((boardgame, index) => (
@@ -551,12 +563,37 @@ export default function ClientCollectionPage() {
           <div className="flex flex-col items-center gap-2">
             <div
               onClick={drawGame}
-              className="absolute bottom-4 border rounded flex items-center justify-center gap-2 px-3 py-1 bg-primary-black/30 backdrop-blur-[4px] cursor-pointer min-w-[150px] shadow-card"
+              className={`absolute bottom-4 border rounded flex items-center justify-center gap-2 px-3 py-1 bg-primary-black/30 backdrop-blur-[4px] cursor-pointer min-w-[180px] shadow-card overflow-hidden h-[35px] max-w-[250px] w-full border-primary-gold/50 ${!spinning && "shadow-card-gold !border-primary-gold"}`}
             >
-              <LuDices />
-              <span className="text-base text-center">
-                {selectedGame ? selectedGame.name : "Sortear um jogo"}
-              </span>
+              <GiCardRandom size={30} />
+
+              <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+                <AnimatePresence>
+                  {selectedGame ? (
+                    <motion.span
+                      key={selectedGame.name}
+                      initial={{ y: 80, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -80, opacity: 0 }}
+                      transition={{ duration: 0.1, ease: "easeInOut" }}
+                      className="absolute text-base text-center w-full"
+                    >
+                      {truncateText(selectedGame.name, 20)}
+                    </motion.span>
+                  ) : (
+                    <motion.span
+                      key="default"
+                      initial={{ y: 80, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -80, opacity: 0 }}
+                      transition={{ duration: 0.1, ease: "easeInOut" }}
+                      className="absolute text-base text-center w-full"
+                    >
+                      Sortear um jogo
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
         </Modal>
