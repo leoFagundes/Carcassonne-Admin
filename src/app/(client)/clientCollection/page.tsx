@@ -53,6 +53,8 @@ export default function ClientCollectionPage() {
 
   const { addAlert } = useAlert();
 
+  const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
+
   useEffect(() => {
     updateMyBoardGamesList();
   }, []);
@@ -86,12 +88,11 @@ export default function ClientCollectionPage() {
     const spin = () => {
       let randomIndex: number;
 
-      // garante que não sai igual ao último
       do {
         randomIndex = Math.floor(Math.random() * myBoardGames.length);
       } while (myBoardGames.length > 1 && randomIndex === lastIndexRef.current);
 
-      lastIndexRef.current = randomIndex; // atualiza ref imediatamente
+      lastIndexRef.current = randomIndex;
       setSelectedGame(myBoardGames[randomIndex]);
       count++;
 
@@ -100,6 +101,14 @@ export default function ClientCollectionPage() {
         setTimeout(spin, delay);
       } else {
         setSpinning(false);
+
+        const selectedCard = cardsRef.current[randomIndex];
+        if (selectedCard) {
+          selectedCard.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
       }
     };
 
@@ -546,6 +555,9 @@ export default function ClientCollectionPage() {
             {myBoardGames.map((boardgame, index) => (
               <Card
                 key={index}
+                ref={(el) => {
+                  cardsRef.current[index] = el;
+                }}
                 boardgame={boardgame}
                 isListView={isListView}
                 onClick={() => {
