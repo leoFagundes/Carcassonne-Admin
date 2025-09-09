@@ -120,6 +120,7 @@ export const patternGeneralConfigs: GeneralConfigsType = {
   disabledDays: [],
   maxMonthsInAdvance: 0,
   hoursToCloseReserve: 0,
+  isMusicRecommendationEnable: false,
 };
 
 export const patternPopup: PopupType = {

@@ -11,6 +11,7 @@ import {
   LuX,
   LuSettings,
   LuCalendar,
+  LuMusic,
 } from "react-icons/lu";
 import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebaseConfig";
@@ -115,6 +116,15 @@ export default function Sidebar() {
               message="Cardápio"
               icon={<LuPizza size={"20px"} />}
               path="/menu"
+            />
+            <Item
+              onClick={() => {
+                router.push("/musicRecommendation");
+                setIsOpen(false);
+              }}
+              message="Musicas"
+              icon={<LuMusic size={"20px"} />}
+              path="/musicRecommendation"
             />
             <Item
               onClick={() => {

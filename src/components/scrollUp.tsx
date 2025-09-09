@@ -2,11 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import { FaArrowUp, FaInfoCircle, FaStar } from "react-icons/fa";
+import { FaArrowUp, FaInfoCircle, FaMusic, FaStar } from "react-icons/fa";
 import Tooltip from "./Tooltip";
+import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 
 export default function ScrollUp() {
   const [isVisible, setIsVisible] = useState(false);
+  const [isMusicRecommendationEnable, setIsMusicRecommendationEnable] =
+    useState(false);
 
   const router = useRouter();
 
@@ -34,6 +37,26 @@ export default function ScrollUp() {
     };
   }, []);
 
+  useEffect(() => {
+    async function fecthGeneralConfigs() {
+      try {
+        const GeneralConfigsFecthed = await GeneralConfigsRepository.get();
+        if (GeneralConfigsFecthed) {
+          setIsMusicRecommendationEnable(
+            GeneralConfigsFecthed.isMusicRecommendationEnable
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Não foi possível carregar as configurações gerais.",
+          error
+        );
+      }
+    }
+
+    fecthGeneralConfigs();
+  }, []);
+
   return (
     <div
       className={`backdrop-blur-[2px] p-2 rounded-md gap-4 flex flex-col items-center justify-center fixed bottom-2 right-2 z-10 `}
@@ -45,6 +68,16 @@ export default function ScrollUp() {
           isVisible ? "opacity-100 cursor-pointer" : "opacity-0"
         }`}
       />
+
+      {isMusicRecommendationEnable && (
+        <Tooltip direction="left" content="Recomende uma música">
+          <FaMusic
+            size={"20px"}
+            className="text-primary cursor-pointer"
+            onClick={() => router.push("/clientMusicRecommendation")}
+          />
+        </Tooltip>
+      )}
 
       <Tooltip direction="left" content="Avalie-nos no Google">
         <FaStar

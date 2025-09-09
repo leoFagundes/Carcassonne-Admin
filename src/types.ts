@@ -68,6 +68,7 @@ export interface GeneralConfigsType {
   disabledDays: number[];
   maxMonthsInAdvance: number;
   hoursToCloseReserve: number;
+  isMusicRecommendationEnable: boolean;
 }
 
 export interface PopupType {
@@ -126,4 +127,10 @@ export interface TableType {
   capacity: number;
   combinableWith?: string[];
   priority: number;
+}
+
+export interface MusicRecommendation {
+  id?: string;
+  name: string;
+  createdAt?: Date;
 }
