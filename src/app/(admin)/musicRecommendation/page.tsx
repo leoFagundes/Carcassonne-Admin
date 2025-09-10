@@ -2,7 +2,6 @@
 
 import Tooltip from "@/components/Tooltip";
 import { useRouter } from "next/navigation";
-import React from "react";
 import { LuLink, LuMusic } from "react-icons/lu";
 
 export default function MusicRecommendationPage() {

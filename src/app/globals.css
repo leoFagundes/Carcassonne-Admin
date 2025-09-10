@@ -48,6 +48,137 @@ h6 {
 }
 
 @layer utilities {
+  #line1 {
+    opacity: 0;
+    fill-opacity: 0;
+    animation: music-line 2s ease 0.2s forwards;
+  }
+  #line2 {
+    opacity: 0;
+    fill-opacity: 0;
+    animation: music-line 2s ease 0.3s forwards;
+  }
+  #line3 {
+    opacity: 0;
+    fill-opacity: 0;
+    animation: music-line 2s ease 0.4s forwards;
+  }
+  #line4 {
+    opacity: 0;
+    fill-opacity: 0;
+    animation: music-line 2s ease 0.5s forwards;
+  }
+  #line5 {
+    opacity: 0;
+    fill-opacity: 0;
+    animation: music-line 2s ease 0.6s forwards;
+  }
+  #line6 {
+    opacity: 0;
+    fill-opacity: 0;
+    animation: music-line 2s ease 0.7s forwards;
+  }
+
+  .note {
+    opacity: 0;
+  }
+
+  #note1 {
+    animation:
+      music-note-fadein 2s ease 2s forwards,
+      music-note-float 3s ease-in-out 2s infinite;
+  }
+  #note2 {
+    animation:
+      music-note-fadein 2s ease 2.2s forwards,
+      music-note-float 3.5s ease-in-out 2.2s infinite;
+  }
+  #note3 {
+    animation:
+      music-note-fadein 2s ease 2.4s forwards,
+      music-note-float 4s ease-in-out 2.4s infinite;
+  }
+  #note4 {
+    animation:
+      music-note-fadein 2s ease 2.6s forwards,
+      music-note-float 2.8s ease-in-out 2.6s infinite;
+  }
+  #note5 {
+    animation:
+      music-note-fadein 2s ease 2.8s forwards,
+      music-note-float 3.2s ease-in-out 2.8s infinite;
+  }
+  #note6 {
+    animation:
+      music-note-fadein 2s ease 1s forwards,
+      music-note-float 4.2s ease-in-out 3s infinite;
+  }
+  #note7 {
+    animation:
+      music-note-fadein 2s ease 1.2s forwards,
+      music-note-float 3.7s ease-in-out 3.2s infinite;
+  }
+  #note8 {
+    animation:
+      music-note-fadein 2s ease 1.4s forwards,
+      music-note-float 2.9s ease-in-out 3.4s infinite;
+  }
+  #note9 {
+    animation:
+      music-note-fadein 2s ease 1.6s forwards,
+      music-note-float 4.4s ease-in-out 3.6s infinite;
+  }
+  #note10 {
+    animation:
+      music-note-fadein 2s ease 1.8s forwards,
+      music-note-float 3.3s ease-in-out 3.8s infinite;
+  }
+  #note11 {
+    animation:
+      music-note-fadein 2s ease 2s forwards,
+      music-note-float 3.9s ease-in-out 4s infinite;
+  }
+  #note12 {
+    animation:
+      music-note-fadein 2s ease 2.2s forwards,
+      music-note-float 2.7s ease-in-out 4.2s infinite;
+  }
+  #note13 {
+    animation:
+      music-note-fadein 2s ease 2.4s forwards,
+      music-note-float 4.5s ease-in-out 4.4s infinite;
+  }
+  #note14 {
+    animation:
+      music-note-fadein 2s ease 2.6s forwards,
+      music-note-float 3.6s ease-in-out 4.6s infinite;
+  }
+  #note15 {
+    animation:
+      music-note-fadein 2s ease 2.8s forwards,
+      music-note-float 3.1s ease-in-out 4.8s infinite;
+  }
+  #note16 {
+    animation:
+      music-note-fadein 2s ease 3s forwards,
+      music-note-float 4.1s ease-in-out 5s infinite;
+  }
+  #note17 {
+    animation:
+      music-note-fadein 2s ease 3.2s forwards,
+      music-note-float 2.6s ease-in-out 5.2s infinite;
+  }
+  #note18 {
+    animation:
+      music-note-fadein 2s ease 3.4s forwards,
+      music-note-float 4.3s ease-in-out 5.4s infinite;
+  }
+  #note19 {
+    animation:
+      music-note-fadein 2s ease 3.6s forwards,
+      music-note-float 3.4s ease-in-out 5.6s infinite;
+  }
+
   .shadow-card {
     box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.5);
   }
@@ -333,5 +464,41 @@ input:-webkit-autofill {
   to {
     opacity: 1;
     transform: rotate(360deg);
+  }
+}
+
+@keyframes music-line {
+  0% {
+    stroke-dasharray: 1 1000;
+    stroke-dashoffset: 0;
+    stroke-width: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dasharray: 150 0;
+    stroke-dashoffset: 20;
+    stroke-width: 3;
+    opacity: 1;
+  }
+}
+
+@keyframes music-note-fadein {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes music-note-float {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0);
   }
 }
