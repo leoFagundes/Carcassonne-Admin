@@ -31,14 +31,12 @@ export default function ClientMenuPage() {
   const [isMenuFixed, setIsMenuFixed] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<MenuItemType | undefined>();
-
   const [descriptions, setDescriptions] = useState<DescriptionTypeProps[]>([]);
   const [infos, setInfos] = useState<InfoType[]>([]);
   const [combos, setCombos] = useState<ComboType[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
   const [typesOrder, setTypesOrder] = useState<TypeOrderType[]>([]);
   const [popup, setPopup] = useState<PopupType>();
-
   const [currentMenuItem, setCurrentMenuItem] = useState("");
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
 

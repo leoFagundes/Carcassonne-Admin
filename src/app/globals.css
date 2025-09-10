@@ -81,12 +81,13 @@ h6 {
 
   .note {
     opacity: 0;
+    transform: scale(0);
   }
 
   #note1 {
     animation:
       music-note-fadein 2s ease 2s forwards,
-      music-note-float 3s ease-in-out 2s infinite;
+      music-note-float 3s ease-in-out 2.1s infinite;
   }
   #note2 {
     animation:
@@ -439,20 +440,20 @@ input:-webkit-autofill {
 @keyframes fadeInPopup {
   from {
     opacity: 0;
-    transform: translateY(-15px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
+    transform: scale(0);
   }
   to {
     opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -483,11 +484,13 @@ input:-webkit-autofill {
 }
 
 @keyframes music-note-fadein {
-  0% {
+  from {
     opacity: 0;
+    transform: scale(0);
   }
-  100% {
+  to {
     opacity: 1;
+    transform: scale(1);
   }
 }
 

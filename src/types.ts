@@ -129,8 +129,8 @@ export interface TableType {
   priority: number;
 }
 
-export interface MusicRecommendation {
+export interface MusicRecommendationType {
   id?: string;
   name: string;
-  createdAt?: Date;
+  createdAt?: Date | Timestamp;
 }

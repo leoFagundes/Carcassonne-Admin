@@ -2,29 +2,58 @@
 
 import Button from "@/components/button";
 import Input from "@/components/input";
+import Loader from "@/components/loader";
 import { useAlert } from "@/contexts/alertProvider";
+import MusicRecommendationRepository from "@/services/repositories/MusicRecommendationsRepository";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { FiSkipBack } from "react-icons/fi";
 
 // import bgSongImage from "../../../../public/images/song.png";
 
 export default function MusicRecommendationPage() {
   const [name, setName] = useState("");
+  const [title, setTitle] = useState("Indique uma música!");
+  const [loading, setLoading] = useState(false);
 
+  const router = useRouter();
   const { addAlert } = useAlert();
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!name.trim()) {
       addAlert("Preencha o campo antes de enviar.");
       return;
     }
+    setLoading(true);
+    try {
+      const response = await MusicRecommendationRepository.create({ name });
 
-    addAlert(`Sua música foi recomendada! 🎶`);
-    setName("");
+      if (response) {
+        addAlert(`Sua música foi recomendada! 🎶`);
+        setTitle("Indique outra música!");
+        setName("");
+      } else {
+        throw new Error();
+      }
+    } catch (error) {
+      console.error("Erro ao enviar uma recomendação de música: ", error);
+      addAlert("Houve um erro, recarregue a página e tente novamente.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-screen text-primary-gold px-4">
-      <div className="fixed top-0 right-0 h-screen w-screen max-w-[500px] overflow-hidden xl:hidden">
+    <div className="relative flex flex-col items-center justify-center w-full h-screen text-primary-gold px-4">
+      <span
+        onClick={() => router.back()}
+        className="absolute top-4 left-4 flex items-center w-full gap-1 cursor-pointer text-primary-gold z-10"
+      >
+        <FiSkipBack size={"18px"} />{" "}
+        <span className="font-semibold text-lg">Voltar</span>
+      </span>
+
+      <div className="fixed top-0 right-0 h-screen w-screen max-w-[500px] overflow-hidden">
         <svg
           className="w-full h-full sm:translate-0 translate-x-35"
           viewBox="0 0 600 1027"
@@ -314,9 +343,7 @@ export default function MusicRecommendationPage() {
       </div>
 
       <section className="m-4 p-4 rounded bg-primary-black/50 backdrop-blur-[6px] z-10 shadow-card">
-        <h1 className="sm:text-4xl text-2xl text-center">
-          Indique uma musi… uma playlist inteira, se quiser!
-        </h1>
+        <h1 className="sm:text-4xl text-2xl text-center">{title}</h1>
         <div className="my-4 flex flex-col items-center gap-5">
           <Input
             value={name}
@@ -326,7 +353,9 @@ export default function MusicRecommendationPage() {
             variant
           />
           <div className="w-fit">
-            <Button onClick={handleSubmit}>Recomendar</Button>
+            <Button onClick={handleSubmit}>
+              {loading ? <Loader /> : "Recomendar"}
+            </Button>
           </div>
         </div>
       </section>
