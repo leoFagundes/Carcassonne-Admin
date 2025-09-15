@@ -9,7 +9,7 @@ const ONE_MINUTE = 60 * 1000;
 const ONE_HOUR = 60 * ONE_MINUTE;
 const ONE_DAY = 24 * ONE_HOUR;
 
-const SESSION_DURATION = ONE_DAY;
+export const SESSION_DURATION = ONE_DAY;
 
 export default function SessionTimer() {
   const { addAlert } = useAlert();

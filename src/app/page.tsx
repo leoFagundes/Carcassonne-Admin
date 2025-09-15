@@ -20,6 +20,7 @@ import { User } from "@/types";
 import { useAlert } from "@/contexts/alertProvider";
 import Loader from "@/components/loader";
 import Puzzle from "@/components/puzzle";
+import { SESSION_DURATION } from "./(admin)/sessionTimer";
 
 export default function Home() {
   const [user, setUser] = useState<User>({
@@ -106,6 +107,11 @@ export default function Home() {
         addAlert("Você precisa verificar seu e-mail antes de fazer login.");
         return;
       }
+
+      localStorage.setItem(
+        "session_expires_at",
+        String(Date.now() + SESSION_DURATION)
+      );
 
       router.push("/myreserves");
     } catch (error: unknown) {
