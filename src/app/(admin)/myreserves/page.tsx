@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Calendar } from "@heroui/react";
 import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
-import { ReserveType } from "@/types";
+import { FreelancerControllType, ReserveType } from "@/types";
 import {
   LuBookCheck,
   LuBookX,
@@ -16,6 +16,7 @@ import {
   LuCalendarX,
   LuLink,
   LuTrash,
+  LuUserPlus,
   LuUserRoundCheck,
 } from "react-icons/lu";
 import Tooltip from "@/components/Tooltip";
@@ -30,6 +31,8 @@ import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import ReserveAdminForms from "@/components/reserveAdminForms";
 import { useRouter } from "next/navigation";
 import interactionPlugin from "@fullcalendar/interaction";
+import FreelancerRepository from "@/services/repositories/FreelancerRepository";
+import FreelancerAdminForms from "@/components/freelancerAdminForms";
 
 type EventFullCalendar = {
   title: string;
@@ -45,14 +48,17 @@ export default function Rerserve() {
     today(getLocalTimeZone())
   );
   const [reserves, setReserves] = useState<ReserveType[]>([]);
+  const [freelancers, setFrelancers] = useState<FreelancerControllType[]>([]);
   const [allReserves, setAllReserves] = useState<ReserveType[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedCalendarModal, setExpandedCalendarModal] = useState(false);
+  const [freelancerFormsModal, setFreelancerFormsModal] = useState(false);
   const [calendarFormsModal, setCalendarFormsModal] = useState(false);
   const [currentFormsType, setCurrentFormsType] = useState<"edit" | "add" | "">(
     ""
   );
   const [currentReserve, setCurrentReserve] = useState<ReserveType>();
+
   const isLargeScreen = useIsLargeScreen();
   const { addAlert } = useAlert();
 
@@ -176,8 +182,28 @@ export default function Rerserve() {
       }
     }
 
+    async function getFrelancers() {
+      setLoading(true);
+      try {
+        const dataBusca = new Date(date.year, date.month - 1, date.day); // mês é 0-indexado (7 = agosto)
+        const fetchedFreelancers =
+          await FreelancerRepository.getByDate(dataBusca);
+        console.log(
+          `Freelancers para ${dataBusca.toLocaleDateString()}:`,
+          fetchedFreelancers
+        );
+        setFrelancers(fetchedFreelancers);
+      } catch (error) {
+        addAlert("Erro ao carregar os freelancers desse dia.");
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     getReserves();
-  }, [date, calendarFormsModal]);
+    getFrelancers();
+  }, [date, calendarFormsModal, freelancerFormsModal]);
 
   useEffect(() => {
     async function getAllReserves() {
@@ -308,6 +334,7 @@ export default function Rerserve() {
   const canceledReserves = reserves.filter(
     (reserve) => reserve.status === "canceled"
   ).length;
+  const activeFreelancers = freelancers.length;
 
   const handleTableChange = async (id: string, newTable: string) => {
     setReserves((prev) =>
@@ -343,6 +370,16 @@ export default function Rerserve() {
                 className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer"
               >
                 <LuCalendarPlus size={"16px"} className="min-w-[16px]" />
+              </div>
+            </Tooltip>
+            <Tooltip direction="bottom" content="Adicionar um novo freelancer">
+              <div
+                onClick={() => {
+                  setFreelancerFormsModal(true);
+                }}
+                className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer"
+              >
+                <LuUserPlus size={"16px"} className="min-w-[16px]" />
               </div>
             </Tooltip>
             <Tooltip direction="bottom" content="Ir para visão do cliente">
@@ -401,6 +438,11 @@ export default function Rerserve() {
                 : "pessoas confirmadas"}
             </span>
             <span className="flex items-center gap-1">
+              <LuUserRoundCheck className="min-w-[16px]" />
+              {activeFreelancers}{" "}
+              {activeFreelancers === 1 ? "freelancer" : "freelancers"}
+            </span>
+            <span className="flex items-center gap-1">
               <LuBookCheck className="min-w-[16px]" />
               {confirmedReserves}{" "}
               {confirmedReserves === 1 ? "reserva ativa" : "reservas ativas"}
@@ -413,6 +455,11 @@ export default function Rerserve() {
                 : "reservas canceladas"}
             </span>
           </div>
+          {freelancers.length > 0 && (
+            <div className="flex items-center gap-3 text-primary-gold bg-secondary-black/30 p-2 rounded shadow-card-light hover:text-invalid-color cursor-pointer transition-all duration-300">
+              aaaaaaaaaaa
+            </div>
+          )}
           {reserves.length > 0 && (
             <div
               onClick={() => deleteTodayReserves()}
@@ -731,9 +778,19 @@ Equipe Carcassonne Pub`
         onClose={() => setCalendarFormsModal(false)}
       >
         <ReserveAdminForms
+          dateProps={date}
           type={currentFormsType}
           reserve={currentReserve}
           onClose={() => setCalendarFormsModal(false)}
+        />
+      </Modal>
+      <Modal
+        isOpen={freelancerFormsModal}
+        onClose={() => setFreelancerFormsModal(false)}
+      >
+        <FreelancerAdminForms
+          dateProps={date}
+          onClose={() => setFreelancerFormsModal(false)}
         />
       </Modal>
     </div>

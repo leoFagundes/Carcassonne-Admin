@@ -8,6 +8,7 @@ import {
   CarcaImageType,
   TypeOrderType,
   PopupType,
+  FreelancerControllType,
 } from "@/types";
 
 export const longMonths: { [key: string]: string } = {
@@ -144,5 +145,15 @@ export const patternTypeOrder: TypeOrderType = {
     name: "",
     order: 0,
     subtypes: [],
+  },
+};
+
+export const patternFreelancer: FreelancerControllType = {
+  name: "",
+  isPayed: false,
+  bookingDate: {
+    day: "",
+    month: "",
+    year: "",
   },
 };

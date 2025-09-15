@@ -17,7 +17,7 @@ import {
 import Input from "./input";
 import { randomCodeGenerator } from "@/utils/utilFunctions";
 import { Calendar } from "@heroui/calendar";
-import { today, getLocalTimeZone } from "@internationalized/date";
+import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
 import Button from "./button";
 import { useAlert } from "@/contexts/alertProvider";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
@@ -26,15 +26,18 @@ interface ReserveAdminFormsType {
   onClose: VoidFunction;
   reserve: ReserveType | undefined;
   type: "edit" | "add" | "";
+  dateProps?: CalendarDate;
 }
 
 export default function ReserveAdminForms({
   onClose,
   reserve,
   type,
+  dateProps,
 }: ReserveAdminFormsType) {
-  const [date, setDate] = useState(today(getLocalTimeZone()));
-
+  const [date, setDate] = useState(() =>
+    dateProps ? dateProps : today(getLocalTimeZone())
+  );
   const { addAlert } = useAlert();
 
   const [localReserve, setLocalReserve] = useState<ReserveType>(() =>
