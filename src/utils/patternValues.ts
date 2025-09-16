@@ -151,6 +151,7 @@ export const patternTypeOrder: TypeOrderType = {
 export const patternFreelancer: FreelancerControllType = {
   name: "",
   isPayed: false,
+  isStandby: false,
   bookingDate: {
     day: "",
     month: "",

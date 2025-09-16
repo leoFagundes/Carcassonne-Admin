@@ -133,6 +133,17 @@ export default function FreelancerAdminForms({
                 width="!w-[250px]"
               />
               <Checkbox
+                label="Freela sob aviso?"
+                variant
+                checked={currentFreelancer.isStandby}
+                setChecked={() =>
+                  setCurrentFreelancer({
+                    ...currentFreelancer,
+                    isStandby: !currentFreelancer.isStandby,
+                  })
+                }
+              />
+              <Checkbox
                 label="Freela está pago?"
                 variant
                 checked={currentFreelancer.isPayed}
