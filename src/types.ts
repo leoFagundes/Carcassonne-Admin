@@ -134,3 +134,15 @@ export interface MusicRecommendationType {
   name: string;
   createdAt?: Date | Timestamp;
 }
+
+export interface FreelancerControllType {
+  id?: string;
+  name: string;
+  isPayed: boolean;
+  isStandby: boolean;
+  bookingDate: {
+    day: string;
+    month: string;
+    year: string;
+  };
+}

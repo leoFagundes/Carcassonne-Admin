@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Calendar } from "@heroui/react";
 import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
-import { ReserveType } from "@/types";
+import { FreelancerControllType, ReserveType } from "@/types";
 import {
   LuBookCheck,
   LuBookX,
@@ -14,8 +14,12 @@ import {
   LuCalendarPlus,
   LuCalendarSearch,
   LuCalendarX,
+  LuDollarSign,
   LuLink,
+  LuSquareCheck,
+  LuSquareCheckBig,
   LuTrash,
+  LuUserPlus,
   LuUserRoundCheck,
 } from "react-icons/lu";
 import Tooltip from "@/components/Tooltip";
@@ -30,11 +34,13 @@ import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import ReserveAdminForms from "@/components/reserveAdminForms";
 import { useRouter } from "next/navigation";
 import interactionPlugin from "@fullcalendar/interaction";
+import FreelancerRepository from "@/services/repositories/FreelancerRepository";
+import FreelancerAdminForms from "@/components/freelancerAdminForms";
 
 type EventFullCalendar = {
   title: string;
   start: string;
-  extendedProps?: { status: "confirmed" | "canceled" };
+  extendedProps?: { status?: "confirmed" | "canceled"; type?: "freelancer" };
 };
 
 const TODAY = today(getLocalTimeZone());
@@ -45,25 +51,34 @@ export default function Rerserve() {
     today(getLocalTimeZone())
   );
   const [reserves, setReserves] = useState<ReserveType[]>([]);
+  const [freelancers, setFrelancers] = useState<FreelancerControllType[]>([]);
   const [allReserves, setAllReserves] = useState<ReserveType[]>([]);
+  const [allFreelancers, setAllFreelancers] = useState<
+    FreelancerControllType[]
+  >([]);
+
   const [loading, setLoading] = useState(false);
   const [expandedCalendarModal, setExpandedCalendarModal] = useState(false);
+  const [freelancerFormsModal, setFreelancerFormsModal] = useState(false);
   const [calendarFormsModal, setCalendarFormsModal] = useState(false);
   const [currentFormsType, setCurrentFormsType] = useState<"edit" | "add" | "">(
     ""
   );
   const [currentReserve, setCurrentReserve] = useState<ReserveType>();
+
   const isLargeScreen = useIsLargeScreen();
   const { addAlert } = useAlert();
 
   const router = useRouter();
 
   const events = transformToFullCalendarEvents(
-    allReserves as (ReserveType & { id: string })[]
+    allReserves as (ReserveType & { id: string })[],
+    allFreelancers as (FreelancerControllType & { id: string })[]
   );
 
   function transformToFullCalendarEvents(
-    reserves: (ReserveType & { id: string })[]
+    reserves: (ReserveType & { id: string })[],
+    freelancers: (FreelancerControllType & { id: string })[]
   ): EventFullCalendar[] {
     const confirmedReserves = reserves.filter((r) => r.status === "confirmed");
     const canceledReserves = reserves.filter((r) => r.status === "canceled");
@@ -72,47 +87,43 @@ export default function Rerserve() {
       string,
       { totalPeople: number; totalReserves: number }
     > = {};
-
     const groupedByDateCanceled: Record<
       string,
       { totalPeople: number; totalReserves: number }
     > = {};
+    const groupedByDateFreelancers: Record<string, number> = {};
 
-    // Agrupa reservas confirmadas
     confirmedReserves.forEach((r) => {
       const { year, month, day } = r.bookingDate;
-      const dateKey = `${year}-${month.toString().padStart(2, "0")}-${day
-        .toString()
-        .padStart(2, "0")}`;
-
+      const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       const totalPeople = (r.adults ?? 0) + (r.childs ?? 0);
 
-      if (!groupedByDateConfirmed[dateKey]) {
+      if (!groupedByDateConfirmed[dateKey])
         groupedByDateConfirmed[dateKey] = { totalPeople: 0, totalReserves: 0 };
-      }
       groupedByDateConfirmed[dateKey].totalPeople += totalPeople;
       groupedByDateConfirmed[dateKey].totalReserves += 1;
     });
 
-    // Agrupa reservas canceladas
     canceledReserves.forEach((r) => {
       const { year, month, day } = r.bookingDate;
-      const dateKey = `${year}-${month.toString().padStart(2, "0")}-${day
-        .toString()
-        .padStart(2, "0")}`;
-
+      const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       const totalPeople = (r.adults ?? 0) + (r.childs ?? 0);
 
-      if (!groupedByDateCanceled[dateKey]) {
+      if (!groupedByDateCanceled[dateKey])
         groupedByDateCanceled[dateKey] = { totalPeople: 0, totalReserves: 0 };
-      }
       groupedByDateCanceled[dateKey].totalPeople += totalPeople;
       groupedByDateCanceled[dateKey].totalReserves += 1;
     });
 
+    freelancers.forEach((f) => {
+      const { year, month, day } = f.bookingDate;
+      const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      groupedByDateFreelancers[dateKey] =
+        (groupedByDateFreelancers[dateKey] ?? 0) + 1;
+    });
+
     const events: EventFullCalendar[] = [];
 
-    // Eventos das reservas confirmadas
     Object.entries(groupedByDateConfirmed).forEach(
       ([date, { totalPeople, totalReserves }]) => {
         events.push({
@@ -126,7 +137,6 @@ export default function Rerserve() {
       }
     );
 
-    // Eventos das reservas canceladas
     Object.entries(groupedByDateCanceled).forEach(
       ([date, { totalReserves }]) => {
         events.push({
@@ -136,6 +146,14 @@ export default function Rerserve() {
         });
       }
     );
+
+    Object.entries(groupedByDateFreelancers).forEach(([date, totalFreelas]) => {
+      events.push({
+        title: `${totalFreelas} ${isLargeScreen ? "Freelas" : "F"}`,
+        start: `${date}T14:00:00`,
+        extendedProps: { type: "freelancer" },
+      });
+    });
 
     return events;
   }
@@ -176,8 +194,28 @@ export default function Rerserve() {
       }
     }
 
+    async function getFrelancers() {
+      setLoading(true);
+      try {
+        const dataBusca = new Date(date.year, date.month - 1, date.day); // mês é 0-indexado (7 = agosto)
+        const fetchedFreelancers =
+          await FreelancerRepository.getByDate(dataBusca);
+        console.log(
+          `Freelancers para ${dataBusca.toLocaleDateString()}:`,
+          fetchedFreelancers
+        );
+        setFrelancers(fetchedFreelancers);
+      } catch (error) {
+        addAlert("Erro ao carregar os freelancers desse dia.");
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     getReserves();
-  }, [date, calendarFormsModal]);
+    getFrelancers();
+  }, [date, calendarFormsModal, freelancerFormsModal]);
 
   useEffect(() => {
     async function getAllReserves() {
@@ -189,6 +227,18 @@ export default function Rerserve() {
         console.error(error);
       }
     }
+
+    async function getAllFreelancers() {
+      try {
+        const allFreelasFecthed = await FreelancerRepository.getAll();
+        setAllFreelancers(allFreelasFecthed);
+      } catch (error) {
+        addAlert("Erro ao carregar as freelancers.");
+        console.error(error);
+      }
+    }
+
+    getAllFreelancers();
 
     getAllReserves();
   }, [expandedCalendarModal]);
@@ -308,6 +358,7 @@ export default function Rerserve() {
   const canceledReserves = reserves.filter(
     (reserve) => reserve.status === "canceled"
   ).length;
+  const activeFreelancers = freelancers.length;
 
   const handleTableChange = async (id: string, newTable: string) => {
     setReserves((prev) =>
@@ -320,6 +371,82 @@ export default function Rerserve() {
       console.error("Erro ao atualizar mesa:", error);
     }
   };
+
+  async function handleFreelaStandByStatus(freela: FreelancerControllType) {
+    if (!freela.id) {
+      addAlert("Erro: Freelancer sem ID.");
+      return;
+    }
+
+    try {
+      const updatedFreela = { ...freela, isStandby: !freela.isStandby };
+      await FreelancerRepository.update(freela.id, updatedFreela);
+
+      setFrelancers((prev) =>
+        prev.map((f) => (f.id === freela.id ? updatedFreela : f))
+      );
+
+      addAlert(
+        `Freelancer ${freela.name} agora está ${
+          updatedFreela.isStandby ? "sobreaviso" : "confirmado"
+        }.`
+      );
+    } catch (error) {
+      console.error("Erro ao atualizar sobreaviso:", error);
+      addAlert("Erro ao atualizar o status de sobreaviso do freelancer.");
+    }
+  }
+
+  async function handleFreelaPaymentStatus(freela: FreelancerControllType) {
+    if (!freela.id) {
+      addAlert("Erro: Freelancer sem ID.");
+      return;
+    }
+
+    try {
+      const updatedFreela = { ...freela, isPayed: !freela.isPayed };
+      await FreelancerRepository.update(freela.id, updatedFreela);
+
+      setFrelancers((prev) =>
+        prev.map((f) => (f.id === freela.id ? updatedFreela : f))
+      );
+
+      addAlert(
+        `Pagamento de ${freela.name} marcado como ${
+          updatedFreela.isPayed ? "Pago ✅" : "Não Pago ❌"
+        }.`
+      );
+    } catch (error) {
+      console.error("Erro ao atualizar pagamento:", error);
+      addAlert("Erro ao atualizar o status de pagamento do freelancer.");
+    }
+  }
+
+  async function handleDeleteFreela(freela: FreelancerControllType) {
+    if (!freela.id) {
+      addAlert("Erro: Freelancer sem ID.");
+      return;
+    }
+
+    try {
+      const confirmDelete = window.confirm(
+        `Tem certeza que deseja deletar o freelancer ${freela.name}?`
+      );
+
+      if (!confirmDelete) return;
+
+      const success = await FreelancerRepository.delete(freela.id);
+      if (success) {
+        setFrelancers((prev) => prev.filter((f) => f.id !== freela.id));
+        addAlert(`Freelancer ${freela.name} deletado com sucesso`);
+      } else {
+        addAlert("Erro ao deletar freelancer.");
+      }
+    } catch (error) {
+      console.error("Erro ao deletar freelancer:", error);
+      addAlert("Erro ao deletar freelancer.");
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4 w-full h-full px-3 overflow-y-scroll">
@@ -343,6 +470,16 @@ export default function Rerserve() {
                 className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer"
               >
                 <LuCalendarPlus size={"16px"} className="min-w-[16px]" />
+              </div>
+            </Tooltip>
+            <Tooltip direction="bottom" content="Adicionar um novo freelancer">
+              <div
+                onClick={() => {
+                  setFreelancerFormsModal(true);
+                }}
+                className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer"
+              >
+                <LuUserPlus size={"16px"} className="min-w-[16px]" />
               </div>
             </Tooltip>
             <Tooltip direction="bottom" content="Ir para visão do cliente">
@@ -401,6 +538,11 @@ export default function Rerserve() {
                 : "pessoas confirmadas"}
             </span>
             <span className="flex items-center gap-1">
+              <LuUserRoundCheck className="min-w-[16px]" />
+              {activeFreelancers}{" "}
+              {activeFreelancers === 1 ? "freelancer" : "freelancers"}
+            </span>
+            <span className="flex items-center gap-1">
               <LuBookCheck className="min-w-[16px]" />
               {confirmedReserves}{" "}
               {confirmedReserves === 1 ? "reserva ativa" : "reservas ativas"}
@@ -413,6 +555,63 @@ export default function Rerserve() {
                 : "reservas canceladas"}
             </span>
           </div>
+          {freelancers.length > 0 && (
+            <div className="flex flex-col gap-2 text-primary-gold bg-secondary-black/30 p-2 rounded shadow-card-light">
+              <div className="flex flex-col items-center justify-center p-1">
+                <span className="text-center w-full text-xl font-semibold">
+                  Freelas
+                </span>
+                <span className="text-center w-full text-sm italic">
+                  ({date.day < 10 ? `0${date.day}` : date.day}/
+                  {date.month < 10 ? `0${date.month}` : date.month}/{date.year})
+                </span>
+              </div>
+              {freelancers.map((freela, index) => (
+                <div
+                  className="flex w-full items-center justify-between py-2 px-3 bg-dark-black/80 rounded shadow-card-light "
+                  key={freela.id ?? index}
+                >
+                  <span>{freela.name}</span>
+                  <div className="flex items-center gap-2">
+                    <Tooltip
+                      direction="top"
+                      content={`${freela.isStandby ? "Sobreaviso" : "Confirmado"}`}
+                    >
+                      <div
+                        onClick={() => handleFreelaStandByStatus(freela)}
+                        className={`cursor-pointer hover:opacity-80 ${freela.isStandby ? "text-yellow-600" : "text-green-700"} bg-primary-black/80 p-2 rounded shadow-card-light`}
+                      >
+                        {freela.isStandby ? (
+                          <LuSquareCheck className="min-w-[16px]" />
+                        ) : (
+                          <LuSquareCheckBig className="min-w-[16px]" />
+                        )}
+                      </div>
+                    </Tooltip>
+                    <Tooltip
+                      direction="top"
+                      content={`${freela.isPayed ? "Pago" : "Não Pago"}`}
+                    >
+                      <div
+                        onClick={() => handleFreelaPaymentStatus(freela)}
+                        className={`cursor-pointer hover:opacity-80 ${freela.isPayed ? "text-green-700" : "text-invalid-color"} bg-primary-black/80 p-2 rounded shadow-card-light`}
+                      >
+                        <LuDollarSign className="min-w-[16px]" />
+                      </div>
+                    </Tooltip>
+                    <Tooltip direction="top" content={`Excluir ${freela.name}`}>
+                      <div
+                        onClick={() => handleDeleteFreela(freela)}
+                        className={`cursor-pointer hover:opacity-80 bg-primary-black/80 p-2 rounded shadow-card-light`}
+                      >
+                        <LuTrash className="min-w-[16px]" />
+                      </div>
+                    </Tooltip>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           {reserves.length > 0 && (
             <div
               onClick={() => deleteTodayReserves()}
@@ -731,9 +930,19 @@ Equipe Carcassonne Pub`
         onClose={() => setCalendarFormsModal(false)}
       >
         <ReserveAdminForms
+          dateProps={date}
           type={currentFormsType}
           reserve={currentReserve}
           onClose={() => setCalendarFormsModal(false)}
+        />
+      </Modal>
+      <Modal
+        isOpen={freelancerFormsModal}
+        onClose={() => setFreelancerFormsModal(false)}
+      >
+        <FreelancerAdminForms
+          dateProps={date}
+          onClose={() => setFreelancerFormsModal(false)}
         />
       </Modal>
     </div>
