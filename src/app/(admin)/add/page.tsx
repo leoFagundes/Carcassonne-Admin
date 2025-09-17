@@ -3,13 +3,16 @@
 import React, { useState } from "react";
 import {
   LuBoxes,
+  LuCalendarPlus,
   LuClipboardPenLine,
   LuDices,
   LuGroup,
+  LuImagePlus,
   LuListOrdered,
   LuPizza,
   LuPlus,
   LuText,
+  LuUserPlus,
 } from "react-icons/lu";
 import Card from "./card";
 import Modal from "@/components/modal";
@@ -36,6 +39,7 @@ import {
 } from "@/utils/patternValues";
 import PopupForms from "@/components/popupForms";
 import TypesOrderForms from "@/components/typesOrderForms";
+import { useRouter } from "next/navigation";
 
 export default function AddPage() {
   const [isAddGameModalOpen, setIsAddGameModalOpen] = useState(false);
@@ -62,6 +66,8 @@ export default function AddPage() {
 
   const [newDescriptionType, setNewDescriptionType] =
     useState<DescriptionTypeProps>(patternDescriptionType);
+
+  const router = useRouter();
 
   return (
     <section className="flex flex-col items-center gap-8 w-full h-full">
@@ -111,6 +117,24 @@ export default function AddPage() {
           description="Adicione e ordene os tipos e subtipos de cada item!"
           icon={<LuListOrdered size={"32px"} className="min-w-[32px]" />}
           onClick={() => setIsAddTypesOrderModalOpen(true)}
+        />
+        <Card
+          title="Adicionar Reserva"
+          description="Adicione uma nova reserva!"
+          icon={<LuCalendarPlus size={"32px"} className="min-w-[32px]" />}
+          onClick={() => router.push(`/myreserves?createreserve=true`)}
+        />
+        <Card
+          title="Adicionar Freelancer"
+          description="Adicione um novo freelancer em um determinado dia!"
+          icon={<LuUserPlus size={"32px"} className="min-w-[32px]" />}
+          onClick={() => router.push(`/myreserves?createfreela=true`)}
+        />
+        <Card
+          title="Adicionar Foto ao Mural"
+          description="Adicione uma nova foto ao mural do Carcassonne!"
+          icon={<LuImagePlus size={"32px"} className="min-w-[32px]" />}
+          onClick={() => router.push(`/carcassonne?createimage=true`)}
         />
       </section>
 

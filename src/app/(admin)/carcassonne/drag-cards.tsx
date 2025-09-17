@@ -13,6 +13,7 @@ import random from "random";
 import InputImage from "@/components/inputImage";
 import { uploadImageToFirebase } from "@/services/repositories/FirebaseImageUtils";
 import Tooltip from "@/components/Tooltip";
+import { useSearchParams } from "next/navigation";
 
 export const DragCards = () => {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -24,6 +25,15 @@ export const DragCards = () => {
   const [carcaImages, setCarcaImages] = useState<CarcaImageType[]>([]);
 
   const { addAlert } = useAlert();
+
+  const searchParams = useSearchParams();
+  const createimage = searchParams.get("createimage");
+
+  useEffect(() => {
+    if (createimage === "true") {
+      setIsModalOpen(true);
+    }
+  }, []);
 
   // Alterna fullscreen
   const handleFullscreen = () => {
@@ -101,7 +111,7 @@ export const DragCards = () => {
         backgroundRepeat: "repeat",
       }}
       ref={sectionRef}
-      className={`saturate-110 relative grid min-h-[600px] sm:max-w-[90%] w-full place-content-center bg-dark-black rounded-lg shadow-card`}
+      className={`${isModalOpen && "border"} saturate-110 relative grid min-h-[600px] sm:max-w-[90%] w-full place-content-center bg-dark-black rounded-lg shadow-card`}
     >
       <div className="absolute z-40 top-4 right-4 flex gap-2">
         <button

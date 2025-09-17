@@ -12,7 +12,7 @@ import {
 } from "@/utils/patternValues";
 import { auth } from "@/services/firebaseConfig";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { LuSettings } from "react-icons/lu";
 import { onAuthStateChanged } from "firebase/auth";
 import BoardgameRepository from "@/services/repositories/BoardGameRepository";
@@ -24,6 +24,7 @@ import { DragCards } from "@/app/(admin)/carcassonne/drag-cards";
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import Input from "@/components/input";
 import OptionsInput from "@/components/optionsInput";
+import { useSearchParams } from "next/navigation";
 
 export default function SettingsPage() {
   const [localGeneralConfigs, setLocalGeneralConfigs] =
@@ -39,6 +40,17 @@ export default function SettingsPage() {
   });
 
   const { addAlert } = useAlert();
+
+  const muralRef = useRef<HTMLDivElement>(null);
+
+  const searchParams = useSearchParams();
+  const createimage = searchParams.get("createimage");
+
+  useEffect(() => {
+    if (createimage === "true") {
+      muralRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
 
   const getCurrentUserEmail = (): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -298,7 +310,10 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-          <div className="w-full flex flex-col items-center gap-1">
+          <div
+            ref={muralRef}
+            className="w-full flex flex-col items-center gap-1"
+          >
             <span className="text-center font-semibold text-lg">
               Mural de fotos do Carcassonne
             </span>

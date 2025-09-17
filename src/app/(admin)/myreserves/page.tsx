@@ -32,7 +32,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import Modal from "@/components/modal";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import ReserveAdminForms from "@/components/reserveAdminForms";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import interactionPlugin from "@fullcalendar/interaction";
 import FreelancerRepository from "@/services/repositories/FreelancerRepository";
 import FreelancerAdminForms from "@/components/freelancerAdminForms";
@@ -70,6 +70,21 @@ export default function Rerserve() {
   const { addAlert } = useAlert();
 
   const router = useRouter();
+
+  const searchParams = useSearchParams();
+  const createreserve = searchParams.get("createreserve");
+  const createfreela = searchParams.get("createfreela");
+
+  useEffect(() => {
+    if (createreserve === "true") {
+      setCalendarFormsModal(true);
+      setCurrentFormsType("add");
+    }
+
+    if (createfreela === "true") {
+      setFreelancerFormsModal(true);
+    }
+  }, []);
 
   const events = transformToFullCalendarEvents(
     allReserves as (ReserveType & { id: string })[],
