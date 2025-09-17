@@ -24,7 +24,7 @@ import { DragCards } from "@/app/(admin)/carcassonne/drag-cards";
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import Input from "@/components/input";
 import OptionsInput from "@/components/optionsInput";
-import { useSearchParams } from "next/navigation";
+import ScrollMural from "./scrollToImage";
 
 export default function SettingsPage() {
   const [localGeneralConfigs, setLocalGeneralConfigs] =
@@ -42,15 +42,6 @@ export default function SettingsPage() {
   const { addAlert } = useAlert();
 
   const muralRef = useRef<HTMLDivElement>(null);
-
-  const searchParams = useSearchParams();
-  const createimage = searchParams.get("createimage");
-
-  useEffect(() => {
-    if (createimage === "true") {
-      muralRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, []);
 
   const getCurrentUserEmail = (): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -129,6 +120,7 @@ export default function SettingsPage() {
   return (
     <section className="flex flex-col gap-8 w-full h-full px-3 pb-8 overflow-y-scroll outline-none">
       {loading && <LoaderFullscreen />}
+      <ScrollMural muralRef={muralRef} />
 
       <section className="flex w-full justify-center items-center gap-2 text-primary-gold">
         <LuSettings size={"48px"} className="min-w-[48px]" />
