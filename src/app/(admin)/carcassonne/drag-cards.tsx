@@ -13,7 +13,6 @@ import random from "random";
 import InputImage from "@/components/inputImage";
 import { uploadImageToFirebase } from "@/services/repositories/FirebaseImageUtils";
 import Tooltip from "@/components/Tooltip";
-import { useSearchParams } from "next/navigation";
 
 export const DragCards = () => {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -26,10 +25,12 @@ export const DragCards = () => {
 
   const { addAlert } = useAlert();
 
-  const searchParams = useSearchParams();
-  const createimage = searchParams.get("createimage");
-
   useEffect(() => {
+    if (typeof window === "undefined") return; // garante que só roda no client
+
+    const params = new URLSearchParams(window.location.search);
+    const createimage = params.get("createimage");
+
     if (createimage === "true") {
       setIsModalOpen(true);
     }
