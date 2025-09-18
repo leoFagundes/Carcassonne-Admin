@@ -25,6 +25,8 @@ import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import Popup from "@/components/popup";
 import TypesOrderRepository from "@/services/repositories/TypesOrderRepository";
 import PopupRepository from "@/services/repositories/PopupRepositoire";
+import { FaAngleLeft, FaAngleRight, FaSearch } from "react-icons/fa";
+import Input from "@/components/input";
 
 export default function ClientMenuPage() {
   const [types, setTypes] = useState(["Avisos", "Combos"]);
@@ -39,8 +41,9 @@ export default function ClientMenuPage() {
   const [popup, setPopup] = useState<PopupType>();
   const [currentMenuItem, setCurrentMenuItem] = useState("");
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
-
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [searchCardExpanded, setSearchCardExpanded] = useState(false);
+  const [searchItem, setSearchItem] = useState("");
 
   const [laoding, setLoading] = useState(true);
 
@@ -272,6 +275,34 @@ export default function ClientMenuPage() {
         />
       )}
       {isMenuFixed && <div className="min-h-[145px] w-screen"></div>}
+
+      <div
+        className={` backdrop-blur-[2px] p-2 rounded-md ${searchCardExpanded ? "gap-2" : "gap-0"} flex items-center justify-center fixed bottom-2 left-2 z-10 bg-dark-black/80 shadow-card-light`}
+      >
+        <div
+          onClick={() => setSearchCardExpanded(!searchCardExpanded)}
+          className="flex items-center text-primary duration-300 ease-in-out opacity-100 cursor-pointer p-1"
+        >
+          <FaSearch size={"20px"} className={`min-w-[20px]`} />
+          {searchCardExpanded ? (
+            <FaAngleLeft size={"14px"} className={`min-w-[14px]`} />
+          ) : (
+            <FaAngleRight size={"14px"} className={`min-w-[14px]`} />
+          )}
+        </div>
+        <div
+          className={`w-0 ${searchCardExpanded && "w-[200px]"} transition-all duration-300`}
+        >
+          {searchCardExpanded && (
+            <Input
+              autoFocus
+              placeholder="procurar item..."
+              setValue={(e) => setSearchItem(e.target.value)}
+              value={searchItem}
+            />
+          )}
+        </div>
+      </div>
       <div
         className={`${
           isMenuFixed && "fixed w-full top-0 left-0 "
@@ -288,7 +319,7 @@ export default function ClientMenuPage() {
 
         {/* Menu de tipos */}
         <section className="w-screen shadow-card">
-          <div ref={menuRef} className="flex gap-5 overflow-x-scroll py-2 px-4">
+          {/* <div ref={menuRef} className="flex gap-5 overflow-x-scroll py-2 px-4">
             {types.map((type, index) => (
               <span
                 id={`${type}-${index}`}
@@ -302,6 +333,38 @@ export default function ClientMenuPage() {
                 {type}
               </span>
             ))}
+          </div> */}
+          <div ref={menuRef} className="flex gap-5 overflow-x-scroll py-2 px-4">
+            {types.map((type, index) => {
+              const hasItems = menuItems.some(
+                (item) =>
+                  item.type === type &&
+                  item.isVisible &&
+                  (!searchItem.trim() ||
+                    item.name
+                      .toLowerCase()
+                      .includes(searchItem.toLowerCase()) ||
+                    item.description
+                      ?.toLowerCase()
+                      .includes(searchItem.toLowerCase()))
+              );
+
+              if (!hasItems) return null;
+
+              return (
+                <span
+                  id={`${type}-${index}`}
+                  key={index}
+                  onClick={() => handleTypeClick(type, `${type}-${index}`)}
+                  className={`flex items-center justify-center bg-secondary-black/60 rounded py-1 px-2 cursor-pointer hover:bg-secondary-black transition-all ${
+                    currentMenuItem === type &&
+                    "font-semibold -translate-y-1 !bg-secondary-black shadow-card text-md mx-1 px-3"
+                  }`}
+                >
+                  {type}
+                </span>
+              );
+            })}
           </div>
         </section>
       </div>
@@ -336,12 +399,17 @@ export default function ClientMenuPage() {
 
       {types
         .filter((type) => type !== "Avisos" && type !== "Combos")
-        .filter((type) =>
-          menuItems.some((item) => item.type === type && item.isVisible)
-        )
         .map((type, index) => {
           const filteredItems = menuItems
             .filter((item) => item.type === type && item.isVisible)
+            .filter((item) => {
+              if (!searchItem.trim()) return true;
+              const term = searchItem.toLowerCase();
+              return (
+                item.name.toLowerCase().includes(term) ||
+                item.description?.toLowerCase().includes(term)
+              );
+            })
             .sort((a, b) => {
               if (a.isFocus !== b.isFocus) {
                 return b.isFocus ? 1 : -1;
@@ -349,12 +417,13 @@ export default function ClientMenuPage() {
               return a.name.localeCompare(b.name);
             });
 
+          if (filteredItems.length === 0) return null; // 🔥 esconde a seção inteira
+
           const itemsWithoutSubtype = filteredItems.filter(
             (item) => !item.subtype
           );
           const itemsWithSubtype = filteredItems.filter((item) => item.subtype);
 
-          // Agrupar os com subtype por nome
           const groupedBySubtype = itemsWithSubtype.reduce(
             (acc, item) => {
               const key = item.subtype as string;
@@ -365,10 +434,8 @@ export default function ClientMenuPage() {
             {} as Record<string, typeof menuItems>
           );
 
-          // Obter o objeto do type atual em typesOrder
           const typeOrder = typesOrder.find((t) => t.type.name === type);
 
-          // Ordenar os subtypes de acordo com a ordem definida, subtypes não encontrados vêm primeiro (e por ordem alfabética)
           const orderedSubtypeEntries = Object.entries(groupedBySubtype).sort(
             ([a], [b]) => {
               const aOrder = typeOrder?.type.subtypes.find(
@@ -388,7 +455,6 @@ export default function ClientMenuPage() {
                 return aOrder! - bOrder!;
               }
 
-              // Ambos sem ordem → ordem alfabética
               return a.localeCompare(b);
             }
           );

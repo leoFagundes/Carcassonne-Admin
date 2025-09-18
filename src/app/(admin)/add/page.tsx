@@ -9,6 +9,7 @@ import {
   LuGroup,
   LuImagePlus,
   LuListOrdered,
+  LuMusic,
   LuPizza,
   LuPlus,
   LuText,
@@ -113,7 +114,7 @@ export default function AddPage() {
           onClick={() => setIsAddPopupModalOpen(true)}
         />
         <Card
-          title="Ordenar tipos"
+          title="Ordenar Tipos"
           description="Adicione e ordene os tipos e subtipos de cada item!"
           icon={<LuListOrdered size={"32px"} className="min-w-[32px]" />}
           onClick={() => setIsAddTypesOrderModalOpen(true)}
@@ -135,6 +136,12 @@ export default function AddPage() {
           description="Adicione uma nova foto ao mural do Carcassonne!"
           icon={<LuImagePlus size={"32px"} className="min-w-[32px]" />}
           onClick={() => router.push(`/carcassonne?createimage=true`)}
+        />
+        <Card
+          title="Adicionar uma Música"
+          description="Adicione uma recomendação de música para a lista!"
+          icon={<LuMusic size={"32px"} className="min-w-[32px]" />}
+          onClick={() => router.push(`/clientMusicRecommendation`)}
         />
       </section>
 
