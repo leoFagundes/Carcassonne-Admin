@@ -370,7 +370,7 @@ export default function ClientMenuPage() {
       </div>
 
       {/* Seções do cardápio */}
-      {infos.length > 0 && (
+      {infos.length > 0 && !searchItem.trim() && (
         <section
           id="Avisos"
           className="flex flex-col items-center w-full mt-8 bg-secondary-black/60 p-3 rounded-sm shadow-card"
@@ -384,7 +384,7 @@ export default function ClientMenuPage() {
         </section>
       )}
 
-      {combos.length > 0 && (
+      {combos.length > 0 && !searchItem.trim() && (
         <section
           id="Combos"
           className="flex flex-col items-center w-full mt-8 bg-secondary-black/60 p-3 rounded-sm shadow-card"
