@@ -48,6 +48,23 @@ export default function Sidebar() {
   const toggleSidebar = () => setIsOpen(!isOpen);
   const pathname = usePathname();
 
+  const menuItems = [
+    {
+      path: "/myreserves",
+      message: "Reservas",
+      icon: <LuCalendar size={20} />,
+    },
+    { path: "/collection", message: "Coleção", icon: <LuDices size={20} /> },
+    { path: "/menu", message: "Cardápio", icon: <LuPizza size={20} /> },
+    {
+      path: "/musicRecommendation",
+      message: "Músicas",
+      icon: <LuMusic size={20} />,
+    },
+    { path: "/add", message: "Adicionar", icon: <LuPlus size={20} /> },
+    { path: "/carcassonne", message: "Extras", icon: <LuSettings size={20} /> },
+  ];
+
   async function handleLogout() {
     try {
       await signOut(auth);
@@ -90,61 +107,15 @@ export default function Sidebar() {
             </div>
           </div>
           <div className="w-full flex flex-col flex-1 gap-3">
-            <Item
-              onClick={() => {
-                router.push("/myreserves");
-                setIsOpen(false);
-              }}
-              message="Reservas"
-              icon={<LuCalendar size={"20px"} />}
-              path="/myreserves"
-            />
-            <Item
-              onClick={() => {
-                router.push("/collection");
-                setIsOpen(false);
-              }}
-              message="Coleção"
-              icon={<LuDices size={"20px"} />}
-              path="/collection"
-            />
-            <Item
-              onClick={() => {
-                router.push("/menu");
-                setIsOpen(false);
-              }}
-              message="Cardápio"
-              icon={<LuPizza size={"20px"} />}
-              path="/menu"
-            />
-            <Item
-              onClick={() => {
-                router.push("/musicRecommendation");
-                setIsOpen(false);
-              }}
-              message="Musicas"
-              icon={<LuMusic size={"20px"} />}
-              path="/musicRecommendation"
-            />
-            <Item
-              onClick={() => {
-                router.push("/add");
-                setIsOpen(false);
-              }}
-              message="Adicionar"
-              icon={<LuPlus size={"20px"} />}
-              path="/add"
-            />
-
-            <Item
-              onClick={() => {
-                router.push("/carcassonne");
-                setIsOpen(false);
-              }}
-              message="Extras"
-              icon={<LuSettings size={"20px"} />}
-              path={"/carcassonne"}
-            />
+            {menuItems.map((item) => (
+              <Item
+                key={item.path}
+                onClick={() => router.push(item.path)}
+                message={item.message}
+                icon={item.icon}
+                path={item.path}
+              />
+            ))}
           </div>
 
           <Item

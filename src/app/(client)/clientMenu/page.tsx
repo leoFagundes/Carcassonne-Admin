@@ -45,7 +45,7 @@ export default function ClientMenuPage() {
   const [searchCardExpanded, setSearchCardExpanded] = useState(false);
   const [searchItem, setSearchItem] = useState("");
 
-  const [laoding, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -266,7 +266,7 @@ export default function ClientMenuPage() {
 
   return (
     <div className="flex flex-col items-center w-full h-screen text-primary-gold px-8">
-      {laoding && <LoaderFullscreen />}
+      {loading && <LoaderFullscreen />}
       {popup && isPopupOpen && (
         <Popup
           url={popup.src}
