@@ -68,6 +68,9 @@ export default function Rerserve() {
   );
   const [currentReserve, setCurrentReserve] = useState<ReserveType>();
   const [printModal, setPrintModal] = useState(false);
+  const [printTime, setPrintTime] = useState(false);
+  const [printIncludeChecks, setPrintIncludeChecks] = useState(false);
+  const [printIncludeObservation, setPrintIncludeObservation] = useState(false);
 
   const isLargeScreen = useIsLargeScreen();
   const { addAlert } = useAlert();
@@ -974,7 +977,16 @@ Equipe Carcassonne Pub`
           onClose={() => setFreelancerFormsModal(false)}
         />
       </Modal>
-      <PrintModal isOpen={printModal} onClose={() => setPrintModal(false)}>
+      <PrintModal
+        isOpen={printModal}
+        onClose={() => setPrintModal(false)}
+        printTime={printTime}
+        setPrintTime={setPrintTime}
+        printIncludeChecks={printIncludeChecks}
+        setPrintIncludeChecks={setPrintIncludeChecks}
+        printIncludeObservation={printIncludeObservation}
+        setPrintIncludeObservation={setPrintIncludeObservation}
+      >
         <div className="p-6 rounded-md w-full text-sm font-mono flex flex-col items-center max-w-[800px]">
           {/* Data */}
           <div className="text-center mb-4 font-semibold text-lg">
@@ -983,9 +995,16 @@ Equipe Carcassonne Pub`
           </div>
 
           {/* Cabeçalho */}
-          <div className="grid grid-cols-[40px_1fr_100px_60px] items-center w-full gap-2 font-semibold border-b border-gray-400 pb-1 mb-2">
+          <div
+            className={`grid items-center w-full gap-2 font-semibold border-b border-gray-400 pb-1 mb-2 ${
+              printIncludeChecks
+                ? "grid-cols-[40px_1fr_100px_60px_60px]"
+                : "grid-cols-[40px_1fr_100px_60px]"
+            }`}
+          >
             <div className="text-right">ㅤ</div>
             <div>Nome</div>
+            {printIncludeChecks && <div className="text-center">Check</div>}
             <div className="text-center">Pessoas</div>
             <div className="text-center">Mesa</div>
           </div>
@@ -997,7 +1016,11 @@ Equipe Carcassonne Pub`
               .map((reserve, index) => (
                 <div
                   key={index}
-                  className="grid grid-cols-[40px_1fr_100px_60px] items-center w-full gap-2"
+                  className={`grid w-full gap-2 ${
+                    printIncludeChecks
+                      ? "grid-cols-[40px_1fr_100px_60px_60px]"
+                      : "grid-cols-[40px_1fr_100px_60px]"
+                  }`}
                 >
                   {/* Número */}
                   <div className="text-right font-semibold">
@@ -1005,7 +1028,29 @@ Equipe Carcassonne Pub`
                   </div>
 
                   {/* Nome */}
-                  <div>{reserve.name}</div>
+                  <div className="flex flex-col gap-1">
+                    <span>{reserve.name}</span>
+                    {printIncludeObservation && reserve.observation && (
+                      <span>
+                        <span className="font-semibold">Observação:</span>{" "}
+                        {reserve.observation}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Check */}
+                  {printIncludeChecks && (
+                    <div className="flex justify-center gap-1 flex-wrap">
+                      {Array.from({
+                        length: reserve.adults + reserve.childs,
+                      }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="w-4 h-4 rounded-[2px] border"
+                        ></div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Pessoas */}
                   <div className="text-center">
