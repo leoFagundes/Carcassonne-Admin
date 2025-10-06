@@ -16,6 +16,7 @@ import {
   LuCalendarX,
   LuDollarSign,
   LuLink,
+  LuPrinter,
   LuSquareCheck,
   LuSquareCheckBig,
   LuTrash,
@@ -36,6 +37,7 @@ import { useRouter } from "next/navigation";
 import interactionPlugin from "@fullcalendar/interaction";
 import FreelancerRepository from "@/services/repositories/FreelancerRepository";
 import FreelancerAdminForms from "@/components/freelancerAdminForms";
+import PrintModal from "./printModal";
 
 type EventFullCalendar = {
   title: string;
@@ -65,6 +67,7 @@ export default function Rerserve() {
     ""
   );
   const [currentReserve, setCurrentReserve] = useState<ReserveType>();
+  const [printModal, setPrintModal] = useState(false);
 
   const isLargeScreen = useIsLargeScreen();
   const { addAlert } = useAlert();
@@ -503,6 +506,15 @@ export default function Rerserve() {
               <div className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
                 <LuLink
                   onClick={() => router.push("/reserve")}
+                  size={"16px"}
+                  className="min-w-[16px]"
+                />
+              </div>
+            </Tooltip>
+            <Tooltip direction="bottom" content="Abrir área de impressão">
+              <div className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
+                <LuPrinter
+                  onClick={() => setPrintModal(true)}
                   size={"16px"}
                   className="min-w-[16px]"
                 />
@@ -962,6 +974,51 @@ Equipe Carcassonne Pub`
           onClose={() => setFreelancerFormsModal(false)}
         />
       </Modal>
+      <PrintModal isOpen={printModal} onClose={() => setPrintModal(false)}>
+        <div className="p-6 rounded-md w-full text-sm font-mono flex flex-col items-center max-w-[800px]">
+          {/* Data */}
+          <div className="text-center mb-4 font-semibold text-lg">
+            {date.day < 10 ? `0${date.day}` : date.day}/
+            {date.month < 10 ? `0${date.month}` : date.month}/{date.year}
+          </div>
+
+          {/* Cabeçalho */}
+          <div className="grid grid-cols-[40px_1fr_100px_60px] items-center w-full gap-2 font-semibold border-b border-gray-400 pb-1 mb-2">
+            <div className="text-right">ㅤ</div>
+            <div>Nome</div>
+            <div className="text-center">Pessoas</div>
+            <div className="text-center">Mesa</div>
+          </div>
+
+          {/* Lista de reservas */}
+          <div className="flex flex-col gap-6 w-full">
+            {reserves
+              .filter((reserve) => reserve.status !== "canceled")
+              .map((reserve, index) => (
+                <div
+                  key={index}
+                  className="grid grid-cols-[40px_1fr_100px_60px] items-center w-full gap-2"
+                >
+                  {/* Número */}
+                  <div className="text-right font-semibold">
+                    {index < 9 ? `0${index + 1}` : index + 1}.
+                  </div>
+
+                  {/* Nome */}
+                  <div>{reserve.name}</div>
+
+                  {/* Pessoas */}
+                  <div className="text-center">
+                    {reserve.adults + reserve.childs}p
+                  </div>
+
+                  {/* Mesa */}
+                  <div className="text-center">{reserve.table}</div>
+                </div>
+              ))}
+          </div>
+        </div>
+      </PrintModal>
     </div>
   );
 }
