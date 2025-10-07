@@ -82,6 +82,21 @@ export default function PrintModal({
               Incluir checks
             </label>
 
+            <label className="flex items-center gap-2 cursor-pointer text-black px-2 border rounded shadow-md text-sm">
+              <input
+                type="checkbox"
+                checked={printConfigs.printSeparateByAge}
+                onChange={() =>
+                  setPrintConfigs({
+                    ...printConfigs,
+                    printSeparateByAge: !printConfigs.printSeparateByAge,
+                  })
+                }
+                className="w-4 h-4"
+              />
+              Separar Adultos e Crianças
+            </label>
+
             <select
               value={printConfigs.printPosition}
               onChange={(e) =>
@@ -161,6 +176,7 @@ export default function PrintModal({
                     printWaterMark: true,
                     printWaterMarkOpacity: 0.04,
                     printFontSize: "small",
+                    printSeparateByAge: false,
                   });
                 }, 200);
               }}
@@ -181,6 +197,7 @@ export default function PrintModal({
                   printWaterMark: true,
                   printWaterMarkOpacity: 0.04,
                   printFontSize: "small",
+                  printSeparateByAge: false,
                 });
               }}
               className="gap-1 p-2 cursor-pointer border rounded shadow-md w-fit h-6 flex justify-center items-center z-10 text-invalid-color"

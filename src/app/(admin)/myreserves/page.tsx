@@ -53,6 +53,7 @@ export type PrintProps = {
   printWaterMark: boolean;
   printWaterMarkOpacity: number;
   printFontSize: "small" | "medium" | "large";
+  printSeparateByAge: boolean;
 };
 
 const TODAY = today(getLocalTimeZone());
@@ -87,6 +88,7 @@ export default function Rerserve() {
     printWaterMark: true,
     printWaterMarkOpacity: 0.04,
     printFontSize: "small",
+    printSeparateByAge: false,
   });
 
   const isLargeScreen = useIsLargeScreen();
@@ -1072,7 +1074,9 @@ Equipe Carcassonne Pub`
 
                   {/* Pessoas */}
                   <div className="text-center">
-                    {reserve.adults + reserve.childs}p
+                    {!printConfigs.printSeparateByAge
+                      ? `${reserve.adults + reserve.childs}p`
+                      : `${reserve.adults}a | ${reserve.childs}c`}
                   </div>
 
                   {/* Mesa */}
