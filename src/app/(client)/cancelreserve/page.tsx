@@ -114,6 +114,13 @@ export default function CancelReserve() {
                   {reserve.bookingDate.year} - {reserve.time}
                 </span>
               </span>
+              <span
+                className={`${reserve.status === "canceled" && "text-invalid-color"}`}
+              >
+                {reserve.status === "canceled"
+                  ? "Reserva cancelada"
+                  : "Reserva Ativa"}
+              </span>
             </div>
           </div>
         ) : code ? (
