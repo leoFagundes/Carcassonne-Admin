@@ -45,6 +45,16 @@ type EventFullCalendar = {
   extendedProps?: { status?: "confirmed" | "canceled"; type?: "freelancer" };
 };
 
+export type PrintProps = {
+  printTime: boolean;
+  printIncludeChecks: boolean;
+  printIncludeObservation: boolean;
+  printPosition: "top" | "center";
+  printWaterMark: boolean;
+  printWaterMarkOpacity: number;
+  printFontSize: "small" | "medium" | "large";
+};
+
 const TODAY = today(getLocalTimeZone());
 
 export default function Rerserve() {
@@ -68,9 +78,16 @@ export default function Rerserve() {
   );
   const [currentReserve, setCurrentReserve] = useState<ReserveType>();
   const [printModal, setPrintModal] = useState(false);
-  const [printTime, setPrintTime] = useState(false);
-  const [printIncludeChecks, setPrintIncludeChecks] = useState(false);
-  const [printIncludeObservation, setPrintIncludeObservation] = useState(false);
+
+  const [printConfigs, setPrintConfigs] = useState<PrintProps>({
+    printTime: false,
+    printIncludeChecks: false,
+    printIncludeObservation: false,
+    printPosition: "center",
+    printWaterMark: true,
+    printWaterMarkOpacity: 0.04,
+    printFontSize: "small",
+  });
 
   const isLargeScreen = useIsLargeScreen();
   const { addAlert } = useAlert();
@@ -515,7 +532,7 @@ export default function Rerserve() {
               </div>
             </Tooltip>
             <Tooltip direction="bottom" content="Abrir área de impressão">
-              <div className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
+              <div className="p-2 sm:flex hidden items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
                 <LuPrinter
                   onClick={() => setPrintModal(true)}
                   size={"16px"}
@@ -980,14 +997,12 @@ Equipe Carcassonne Pub`
       <PrintModal
         isOpen={printModal}
         onClose={() => setPrintModal(false)}
-        printTime={printTime}
-        setPrintTime={setPrintTime}
-        printIncludeChecks={printIncludeChecks}
-        setPrintIncludeChecks={setPrintIncludeChecks}
-        printIncludeObservation={printIncludeObservation}
-        setPrintIncludeObservation={setPrintIncludeObservation}
+        printConfigs={printConfigs}
+        setPrintConfigs={setPrintConfigs}
       >
-        <div className="p-6 rounded-md w-full text-sm font-mono flex flex-col items-center max-w-[800px]">
+        <div
+          className={`p-6 rounded-md w-full ${printConfigs.printFontSize === "small" ? "text-sm" : printConfigs.printFontSize === "large" ? "text-lg" : "texxt-base"} font-mono flex flex-col items-center max-w-[800px]`}
+        >
           {/* Data */}
           <div className="text-center mb-4 font-semibold text-lg">
             {date.day < 10 ? `0${date.day}` : date.day}/
@@ -997,14 +1012,16 @@ Equipe Carcassonne Pub`
           {/* Cabeçalho */}
           <div
             className={`grid items-center w-full gap-2 font-semibold border-b border-gray-400 pb-1 mb-2 ${
-              printIncludeChecks
+              printConfigs.printIncludeChecks
                 ? "grid-cols-[40px_1fr_100px_60px_60px]"
                 : "grid-cols-[40px_1fr_100px_60px]"
             }`}
           >
             <div className="text-right">ㅤ</div>
             <div>Nome</div>
-            {printIncludeChecks && <div className="text-center">Check</div>}
+            {printConfigs.printIncludeChecks && (
+              <div className="text-center">Check</div>
+            )}
             <div className="text-center">Pessoas</div>
             <div className="text-center">Mesa</div>
           </div>
@@ -1017,7 +1034,7 @@ Equipe Carcassonne Pub`
                 <div
                   key={index}
                   className={`grid w-full gap-2 ${
-                    printIncludeChecks
+                    printConfigs.printIncludeChecks
                       ? "grid-cols-[40px_1fr_100px_60px_60px]"
                       : "grid-cols-[40px_1fr_100px_60px]"
                   }`}
@@ -1030,16 +1047,17 @@ Equipe Carcassonne Pub`
                   {/* Nome */}
                   <div className="flex flex-col gap-1">
                     <span>{reserve.name}</span>
-                    {printIncludeObservation && reserve.observation && (
-                      <span>
-                        <span className="font-semibold">Observação:</span>{" "}
-                        {reserve.observation}
-                      </span>
-                    )}
+                    {printConfigs.printIncludeObservation &&
+                      reserve.observation && (
+                        <span>
+                          <span className="font-semibold">Observação:</span>{" "}
+                          {reserve.observation}
+                        </span>
+                      )}
                   </div>
 
                   {/* Check */}
-                  {printIncludeChecks && (
+                  {printConfigs.printIncludeChecks && (
                     <div className="flex justify-center gap-1 flex-wrap">
                       {Array.from({
                         length: reserve.adults + reserve.childs,

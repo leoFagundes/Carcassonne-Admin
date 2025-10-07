@@ -1,39 +1,38 @@
 import { ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { PrintProps } from "./page";
+import { LuPrinter, LuX } from "react-icons/lu";
 
 interface PrintModalProps {
   isOpen: boolean;
   onClose: VoidFunction;
   children: ReactNode;
-  printTime: boolean;
-  printIncludeChecks: boolean;
-  printIncludeObservation: boolean;
-  setPrintTime: React.Dispatch<React.SetStateAction<boolean>>;
-  setPrintIncludeChecks: React.Dispatch<React.SetStateAction<boolean>>;
-  setPrintIncludeObservation: React.Dispatch<React.SetStateAction<boolean>>;
+  printConfigs: PrintProps;
+  setPrintConfigs: React.Dispatch<React.SetStateAction<PrintProps>>;
 }
 
 export default function PrintModal({
   isOpen,
   onClose,
   children,
-  printTime,
-  printIncludeChecks,
-  printIncludeObservation,
-  setPrintTime,
-  setPrintIncludeChecks,
-  setPrintIncludeObservation,
+  printConfigs,
+  setPrintConfigs,
 }: PrintModalProps) {
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed top-0 left-0 w-screen h-screen bg-primary-white z-[9999] flex flex-col justify-center p-8">
+    <div
+      className={`fixed top-0 left-0 w-screen h-screen bg-primary-white z-[9999] flex flex-col ${printConfigs.printPosition === "top" ? "justify-start" : "justify-center"}  p-8`}
+    >
       {/* Marca d'água */}
-      <img
-        src="images/logo-clean.png"
-        alt="logo"
-        className="absolute top-0 left-0 w-full h-full object-contain opacity-4 pointer-events-none"
-      />
+      {printConfigs.printWaterMark && (
+        <img
+          src="images/logo-clean.png"
+          alt="logo"
+          className="absolute top-0 left-0 w-full h-full object-contain opacity-4 pointer-events-none"
+          style={{ opacity: printConfigs.printWaterMarkOpacity }}
+        />
+      )}
 
       {/* Conteúdo do modal */}
       <div
@@ -43,60 +42,151 @@ export default function PrintModal({
         {children}
       </div>
 
-      {printTime && (
+      {printConfigs.printTime && (
         <div className="absolute left-2 bottom-2 flex gap-2">
           <span className="font-semibold">Mesas disponíveis:</span>
         </div>
       )}
 
-      {!printTime && (
-        <div className="absolute right-2 bottom-2 flex gap-2">
-          <label className="flex items-center gap-2 cursor-pointer text-black px-2 border rounded shadow-md text-sm">
-            <input
-              type="checkbox"
-              checked={printIncludeObservation}
-              onChange={() =>
-                setPrintIncludeObservation(!printIncludeObservation)
+      {!printConfigs.printTime && (
+        <div className="absolute bottom-0 left-0 p-2 w-full flex gap-2 md:gap-4 text-black justify-center z-50 backdrop-blur-2xl">
+          <div className="flex flex-wrap gap-1 justify-center">
+            <label className="flex items-center gap-2 cursor-pointer text-black px-2 border rounded shadow-md text-sm">
+              <input
+                type="checkbox"
+                checked={printConfigs.printIncludeObservation}
+                onChange={() =>
+                  setPrintConfigs({
+                    ...printConfigs,
+                    printIncludeObservation:
+                      !printConfigs.printIncludeObservation,
+                  })
+                }
+                className="w-4 h-4"
+              />
+              Incluir observação
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer text-black px-2 border rounded shadow-md text-sm">
+              <input
+                type="checkbox"
+                checked={printConfigs.printIncludeChecks}
+                onChange={() =>
+                  setPrintConfigs({
+                    ...printConfigs,
+                    printIncludeChecks: !printConfigs.printIncludeChecks,
+                  })
+                }
+                className="w-4 h-4"
+              />
+              Incluir checks
+            </label>
+
+            <select
+              value={printConfigs.printPosition}
+              onChange={(e) =>
+                setPrintConfigs({
+                  ...printConfigs,
+                  printPosition: e.target.value as "top" | "center",
+                })
               }
-              className="w-4 h-4"
-            />
-            Incluir observação
-          </label>
+              className="border rounded shadow-md text-sm px-2 cursor-pointer"
+            >
+              <option value="top">Topo</option>
+              <option value="center">Centro</option>
+            </select>
 
-          <label className="flex items-center gap-2 cursor-pointer text-black px-2 border rounded shadow-md text-sm">
+            <select
+              value={printConfigs.printFontSize}
+              onChange={(e) =>
+                setPrintConfigs({
+                  ...printConfigs,
+                  printFontSize: e.target.value as "small" | "medium" | "large",
+                })
+              }
+              className="border rounded shadow-md text-sm px-2 cursor-pointer"
+            >
+              <option value="small">Fonte Pequena</option>
+              <option value="medium">Fonte Média</option>
+              <option value="large">Fonte Grande</option>
+            </select>
+
+            <label className="flex items-center gap-2 cursor-pointer text-black px-2 border rounded shadow-md text-sm">
+              <input
+                type="checkbox"
+                checked={printConfigs.printWaterMark}
+                onChange={() =>
+                  setPrintConfigs({
+                    ...printConfigs,
+                    printWaterMark: !printConfigs.printWaterMark,
+                  })
+                }
+                className="w-4 h-4"
+              />
+              Marca d{"'"}água
+            </label>
+
             <input
-              type="checkbox"
-              checked={printIncludeChecks}
-              onChange={() => setPrintIncludeChecks(!printIncludeChecks)}
-              className="w-4 h-4"
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={printConfigs.printWaterMarkOpacity}
+              onChange={(e) =>
+                setPrintConfigs({
+                  ...printConfigs,
+                  printWaterMarkOpacity: parseFloat(e.target.value),
+                })
+              }
+              className="w-20 cursor-grab"
             />
-            Incluir checks
-          </label>
-
-          {/* Botão imprimir */}
-          <div
-            onClick={() => {
-              setPrintTime(true);
-
-              setTimeout(() => {
-                window.print();
-                onClose();
-                setPrintTime(false);
-                setPrintIncludeChecks(false);
-                setPrintIncludeObservation(false);
-              }, 200);
-            }}
-            className="text-black p-2 cursor-pointer border rounded shadow-md w-fit h-6 flex justify-center items-center z-10"
-          >
-            imprimir
           </div>
 
-          {/* Botão fechar */}
-          <div
-            onClick={onClose}
-            className=" text-black p-2 cursor-pointer border rounded shadow-md w-6 h-6 flex justify-center items-center z-10"
-          >
-            X
+          <div className="flex flex-wrap gap-1 justify-center">
+            <div
+              onClick={() => {
+                setPrintConfigs({
+                  ...printConfigs,
+                  printTime: true,
+                });
+                setTimeout(() => {
+                  window.print();
+                  onClose();
+                  setPrintConfigs({
+                    ...printConfigs,
+                    printTime: false,
+                    printIncludeChecks: false,
+                    printIncludeObservation: false,
+                    printPosition: "center",
+                    printWaterMark: true,
+                    printWaterMarkOpacity: 0.04,
+                    printFontSize: "small",
+                  });
+                }, 200);
+              }}
+              className="gap-1 text-cyan-900 p-2 cursor-pointer border rounded shadow-md w-fit h-6 flex justify-center items-center z-10"
+            >
+              <LuPrinter /> imprimir
+            </div>
+
+            <div
+              onClick={() => {
+                onClose();
+                setPrintConfigs({
+                  ...printConfigs,
+                  printTime: false,
+                  printIncludeChecks: false,
+                  printIncludeObservation: false,
+                  printPosition: "center",
+                  printWaterMark: true,
+                  printWaterMarkOpacity: 0.04,
+                  printFontSize: "small",
+                });
+              }}
+              className="gap-1 p-2 cursor-pointer border rounded shadow-md w-fit h-6 flex justify-center items-center z-10 text-invalid-color"
+            >
+              <LuX /> Fechar tela
+            </div>
           </div>
         </div>
       )}

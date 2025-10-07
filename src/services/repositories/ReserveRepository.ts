@@ -9,6 +9,8 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
+  query,
+  orderBy,
 } from "firebase/firestore";
 import { ReserveType } from "@/types";
 
@@ -116,7 +118,8 @@ class ReserveRepository {
   static async getAll(): Promise<(ReserveType & { id: string })[]> {
     try {
       const colRef = collection(db, this.collectionName);
-      const snapshot = await getDocs(colRef);
+      const q = query(colRef, orderBy("createdAt", "desc"));
+      const snapshot = await getDocs(q);
 
       return snapshot.docs.map((docSnap) => {
         const data = docSnap.data() as ReserveType;

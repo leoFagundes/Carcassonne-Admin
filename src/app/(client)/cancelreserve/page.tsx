@@ -9,7 +9,7 @@ import ReserveRepository from "@/services/repositories/ReserveRepository";
 import { ReserveType } from "@/types";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LuCalendar, LuClock } from "react-icons/lu";
+import { LuCalendar, LuCheck, LuClock, LuX } from "react-icons/lu";
 
 export default function CancelReserve() {
   const [loading, setLoading] = useState(true);
@@ -38,7 +38,9 @@ export default function CancelReserve() {
 
   useEffect(() => {
     const findReserve = allReserves.filter(
-      (reserve) => reserve.code.replace(/^#/, "") === code.replace(/^#/, "")
+      (reserve) =>
+        reserve.code.replace(/^#/, "").toLowerCase() ===
+        code.replace(/^#/, "").toLowerCase()
     );
 
     if (findReserve.length >= 1) {
@@ -59,6 +61,12 @@ export default function CancelReserve() {
       addAlert("Nenhuma reserva encontrada com esse código.");
       return;
     }
+
+    if (reserveFound && reserveFound.status === "canceled") {
+      addAlert("Essa reserva já está cancelada.");
+      return;
+    }
+
     setcomponentLoading(true);
     try {
       await ReserveRepository.update(reserveFound.id!, {
@@ -114,13 +122,17 @@ export default function CancelReserve() {
                   {reserve.bookingDate.year} - {reserve.time}
                 </span>
               </span>
-              <span
-                className={`${reserve.status === "canceled" && "text-invalid-color"}`}
-              >
-                {reserve.status === "canceled"
-                  ? "Reserva cancelada"
-                  : "Reserva Ativa"}
-              </span>
+              <div>
+                {reserve.status === "canceled" ? (
+                  <span className="text-invalid-color flex items-center gap-1">
+                    <LuX /> Reserva Cancelada
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1">
+                    <LuCheck /> Reserva Ativa
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         ) : code ? (
