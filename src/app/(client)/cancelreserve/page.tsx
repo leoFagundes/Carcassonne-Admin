@@ -49,7 +49,7 @@ export default function CancelReserve() {
   }, [code]);
 
   async function handleCancelReserve() {
-    const normalizedCode = code.trim().replace(/^#/, "");
+    const normalizedCode = code.trim().replace(/^#/, "").toLowerCase();
 
     const reserveFound = allReserves.find(
       (reserve) => reserve.code.toLowerCase() === normalizedCode
