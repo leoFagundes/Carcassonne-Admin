@@ -85,7 +85,7 @@ export default function Home() {
         }
 
         if (currentUser.emailVerified) {
-          console.log(currentUser);
+          setLoading(true);
           addAlert("Sua sessão está ativa.");
           router.push("/myreserves");
         }

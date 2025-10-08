@@ -6,12 +6,14 @@ import LoaderFullscreen from "./loaderFullscreen";
 import { useAlert } from "@/contexts/alertProvider";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import Input from "./input";
-import { TypeOrderType } from "@/types";
+import { InfoType, TypeOrderType } from "@/types";
 import Loader from "./loader";
 import { LuListOrdered, LuPlus } from "react-icons/lu";
 import TypesOrderRepository from "@/services/repositories/TypesOrderRepository";
 import RecorderTypesOrderList from "./recorderTypesOrderList";
 import { patternTypeOrder } from "@/utils/patternValues";
+import RecorderInfoList from "./recorderInfoList";
+import InfoRepository from "@/services/repositories/InfoRepository";
 
 interface TypesOrderFormsProps {
   currentTypeOrder: TypeOrderType;
@@ -26,6 +28,7 @@ export default function TypesOrderForms({
   const [subtypes, setSubtypes] = useState<string[]>([]);
   const [typeInOrder, setTypeInOrder] = useState(currentTypeOrder);
   const [typesOrder, setTypesOrder] = useState<TypeOrderType[]>([]);
+  const [infos, setInfos] = useState<InfoType[]>([]);
 
   const { addAlert } = useAlert();
 
@@ -69,6 +72,20 @@ export default function TypesOrderForms({
     fetchTypesAndSubtypes();
   }, []);
 
+  useEffect(() => {
+    async function fetchInfos() {
+      try {
+        const infosFetched = await InfoRepository.getAll();
+        console.log(infosFetched);
+        setInfos(infosFetched);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    fetchInfos();
+  }, []);
+
   async function handleCreateTypeOrder() {
     if (typeInOrder.type.name.trim() === "") {
       addAlert("Adicione um valor válido!");
@@ -106,7 +123,6 @@ export default function TypesOrderForms({
         await TypesOrderRepository.update(item.id, {
           type: {
             ...item.type,
-            // já deve estar ordenado corretamente, mas pode reforçar aqui
             order: item.type.order,
             subtypes: item.type.subtypes.map((subtype, index) => ({
               ...subtype,
@@ -120,6 +136,23 @@ export default function TypesOrderForms({
     } catch (error) {
       console.error("Erro ao salvar ordenação:", error);
       addAlert("Erro ao salvar a ordem. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function saveOrder() {
+    try {
+      setLoading(true);
+      for (const item of infos) {
+        if (!item.id) continue;
+        await InfoRepository.update(item.id, {
+          orderPriority: item.orderPriority,
+        });
+      }
+      addAlert("Ordem salva com sucesso!");
+    } catch (error) {
+      addAlert(`Erro ao salvar: ${error}`);
     } finally {
       setLoading(false);
     }
@@ -156,24 +189,42 @@ export default function TypesOrderForms({
           </Button>
         </div>
       </div>
-      {typesOrder.length > 0 && (
-        <div className="flex flex-col items-center bg-dark-black/50 my-2 mx-4 py-2 px-4 rounded shadow-card">
-          <h1 className="text-4xl text-gradient-gold text-center mt-4">
-            Ordenar Tipos e Subtipos
-          </h1>
-          <RecorderTypesOrderList
-            items={typesOrder}
-            subItemOptions={subtypes}
-            setItems={setTypesOrder}
-          />
+      <div className="flex flex-wrap justify-center gap-2">
+        {typesOrder.length > 0 && (
+          <div className="flex flex-col items-center bg-dark-black/50 my-2 mx-4 py-2 px-4 rounded shadow-card">
+            <h1 className="text-4xl text-gradient-gold text-center mt-4">
+              Ordenar Tipos e Subtipos
+            </h1>
+            <RecorderTypesOrderList
+              items={typesOrder}
+              subItemOptions={subtypes}
+              setItems={setTypesOrder}
+            />
 
-          <div className="flex gap-2 m-2">
-            <Button onClick={handleUpdateOrder}>
-              {loading ? <Loader /> : "Salvar"}
-            </Button>
+            <div className="flex gap-2 m-2">
+              <Button onClick={handleUpdateOrder}>
+                {loading ? <Loader /> : "Salvar"}
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {infos.length > 0 && (
+          <div className="flex flex-col items-center bg-dark-black/50 my-2 mx-4 py-2 px-4 rounded shadow-card">
+            <h1 className="text-4xl text-gradient-gold text-center mt-4">
+              Ordenar Avisos
+            </h1>
+
+            <RecorderInfoList items={infos} setItems={setInfos} />
+
+            <div>
+              <Button onClick={saveOrder} disabled={loading}>
+                {loading ? <Loader /> : "Salvar"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

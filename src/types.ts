@@ -49,6 +49,7 @@ export interface InfoType {
   name: string;
   description: string;
   values: string[];
+  orderPriority?: number;
 }
 
 export interface DescriptionTypeProps {

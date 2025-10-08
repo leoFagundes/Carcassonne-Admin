@@ -378,9 +378,11 @@ export default function ClientMenuPage() {
           <h2 className="text-4xl w-full text-center">Avisos</h2>
           <div className="h-[1px] w-full bg-primary-gold mb-5 mt-2" />
 
-          {infos.map((info, index) => (
-            <InfoCard key={index} info={info} />
-          ))}
+          {[...infos]
+            .sort((a, b) => (a.orderPriority ?? 0) - (b.orderPriority ?? 0))
+            .map((info, index) => (
+              <InfoCard key={index} info={info} />
+            ))}
         </section>
       )}
 
