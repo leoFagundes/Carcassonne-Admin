@@ -1,7 +1,9 @@
-import { ReactNode } from "react";
+"use client";
+
+import { ReactNode, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { PrintProps } from "./page";
-import { LuPrinter, LuX } from "react-icons/lu";
+import { LuPrinter, LuSkipBack, LuX } from "react-icons/lu";
 
 interface PrintModalProps {
   isOpen: boolean;
@@ -18,6 +20,25 @@ export default function PrintModal({
   printConfigs,
   setPrintConfigs,
 }: PrintModalProps) {
+  useEffect(() => {
+    const saved = localStorage.getItem("printConfigs");
+    if (saved) {
+      setPrintConfigs(JSON.parse(saved));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("printConfigs", JSON.stringify(printConfigs));
+  }, [printConfigs]);
+
+  const handleOpacityChange = (value: string) => {
+    const num = Math.min(1, Math.max(0, parseFloat(value) || 0));
+    setPrintConfigs({
+      ...printConfigs,
+      printWaterMarkOpacity: num,
+    });
+  };
+
   if (!isOpen) return null;
 
   return createPortal(
@@ -141,23 +162,29 @@ export default function PrintModal({
               Marca d{"'"}água
             </label>
 
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={printConfigs.printWaterMarkOpacity}
-              onChange={(e) =>
-                setPrintConfigs({
-                  ...printConfigs,
-                  printWaterMarkOpacity: parseFloat(e.target.value),
-                })
-              }
-              className="w-20 cursor-grab"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={printConfigs.printWaterMarkOpacity}
+                onChange={(e) => handleOpacityChange(e.target.value)}
+                className="w-24 cursor-grab"
+              />
+              <input
+                type="number"
+                min="0"
+                max="1"
+                step="0.01"
+                value={printConfigs.printWaterMarkOpacity}
+                onChange={(e) => handleOpacityChange(e.target.value)}
+                className="w-16 text-center border border-gray-300 rounded-md"
+              />
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-1 justify-center">
+          <div className="flex flex-wrap gap-2 justify-center">
             <div
               onClick={() => {
                 setPrintConfigs({
@@ -167,6 +194,20 @@ export default function PrintModal({
                 setTimeout(() => {
                   window.print();
                   onClose();
+                  setPrintConfigs({
+                    ...printConfigs,
+                    printTime: false,
+                  });
+                }, 200);
+              }}
+              className="gap-1 text-cyan-900 p-2 cursor-pointer border rounded shadow-md w-28 h-8 flex justify-center items-center z-10"
+            >
+              <LuPrinter /> Imprimir
+            </div>
+
+            <div
+              onClick={() => {
+                setTimeout(() => {
                   setPrintConfigs({
                     ...printConfigs,
                     printTime: false,
@@ -180,9 +221,9 @@ export default function PrintModal({
                   });
                 }, 200);
               }}
-              className="gap-1 text-cyan-900 p-2 cursor-pointer border rounded shadow-md w-fit h-6 flex justify-center items-center z-10"
+              className="gap-1 text-cyan-900 p-2 cursor-pointer border rounded shadow-md w-28 h-8 flex justify-center items-center z-10"
             >
-              <LuPrinter /> imprimir
+              <LuSkipBack /> Resetar
             </div>
 
             <div
@@ -191,18 +232,11 @@ export default function PrintModal({
                 setPrintConfigs({
                   ...printConfigs,
                   printTime: false,
-                  printIncludeChecks: false,
-                  printIncludeObservation: false,
-                  printPosition: "center",
-                  printWaterMark: true,
-                  printWaterMarkOpacity: 0.04,
-                  printFontSize: "small",
-                  printSeparateByAge: false,
                 });
               }}
-              className="gap-1 p-2 cursor-pointer border rounded shadow-md w-fit h-6 flex justify-center items-center z-10 text-invalid-color"
+              className="gap-1 p-2 cursor-pointer border rounded shadow-md w-28 h-8 flex justify-center items-center z-10 text-invalid-color"
             >
-              <LuX /> Fechar tela
+              <LuX /> Fechar
             </div>
           </div>
         </div>
