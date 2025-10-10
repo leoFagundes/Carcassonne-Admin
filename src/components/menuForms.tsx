@@ -95,10 +95,11 @@ export default function MenuForms({
 
   const handleSaveItem = async () => {
     if (
-      localItem.name.trim() === "" ||
-      localItem.description.trim() === "" ||
-      localItem.value.trim() === "" ||
-      localItem.type.trim() === ""
+      (localItem.name.trim() === "" ||
+        localItem.description.trim() === "" ||
+        localItem.value.trim() === "" ||
+        localItem.type.trim() === "") &&
+      localItem.name !== "???"
     ) {
       addAlert("Preencha todos os campos obrigatórios.");
       return;
