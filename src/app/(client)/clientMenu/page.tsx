@@ -351,6 +351,8 @@ export default function ClientMenuPage() {
 
               if (!hasItems) return null;
 
+              if (type === "???") return null;
+
               return (
                 <span
                   id={`${type}-${index}`}
