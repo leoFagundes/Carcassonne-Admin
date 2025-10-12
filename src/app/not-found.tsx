@@ -17,9 +17,9 @@ export default function NotFound() {
       </span>
       <h1 className="text-4xl font-bold mb-4">Página não encontrada!</h1>
       <p className="text-lg max-w-md">
-        Procurando por <strong>enigmas</strong>, talvez? Sinto lhe informar...
-        você tomou o caminho errado. Parece que os zumbis estão a solta, volte
-        ao abrigo antes que escureça!
+        Procurando por algum desafio, talvez? Sinto lhe informar... você tomou o
+        caminho errado. Parece que os zumbis estão a solta, volte ao abrigo
+        antes que escureça!
       </p>
     </div>
   );

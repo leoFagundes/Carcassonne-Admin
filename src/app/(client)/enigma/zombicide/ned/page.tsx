@@ -19,7 +19,7 @@ export default function NedPage() {
       <span>
         O segundo dos personagens, diziam que ele era louco com suas teorias e
         seu porão cheio de latas. Hoje, é o único que ri — porque os zumbis não
-        batem na porta, eles <strong className="text-primary-white">a</strong>
+        batem na porta, eles <span className="animate-pulse">a</span>
         rrombam.
       </span>
     </div>

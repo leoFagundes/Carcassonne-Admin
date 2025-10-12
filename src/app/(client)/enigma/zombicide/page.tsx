@@ -11,7 +11,7 @@ export default function ZombicidePage() {
       <span>
         <i>/enigma/zombicide/???</i>
       </span>
-      <div className="absolute bottom-1 opacity-30">
+      <div className="absolute bottom-4 opacity-30">
         Dica: A primeira letra é a que mais se destaca
       </div>
     </div>

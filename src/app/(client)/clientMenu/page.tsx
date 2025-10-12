@@ -52,113 +52,63 @@ export default function ClientMenuPage() {
   const { addAlert } = useAlert();
 
   useEffect(() => {
-    const fetchTypesOrder = async () => {
+    const fetchAll = async () => {
       setLoading(true);
       try {
-        const fecthedTypesOrder = await TypesOrderRepository.getAll();
-        setTypesOrder(fecthedTypesOrder);
-      } catch (error) {
-        addAlert(`Erro ao carregar tipos: ${error}`);
-      } finally {
-        setLoading(false);
-      }
-    };
+        const [
+          fetchedTypesOrder,
+          fetchedPopups,
+          fetchedItems,
+          fetchedCombos,
+          fetchedInfos,
+          fetchedDescriptions,
+        ] = await Promise.all([
+          TypesOrderRepository.getAll(),
+          PopupRepository.getAll(),
+          MenuItemRepository.getAll(),
+          ComboRepository.getAll(),
+          InfoRepository.getAll(),
+          DescriptionRepository.getAll(),
+        ]);
 
-    const fetchDescriptions = async () => {
-      setLoading(true);
-      try {
-        const fecthedDescriptions = await DescriptionRepository.getAll();
-        setDescriptions(fecthedDescriptions);
-      } catch (error) {
-        addAlert(`Erro ao carregar descrições: ${error}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchInfos = async () => {
-      setLoading(true);
-      try {
-        const fetchedInfos = await InfoRepository.getAll();
-        setInfos(fetchedInfos);
-      } catch (error) {
-        addAlert(`Erro ao carregar avisos: ${error}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchCombos = async () => {
-      setLoading(true);
-      try {
-        const fetchedCombos = await ComboRepository.getAll();
-        setCombos(fetchedCombos);
-      } catch (error) {
-        addAlert(`Erro ao carregar combos: ${error}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchMenuItems = async () => {
-      setLoading(true);
-      try {
-        const fetchedItems = await MenuItemRepository.getAll();
-        const menuTypes = Array.from(new Set(fetchedItems.map((b) => b.type)));
+        setTypesOrder(fetchedTypesOrder);
         setMenuItems(fetchedItems);
+        setCombos(fetchedCombos);
+        setInfos(fetchedInfos);
+        setDescriptions(fetchedDescriptions);
 
-        const allTypes = Array.from(new Set([...menuTypes]));
-        setTypes(allTypes);
-      } catch (error) {
-        addAlert(`Erro ao carregar itens: ${error}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchPopups = async () => {
-      setLoading(true);
-      try {
-        const fetchedPopups = await PopupRepository.getAll();
-
-        const currentPopup = fetchedPopups.filter((popup) => popup.isActive);
-        if (currentPopup.length > 0) {
-          setPopup(currentPopup[0]);
+        const currentPopup = fetchedPopups.find((popup) => popup.isActive);
+        if (currentPopup) {
+          setPopup(currentPopup);
           setIsPopupOpen(true);
         }
+
+        const menuTypes = Array.from(new Set(fetchedItems.map((b) => b.type)));
+
+        const orderedTypes = menuTypes.sort((a, b) => {
+          const orderA =
+            fetchedTypesOrder.find((t) => t.type.name === a)?.type.order ?? 999;
+          const orderB =
+            fetchedTypesOrder.find((t) => t.type.name === b)?.type.order ?? 999;
+          return orderA - orderB;
+        });
+
+        const baseTypes = ["Avisos", "Combos"];
+        const finalTypes = [
+          ...baseTypes,
+          ...orderedTypes.filter((t) => !baseTypes.includes(t)),
+        ];
+
+        setTypes(finalTypes);
       } catch (error) {
-        addAlert(`Erro ao carregar configurações gerais: ${error}`);
+        addAlert(`Erro ao carregar dados: ${error}`);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTypesOrder();
-    fetchPopups();
-    fetchMenuItems();
-    fetchCombos();
-    fetchInfos();
-    fetchDescriptions();
+    fetchAll();
   }, []);
-
-  useEffect(() => {
-    if (types.length > 0 && typesOrder.length > 0) {
-      const orderedTypes = [...types].sort((a, b) => {
-        const orderA =
-          typesOrder.find((t) => t.type.name === a)?.type.order ?? 999;
-        const orderB =
-          typesOrder.find((t) => t.type.name === b)?.type.order ?? 999;
-        return orderA - orderB;
-      });
-
-      const baseTypes = ["Avisos", "Combos"];
-      setTypes([...baseTypes, ...orderedTypes]);
-    } else {
-      const baseTypes = ["Avisos", "Combos"];
-
-      setTypes([...baseTypes, ...types]);
-    }
-  }, [typesOrder]);
 
   const handleScroll = () => {
     const scrollTop = window.scrollY;
@@ -219,8 +169,8 @@ export default function ClientMenuPage() {
   }
 
   const handleTypeClick = (type: string, id: string) => {
-    handleScrollToSection(type); // Rola para a seção
-    centralizeMenuItem(id); // Centraliza o tipo no menu horizontal
+    handleScrollToSection(type);
+    centralizeMenuItem(id);
     setCurrentMenuItem(type);
   };
 
@@ -243,7 +193,7 @@ export default function ClientMenuPage() {
       {
         root: null,
         rootMargin: "0px 0px -10% 0px",
-        threshold: 0.1, // % da seção visível
+        threshold: 0.1,
       }
     );
 
@@ -421,7 +371,7 @@ export default function ClientMenuPage() {
               return a.name.localeCompare(b.name);
             });
 
-          if (filteredItems.length === 0) return null; // 🔥 esconde a seção inteira
+          if (filteredItems.length === 0) return null;
 
           const itemsWithoutSubtype = filteredItems.filter(
             (item) => !item.subtype

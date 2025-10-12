@@ -18,9 +18,9 @@ export default function PhilPage() {
       </span>
       <span>
         O terceiro dos personagens, ainda veste o uniforme, mesmo{" "}
-        <strong className="text-primary-white">c</strong>oberto de sangue. Um
-        policial em um mundo sem leis, patrulhando ruínas e caçando mortos que
-        não ficam deitados.
+        <span className="animate-pulse">c</span>oberto de sangue. Um policial em
+        um mundo sem leis, patrulhando ruínas e caçando mortos que não ficam
+        deitados.
       </span>
     </div>
   );

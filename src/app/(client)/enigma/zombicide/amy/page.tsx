@@ -18,8 +18,8 @@ export default function AmyPage() {
       </span>
       <span>
         A primeira dos personagens, antes, curava{" "}
-        <strong className="text-primary-white">f</strong>erimentos. Agora,
-        costura cabeças — mas no chão. A estudante de medicina virou cirurgiã de
+        <span className="animate-pulse">f</span>erimentos. Agora, costura
+        cabeças — mas no chão. A estudante de medicina virou cirurgiã de
         zumbis...
       </span>
     </div>
