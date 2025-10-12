@@ -6,13 +6,15 @@ import React from "react";
 import ReactConfetti from "react-confetti";
 import reifelipe from "../../../../../../public/images/reifelipe.png";
 import reigabriel from "../../../../../../public/images/reigabriel.png";
+import { useWindowSize } from "react-use";
 
 export default function FinalPage() {
   const router = useRouter();
+  const { width, height } = useWindowSize();
 
   return (
     <div className="flex flex-col gap-2 items-center justify-center w-screen h-screen text-primary-gold text-center p-4">
-      <ReactConfetti numberOfPieces={100} />
+      <ReactConfetti numberOfPieces={100} width={width} height={height} />
       <div className="flex flex-col gap-3 text-start border p-3 rounded shadow-lg max-w-[400px] bg-primary-black z-100 max-h-[80%] overflow-y-auto">
         <span
           onClick={() => router.back()}
