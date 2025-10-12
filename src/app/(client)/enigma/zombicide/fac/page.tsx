@@ -2,19 +2,38 @@
 
 import { useRouter } from "next/navigation";
 import { FiSkipBack } from "react-icons/fi";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import ReactConfetti from "react-confetti";
 import reifelipe from "../../../../../../public/images/reifelipe.png";
 import reigabriel from "../../../../../../public/images/reigabriel.png";
-import { useWindowSize } from "react-use";
 
 export default function FinalPage() {
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const router = useRouter();
-  const { width, height } = useWindowSize();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    handleResize(); // pega os valores iniciais
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
-    <div className="flex flex-col gap-2 items-center justify-center w-screen h-screen text-primary-gold text-center p-4">
-      <ReactConfetti numberOfPieces={100} width={width} height={height} />
+    <div className="relative flex flex-col gap-2 items-center justify-center w-screen h-screen text-primary-gold text-center p-4">
+      <div className="absolute top-0 left-0">
+        <ReactConfetti
+          numberOfPieces={150}
+          width={windowSize.width}
+          height={windowSize.height}
+        />
+      </div>
       <div className="flex flex-col gap-3 text-start border p-3 rounded shadow-lg max-w-[400px] bg-primary-black z-100 max-h-[80%] overflow-y-auto">
         <span
           onClick={() => router.back()}
