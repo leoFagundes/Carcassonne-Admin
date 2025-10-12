@@ -6,7 +6,8 @@ export default function ZombicidePage() {
       <span>
         Os <strong>personagens</strong> do <strong>Zombicide</strong> são
         sobreviventes destemidos, cada um com habilidades únicas para enfrentar
-        o caos do apocalipse zumbi. Apenas 3 sobreviveram até agora.
+        o caos do apocalipse zumbi. Apenas <strong>3 sobreviveram</strong> até
+        agora.
       </span>
       <span>
         <i>/enigma/zombicide/???</i>
