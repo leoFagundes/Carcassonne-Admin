@@ -84,9 +84,9 @@ export default function Rerserve() {
     printTime: false,
     printIncludeChecks: false,
     printIncludeObservation: false,
-    printPosition: "center",
+    printPosition: "top",
     printWaterMark: true,
-    printWaterMarkOpacity: 0.04,
+    printWaterMarkOpacity: 0.1,
     printFontSize: "small",
     printSeparateByAge: false,
   });
@@ -1079,9 +1079,18 @@ Equipe Carcassonne Pub`
 
                   {/* Pessoas */}
                   <div className="text-center">
-                    {!printConfigs.printSeparateByAge
-                      ? `${reserve.adults + reserve.childs}p`
-                      : `${reserve.adults}a | ${reserve.childs}c`}
+                    {!printConfigs.printSeparateByAge ? (
+                      `${reserve.adults + reserve.childs}`
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <div className="flex gap-1 justify-center">
+                          <span>{reserve.adults}a</span>
+                          <span>|</span>
+                          <span>{reserve.childs}c</span>
+                        </div>
+                        <span>({reserve.adults + reserve.childs})</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Mesa */}

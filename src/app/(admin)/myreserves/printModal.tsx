@@ -213,9 +213,9 @@ export default function PrintModal({
                     printTime: false,
                     printIncludeChecks: false,
                     printIncludeObservation: false,
-                    printPosition: "center",
+                    printPosition: "top",
                     printWaterMark: true,
-                    printWaterMarkOpacity: 0.04,
+                    printWaterMarkOpacity: 0.1,
                     printFontSize: "small",
                     printSeparateByAge: false,
                   });
