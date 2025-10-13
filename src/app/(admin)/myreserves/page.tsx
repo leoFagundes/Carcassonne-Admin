@@ -1032,6 +1032,11 @@ Equipe Carcassonne Pub`
           <div className="flex flex-col gap-6 w-full">
             {reserves
               .filter((reserve) => reserve.status !== "canceled")
+              .sort((a, b) => {
+                const [ah, am] = a.time.split(":").map(Number);
+                const [bh, bm] = b.time.split(":").map(Number);
+                return ah * 60 + am - (bh * 60 + bm);
+              })
               .map((reserve, index) => (
                 <div
                   key={index}
