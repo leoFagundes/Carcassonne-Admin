@@ -7,13 +7,18 @@ import Calendar from "react-calendar";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
 import { GeneralConfigsType, ReserveType } from "@/types";
 import { randomCodeGenerator } from "@/utils/utilFunctions";
-import { longMonths, patternGeneralConfigs } from "@/utils/patternValues";
+import {
+  daysArray,
+  longMonths,
+  patternGeneralConfigs,
+} from "@/utils/patternValues";
 import {
   LuBadgeInfo,
   LuCalendar,
   LuCalendarOff,
   LuClock,
   LuCopy,
+  LuMessageCircleWarning,
   LuUsers,
 } from "react-icons/lu";
 import Input from "@/components/input";
@@ -432,6 +437,7 @@ export default function Reserve() {
               </div>
             ))}
           </div>
+
           <div className="flex gap-2">
             <Button
               onClick={() => {
@@ -463,6 +469,38 @@ export default function Reserve() {
             >
               Continuar
             </Button>
+          </div>
+
+          <div className="text-primary-gold flex flex-col items-center gap-1 bg-primary-black p-2 rounded shadow-card">
+            <span className="flex items-center gap-2 text-xs font-semibold">
+              <LuMessageCircleWarning size={16} className="min-w-[16px]" />
+              Caso uma data esteja indisponível, ela se encaixa em uma das
+              situações abaixo:
+            </span>
+
+            <div className="flex flex-col text-xs w-full mt-1">
+              <span>
+                • É{" "}
+                {localGeneralConfigs.disabledDays
+                  .map((dayIndex) => daysArray[dayIndex])
+                  .join(" ou ")}
+              </span>
+              <span>
+                • Atingiu o limite máximo de{" "}
+                {localGeneralConfigs.maxCapacityInDay} pessoas no dia
+              </span>
+              <span>
+                • Passou do horário limite (
+                {localGeneralConfigs.hoursToCloseReserve}h) para reservas de
+                hoje{" "}
+              </span>
+              <span>
+                • Está além do período máximo de{" "}
+                {localGeneralConfigs.maxMonthsInAdvance}{" "}
+                {localGeneralConfigs.maxMonthsInAdvance === 1 ? "mês" : "meses"}{" "}
+                de antecedência
+              </span>
+            </div>
           </div>
         </div>
       )}

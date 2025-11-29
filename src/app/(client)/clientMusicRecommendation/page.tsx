@@ -13,7 +13,7 @@ import { FiSkipBack } from "react-icons/fi";
 
 export default function MusicRecommendationPage() {
   const [name, setName] = useState("");
-  const [title, setTitle] = useState("Indique uma música!");
+  const [title, setTitle] = useState("Indique uma música ou playlist!");
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
