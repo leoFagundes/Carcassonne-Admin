@@ -142,14 +142,12 @@ export default function Reserve() {
     fetchGeneralConfigs();
   }, []);
 
-  // Function to sum total people booked on a specific date
   function getTotalPeopleOnDate(date: Date, bookings: ReserveType[]): number {
-    // Filter confirmed bookings for the given date
     const bookingsOnDate = bookings.filter((booking) => {
       if (booking.status !== "confirmed") return false;
 
       const bDate = booking.bookingDate;
-      // Compare year, month and day as numbers
+
       return (
         Number(bDate.year) === date.getFullYear() &&
         Number(bDate.month) === date.getMonth() + 1 &&
@@ -157,7 +155,6 @@ export default function Reserve() {
       );
     });
 
-    // Sum adults + children
     let total = 0;
     bookingsOnDate.forEach((booking) => {
       total += (booking.adults || 0) + (booking.childs || 0);
@@ -221,6 +218,29 @@ export default function Reserve() {
 
     if (!isValidPhone(reserve.phone)) {
       addAlert("Por favor, insira um telefone válido.");
+      return;
+    }
+
+    const freshConfigs = await GeneralConfigsRepository.get();
+
+    if (!freshConfigs) {
+      addAlert("Erro ao validar horário limite. Tente novamente.");
+      setcomponentLoading(false);
+      return;
+    }
+
+    const now = new Date();
+    const limitDate = new Date();
+    limitDate.setHours(freshConfigs.hoursToCloseReserve, 0, 0, 0);
+
+    const isTodayBooking =
+      Number(reserve.bookingDate.day) === now.getDate() &&
+      Number(reserve.bookingDate.month) === now.getMonth() + 1 &&
+      Number(reserve.bookingDate.year) === now.getFullYear();
+
+    if (isTodayBooking && now > limitDate) {
+      addAlert("O horário limite para reservar hoje já passou.");
+      setcomponentLoading(false);
       return;
     }
 
