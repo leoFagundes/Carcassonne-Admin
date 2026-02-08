@@ -3,7 +3,7 @@
 import Input from "@/components/input";
 import { ComboType, InfoType, MenuItemType } from "@/types";
 import React, { useEffect, useState } from "react";
-import { LuLink, LuPizza } from "react-icons/lu";
+import { LuFileCode2, LuLink, LuPizza } from "react-icons/lu";
 import Dropdown from "@/components/dropdown";
 import Checkbox from "@/components/checkbox";
 import Modal from "@/components/modal";
@@ -132,7 +132,17 @@ export default function MenuPage() {
             />
           </div>
         </Tooltip>
+        <Tooltip direction="bottom" content="Ir para a visaualização do PDF">
+          <div className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
+            <LuFileCode2
+              onClick={() => router.push("/menu/pdf")}
+              size={"16px"}
+              className="min-w-[16px]"
+            />
+          </div>
+        </Tooltip>
       </section>
+
       {/* Input de busca */}
       <section className="flex items-center flex-wrap justify-center gap-4 ">
         <div className="flex justify-center gap-4 flex-wrap max-w-[300px]">
