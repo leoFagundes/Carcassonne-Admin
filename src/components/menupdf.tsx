@@ -54,6 +54,8 @@ export default function MenuPDF({
       style={{
         width: "210mm",
         minHeight: "297mm",
+        padding: "20mm 15mm",
+        boxSizing: "border-box",
         backgroundColor: COLORS.primaryBlack,
         color: COLORS.primaryGold,
         fontFamily: "Arial, Helvetica, sans-serif",
