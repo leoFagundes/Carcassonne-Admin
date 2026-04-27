@@ -20,7 +20,6 @@ import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import InfoRepository from "@/services/repositories/InfoRepository";
 import ComboRepository from "@/services/repositories/ComboRepository";
 import Counter from "@/components/mage-ui/text/counter";
-import { DragCards } from "@/app/(admin)/carcassonne/drag-cards";
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import Input from "@/components/input";
 import OptionsInput from "@/components/optionsInput";
@@ -222,7 +221,7 @@ export default function SettingsPage() {
                   label="Dias da semana inválidos"
                   placeholder="Dias da semana inválidos"
                   values={localGeneralConfigs.disabledDays.map(
-                    (day) => daysArray[day]
+                    (day) => daysArray[day],
                   )}
                   options={daysArray}
                   setValues={(values) => {
@@ -311,7 +310,7 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-          <div
+          {/* <div
             ref={muralRef}
             className="w-full flex flex-col items-center gap-1"
           >
@@ -319,7 +318,7 @@ export default function SettingsPage() {
               Mural de fotos do Carcassonne
             </span>
             <DragCards />
-          </div>
+          </div> */}
         </div>
         <div className="flex justify-center w-full absolute bg-primary-black/50 backdrop-blur-[5px] bottom-0 z-80 py-4 ">
           <div className="w-fit">

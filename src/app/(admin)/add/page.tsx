@@ -6,8 +6,8 @@ import {
   LuCalendarPlus,
   LuClipboardPenLine,
   LuDices,
+  LuExternalLink,
   LuGroup,
-  LuImagePlus,
   LuListOrdered,
   LuMusic,
   LuPizza,
@@ -131,17 +131,23 @@ export default function AddPage() {
           icon={<LuUserPlus size={"32px"} className="min-w-[32px]" />}
           onClick={() => router.push(`/myreserves?createfreela=true`)}
         />
-        <Card
+        {/* <Card
           title="Adicionar Foto ao Mural"
           description="Adicione uma nova foto ao mural do Carcassonne!"
           icon={<LuImagePlus size={"32px"} className="min-w-[32px]" />}
           onClick={() => router.push(`/carcassonne?createimage=true`)}
-        />
+        /> */}
         <Card
           title="Adicionar uma Música"
           description="Adicione uma recomendação de música para a lista!"
           icon={<LuMusic size={"32px"} className="min-w-[32px]" />}
           onClick={() => router.push(`/clientMusicRecommendation`)}
+        />
+        <Card
+          title="Adicionar um Link"
+          description="Adicione um novo Link ao Linktree do Carcassonne"
+          icon={<LuExternalLink size={"32px"} className="min-w-[32px]" />}
+          onClick={() => router.push(`/links?createlink=true`)}
         />
       </section>
 

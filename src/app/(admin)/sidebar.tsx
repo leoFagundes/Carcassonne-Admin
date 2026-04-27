@@ -5,13 +5,14 @@ import React, { ReactNode, useEffect, useState } from "react";
 import {
   LuDices,
   LuPizza,
-  LuPlus,
   LuSkipBack,
   LuMenu,
   LuX,
   LuSettings,
   LuCalendar,
   LuMusic,
+  LuExternalLink,
+  LuListPlus,
 } from "react-icons/lu";
 import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebaseConfig";
@@ -108,7 +109,7 @@ export default function Sidebar() {
 
           // === Verificação de novas músicas ===
           const storedIds = JSON.parse(
-            localStorage.getItem("songsAlreadyNotified") || "[]"
+            localStorage.getItem("songsAlreadyNotified") || "[]",
           );
 
           // IDs das músicas atuais
@@ -116,7 +117,7 @@ export default function Sidebar() {
 
           // músicas novas (que ainda não estão no localStorage)
           const newSongs = recommendations.filter(
-            (music) => music.id && !storedIds.includes(music.id)
+            (music) => music.id && !storedIds.includes(music.id),
           );
 
           if (newSongs.length > 0) {
@@ -127,7 +128,7 @@ export default function Sidebar() {
             const updatedIds = [...storedIds, ...newSongs.map((m) => m.id)];
             localStorage.setItem(
               "songsAlreadyNotified",
-              JSON.stringify(updatedIds)
+              JSON.stringify(updatedIds),
             );
           }
         }
@@ -154,8 +155,13 @@ export default function Sidebar() {
       message: "Músicas",
       icon: <LuMusic size={20} />,
     },
-    { path: "/add", message: "Adicionar", icon: <LuPlus size={20} /> },
-    { path: "/carcassonne", message: "Extras", icon: <LuSettings size={20} /> },
+    { path: "/links", message: "Links", icon: <LuExternalLink size={20} /> },
+    { path: "/add", message: "Adicionar", icon: <LuListPlus size={20} /> },
+    {
+      path: "/carcassonne",
+      message: "Configurações",
+      icon: <LuSettings size={20} className="min-w-[20px]" />,
+    },
   ];
 
   async function handleLogout() {
@@ -181,7 +187,7 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full w-[200px] bg-primary-black/80 p-4 z-40 rounded-md backdrop-blur-[1px] shadow-card transform transition-transform duration-300 ease-in-out
+        className={`fixed top-0 left-0 h-full w-[210px] bg-primary-black/80 p-4 z-40 rounded-md backdrop-blur-[1px] shadow-card transform transition-transform duration-300 ease-in-out
         ${isOpen ? "translate-x-0" : "-translate-x-full"} 
         md:relative md:translate-x-0 md:flex`}
       >

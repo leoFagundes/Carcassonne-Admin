@@ -9,6 +9,7 @@ import {
   TypeOrderType,
   PopupType,
   FreelancerControllType,
+  LinkType,
 } from "@/types";
 
 export const longMonths: { [key: string]: string } = {
@@ -146,6 +147,13 @@ export const patternTypeOrder: TypeOrderType = {
     order: 0,
     subtypes: [],
   },
+};
+
+export const patternLink: LinkType = {
+  name: "",
+  description: "",
+  icon: "",
+  url: "",
 };
 
 export const patternFreelancer: FreelancerControllType = {

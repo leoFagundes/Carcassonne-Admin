@@ -1,10 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import * as Icons from "lucide-react";
+
 export const truncateText = (text: string, maxLength: number): string => {
   return text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
 };
 
 export const generateRandomNumber = (
   minNumber: number = 0,
-  maxNumber: number
+  maxNumber: number,
 ): number => {
   return Math.floor(Math.random() * (maxNumber - minNumber + 1)) + minNumber;
 };
@@ -40,7 +43,7 @@ export const openWhatsApp = (rawPhone: string) => {
 export const openEmail = (
   email: string,
   subjectProps: string,
-  bodyProps: string
+  bodyProps: string,
 ) => {
   const subject = encodeURIComponent(subjectProps);
   const body = encodeURIComponent(bodyProps);
@@ -48,3 +51,36 @@ export const openEmail = (
 
   window.open(gmailUrl, "_blank");
 };
+
+export function normalizeIconName(name: string) {
+  if (!name) return "";
+
+  const cleaned = name.replace(/^Lucide/, "");
+
+  // se já parece camelCase/PascalCase → NÃO mexe
+  if (/^[A-Z][a-zA-Z]+$/.test(cleaned)) {
+    return cleaned;
+  }
+
+  return cleaned
+    .replace(/[-_]+/g, " ")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join("");
+}
+
+export function getLucideIcon(name: string) {
+  if (!name) return null;
+
+  const cleaned = name.replace(/^Lucide/, "");
+
+  const normalized = normalizeIconName(cleaned);
+
+  return (
+    (Icons as Record<string, any>)[cleaned] ||
+    (Icons as Record<string, any>)[normalized] ||
+    null
+  );
+}
+
+export const iconNames = Object.keys(Icons);

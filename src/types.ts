@@ -147,3 +147,12 @@ export interface FreelancerControllType {
     year: string;
   };
 }
+
+export interface LinkType {
+  id?: string;
+  name: string;
+  description: string;
+  icon: string;
+  url: string;
+  order?: number;
+}
