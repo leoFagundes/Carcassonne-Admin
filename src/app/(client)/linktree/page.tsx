@@ -1,18 +1,10 @@
 "use client";
 
+import Loader from "@/components/loader";
 import LinksRepository from "@/services/repositories/LinksRepository";
 import { LinkType } from "@/types";
 import { getLucideIcon } from "@/utils/utilFunctions";
-import React, { useEffect, useMemo, useState } from "react";
-import { LuDice5 } from "react-icons/lu";
-
-type LinkItem = {
-  id: string;
-  name: string;
-  url: string;
-  icon: string;
-  description?: string;
-};
+import { useEffect, useMemo, useState } from "react";
 
 // const LINKS: LinkItem[] = [
 //   {
@@ -399,11 +391,14 @@ export default function LinktreePage() {
               ))}
           </div> */}
 
-          <div className="flex flex-col gap-3 w-full">
-            {mounted &&
+          <div className="flex flex-col items-center gap-3 w-full">
+            {mounted ? (
               sortedLinks.map((link, i) => (
                 <LinkCard key={link.id} link={link} index={i} />
-              ))}
+              ))
+            ) : (
+              <Loader />
+            )}
           </div>
 
           {/* Footer */}
