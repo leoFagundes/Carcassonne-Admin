@@ -362,7 +362,7 @@ export default function LinktreePage() {
 
             {/* Tagline */}
             <p className="text-primary-white/40 text-xs text-center tracking-wide max-w-[220px] leading-relaxed">
-              O lugar onde as melhores histórias começam numa jogada.
+              Coma, jogue, repita
             </p>
 
             {/* Divider */}
