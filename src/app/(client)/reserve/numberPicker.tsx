@@ -19,74 +19,48 @@ export default function NumberPicker({
       setCurrentNumber(initialNumber);
       return;
     }
-
     setCurrentNumber(currentNumber - 1);
   }
 
   function increment() {
     if (inLimit) return;
-
     setCurrentNumber(currentNumber + 1);
   }
 
+  const btnBase =
+    "flex items-center justify-center w-10 h-10 rounded-full border text-sm font-semibold cursor-pointer transition-all duration-200 select-none";
+  const btnInactive =
+    "border-primary-gold/25 bg-secondary-black/50 text-primary-gold/80 hover:border-primary-gold/50";
+  const btnActive =
+    "border-primary-gold bg-primary-gold text-primary-black shadow-card-gold";
+
   return (
-    <div className="flex gap-3 flex-wrap justify-center ">
-      <div className="flex gap-3 justify-center">
-        <div
-          onClick={() => setCurrentNumber(initialNumber)}
-          className={`flex items-center justify-center p-2 rounded-full bg-primary-white w-10 h-10
-             text-black font-semibold text-xl cursor-pointer shadow-card ${
-               initialNumber === currentNumber &&
-               "!bg-primary-gold saturate-150"
-             }`}
-        >
-          {initialNumber}
-        </div>
-        <div
-          onClick={() => setCurrentNumber(initialNumber + 1)}
-          className={`flex items-center justify-center p-2 rounded-full bg-primary-white w-10 h-10
-             text-black font-semibold text-xl cursor-pointer shadow-card ${
-               initialNumber + 1 === currentNumber &&
-               "!bg-primary-gold saturate-150"
-             }`}
-        >
-          {initialNumber + 1}
-        </div>
-        <div
-          onClick={() => setCurrentNumber(initialNumber + 2)}
-          className={`flex items-center justify-center p-2 rounded-full bg-primary-white w-10 h-10
-             text-black font-semibold text-xl cursor-pointer shadow-card ${
-               initialNumber + 2 === currentNumber &&
-               "!bg-primary-gold saturate-150"
-             }`}
-        >
-          {initialNumber + 2}
-        </div>
-        <div
-          onClick={() => setCurrentNumber(initialNumber + 3)}
-          className={`flex items-center justify-center p-2 rounded-full bg-primary-white w-10 h-10
-             text-black font-semibold text-xl cursor-pointer shadow-card ${
-               initialNumber + 3 === currentNumber &&
-               "!bg-primary-gold saturate-150"
-             }`}
-        >
-          {initialNumber + 3}
-        </div>
+    <div className="flex gap-3 flex-wrap justify-center">
+      <div className="flex gap-2 justify-center">
+        {[0, 1, 2, 3].map((offset) => (
+          <div
+            key={offset}
+            onClick={() => setCurrentNumber(initialNumber + offset)}
+            className={`${btnBase} ${
+              initialNumber + offset === currentNumber ? btnActive : btnInactive
+            }`}
+          >
+            {initialNumber + offset}
+          </div>
+        ))}
       </div>
-      <div className="flex items-center gap-2 mx-2">
+      <div className="flex items-center gap-2">
         <div
           onClick={decrement}
-          className="select-none flex items-center justify-center w-10 h-10 p-2 rounded-full border cursor-pointer text-xl"
+          className="flex items-center justify-center w-8 h-8 rounded-full border border-dashed border-primary-gold/35 text-primary-gold/60 hover:border-primary-gold/60 hover:text-primary-gold cursor-pointer transition-all duration-200 select-none"
         >
-          <LuMinus size={20} className="min-w-[20px]" />
+          <LuMinus size={14} />
         </div>
         <div
           onClick={() => setCurrentNumber(initialNumber + 4)}
-          className={`flex items-center justify-center p-2 rounded-full bg-primary-white w-16 h-10
-             text-black font-semibold text-xl cursor-pointer shadow-card ${
-               initialNumber + 4 <= currentNumber &&
-               "!bg-primary-gold saturate-150"
-             }`}
+          className={`${btnBase} w-14 ${
+            initialNumber + 4 <= currentNumber ? btnActive : btnInactive
+          }`}
         >
           {currentNumber < initialNumber + 4
             ? initialNumber + 4
@@ -94,9 +68,9 @@ export default function NumberPicker({
         </div>
         <div
           onClick={increment}
-          className="select-none flex items-center justify-center w-10 h-10 p-2 rounded-full border cursor-pointer text-xl"
+          className="flex items-center justify-center w-8 h-8 rounded-full border border-dashed border-primary-gold/35 text-primary-gold/60 hover:border-primary-gold/60 hover:text-primary-gold cursor-pointer transition-all duration-200 select-none"
         >
-          <LuPlus size={20} className="min-w-[20px]" />
+          <LuPlus size={14} />
         </div>
       </div>
     </div>
