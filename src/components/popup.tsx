@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { LuX } from "react-icons/lu";
 import Checkbox from "./checkbox";
 import Loader from "./loader";
@@ -19,16 +19,12 @@ export default function Popup({ isOpen, onClose, url }: PopupProps) {
   const [initialized, setInitialized] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  // Precarregando a imagem
   useEffect(() => {
     const img = new Image();
     img.src = url;
     img.onload = () => setImageLoaded(true);
   }, [url]);
 
-  // Verifica se deve exibir o popup baseado no localStorage
   useEffect(() => {
     const hiddenUntil = localStorage.getItem(STORAGE_KEY);
 
@@ -51,10 +47,9 @@ export default function Popup({ isOpen, onClose, url }: PopupProps) {
 
   const handleClose = () => {
     if (isChecked) {
-      const hideUntil = new Date(Date.now() + 5 * 60 * 60 * 1000); // 5 horas à frente
+      const hideUntil = new Date(Date.now() + 5 * 60 * 60 * 1000);
       localStorage.setItem(STORAGE_KEY, hideUntil.toISOString());
     }
-
     onClose();
   };
 
@@ -62,46 +57,51 @@ export default function Popup({ isOpen, onClose, url }: PopupProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-secondary-black/40 backdrop-blur-[2px]"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 backdrop-blur-[4px] px-4"
       onClick={handleClose}
     >
-      <button
-        onClick={handleClose}
-        className="absolute flex items-center gap-2 top-2 right-2 bg-secondary-black/50 backdrop-blur-[4px] rounded-lg p-2 shadow-card cursor-pointer z-10"
-      >
-        Fechar <LuX className="min-w-[18px]" size={18} />
-      </button>
-
       <div
-        ref={contentRef}
-        className="fixed inset-0 flex items-center justify-center p-4 overflow-auto bg-black/50"
+        className="relative flex flex-col bg-secondary-black/95 border border-primary-gold/20 rounded-2xl min-h-[200px] shadow-[0_0_40px_rgba(0,0,0,0.6)] max-w-[400px] w-full max-h-[88vh] overflow-hidden animation-popup"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex flex-col gap-3 relative rounded-lg max-w-full max-h-full p-4 animation-popup">
+        {/* Header */}
+        <div className="flex items-center justify-end px-4 py-3 border-b border-primary-gold/10 shrink-0">
+          <button
+            onClick={handleClose}
+            className="p-1.5 rounded-full border border-primary-gold/20 text-primary-gold/60 hover:text-primary-gold hover:border-primary-gold/50 transition-all duration-200"
+          >
+            <LuX size={15} />
+          </button>
+        </div>
+
+        {/* Image */}
+        <div className="relative flex-1 min-h-0 flex items-center justify-center w-full bg-black/20">
           {!imageLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md">
+            <div className="absolute py-16">
               <Loader />
             </div>
           )}
-
           <img
             src={url}
             alt="Popup"
-            className={`max-w-full max-h-[90vh] w-auto h-auto rounded-md object-contain shadow-card transition-opacity duration-300 ${
-              imageLoaded ? "opacity-100" : "opacity-0"
+            className={`w-full h-auto object-contain max-h-[65vh] transition-opacity duration-300 ${
+              imageLoaded ? "opacity-100" : "opacity-0 h-0"
             }`}
             onLoad={() => setImageLoaded(true)}
           />
+        </div>
 
-          {imageLoaded && (
+        {/* Footer */}
+        {imageLoaded && (
+          <div className="px-4 py-3 border-t border-primary-gold/10 shrink-0">
             <Checkbox
               checked={isChecked}
               setChecked={(e) => setIsChecked(e.target.checked)}
               label="Ocultar por hoje"
               withoutBackground
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

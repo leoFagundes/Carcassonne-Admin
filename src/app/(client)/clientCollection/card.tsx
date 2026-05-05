@@ -63,77 +63,55 @@ export default function Card({
       {isListView ? (
         <div
           {...props}
-          className={`${
-            !boardgame.isVisible && "hidden"
-          } relative cursor-pointer sm:max-w-[600px] max-w-[300px] flex items-center gap-3 w-full p-3 border-b border-primary-gold/50 sm:hover:bg-secondary-black sm:hover:shadow-lg transition-all ease-in duration-200`}
+          className={`${!boardgame.isVisible && "hidden"} ${
+            selectedGame && !spinning
+              ? "border-primary-gold/60 bg-secondary-black/60"
+              : "border-primary-gold/15 hover:border-primary-gold/35 hover:bg-secondary-black/50"
+          } relative cursor-pointer w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all ease-in duration-200`}
         >
-          <div className="sm:hidden">
-            {selectedGame && !spinning && (
-              <ReactConfetti
-                width={800}
-                height={300}
-                className="max-w-full max-h-full"
-                numberOfPieces={40}
-              />
-            )}
-          </div>
-          <div className="hidden sm:block">
-            {selectedGame && !spinning && (
-              <ReactConfetti
-                width={3000}
-                height={300}
-                className="max-w-full max-h-full"
-                numberOfPieces={40}
-              />
-            )}
-          </div>
-          <div className={`relative`}>
-            {boardgame.image && (
-              <img
-                src={boardgame.image}
-                alt="boardgame"
-                className="h-12 w-12 min-w-12 rounded shadow-card"
-              />
-            )}
-
-            {!boardgame.image && (
-              <img
-                src={patternBoardGameImage.src}
-                alt="boardgame"
-                className="h-12 w-12 rounded shadow-card"
-              />
-            )}
+          {selectedGame && !spinning && (
+            <ReactConfetti
+              width={800}
+              height={300}
+              className="max-w-full max-h-full"
+              numberOfPieces={40}
+            />
+          )}
+          <div className="relative shrink-0">
+            <img
+              src={boardgame.image || patternBoardGameImage.src}
+              alt="boardgame"
+              className="h-10 w-10 min-w-10 rounded-lg object-cover shadow-card"
+            />
             {boardgame.featured && (
-              <div className="shadow-card flex items-center justify-center absolute -bottom-2 -right-2 p-1 bg-primary-black rounded-full">
-                <LuSparkles size={"14px"} className="min-w-[14px] " />
+              <div className="shadow-card flex items-center justify-center absolute -bottom-1.5 -right-1.5 p-0.5 bg-primary-black rounded-full border border-primary-gold/30">
+                <LuSparkles size={"10px"} className="min-w-[10px]" />
               </div>
             )}
           </div>
-          <span className="max-w-[100px] sm:max-w-[300px]">
+          <span className="flex-1 text-sm font-medium truncate">
             {boardgame.name}
           </span>
           {boardgame.isForSale && (
-            <span className="max-w-[100px] sm:max-w-[300px]">
-              {boardgame.value}
-            </span>
+            <span className="text-xs text-primary-gold/70">{boardgame.value}</span>
           )}
           {!isSmallScreen && (
-            <span className="flex items-center gap-2 text-sm flex-1 justify-end text-nowrap">
-              <FiUsers size={"16px"} className="min-w-[16px]" />
+            <span className="flex items-center gap-1.5 text-xs text-primary-gold/60 shrink-0">
+              <FiUsers size={"13px"} className="min-w-[13px]" />
               {boardgame.minPlayers === boardgame.maxPlayers
                 ? boardgame.maxPlayers
-                : `${boardgame.minPlayers} - ${boardgame.maxPlayers}`}{" "}
+                : `${boardgame.minPlayers}–${boardgame.maxPlayers}`}
             </span>
           )}
-
           <div
             className={`flex items-center justify-end gap-2 ${
               isSmallScreen && "flex-1"
             }`}
           >
-            <div className="p-1 rounded-full border cursor-pointer">
+            <div className="p-1 rounded-full border border-primary-gold/25 hover:border-primary-gold/60 transition-all cursor-pointer">
               {mode === "default" ? (
                 <LuPlus
+                  size={14}
                   onClick={(e) => {
                     addBoardGameToList(boardgame);
                     e.stopPropagation();
@@ -141,6 +119,7 @@ export default function Card({
                 />
               ) : (
                 <LuX
+                  size={14}
                   onClick={(e) => {
                     removeBoardGameFromList(boardgame);
                     e.stopPropagation();
@@ -148,15 +127,17 @@ export default function Card({
                 />
               )}
             </div>
-            <FiArrowRight size={"20px"} className="min-w-[20px]" />
+            <FiArrowRight size={"16px"} className="min-w-[16px] text-primary-gold/50" />
           </div>
         </div>
       ) : (
         <div
           {...props}
-          className={`${
-            !boardgame.isVisible && "hidden"
-          } ${selectedGame && !spinning && "!border-primary-gold border-[2px]"} relative w-full h-fit max-w-[300px] rounded-lg shadow-card-gold cursor-pointer sm:hover:border-primary-gold/50 sm:border sm:border-transparent transition-all ease-in duration-200`}
+          className={`${!boardgame.isVisible && "hidden"} ${
+            selectedGame && !spinning
+              ? "border-primary-gold/70 border-[2px] shadow-[0_0_20px_rgba(230,197,107,0.15)]"
+              : "border-primary-gold/20 hover:border-primary-gold/50"
+          } relative w-full h-fit max-w-[280px] rounded-xl border bg-secondary-black/40 cursor-pointer transition-all ease-in duration-200`}
         >
           {selectedGame && !spinning && (
             <ReactConfetti
@@ -167,60 +148,55 @@ export default function Card({
             />
           )}
           <div
-            className="relative w-full h-[150px] bg-center bg-cover rounded-t-lg"
+            className="relative w-full h-[150px] bg-center bg-cover rounded-t-xl overflow-hidden"
             style={{
               backgroundImage: `url(${
                 boardgame.image ? boardgame.image : patternBoardGameImage.src
               })`,
             }}
           >
-            <div className="flex py-2 px-4 items-end absolute w-full h-full bg-primary-black/40">
-              <span className="font-bold text-lg text-primary-white">
+            <div className="absolute inset-0 bg-gradient-to-t from-primary-black/80 via-transparent to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 px-3 pb-2.5">
+              <span className="font-bold text-sm text-primary-white drop-shadow leading-tight line-clamp-2">
                 {boardgame.name}
               </span>
             </div>
+            {boardgame.featured && (
+              <div className="absolute top-2 left-2 p-1.5 bg-primary-black/70 backdrop-blur-sm rounded-full border border-primary-gold/30 shadow-card">
+                <LuSparkles size={"12px"} className="min-w-[12px]" />
+              </div>
+            )}
           </div>
-          {boardgame.featured && (
-            <div className="flex items-center gap-1 absolute top-1 left-1 p-2 text-sm bg-primary-black/70 backdrop-blur-[2px] rounded-full shadow-card">
-              <LuSparkles size={"16px"} className="min-w-[16px]" />
-            </div>
-          )}
-          <div className="flex flex-col gap-2 p-4 relative">
+
+          <div className="flex flex-col gap-1.5 p-3">
             {boardgame.isForSale && (
-              <span className="flex items-center gap-2 text-sm">
-                <FiDollarSign size={"16px"} className="min-w-[16px]" />
+              <span className="flex items-center gap-2 text-xs text-primary-gold/80">
+                <FiDollarSign size={"13px"} className="min-w-[13px]" />
                 {boardgame.value}
               </span>
             )}
-            <span className="flex items-center gap-2 text-sm">
-              <FiUsers size={"16px"} className="min-w-[16px]" />
+            <span className="flex items-center gap-2 text-xs text-primary-gold/80">
+              <FiUsers size={"13px"} className="min-w-[13px]" />
               {boardgame.minPlayers === boardgame.maxPlayers
                 ? boardgame.maxPlayers
-                : `${boardgame.minPlayers} - ${boardgame.maxPlayers}`}{" "}
+                : `${boardgame.minPlayers}–${boardgame.maxPlayers}`}{" "}
               Jogadores
             </span>
-            <span className="flex items-center gap-2 text-sm">
-              <FiClock size={"16px"} className="min-w-[16px]" />
+            <span className="flex items-center gap-2 text-xs text-primary-gold/80">
+              <FiClock size={"13px"} className="min-w-[13px]" />
               {boardgame.playTime} minutos
             </span>
-            <span className="flex items-center gap-2 text-sm">
-              <FiTrendingUp size={"16px"} className="min-w-[16px]" />
-              {boardgame.difficulty}{" "}
-              <span className="text-xs italic text-primary-gold/60">
-                (dificuldade)
-              </span>
+            <span className="flex items-center gap-2 text-xs text-primary-gold/80">
+              <FiTrendingUp size={"13px"} className="min-w-[13px]" />
+              {boardgame.difficulty}
             </span>
-            <span className="flex items-center gap-2 text-sm">
-              <FiLayers size={"16px"} className="min-w-[16px]" />
-              {truncateText(boardgame.types.join(", "), 22)}
-
-              <span className="text-xs italic text-primary-gold/60">
-                (Tipo)
-              </span>
+            <span className="flex items-center gap-2 text-xs text-primary-gold/70">
+              <FiLayers size={"13px"} className="min-w-[13px]" />
+              {truncateText(boardgame.types.join(", "), 24)}
             </span>
             <div
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-2 pt-2 text-sm cursor-pointer"
+              className="pt-1.5"
             >
               {mode === "default" ? (
                 <Button onClick={() => addBoardGameToList(boardgame)}>
