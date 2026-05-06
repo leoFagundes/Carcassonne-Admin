@@ -296,7 +296,10 @@ export default function Rerserve() {
         const reserveWithNewStatus = {
           ...reserve,
           status: newStatus,
-          ...(newStatus === "canceled" && { canceledAt: new Date().toISOString() }),
+          ...(newStatus === "canceled" && {
+            canceledAt: new Date().toISOString(),
+            canceledBy: "admin" as const,
+          }),
         };
         await ReserveRepository.update(id, reserveWithNewStatus);
 
@@ -886,18 +889,27 @@ Equipe Carcassonne Pub`,
                                   })}
                               </div>
                             )}
-                            {reserve.status === "canceled" && reserve.canceledAt && (
+                            {reserve.status === "canceled" && (
                               <div className="mt-1 flex flex-col gap-0.5 border-t border-invalid-color/15 pt-1">
-                                <span className="text-invalid-color/80">
-                                  <span className="font-semibold">Cancelada em: </span>
-                                  {new Date(reserve.canceledAt).toLocaleString("pt-BR", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </span>
+                                {reserve.canceledBy && (
+                                  <span className="text-invalid-color/90 font-semibold">
+                                    {reserve.canceledBy === "user"
+                                      ? "Cancelada pelo usuário"
+                                      : "Cancelada pelo Administrador"}
+                                  </span>
+                                )}
+                                {reserve.canceledAt && (
+                                  <span className="text-invalid-color/70">
+                                    <span className="font-semibold">Em: </span>
+                                    {new Date(reserve.canceledAt).toLocaleString("pt-BR", {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
+                                )}
                                 {reserve.canceledReason && (
                                   <span className="text-invalid-color/70">
                                     <span className="font-semibold">Motivo: </span>

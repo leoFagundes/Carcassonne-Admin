@@ -70,6 +70,7 @@ export default function CancelReserve() {
         ...reserveFound,
         status: "canceled",
         canceledAt: new Date().toISOString(),
+        canceledBy: "user",
         canceledReason: cancelReason.trim() || undefined,
       });
       setAllReserves((prev) =>

@@ -1,42 +1,54 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { LuExpand, LuImage, LuMinimize2, LuPlus, LuText } from "react-icons/lu";
-import Modal from "@/components/modal";
-import Button from "@/components/button";
+import {
+  LuExpand,
+  LuImage,
+  LuMinimize2,
+  LuPlus,
+  LuText,
+  LuTrash,
+  LuX,
+} from "react-icons/lu";
 import Input from "@/components/input";
 import { patternCarcaImage } from "@/utils/patternValues";
 import CarcaImageRepository from "@/services/repositories/CarcaImageRepository";
 import { useAlert } from "@/contexts/alertProvider";
 import { CarcaImageType } from "@/types";
-import random from "random";
 import InputImage from "@/components/inputImage";
 import { uploadImageToFirebase } from "@/services/repositories/FirebaseImageUtils";
-import Tooltip from "@/components/Tooltip";
+import Loader from "@/components/loader";
 
 export const DragCards = () => {
-  const sectionRef = useRef<HTMLElement | null>(null);
+  const sectionRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCarcaImage, setNewCarcaImage] = useState(patternCarcaImage);
   const [imageFile, setImageFile] = React.useState<File | null>(null);
-  const [allDescriptionsVisible, setAllDescriptionsVisible] = useState(false);
+  const [showDescriptions, setShowDescriptions] = useState(false);
   const [carcaImages, setCarcaImages] = useState<CarcaImageType[]>([]);
+  const [saving, setSaving] = useState(false);
 
   const { addAlert } = useAlert();
 
   useEffect(() => {
-    if (typeof window === "undefined") return; // garante que só roda no client
-
+    if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    const createimage = params.get("createimage");
-
-    if (createimage === "true") {
-      setIsModalOpen(true);
-    }
+    if (params.get("createimage") === "true") setIsModalOpen(true);
   }, []);
 
-  // Alterna fullscreen
+  useEffect(() => {
+    CarcaImageRepository.getAll()
+      .then(setCarcaImages)
+      .catch(() => addAlert("Erro ao carregar imagens."));
+  }, []);
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
   const handleFullscreen = () => {
     if (!isFullscreen && sectionRef.current?.requestFullscreen) {
       sectionRef.current.requestFullscreen();
@@ -45,283 +57,267 @@ export const DragCards = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchCarcaImages = async () => {
-      try {
-        const fetchedCarcaImages = await CarcaImageRepository.getAll();
-        setCarcaImages(fetchedCarcaImages);
-      } catch (error) {
-        addAlert(`Erro ao carregar imagens: ${error}`);
-      }
-    };
-
-    fetchCarcaImages();
-  }, []);
-
-  const addCarcaImage = async () => {
+  const handleAdd = async () => {
     if (!newCarcaImage.src.trim() && !imageFile) {
-      addAlert("Adicione uma imagem!");
+      addAlert("Adicione uma imagem.");
       return;
     }
-
+    setSaving(true);
     try {
       let imageUrl = newCarcaImage.src || "";
-
       if (imageFile) {
         const { url } = await uploadImageToFirebase(imageFile, "carca-images");
         imageUrl = url;
       }
-
-      const top = `${random.int(10, 60)}%`;
-      const left = `${random.int(10, 60)}%`;
-      const rotate = `${(Math.random() * 32 - 16).toFixed(2)}deg`;
-
-      await CarcaImageRepository.create({
+      const created = await CarcaImageRepository.create({
         ...newCarcaImage,
-        top,
-        left,
-        rotate,
         src: imageUrl,
+        top: "0",
+        left: "0",
+        rotate: "0",
       });
-
-      addAlert("Imagem criada com sucesso");
+      if (created) setCarcaImages((prev) => [...prev, created as CarcaImageType]);
+      addAlert("Foto adicionada com sucesso!");
       setIsModalOpen(false);
       setNewCarcaImage(patternCarcaImage);
+      setImageFile(null);
     } catch (error) {
-      console.error(error);
-      addAlert(`Erro ao adicionar imagem: ${error}`);
+      addAlert(`Erro ao adicionar: ${error}`);
+    } finally {
+      setSaving(false);
     }
   };
 
-  useEffect(() => {
-    const onFullscreenChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-
-    document.addEventListener("fullscreenchange", onFullscreenChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", onFullscreenChange);
-    };
-  }, []);
+  const handleDelete = async (id: string | undefined) => {
+    if (!id) return;
+    if (!confirm("Remover esta foto do mural?")) return;
+    try {
+      await CarcaImageRepository.delete(id);
+      setCarcaImages((prev) => prev.filter((img) => img.id !== id));
+      addAlert("Foto removida.");
+    } catch {
+      addAlert("Erro ao remover foto.");
+    }
+  };
 
   return (
-    <section
-      style={{
-        backgroundImage: "url('images/black-cardboard-texture.jpg')",
-        backgroundSize: "cover",
-        backgroundRepeat: "repeat",
-      }}
-      ref={sectionRef}
-      className={`${isModalOpen && "border"} saturate-110 relative grid min-h-[600px] sm:max-w-[90%] w-full place-content-center bg-dark-black rounded-lg shadow-card`}
-    >
-      <div className="absolute z-40 top-4 right-4 flex gap-2">
-        <button
-          onClick={() => setAllDescriptionsVisible(!allDescriptionsVisible)}
-          className="cursor-pointer p-2 text-sm bg-primary-gold text-primary-black font-semibold rounded hover:bg-primary-gold/80 transition"
-        >
-          <LuText size={18} />
-        </button>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="cursor-pointer p-2 text-sm bg-primary-gold text-primary-black font-semibold rounded hover:bg-primary-gold/80 transition"
-        >
-          <LuPlus size={18} />
-        </button>
-        <button
-          onClick={handleFullscreen}
-          className="cursor-pointer p-2 text-sm bg-primary-gold text-primary-black font-semibold rounded hover:bg-primary-gold/80 transition"
-        >
-          {isFullscreen ? <LuMinimize2 size={18} /> : <LuExpand size={18} />}
-        </button>
-      </div>
-      {allDescriptionsVisible && (
-        <div className="absolute top-0 left-0 flex gap-2 flex-col sm:p-4 py-16 px-4 bg-dark-black/30 backdrop-blur-[4px] z-30 rounded max-h-full overflow-y-auto">
-          {carcaImages.map(({ description }, index) => (
-            <span
-              className="p-2 max-w-[500px] rounded-lg border border-dashed bg-dark-black"
-              key={index}
-            >
-              {description}
-            </span>
-          ))}
-        </div>
-      )}
-      {/* <h1 className="text-5xl opacity-25 text-center p-6">Carcassonne Pub</h1> */}
+    <div className="flex flex-col gap-3">
+      <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45 flex items-center gap-2">
+        <LuImage size={13} /> Mural de Fotos
+      </span>
 
       <div
-        className={`relative w-full p-16 flex flex-wrap gap-5 justify-center ${isFullscreen && "overflow-y-auto"}`}
+        ref={sectionRef}
+        className="rounded-xl border border-primary-gold/15 bg-secondary-black/40 overflow-hidden"
       >
-        {" "}
-        {carcaImages.map((carcaImage, index) => (
-          <div
-            style={{
-              transform: `rotate(${(Math.random() * 4 - 2).toFixed(2)}deg)`,
-            }}
-            key={index}
-            className={`relative flex justify-center bg-primary-white w-fit h-fit p-2 pb-6 shadow-card`}
-          >
-            <img
-              className="absolute z-20 w-8 -translate-y-6 translate-x-4"
-              src="svg/map_pin.svg"
-              alt="map_pin"
-            />
-            <div
-              style={{
-                backgroundImage: `url(images/black-cardboard-texture.jpg)`,
-              }}
-              className="absolute z-10 p-1 rounded-full w-3 h-3 translate-x-1 border border-primary-black shadow-card "
-            ></div>
-            <Tooltip
-              textWrap
-              clickToStay
-              contentNode={carcaImage.description}
-              direction="top"
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-primary-gold/10">
+          <span className="text-sm text-primary-gold/60">
+            {carcaImages.length}{" "}
+            {carcaImages.length === 1 ? "foto" : "fotos"}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowDescriptions(!showDescriptions)}
+              title="Mostrar descrições"
+              className={`p-1.5 rounded-lg border transition-all duration-200 cursor-pointer ${
+                showDescriptions
+                  ? "border-primary-gold/50 text-primary-gold bg-primary-gold/10"
+                  : "border-primary-gold/20 text-primary-gold/45 hover:border-primary-gold/40 hover:text-primary-gold"
+              }`}
             >
-              <img
-                key={carcaImage.id || index}
-                src={carcaImage.src}
-                alt={carcaImage.description}
-                className="shadow-card-light border border-primary-black/50"
-                style={{
-                  width: carcaImage.width,
-                  height: carcaImage.height,
-                  minWidth: carcaImage.width,
-                }}
-              />
-            </Tooltip>
+              <LuText size={13} />
+            </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              title="Adicionar foto"
+              className="p-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/45 hover:text-primary-gold transition-all duration-200 cursor-pointer"
+            >
+              <LuPlus size={13} />
+            </button>
+            <button
+              onClick={handleFullscreen}
+              title={isFullscreen ? "Sair do fullscreen" : "Fullscreen"}
+              className="p-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/45 hover:text-primary-gold transition-all duration-200 cursor-pointer"
+            >
+              {isFullscreen ? <LuMinimize2 size={13} /> : <LuExpand size={13} />}
+            </button>
           </div>
-        ))}
+        </div>
+
+        {/* Gallery */}
+        <div
+          className={`p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 ${
+            isFullscreen ? "overflow-y-auto max-h-[calc(100vh-80px)] pb-8" : "min-h-[200px]"
+          }`}
+        >
+          {carcaImages.length === 0 ? (
+            <div className="col-span-full flex flex-col items-center justify-center py-16 gap-3 text-primary-gold/25">
+              <LuImage size={28} />
+              <p className="text-sm">Nenhuma foto no mural ainda.</p>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="text-xs px-3 py-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all"
+              >
+                Adicionar primeira foto
+              </button>
+            </div>
+          ) : (
+            carcaImages.map((img, index) => (
+              <div
+                key={img.id || index}
+                className="group relative rounded-xl overflow-hidden border border-primary-gold/15 hover:border-primary-gold/45 transition-all duration-300"
+                style={{ aspectRatio: "1" }}
+              >
+                <img
+                  src={img.src}
+                  alt={img.description}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+
+                {/* Hover overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-primary-black via-primary-black/70 to-primary-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-2.5">
+                  {(showDescriptions || img.description) && (
+                    <p className="text-[11px] text-primary-gold/85 leading-relaxed line-clamp-3 mb-2">
+                      {img.description}
+                    </p>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(img.id);
+                    }}
+                    className="self-end p-1.5 rounded-lg bg-invalid-color/15 border border-invalid-color/35 text-invalid-color/80 hover:bg-invalid-color/25 hover:text-invalid-color transition-all cursor-pointer"
+                  >
+                    <LuTrash size={12} />
+                  </button>
+                </div>
+
+                {/* Always-visible description badge when toggled */}
+                {showDescriptions && img.description && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-primary-black/70 backdrop-blur-sm px-2 py-1.5 group-hover:opacity-0 transition-opacity">
+                    <p className="text-[10px] text-primary-gold/65 line-clamp-2">
+                      {img.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
+      {/* Add photo modal */}
       {isModalOpen && (
-        <Modal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setNewCarcaImage(patternCarcaImage);
-          }}
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[4px] px-4"
+          onClick={() => setIsModalOpen(false)}
         >
-          <h2 className="text-3xl text-center">Adicionar uma nova foto</h2>
-          <section className="flex justify-center gap-6 w-full my-6 flex-wrap overflow-y-auto">
-            <div className="flex flex-col items-center gap-5 p-2">
-              <div className="flex flex-col gap-1 border p-1 rounded shadow-card border-dashed border-primary-gold/20">
-                <InputImage
-                  onChange={(file) => {
-                    if (file) {
-                      setImageFile(file);
-                      setNewCarcaImage({
-                        ...newCarcaImage,
-                        src: URL.createObjectURL(file),
-                      });
-                    }
-                  }}
-                  onCloseImage={() => {
-                    setImageFile(null);
-                    setNewCarcaImage({
-                      ...newCarcaImage,
-                      src: "",
-                    });
-                  }}
-                  width="!w-[250px]"
-                  previewUrl={newCarcaImage.src}
-                />
+          <div
+            className="bg-secondary-black/95 border border-primary-gold/20 rounded-2xl w-full max-w-[480px] max-h-[90vh] flex flex-col overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-primary-gold/10 shrink-0">
+              <div className="w-full text-center">
+                <h2 className="text-lg text-gradient-gold">Adicionar foto ao mural</h2>
+              </div>
+              <button
+                onClick={() => { setIsModalOpen(false); setNewCarcaImage(patternCarcaImage); setImageFile(null); }}
+                className="p-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/60 hover:text-primary-gold transition-all shrink-0 ml-2"
+              >
+                <LuX size={14} />
+              </button>
+            </div>
+
+            {/* Modal content */}
+            <div className="flex flex-col sm:flex-row gap-5 p-5 overflow-y-auto">
+              {/* Left: inputs */}
+              <div className="flex flex-col gap-4 flex-1">
+                <div className="rounded-xl border border-primary-gold/15 overflow-hidden">
+                  <InputImage
+                    onChange={(file) => {
+                      if (file) {
+                        setImageFile(file);
+                        setNewCarcaImage({ ...newCarcaImage, src: URL.createObjectURL(file) });
+                      }
+                    }}
+                    onCloseImage={() => {
+                      setImageFile(null);
+                      setNewCarcaImage({ ...newCarcaImage, src: "" });
+                    }}
+                    width={`!w-full ${!imageFile ? "!h-[120px]" : "!min-h-[200px]"}`}
+                    previewUrl={newCarcaImage.src}
+                  />
+                </div>
 
                 {!imageFile && (
                   <>
-                    <span className="w-full text-center text-primary-gold/80 italic">
-                      ou
-                    </span>
-
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-px bg-primary-gold/15" />
+                      <span className="text-[11px] text-primary-gold/30">ou URL</span>
+                      <div className="flex-1 h-px bg-primary-gold/15" />
+                    </div>
                     <Input
                       label="Link da imagem"
-                      placeholder="URL da imagem"
+                      placeholder="https://..."
                       value={newCarcaImage.src ?? ""}
-                      setValue={(e) =>
-                        setNewCarcaImage({
-                          ...newCarcaImage,
-                          src: e.target.value,
-                        })
-                      }
+                      setValue={(e) => setNewCarcaImage({ ...newCarcaImage, src: e.target.value })}
                       variant
-                      icon={<LuImage size={"18px"} />}
-                      width="!w-[250px]"
+                      width="!w-full"
                     />
                   </>
                 )}
+
+                <Input
+                  multiline
+                  rows={2}
+                  placeholder="Descrição da foto (opcional)"
+                  label="Descrição"
+                  setValue={(e) => setNewCarcaImage({ ...newCarcaImage, description: e.target.value })}
+                  value={newCarcaImage.description}
+                  variant
+                  width="!w-full"
+                />
+
               </div>
-              <Input
-                multiline
-                placeholder="descrição da imagem"
-                label="descrição da imagem"
-                setValue={(e) =>
-                  setNewCarcaImage({
-                    ...newCarcaImage,
-                    description: e.target.value,
-                  })
-                }
-                value={newCarcaImage.description}
-                variant
-                width="!w-[250px]"
-              />
-              <div className="flex gap-4 w-full justify-center">
-                <div
-                  onClick={() =>
-                    setNewCarcaImage({
-                      ...newCarcaImage,
-                      width: "320px",
-                      height: "224px",
-                    })
-                  }
-                  className="flex items-center justify-center w-12 h-8 border cursor-pointer hover:text-primary-gold/80 border-dashed"
-                >
-                  1
+
+              {/* Right: preview */}
+              {newCarcaImage.src && (
+                <div className="flex flex-col gap-2 items-center shrink-0">
+                  <span className="text-[10px] uppercase tracking-widest text-primary-gold/40">
+                    Pré-visualização
+                  </span>
+                  <div className="rounded-xl overflow-hidden border border-primary-gold/20 w-[120px] h-[120px]">
+                    <img
+                      src={newCarcaImage.src}
+                      alt="preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 </div>
-                <div
-                  onClick={() =>
-                    setNewCarcaImage({
-                      ...newCarcaImage,
-                      width: "224px",
-                      height: "300px",
-                    })
-                  }
-                  className="flex items-center justify-center w-8 h-12 border cursor-pointer hover:text-primary-gold/80 border-dashed"
-                >
-                  2
-                </div>
-                <div
-                  onClick={() =>
-                    setNewCarcaImage({
-                      ...newCarcaImage,
-                      width: "224px",
-                      height: "224px",
-                    })
-                  }
-                  className="flex items-center justify-center  w-8 h-8 border cursor-pointer hover:text-primary-gold/80 border-dashed"
-                >
-                  3
-                </div>
-              </div>
+              )}
             </div>
-            <div className="flex flex-col gap-2 items-center p-2">
-              <span className="font-semibold text-xl">Pré-visualização</span>
-              <img
-                style={{
-                  width: newCarcaImage.width,
-                  height: newCarcaImage.height,
-                }}
-                className={`text-primary-gold border w-48 ${
-                  newCarcaImage.src ? "bg-primary-white" : "bg-primary-black "
-                } p-1 pb-4`}
-                src={newCarcaImage.src || "images/mascote-3.png"}
-                alt={"preview carcaimage"}
-              />
+
+            {/* Modal footer */}
+            <div className="flex justify-center gap-3 px-5 py-3 border-t border-primary-gold/10 shrink-0">
+              <button
+                onClick={() => { setIsModalOpen(false); setNewCarcaImage(patternCarcaImage); setImageFile(null); }}
+                className="px-4 py-2 text-sm rounded-lg border border-primary-gold/20 text-primary-gold/60 hover:border-primary-gold/40 hover:text-primary-gold transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleAdd}
+                disabled={saving}
+                className="px-5 py-2 text-sm rounded-lg border border-primary-gold/50 bg-primary-gold/10 text-primary-gold hover:bg-primary-gold/15 transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {saving ? <Loader /> : "Adicionar"}
+              </button>
             </div>
-          </section>
-          <div>
-            <Button onClick={addCarcaImage}>Adicionar</Button>
           </div>
-        </Modal>
+        </div>
       )}
-    </section>
+    </div>
   );
 };

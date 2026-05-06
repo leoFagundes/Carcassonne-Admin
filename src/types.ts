@@ -122,6 +122,7 @@ export interface ReserveType {
   createdAt?: Timestamp;
   canceledAt?: string;
   canceledReason?: string;
+  canceledBy?: "user" | "admin";
 }
 
 export interface TableType {
