@@ -5,7 +5,6 @@ import React, { ReactNode, useEffect, useState } from "react";
 import {
   LuDices,
   LuPizza,
-  LuSkipBack,
   LuMenu,
   LuX,
   LuSettings,
@@ -29,13 +28,18 @@ interface ItemProps {
   onClick: VoidFunction;
   notify?: unknown[];
   setSongsToNotify?: React.Dispatch<
-    React.SetStateAction<
-      (MusicRecommendationType & { id: string })[]
-    >
+    React.SetStateAction<(MusicRecommendationType & { id: string })[]>
   >;
 }
 
-function Item({ message, icon, path, onClick, notify, setSongsToNotify }: ItemProps) {
+function Item({
+  message,
+  icon,
+  path,
+  onClick,
+  notify,
+  setSongsToNotify,
+}: ItemProps) {
   const pathname = usePathname();
   const isActive = pathname === path;
 
@@ -58,7 +62,7 @@ function Item({ message, icon, path, onClick, notify, setSongsToNotify }: ItemPr
         <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[2px] rounded-full bg-primary-gold" />
       )}
       <span className="shrink-0">{icon}</span>
-      <span className="text-sm font-medium">{message}</span>
+      <span className="text-lg font-light">{message}</span>
       {notify && notify.length > 0 && path === "/musicRecommendation" && (
         <div className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary-gold text-primary-black text-[10px] font-bold animate-bounce">
           {notify.length}
@@ -76,7 +80,6 @@ export default function Sidebar() {
 
   const { addAlert } = useAlert();
   const router = useRouter();
-  const pathname = usePathname();
   const toggleSidebar = () => setIsOpen(!isOpen);
 
   useEffect(() => {
@@ -115,7 +118,10 @@ export default function Sidebar() {
             addAlert(`${newSongs.length} nova música adicionada! 🎵`);
 
             const updatedIds = [...storedIds, ...newSongs.map((m) => m.id)];
-            localStorage.setItem("songsAlreadyNotified", JSON.stringify(updatedIds));
+            localStorage.setItem(
+              "songsAlreadyNotified",
+              JSON.stringify(updatedIds),
+            );
           }
         }
       } catch (error) {
@@ -128,13 +134,25 @@ export default function Sidebar() {
   }, []);
 
   const menuItems = [
-    { path: "/myreserves",         message: "Reservas",      icon: <LuCalendar size={17} /> },
-    { path: "/collection",         message: "Coleção",       icon: <LuDices size={17} /> },
-    { path: "/menu",               message: "Cardápio",      icon: <LuPizza size={17} /> },
-    { path: "/musicRecommendation",message: "Músicas",       icon: <LuMusic size={17} /> },
-    { path: "/links",              message: "Links",         icon: <LuExternalLink size={17} /> },
-    { path: "/add",                message: "Adicionar",     icon: <LuListPlus size={17} /> },
-    { path: "/carcassonne",        message: "Configurações", icon: <LuSettings size={17} /> },
+    {
+      path: "/myreserves",
+      message: "Reservas",
+      icon: <LuCalendar size={18} />,
+    },
+    { path: "/collection", message: "Coleção", icon: <LuDices size={18} /> },
+    { path: "/menu", message: "Cardápio", icon: <LuPizza size={18} /> },
+    {
+      path: "/musicRecommendation",
+      message: "Músicas",
+      icon: <LuMusic size={18} />,
+    },
+    { path: "/links", message: "Links", icon: <LuExternalLink size={18} /> },
+    { path: "/add", message: "Adicionar", icon: <LuListPlus size={18} /> },
+    {
+      path: "/carcassonne",
+      message: "Configurações",
+      icon: <LuSettings size={18} />,
+    },
   ];
 
   async function handleLogout() {
@@ -178,7 +196,6 @@ export default function Sidebar() {
         md:relative md:translate-x-0 md:flex md:flex-shrink-0`}
       >
         <div className="flex flex-col h-full w-full overflow-y-auto">
-
           {/* Logo section */}
           <div className="flex flex-col items-center gap-3 px-4 pt-6 pb-4 border-b border-primary-gold/10">
             <div className="relative">
@@ -194,7 +211,7 @@ export default function Sidebar() {
               </div>
             </div>
             <div className="flex flex-col items-center gap-0.5">
-              <span className="font-cinzel text-xs font-semibold text-primary-gold/80 tracking-[0.2em] uppercase">
+              <span className="font-cinzel text-sm font-semibold text-primary-gold/80 tracking-[0.2em] uppercase">
                 Carcassonne
               </span>
               <span className="text-[10px] text-primary-gold/35 tracking-widest uppercase">
@@ -224,7 +241,10 @@ export default function Sidebar() {
           {/* Logout */}
           <div className="p-3 border-t border-primary-gold/10">
             <div
-              onClick={() => { handleLogout(); setIsOpen(false); }}
+              onClick={() => {
+                handleLogout();
+                setIsOpen(false);
+              }}
               className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 text-primary-gold/35 hover:text-invalid-color hover:bg-invalid-color/5 select-none"
             >
               <LuLogOut size={17} className="shrink-0" />
