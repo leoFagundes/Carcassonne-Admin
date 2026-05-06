@@ -132,7 +132,9 @@ export default function SettingsPage() {
 
       <section className="flex w-full justify-center items-center gap-2 text-primary-gold">
         <LuSettings size={"48px"} className="min-w-[48px]" />
-        <h2 className="text-5xl text-primary-gold text-center">Extras</h2>
+        <h2 className="text-5xl text-primary-gold text-center">
+          Configurações
+        </h2>
       </section>
 
       {/* Configs */}

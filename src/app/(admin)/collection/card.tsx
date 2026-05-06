@@ -7,7 +7,7 @@ import { BoardgameType } from "@/types";
 import { highlightMatch } from "@/utils/utilFunctions";
 import React, { ComponentProps, useState } from "react";
 import { FiClock, FiUsers } from "react-icons/fi";
-import { LuEye, LuEyeOff, LuSparkles } from "react-icons/lu";
+import { LuEye, LuEyeOff, LuSparkles, LuTag } from "react-icons/lu";
 
 interface GameCardProps extends ComponentProps<"div"> {
   boardgame: BoardgameType;
@@ -29,15 +29,11 @@ export default function Card({
 
   const toggleVisibility = async (
     event: React.MouseEvent<SVGElement, MouseEvent>,
-    state: "visible" | "invisible"
+    state: "visible" | "invisible",
   ) => {
     event.stopPropagation();
-
-    const newVisibilityValue = state === "visible" ? true : false;
-    const newBoardgameValue = {
-      ...boardgame,
-      isVisible: newVisibilityValue,
-    };
+    const newVisibilityValue = state === "visible";
+    const newBoardgameValue = { ...boardgame, isVisible: newVisibilityValue };
 
     if (!boardgame.id) {
       addAlert("ID inválido");
@@ -46,123 +42,120 @@ export default function Card({
 
     try {
       await BoardgameRepository.update(boardgame.id, newBoardgameValue);
-      const updatedBoardgames = boardgames.map((propBoardgame) =>
-        propBoardgame.id === boardgame.id ? newBoardgameValue : propBoardgame
+      setBoardgames(
+        boardgames.map((b) => (b.id === boardgame.id ? newBoardgameValue : b)),
       );
-      setBoardgames(updatedBoardgames);
       addAlert(
-        `${boardgame.name} está ${newVisibilityValue ? "visível" : "invisível"}`
+        `${boardgame.name} está ${newVisibilityValue ? "visível" : "invisível"}`,
       );
     } catch (error) {
-      addAlert(`Erro ao mudar a visibilidade do jogo: ${error}`);
+      addAlert(`Erro ao mudar a visibilidade: ${error}`);
     }
   };
 
   const toggleFeatured = async (
-    event: React.MouseEvent<SVGElement, MouseEvent>
+    event: React.MouseEvent<SVGElement, MouseEvent>,
   ) => {
     event.stopPropagation();
-
     if (!boardgame.id) {
       addAlert("ID inválido");
       return;
     }
 
-    const updatedBoardgame = {
-      ...boardgame,
-      featured: !boardgame.featured,
-    };
+    const updatedBoardgame = { ...boardgame, featured: !boardgame.featured };
 
     try {
       await BoardgameRepository.update(boardgame.id, updatedBoardgame);
-      const updatedBoardgames = boardgames.map((propBoardgame) =>
-        propBoardgame.id === boardgame.id ? updatedBoardgame : propBoardgame
+      setBoardgames(
+        boardgames.map((b) => (b.id === boardgame.id ? updatedBoardgame : b)),
       );
-      setBoardgames(updatedBoardgames);
       addAlert(
-        `${boardgame.name} ${
-          updatedBoardgame.featured
-            ? "agora está em destaque"
-            : "não está mais em destaque"
-        }`
+        `${boardgame.name} ${updatedBoardgame.featured ? "agora está em destaque" : "não está mais em destaque"}`,
       );
     } catch (error) {
-      addAlert(`Erro ao atualizar destaque do item: ${error}`);
+      addAlert(`Erro ao atualizar destaque: ${error}`);
     }
   };
 
   return (
     <div
       {...props}
-      className={`${!boardgame.isVisible && "opacity-50"} ${
-        isChildInFocus
-          ? "outline-transparent hover:outline-transparent"
-          : "hover:outline-primary-gold"
-      } group relative flex flex-col w-[200px] h-fit max-h-[250px] outline hover:outline-primary-gold outline-transparent transition-all duration-200 ease-in overflow-visible scrollbar-none gap-2 items-center bg-primary-black/80 rounded-lg text-primary-gold shadow-card-gold cursor-pointer`}
+      className={`${!boardgame.isVisible && "opacity-40"} ${
+        isChildInFocus ? "" : "hover:border-primary-gold/55"
+      } group relative flex flex-col w-[190px] rounded-xl border shadow-card  border-primary-gold/20 bg-secondary-black/50 cursor-pointer transition-all duration-200 overflow-hidden`}
     >
-      {boardgame.image && (
-        <div
-          className="flex items-center w-full h-[120px] bg-cover bg-no-repeat bg-center rounded-t-lg"
-          style={{ backgroundImage: `url(${boardgame.image})` }}
-        ></div>
-      )}
+      {/* Image */}
+      <div
+        className="w-full h-[120px] bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url(${boardgame.image || "images/patternBoardgameImage.png"})`,
+        }}
+      >
+        {/* For sale badge */}
+        {boardgame.isForSale && (
+          <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 bg-primary-gold text-primary-black text-[10px] font-bold rounded-md">
+            <LuTag size={10} /> Venda
+          </div>
+        )}
+      </div>
 
-      {!boardgame.image && (
-        <img
-          className="h-[120px]"
-          src={"images/patternBoardgameImage.png"}
-          alt="Pattern Image"
-        />
-      )}
-
-      <div className="flex flex-col items-center gap-2 py-2 px-3">
+      {/* Info */}
+      <div className="flex flex-col gap-1.5 px-3 py-2.5">
         <span
-          className="font-semibold text-center text-md"
+          className="font-semibold text-sm text-primary-gold leading-tight line-clamp-2"
           dangerouslySetInnerHTML={{
             __html: highlightMatch(boardgame.name, searchTerm),
           }}
         />
-        <div className="flex gap-4">
-          <span className="flex text-sm items-center gap-2">
-            <FiUsers />
-            {boardgame.minPlayers} - {boardgame.maxPlayers}
+        <div className="flex gap-3 text-primary-gold/55">
+          <span className="flex items-center gap-1 text-xs">
+            <FiUsers size={11} />
+            {boardgame.minPlayers}–{boardgame.maxPlayers}
           </span>
-          <span className="flex text-sm items-center gap-2">
-            <FiClock />
-            {boardgame.playTime} min
+          <span className="flex items-center gap-1 text-xs">
+            <FiClock size={11} />
+            {boardgame.playTime}min
           </span>
         </div>
       </div>
+
+      {/* Action buttons */}
       <div
         onMouseOver={() => setIsChildInFocus(true)}
         onMouseLeave={() => setIsChildInFocus(false)}
         onClick={(e) => e.stopPropagation()}
         className="flex flex-col gap-1 absolute top-2 right-2"
       >
-        <div className="p-2 rounded-lg bg-primary-black/80 backdrop-blur-[2px] hover:outline-primary-gold outline outline-transparent transition-all duration-300 ease-in">
+        <div className="p-1.5 rounded-lg bg-primary-black/75 text-primary-gold backdrop-blur-sm border border-primary-gold/20 hover:border-primary-gold/50 transition-all">
           {boardgame.isVisible ? (
-            <Tooltip direction="left" content="Deixar jogo invisivel">
-              <LuEye onClick={(e) => toggleVisibility(e, "invisible")} />
+            <Tooltip direction="left" content="Deixar invisível">
+              <LuEye
+                size={14}
+                onClick={(e) => toggleVisibility(e, "invisible")}
+              />
             </Tooltip>
           ) : (
-            <Tooltip direction="left" content="Deixar jogo visivel">
-              <LuEyeOff onClick={(e) => toggleVisibility(e, "visible")} />
+            <Tooltip direction="left" content="Deixar visível">
+              <LuEyeOff
+                size={14}
+                onClick={(e) => toggleVisibility(e, "visible")}
+              />
             </Tooltip>
           )}
         </div>
-        <div className="p-2 rounded-lg bg-primary-black/80 backdrop-blur-[2px] hover:outline-primary-gold outline outline-transparent transition-all duration-300 ease-in">
+        <div
+          className={`p-1.5 rounded-lg bg-primary-black/75 backdrop-blur-sm border transition-all ${boardgame.featured ? "border-primary-gold/60 text-primary-gold" : "border-primary-gold/20 text-primary-gold/40 hover:border-primary-gold/50"}`}
+        >
           <Tooltip
             direction="left"
-            content={
-              boardgame.featured ? "Remover destaque" : "Colocar em destaque"
-            }
+            content={boardgame.featured ? "Remover destaque" : "Destacar"}
           >
-            <div
-              className={`${!boardgame.featured ? "diagonal-strike" : ""} ${
-                !boardgame.featured && "opacity-50"
-              }`}
-            >
-              <LuSparkles onClick={toggleFeatured} className="z-10 relative" />
+            <div className={`${!boardgame.featured && "diagonal-strike"}`}>
+              <LuSparkles
+                size={14}
+                onClick={toggleFeatured}
+                className="z-10 relative"
+              />
             </div>
           </Tooltip>
         </div>

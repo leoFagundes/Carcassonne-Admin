@@ -45,13 +45,13 @@ export default function MusicRecommendationPage() {
         const GeneralConfigsFecthed = await GeneralConfigsRepository.get();
         if (GeneralConfigsFecthed) {
           setIsMusicRecommendationEnable(
-            GeneralConfigsFecthed.isMusicRecommendationEnable
+            GeneralConfigsFecthed.isMusicRecommendationEnable,
           );
         }
       } catch (error) {
         console.error(
           "Não foi possível carregar as configurações gerais.",
-          error
+          error,
         );
       }
     }
@@ -69,7 +69,7 @@ export default function MusicRecommendationPage() {
         });
         setIsMusicRecommendationEnable(!e.target.checked);
         addAlert(
-          "Visibilidade do ícone na página do cardápio e na página do acervo de jogos foi alterada."
+          "Visibilidade do ícone na página do cardápio e na página do acervo de jogos foi alterada.",
         );
       } else {
         addAlert("Recarregue a página e tente novamente.");
@@ -151,9 +151,10 @@ export default function MusicRecommendationPage() {
   return (
     <section className="flex flex-col gap-8 w-full h-full overflow-y-scroll overflow-hidden outline-none px-3 relative">
       {fullLoading && <LoaderFullscreen />}
-      <div className="fixed top-0 right-0 h-screen w-screen max-w-[500px] max-h-full overflow-hidden ">
+      {/* Animated SVG with glow */}
+      <div className="fixed top-0 right-0 h-screen w-screen max-w-[500px] overflow-hidden pointer-events-none scale-110">
         <svg
-          className="w-full h-full sm:translate-0 translate-x-35"
+          className="w-full h-full sm:translate-0 translate-x-35 svg-music-glow"
           viewBox="0 0 600 1027"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
@@ -224,7 +225,6 @@ export default function MusicRecommendationPage() {
               fill="#E6C56B"
               stroke="#D4AF37"
             />
-
             <g className="note" id="note5">
               <path
                 id="Vector 17"
@@ -251,7 +251,6 @@ export default function MusicRecommendationPage() {
                 stroke="#D4AF37"
               />
             </g>
-
             <g className="note" id="note6">
               <path
                 id="Vector 17_2"
@@ -278,7 +277,6 @@ export default function MusicRecommendationPage() {
                 stroke="#D4AF37"
               />
             </g>
-
             <g className="note" id="note6_2">
               <path
                 id="Vector 17_3"
@@ -305,7 +303,6 @@ export default function MusicRecommendationPage() {
                 stroke="#D4AF37"
               />
             </g>
-
             <g className="note" id="note7">
               <path
                 id="Vector 17_4"
@@ -332,7 +329,6 @@ export default function MusicRecommendationPage() {
                 stroke="#D4AF37"
               />
             </g>
-
             <g className="note" id="note8">
               <path
                 id="Vector 17_5"
@@ -524,6 +520,38 @@ export default function MusicRecommendationPage() {
             );
           })}
       </section>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap');
+        .font-cinzel { font-family: 'Cinzel', serif; }
+
+        @keyframes shimmer-gold {
+          0%   { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        .text-shimmer-gold {
+          background: linear-gradient(135deg, #e6c56b 0%, #f5e09a 40%, #d4af37 70%, #e6c56b 100%);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: shimmer-gold 4s linear infinite;
+        }
+        @keyframes glow-pulse {
+          0%, 100% { filter: drop-shadow(0 0 4px rgba(230, 197, 107, 0.2)); }
+          50%       { filter: drop-shadow(0 0 12px rgba(230, 197, 107, 0.5)); }
+        }
+        .svg-music-glow {
+          animation: glow-pulse 4s ease-in-out infinite;
+        }
+        @keyframes card-fade-in {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .card-fade-in {
+          animation: card-fade-in 0.6s ease both;
+        }
+      `}</style>
     </section>
   );
 }

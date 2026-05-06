@@ -30,7 +30,6 @@ export default function CollectionPage() {
     useState<BoardgameType>(patternBoardgame);
 
   const { addAlert } = useAlert();
-
   const router = useRouter();
 
   useEffect(() => {
@@ -45,7 +44,6 @@ export default function CollectionPage() {
         setLoading(false);
       }
     };
-
     fetchBoardgames();
   }, [currentItem]);
 
@@ -53,14 +51,12 @@ export default function CollectionPage() {
     const matchesSearch =
       game.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       game.description.toLowerCase().includes(searchTerm.toLowerCase());
-
     const matchesType = filterType === "" || game.types.includes(filterType);
     const matchesDifficulty =
       filterDifficulty === "" || game.difficulty.includes(filterDifficulty);
     const matchesFocus = showOnlyFocus ? game.featured : true;
     const matchesInvisible = showOnlyInvisible ? !game.isVisible : true;
     const matchesIsForSale = showOnlyIsForSale ? game.isForSale : true;
-
     return (
       matchesSearch &&
       matchesType &&
@@ -72,88 +68,105 @@ export default function CollectionPage() {
   });
 
   const boardgameTypes = Array.from(
-    new Set(boardgames.flatMap((b) => b.types))
+    new Set(boardgames.flatMap((b) => b.types)),
   ).sort();
 
   return (
-    <section className="flex flex-col gap-8 w-full h-full px-3 overflow-y-scroll">
+    <section className="flex flex-col gap-6 w-full h-full overflow-y-auto py-2 px-6">
       {loading && <LoaderFullscreen />}
-      <section className="flex w-full justify-center items-center gap-2 text-primary-gold ">
-        <LuDices size={"48px"} className="min-w-[48px]" />
-        <h2 className="sm:text-5xl text-3xl text-primary-gold text-center">
-          Coleção de jogos
-        </h2>{" "}
-        <Tooltip direction="bottom" content="Ir para visão do cliente">
-          <div className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
-            <LuLink
-              onClick={() => router.push("/clientCollection")}
-              size={"16px"}
-              className="min-w-[16px]"
-            />
-          </div>
-        </Tooltip>
-        <Tooltip
-          direction="bottom"
-          content="Ir para visão do cliente (Jogos à venda)"
-        >
-          <div className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
-            <LuDollarSign
-              onClick={() => router.push("/clientCollection/forSale")}
-              size={"16px"}
-              className="min-w-[16px]"
-            />
-          </div>
-        </Tooltip>
-      </section>
 
-      {/* Input de busca */}
-      <section className="flex items-center flex-wrap justify-center gap-4 ">
-        <div className="flex justify-center gap-4 flex-wrap max-w-[300px]">
+      {/* Header */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-center gap-4 w-full">
+          <div className="flex items-center gap-2">
+            <LuDices size={32} className="text-primary-gold/70 shrink-0" />
+            <h1 className="text-lg sm:text-3xl font-semibold text-primary-gold">
+              Coleção de Jogos
+            </h1>
+            <span className="text-xs text-primary-gold/35 mt-0.5">
+              ({filteredBoardgames.length})
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Tooltip direction="bottom" content="Visão do cliente">
+              <button
+                onClick={() => router.push("/clientCollection")}
+                className="p-2 cursor-pointer rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all"
+              >
+                <LuLink size={14} />
+              </button>
+            </Tooltip>
+            <Tooltip direction="bottom" content="Jogos à venda (cliente)">
+              <button
+                onClick={() => router.push("/clientCollection/forSale")}
+                className="p-2 cursor-pointer rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all"
+              >
+                <LuDollarSign size={14} />
+              </button>
+            </Tooltip>
+          </div>
+        </div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent" />
+      </div>
+
+      {/* Filters */}
+      <section className="flex flex-row flex-wrap justify-center items-center gap-4 w-fit mx-auto bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-6">
+        <div className="flex flex-col gap-4 w-full sm:w-auto">
           <Input
             placeholder="Buscar por nome ou descrição..."
             value={searchTerm}
             setValue={(e) => setSearchTerm(e.target.value)}
             variant
+            width="!w-full sm:!w-[240px]"
           />
           <Dropdown
             value={filterType}
             setValue={(e) => setFilterType(e.target.value)}
             options={boardgameTypes}
-            firstLabel="Todos os tipos"
+            firstLabel="Tipo"
             variant
+            width="!w-full sm:!w-[240px]"
           />
           <Dropdown
             value={filterDifficulty}
             setValue={(e) => setFilterDifficulty(e.target.value)}
             options={difficultiesOptions}
-            firstLabel="Todos as Dificuldades"
+            firstLabel="Dificuldade"
             variant
+            width="!w-full sm:!w-[240px]"
           />
         </div>
-        <div className="flex justify-center gap-4 flex-wrap max-w-[300px]">
+
+        <div className="hidden lg:block w-px h-full bg-primary-gold/20 shrink-0 mx-1" />
+
+        <div className="flex flex-col gap-4 shrink-0 w-full sm:w-auto">
           <Checkbox
             checked={showOnlyFocus}
             setChecked={(e) => setShowOnlyFocus(e.target.checked)}
-            label="Jogos em destaque"
+            label="Destaque"
+            width="!w-full sm:!w-fit"
             variant
           />
           <Checkbox
             checked={showOnlyInvisible}
             setChecked={(e) => setShowOnlyInvisible(e.target.checked)}
-            label="Mostrar apenas invisíveis"
+            label="Invisíveis"
+            width="!w-full sm:!w-fit"
             variant
           />
           <Checkbox
             checked={showOnlyIsForSale}
             setChecked={(e) => setShowOnlyIsForSale(e.target.checked)}
-            label="Mostrar apenas jogos à venda"
+            label="À venda"
+            width="!w-full sm:!w-fit"
             variant
           />
         </div>
       </section>
-      {/* Lista de jogos */}
-      <section className="flex justify-center flex-wrap gap-x-6 gap-y-8 px-1 pt-2 pb-4">
-        {filteredBoardgames.length > 0 && !isModalOpen ? (
+
+      {/* Cards */}
+      <section className="flex justify-center flex-wrap gap-4">
+        {filteredBoardgames.length > 0 ? (
           filteredBoardgames.map((boardgame, index) => (
             <Card
               key={index}
@@ -168,11 +181,13 @@ export default function CollectionPage() {
             />
           ))
         ) : (
-          <p className="text-primary-gold text-xl text-center">
-            Nenhum jogo encontrado.
-          </p>
+          <div className="flex flex-col items-center gap-2 py-16 text-primary-gold/40">
+            <LuDices size={32} />
+            <p className="text-sm">Nenhum jogo encontrado.</p>
+          </div>
         )}
       </section>
+
       {currentItem && (
         <Modal
           isOpen={isModalOpen}

@@ -17,34 +17,36 @@ export default function ComboCard({
   return (
     <div
       {...props}
-      className={`relative flex flex-col w-[240px] h-fit max-h-[280px] outline hover:outline-primary-gold outline-transparent shadow-card-gold transition-all duration-200 ease-in scrollbar-none gap-2 items-center bg-primary-black/80 p-4 rounded-lg text-primary-gold cursor-pointer overflow-visible`}
+      className={`hover:border-primary-gold/55 group relative flex flex-col w-[190px] rounded-xl border shadow-card border-primary-gold/20 bg-secondary-black/50 cursor-pointer transition-all duration-200 overflow-hidden`}
     >
-      <div className="flex items-center">
-        <img
-          className="w-[120px] rounded"
-          src={"images/mascote-combo-2.png"}
-          alt="item"
-        />
-      </div>
-      <span
-        className="font-semibold text-center text-md w-full"
-        dangerouslySetInnerHTML={{
-          __html: highlightMatch(item.name, searchTerm),
+      {/* Image */}
+      <div
+        className="w-full h-[120px] bg-contain bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url(${"images/mascote-combo-2.png"})`,
         }}
       />
 
-      <div className="overflow-y-scroll flex-1 w-full text-center">
+      {/* Info */}
+      <div className="flex flex-col gap-1.5 px-3 py-2.5">
         <span
-          className="text-xs text-center w-full"
+          className="font-semibold text-sm text-primary-gold leading-tight line-clamp-2"
+          dangerouslySetInnerHTML={{
+            __html: highlightMatch(item.name, searchTerm),
+          }}
+        />
+        <span
+          className="text-xs text-primary-gold/55 line-clamp-2"
           dangerouslySetInnerHTML={{
             __html: highlightMatch(
-              truncateText(item.description, 80),
-              searchTerm
+              truncateText(item.description, 60),
+              searchTerm,
             ),
           }}
         />
       </div>
-      <div className="flex flex-col gap-2 absolute top-4 right-3">
+
+      <div className="flex flex-col gap-2 absolute top-4 right-3 text-primary-gold">
         <Tooltip direction="left" content="Este item é um Combo">
           <LuBoxes />
         </Tooltip>

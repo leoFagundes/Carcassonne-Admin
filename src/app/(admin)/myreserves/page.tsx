@@ -61,7 +61,7 @@ const TODAY = today(getLocalTimeZone());
 export default function Rerserve() {
   const [date, setDate] = useState(TODAY);
   const [fullCalendarDate, setFullCalendarDate] = useState(
-    today(getLocalTimeZone())
+    today(getLocalTimeZone()),
   );
   const [reserves, setReserves] = useState<ReserveType[]>([]);
   const [freelancers, setFrelancers] = useState<FreelancerControllType[]>([]);
@@ -75,7 +75,7 @@ export default function Rerserve() {
   const [freelancerFormsModal, setFreelancerFormsModal] = useState(false);
   const [calendarFormsModal, setCalendarFormsModal] = useState(false);
   const [currentFormsType, setCurrentFormsType] = useState<"edit" | "add" | "">(
-    ""
+    "",
   );
   const [currentReserve, setCurrentReserve] = useState<ReserveType>();
   const [printModal, setPrintModal] = useState(false);
@@ -115,12 +115,12 @@ export default function Rerserve() {
 
   const events = transformToFullCalendarEvents(
     allReserves as (ReserveType & { id: string })[],
-    allFreelancers as (FreelancerControllType & { id: string })[]
+    allFreelancers as (FreelancerControllType & { id: string })[],
   );
 
   function transformToFullCalendarEvents(
     reserves: (ReserveType & { id: string })[],
-    freelancers: (FreelancerControllType & { id: string })[]
+    freelancers: (FreelancerControllType & { id: string })[],
   ): EventFullCalendar[] {
     const confirmedReserves = reserves.filter((r) => r.status === "confirmed");
     const canceledReserves = reserves.filter((r) => r.status === "canceled");
@@ -176,7 +176,7 @@ export default function Rerserve() {
           title: `${totalReserves} ${isLargeScreen ? "Reservas Ati." : "ra"}`,
           start: `${date}T10:00:00`,
         });
-      }
+      },
     );
 
     Object.entries(groupedByDateCanceled).forEach(
@@ -186,7 +186,7 @@ export default function Rerserve() {
           start: `${date}T12:00:00`,
           extendedProps: { status: "canceled" },
         });
-      }
+      },
     );
 
     Object.entries(groupedByDateFreelancers).forEach(([date, totalFreelas]) => {
@@ -225,7 +225,7 @@ export default function Rerserve() {
         const fetchedReserves = await ReserveRepository.getByDate(dataBusca);
         console.log(
           `Reservas para ${dataBusca.toLocaleDateString()}:`,
-          fetchedReserves
+          fetchedReserves,
         );
         setReserves(fetchedReserves);
       } catch (error) {
@@ -244,7 +244,7 @@ export default function Rerserve() {
           await FreelancerRepository.getByDate(dataBusca);
         console.log(
           `Freelancers para ${dataBusca.toLocaleDateString()}:`,
-          fetchedFreelancers
+          fetchedFreelancers,
         );
         setFrelancers(fetchedFreelancers);
       } catch (error) {
@@ -288,7 +288,7 @@ export default function Rerserve() {
   async function changeReserveStatus(
     id: string | undefined,
     newStatus: "confirmed" | "canceled",
-    reserve: ReserveType
+    reserve: ReserveType,
   ) {
     try {
       if (id) {
@@ -298,7 +298,7 @@ export default function Rerserve() {
         const reservesUpdated = reserves.map((reserve) =>
           reserve.id === reserveWithNewStatus.id
             ? reserveWithNewStatus
-            : reserve
+            : reserve,
         );
         setReserves(reservesUpdated);
 
@@ -314,7 +314,7 @@ export default function Rerserve() {
 
   async function deleteTodayReserves() {
     const confirmed = window.confirm(
-      "Tem certeza que deseja deletar todas as reservas de hoje?"
+      "Tem certeza que deseja deletar todas as reservas de hoje?",
     );
     if (!confirmed) return;
 
@@ -336,7 +336,7 @@ export default function Rerserve() {
 
   async function deleteThisMonthReserves(year: number, month: number) {
     const confirmed = window.confirm(
-      "Tem certeza que deseja deletar todas as reservas deste mês?"
+      "Tem certeza que deseja deletar todas as reservas deste mês?",
     );
     if (!confirmed) return;
 
@@ -356,7 +356,7 @@ export default function Rerserve() {
 
   async function deleteReserve(id: string) {
     const confirmed = window.confirm(
-      "Tem certeza que deseja deletar essa reserva?"
+      "Tem certeza que deseja deletar essa reserva?",
     );
     if (!confirmed) return;
 
@@ -388,23 +388,23 @@ export default function Rerserve() {
 
       return groups;
     },
-    {} as Record<string, ReserveType[]>
+    {} as Record<string, ReserveType[]>,
   );
 
   const confirmedPeople = reserves
     .filter((reserve) => reserve.status !== "canceled")
     .reduce((total, reserve) => total + reserve.adults + reserve.childs, 0);
   const confirmedReserves = reserves.filter(
-    (reserve) => reserve.status === "confirmed"
+    (reserve) => reserve.status === "confirmed",
   ).length;
   const canceledReserves = reserves.filter(
-    (reserve) => reserve.status === "canceled"
+    (reserve) => reserve.status === "canceled",
   ).length;
   const activeFreelancers = freelancers.length;
 
   const handleTableChange = async (id: string, newTable: string) => {
     setReserves((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, table: newTable } : r))
+      prev.map((r) => (r.id === id ? { ...r, table: newTable } : r)),
     );
 
     try {
@@ -425,13 +425,13 @@ export default function Rerserve() {
       await FreelancerRepository.update(freela.id, updatedFreela);
 
       setFrelancers((prev) =>
-        prev.map((f) => (f.id === freela.id ? updatedFreela : f))
+        prev.map((f) => (f.id === freela.id ? updatedFreela : f)),
       );
 
       addAlert(
         `Freelancer ${freela.name} agora está ${
           updatedFreela.isStandby ? "sobreaviso" : "confirmado"
-        }.`
+        }.`,
       );
     } catch (error) {
       console.error("Erro ao atualizar sobreaviso:", error);
@@ -450,13 +450,13 @@ export default function Rerserve() {
       await FreelancerRepository.update(freela.id, updatedFreela);
 
       setFrelancers((prev) =>
-        prev.map((f) => (f.id === freela.id ? updatedFreela : f))
+        prev.map((f) => (f.id === freela.id ? updatedFreela : f)),
       );
 
       addAlert(
         `Pagamento de ${freela.name} marcado como ${
           updatedFreela.isPayed ? "Pago ✅" : "Não Pago ❌"
-        }.`
+        }.`,
       );
     } catch (error) {
       console.error("Erro ao atualizar pagamento:", error);
@@ -472,7 +472,7 @@ export default function Rerserve() {
 
     try {
       const confirmDelete = window.confirm(
-        `Tem certeza que deseja deletar o freelancer ${freela.name}?`
+        `Tem certeza que deseja deletar o freelancer ${freela.name}?`,
       );
 
       if (!confirmDelete) return;
@@ -567,7 +567,7 @@ export default function Rerserve() {
             aria-label="Date (Invalid on weekends)"
             value={date}
             onChange={setDate}
-            className=" bg-secondary-black/30 shadow-card-light"
+            className=" bg-secondary-black/30 backdrop-blur-[2px] shadow-card-light"
             classNames={{
               cell: "text-primary-gold",
               cellButton:
@@ -580,7 +580,7 @@ export default function Rerserve() {
               errorMessage: "text-primary-gold text-sm italic",
             }}
           />
-          <div className="flex flex-col text-primary-gold gap-1 shadow-card-light p-2 bg-secondary-black/30">
+          <div className="flex flex-col text-primary-gold gap-1 shadow-card-light p-2 bg-secondary-black/30 backdrop-blur-[2px]">
             <span className="flex items-center gap-1">
               <LuUserRoundCheck className="min-w-[16px]" />
               {confirmedPeople}{" "}
@@ -607,7 +607,7 @@ export default function Rerserve() {
             </span>
           </div>
           {freelancers.length > 0 && (
-            <div className="flex flex-col gap-2 text-primary-gold bg-secondary-black/30 p-2 rounded shadow-card-light">
+            <div className="flex flex-col gap-2 text-primary-gold bg-secondary-black/30 backdrop-blur-[2px] p-2 rounded shadow-card-light">
               <div className="flex flex-col items-center justify-center p-1">
                 <span className="text-center w-full text-xl font-semibold">
                   Freelas
@@ -666,7 +666,7 @@ export default function Rerserve() {
           {reserves.length > 0 && (
             <div
               onClick={() => deleteTodayReserves()}
-              className="flex items-center gap-3 text-primary-gold bg-secondary-black/30 p-2 rounded shadow-card-light hover:text-invalid-color cursor-pointer transition-all duration-300"
+              className="flex items-center gap-3 text-primary-gold bg-secondary-black/30 backdrop-blur-[2px] p-2 rounded shadow-card-light hover:text-invalid-color cursor-pointer transition-all duration-300"
             >
               <div className=" p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
                 <LuTrash
@@ -682,7 +682,7 @@ export default function Rerserve() {
           )}
         </section>
         {reserves.length === 0 ? (
-          <section className="flex flex-col items-center justify-center text-primary-gold p-3 w-full mr-5 rounded shadow-card-light bg-secondary-black/30">
+          <section className="flex flex-col items-center justify-center text-primary-gold p-3 w-full mr-5 rounded shadow-card-light bg-secondary-black/30 backdrop-blur-[2px]">
             <img
               className="w-[200px]"
               src="images/mascote-triste.png"
@@ -723,7 +723,7 @@ export default function Rerserve() {
                     <div className="sm:ml-4 flex flex-col gap-2 w-full">
                       {reserves.map((reserve) => (
                         <div
-                          className="flex justify-between bg-secondary-black/30 shadow-card-light p-2 rounded w-full min-w-[250px] gap-2 flex-wrap"
+                          className="flex justify-between bg-secondary-black/30 backdrop-blur-[2px]  shadow-card-light p-2 rounded w-full min-w-[250px] gap-2 flex-wrap"
                           key={reserve.id}
                         >
                           <div className="flex flex-col gap-1">
@@ -739,7 +739,7 @@ export default function Rerserve() {
                                           changeReserveStatus(
                                             reserve.id,
                                             "confirmed",
-                                            reserve
+                                            reserve,
                                           )
                                         }
                                         className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
@@ -752,7 +752,7 @@ export default function Rerserve() {
                                           changeReserveStatus(
                                             reserve.id,
                                             "canceled",
-                                            reserve
+                                            reserve,
                                           )
                                         }
                                         className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
@@ -766,7 +766,7 @@ export default function Rerserve() {
                                             deleteReserve(reserve.id);
                                           } else {
                                             addAlert(
-                                              "Recarregue a página e tente novamente"
+                                              "Recarregue a página e tente novamente",
                                             );
                                           }
                                         }}
@@ -840,7 +840,7 @@ Recebemos sua solicitação de reserva no Carcassonne Pub e estamos muito felize
 Caso precise alterar ou cancelar sua reserva, por favor nos avise com antecedência respondendo a este e-mail.
 
 Nos vemos em breve! 🍺
-Equipe Carcassonne Pub`
+Equipe Carcassonne Pub`,
                                     )
                                   }
                                   className="cursor-pointer hover:underline"
@@ -883,7 +883,7 @@ Equipe Carcassonne Pub`
                               setValue={(e) =>
                                 handleTableChange(
                                   reserve.id ? reserve.id : "",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               width="!w-[40px] !min-w-[80px] !py-1 !px-0"
@@ -914,7 +914,7 @@ Equipe Carcassonne Pub`
                 const clickedDate = new CalendarDate(
                   info.date.getFullYear(),
                   info.date.getMonth() + 1, // meses no CalendarDate são 1-based
-                  info.date.getDate()
+                  info.date.getDate(),
                 );
 
                 setDate(clickedDate);
@@ -957,7 +957,7 @@ Equipe Carcassonne Pub`
             onClick={() =>
               deleteThisMonthReserves(
                 fullCalendarDate.year,
-                fullCalendarDate.month
+                fullCalendarDate.month,
               )
             }
             className="flex items-center gap-3 text-primary-gold p-2 rounded hover:text-invalid-color cursor-pointer transition-all duration-300"
