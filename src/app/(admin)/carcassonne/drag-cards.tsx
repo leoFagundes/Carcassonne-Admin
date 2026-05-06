@@ -69,14 +69,15 @@ export const DragCards = () => {
         const { url } = await uploadImageToFirebase(imageFile, "carca-images");
         imageUrl = url;
       }
-      const created = await CarcaImageRepository.create({
+      await CarcaImageRepository.create({
         ...newCarcaImage,
         src: imageUrl,
         top: "0",
         left: "0",
         rotate: "0",
       });
-      if (created) setCarcaImages((prev) => [...prev, created as CarcaImageType]);
+      const updated = await CarcaImageRepository.getAll();
+      setCarcaImages(updated);
       addAlert("Foto adicionada com sucesso!");
       setIsModalOpen(false);
       setNewCarcaImage(patternCarcaImage);
