@@ -293,7 +293,11 @@ export default function Rerserve() {
   ) {
     try {
       if (id) {
-        const reserveWithNewStatus = { ...reserve, status: newStatus };
+        const reserveWithNewStatus = {
+          ...reserve,
+          status: newStatus,
+          ...(newStatus === "canceled" && { canceledAt: new Date().toISOString() }),
+        };
         await ReserveRepository.update(id, reserveWithNewStatus);
 
         const reservesUpdated = reserves.map((reserve) =>
@@ -880,6 +884,26 @@ Equipe Carcassonne Pub`,
                                     hour: "2-digit",
                                     minute: "2-digit",
                                   })}
+                              </div>
+                            )}
+                            {reserve.status === "canceled" && reserve.canceledAt && (
+                              <div className="mt-1 flex flex-col gap-0.5 border-t border-invalid-color/15 pt-1">
+                                <span className="text-invalid-color/80">
+                                  <span className="font-semibold">Cancelada em: </span>
+                                  {new Date(reserve.canceledAt).toLocaleString("pt-BR", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                                {reserve.canceledReason && (
+                                  <span className="text-invalid-color/70">
+                                    <span className="font-semibold">Motivo: </span>
+                                    {reserve.canceledReason}
+                                  </span>
+                                )}
                               </div>
                             )}
                           </div>

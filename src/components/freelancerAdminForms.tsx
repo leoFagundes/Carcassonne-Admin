@@ -76,12 +76,15 @@ export default function FreelancerAdminForms({
     <div className="flex justify-center w-full h-full text-primary-gold">
       <form
         onSubmit={(e) => handleCreateFreelancer(e)}
-        className="flex flex-col items-center w-fit  rounded px-3 py-8 sm:p-10 gap-10 overflow-y-scroll max-h-[100%] max-w-[100%] sm:max-h-[90%] sm:max-w-[90%]"
+        className="flex flex-col items-center w-fit rounded px-3 py-6 sm:p-8 gap-8 overflow-y-auto max-h-[100%] max-w-[100%] sm:max-h-[90%] sm:max-w-[90%]"
       >
-        <span className="flex items-center gap-2 font-semibold sm:text-2xl text-xl">
-          <LuUserPlus size={"20px"} className="min-w-[16px]" />
-          Criar um novo freelancer
-        </span>
+        <div className="w-full text-center">
+          <h1 className="text-xl sm:text-2xl text-gradient-gold flex items-center justify-center gap-2">
+            <LuUserPlus size={20} className="shrink-0" />
+            Criar um novo freelancer
+          </h1>
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
+        </div>
         <div className="flex gap-6 flex-wrap justify-center">
           <section className="flex flex-col items-center gap-2">
             <Calendar

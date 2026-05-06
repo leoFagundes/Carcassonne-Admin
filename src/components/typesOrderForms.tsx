@@ -159,11 +159,12 @@ export default function TypesOrderForms({
   }
 
   return (
-    <div className="flex flex-col items-center overflow-y-scroll px-2 min-h-[250px]">
+    <div className="flex flex-col items-center overflow-y-auto px-2 min-h-[250px] w-full">
       {fetchLoading && <LoaderFullscreen />}
-      <h1 className="text-4xl text-gradient-gold text-center">
-        Adicionar tipo{" "}
-      </h1>
+      <div className="w-full text-center mb-4">
+        <h1 className="text-xl sm:text-2xl text-gradient-gold">Adicionar tipo</h1>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
+      </div>
 
       <div className="flex items-center flex-wrap justify-center gap-x-2 gap-y-4 my-6 text-primary-gold">
         <Input
@@ -191,17 +192,17 @@ export default function TypesOrderForms({
       </div>
       <div className="flex flex-wrap justify-center gap-2">
         {typesOrder.length > 0 && (
-          <div className="flex flex-col items-center bg-dark-black/50 my-2 mx-4 py-2 px-4 rounded shadow-card">
-            <h1 className="text-4xl text-gradient-gold text-center mt-4">
+          <div className="flex flex-col items-center border border-primary-gold/15 bg-secondary-black/40 my-2 mx-4 py-4 px-4 rounded-xl">
+            <h2 className="text-lg font-semibold text-gradient-gold mb-3">
               Ordenar Tipos e Subtipos
-            </h1>
+            </h2>
             <RecorderTypesOrderList
               items={typesOrder}
               subItemOptions={subtypes}
               setItems={setTypesOrder}
             />
 
-            <div className="flex gap-2 m-2">
+            <div className="flex gap-2 pt-3 border-t border-primary-gold/10 w-full justify-center mt-2">
               <Button onClick={handleUpdateOrder}>
                 {loading ? <Loader /> : "Salvar"}
               </Button>
@@ -210,10 +211,10 @@ export default function TypesOrderForms({
         )}
 
         {infos.length > 0 && (
-          <div className="flex flex-col items-center bg-dark-black/50 my-2 mx-4 py-2 px-4 rounded shadow-card">
-            <h1 className="text-4xl text-gradient-gold text-center mt-4">
+          <div className="flex flex-col items-center border border-primary-gold/15 bg-secondary-black/40 my-2 mx-4 py-4 px-4 rounded-xl">
+            <h2 className="text-lg font-semibold text-gradient-gold mb-3">
               Ordenar Avisos
-            </h1>
+            </h2>
 
             <RecorderInfoList items={infos} setItems={setInfos} />
 

@@ -202,16 +202,19 @@ export default function ReserveAdminForms({
         onSubmit={(e) =>
           type === "add" ? handleCreateReserve(e) : handleEditReserve(e)
         }
-        className="flex flex-col items-center w-fit  rounded px-3 py-8 sm:p-10 gap-10 overflow-y-scroll max-h-[100%] max-w-[100%] sm:max-h-[90%] sm:max-w-[90%]"
+        className="flex flex-col items-center w-fit rounded px-3 py-6 sm:p-8 gap-8 overflow-y-auto max-h-[100%] max-w-[100%] sm:max-h-[90%] sm:max-w-[90%]"
       >
-        <span className="flex items-center gap-2 font-semibold sm:text-2xl text-xl">
-          {type === "add" ? (
-            <LuCalendarPlus size={"20px"} className="min-w-[16px]" />
-          ) : (
-            <LuCalendarCog size={"20px"} className="min-w-[16px]" />
-          )}
-          {type === "add" ? "Criar uma nova Reserva" : "Editar Reserva"}
-        </span>
+        <div className="w-full text-center">
+          <h1 className="text-xl sm:text-2xl text-gradient-gold flex items-center justify-center gap-2">
+            {type === "add" ? (
+              <LuCalendarPlus size={20} className="shrink-0" />
+            ) : (
+              <LuCalendarCog size={20} className="shrink-0" />
+            )}
+            {type === "add" ? "Criar uma nova Reserva" : "Editar Reserva"}
+          </h1>
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
+        </div>
         <div className="flex gap-6 flex-wrap justify-center">
           <section className="flex flex-col items-center gap-2">
             <Calendar

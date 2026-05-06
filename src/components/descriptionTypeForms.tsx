@@ -127,13 +127,14 @@ export default function DescriptionTypeForms({
   };
 
   return (
-    <div className="flex flex-col items-center overflow-y-scroll px-2">
+    <div className="flex flex-col items-center overflow-y-auto px-2 w-full">
       {fetchLoading && <LoaderFullscreen />}
-      <h1 className="text-4xl text-gradient-gold text-center">
-        Adicionar uma nova descrição
-      </h1>
+      <div className="w-full text-center mb-4">
+        <h1 className="text-xl sm:text-2xl text-gradient-gold">Adicionar uma nova descrição</h1>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
+      </div>
 
-      <div className="flex flex-col gap-6 my-6 text-primary-gold">
+      <div className="flex flex-col gap-6 text-primary-gold">
         <Input
           label="Tipo"
           placeholder="Ex: Pizza, Entrada..."
@@ -165,21 +166,21 @@ export default function DescriptionTypeForms({
           width="!w-[250px]"
         />
       </div>
-      <div className="flex gap-2 m-2">
+      <div className="flex gap-2 pt-3 border-t border-primary-gold/10 w-full justify-center my-4">
         <Button onClick={handleCreateDescription}>
           {addLoading ? <Loader /> : "Adicionar"}
         </Button>
       </div>
       {descriptions.length > 0 && (
-        <section className="flex flex-col gap-2 mt-4">
-          <span className="text-primary-gold font-semibold text-lg">
+        <section className="flex flex-col gap-2 w-full">
+          <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
             Descrições atuais:
           </span>
           {descriptions.map((descriptionType, index) => (
             <div
               key={index}
               onClick={() => handleDeleteDescription(descriptionType)}
-              className="flex items-center gap-2 p-2 border rounded text-primary-gold cursor-pointer hover:text-invalid-color transition-all border-dashed"
+              className="flex items-center gap-2 px-3 py-2 border border-primary-gold/20 rounded-lg text-primary-gold cursor-pointer hover:text-invalid-color hover:border-invalid-color/40 transition-all"
             >
               <span>{descriptionType.type}</span>
               <FiArrowRight className="min-w-[16px]" size={"16px"} />{" "}

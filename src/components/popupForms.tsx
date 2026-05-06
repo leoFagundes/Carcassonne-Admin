@@ -150,8 +150,8 @@ export default function PopupForms({ closeForms }: DescriptionTypeFormsProps) {
           allPopups.map((popup) =>
             popup.isActive
               ? PopupRepository.update(popup.id!, { isActive: false })
-              : Promise.resolve(true)
-          )
+              : Promise.resolve(true),
+          ),
         );
 
         setPopups(allPopups.map((popup) => ({ ...popup, isActive: false })));
@@ -161,15 +161,15 @@ export default function PopupForms({ closeForms }: DescriptionTypeFormsProps) {
           allPopups.map((popup) =>
             PopupRepository.update(popup.id!, {
               isActive: popup.id === id,
-            })
-          )
+            }),
+          ),
         );
 
         setPopups(
           allPopups.map((popup) => ({
             ...popup,
             isActive: popup.id === id,
-          }))
+          })),
         );
       }
     } catch (error) {
@@ -181,14 +181,17 @@ export default function PopupForms({ closeForms }: DescriptionTypeFormsProps) {
   };
 
   return (
-    <div className="flex flex-col items-center overflow-y-scroll px-2">
+    <div className="flex flex-col items-center overflow-y-auto px-2 w-full">
       {fetchLoading && <LoaderFullscreen />}
-      <h1 className="text-4xl text-gradient-gold text-center">
-        Adicionar um novo Popup
-      </h1>
+      <div className="w-full text-center mb-4">
+        <h1 className="text-xl sm:text-2xl text-gradient-gold">
+          Adicionar um novo Popup
+        </h1>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
+      </div>
 
-      <div className="p-3 rounded shadow-card my-6 gap-5 flex flex-col bg-dark-black">
-        <div className="flex flex-col gap-6 text-primary-gold">
+      <div className="rounded-xl border border-primary-gold/15 bg-secondary-black/40 p-4 mb-4 gap-5 flex flex-col w-full">
+        <div className="flex flex-col items-center gap-6 text-primary-gold">
           <InputImage
             onChange={(file) => {
               if (file) {
@@ -229,11 +232,12 @@ export default function PopupForms({ closeForms }: DescriptionTypeFormsProps) {
         </div>
       </div>
 
-      <h1 className="text-4xl text-gradient-gold text-center">
-        Galeria de Popups
-      </h1>
+      <div className="w-full text-center mb-3">
+        <h1 className="text-lg text-gradient-gold">Galeria de Popups</h1>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/20 to-transparent mt-1" />
+      </div>
 
-      <div className="p-3 rounded shadow-card my-6 gap-5 flex flex-wrap justify-center bg-dark-black">
+      <div className="rounded-xl border border-primary-gold/15 bg-secondary-black/40 p-4 gap-5 flex flex-wrap justify-center w-full">
         {popups.map((popup, index) => {
           return (
             <div className="flex flex-col items-center" key={index}>

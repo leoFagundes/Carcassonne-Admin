@@ -120,6 +120,8 @@ export interface ReserveType {
   status: "confirmed" | "canceled";
   table?: string;
   createdAt?: Timestamp;
+  canceledAt?: string;
+  canceledReason?: string;
 }
 
 export interface TableType {

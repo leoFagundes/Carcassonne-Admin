@@ -107,10 +107,13 @@ export default function LinksForms({
 
   return (
     <>
-      <h1 className="text-4xl text-gradient-gold text-center">
-        {localItem.name ? localItem.name : "Link sem nome"}
-      </h1>
-      <div className="flex flex-wrap justify-center py-6 text-primary-gold gap-6 my-4 overflow-y-visible px-4">
+      <div className="w-full text-center">
+        <h1 className="text-xl sm:text-2xl text-gradient-gold">
+          {localItem.name ? localItem.name : "Link sem nome"}
+        </h1>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
+      </div>
+      <div className="flex flex-wrap justify-center py-4 text-primary-gold gap-6 overflow-y-auto px-2 flex-1 min-h-0 w-full">
         <div className="flex flex-col gap-6 ">
           <Input
             label="Nome"
@@ -176,7 +179,7 @@ export default function LinksForms({
           </div>
         </div>
       </div>
-      <div className="flex gap-2 m-2">
+      <div className="flex gap-2 pt-3 border-t border-primary-gold/10 w-full justify-center">
         {formType === "edit" && (
           <Tooltip content="Cuidado, essa ação é irreversível.">
             <Button onClick={handleDeleteLink} isHoverInvalid>
