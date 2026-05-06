@@ -127,80 +127,105 @@ export default function SettingsPage() {
   };
 
   return (
-    <section className="flex flex-col gap-8 w-full h-full px-3 pb-8 overflow-y-scroll outline-none">
+    <section className="flex flex-col gap-5 w-full h-full pb-20 overflow-y-auto outline-none">
       {loading && <LoaderFullscreen />}
 
-      <section className="flex w-full justify-center items-center gap-2 text-primary-gold">
-        <LuSettings size={"48px"} className="min-w-[48px]" />
-        <h2 className="text-5xl text-primary-gold text-center">
-          Configurações
-        </h2>
-      </section>
+      {/* Header */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-center gap-2 w-full">
+          <LuSettings size={32} className="text-primary-gold/70 shrink-0" />
+          <h1 className="text-3xl font-semibold text-primary-gold">
+            Configurações
+          </h1>
+        </div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent" />
+      </div>
 
       {/* Configs */}
-      <section className="flex flex-col items-center flex-wrap gap-4 text-primary-gold">
-        <div className="flex flex-wrap w-full gap-3 justify-center pb-12">
-          <div className="p-3 rounded-lg shadow-card border w-full sm:max-w-[80%] flex flex-col gap-2">
-            {" "}
-            <span className="text-lg font-semibold">Banco de dados</span>
-            <ul className="list-disc list-inside text-sm flex flex-col gap-1">
-              <li>
-                <span className="font-semibold">Usuário ativo:</span>{" "}
-                {databaseInfo.currentUserEmail || "Não identificado"}
-              </li>
-              <li>
-                <span className="font-semibold">Acervo de jogos:</span>{" "}
-                <Counter targetValue={databaseInfo.boardgamesQuantity} />
-              </li>
-              <li>
-                <span className="font-semibold">Itens do cardápio:</span>{" "}
-                <Counter targetValue={databaseInfo.menuItemsQuantity} />
-              </li>
-              <li>
-                <span className="font-semibold">Avisos do cardápio:</span>{" "}
-                <Counter targetValue={databaseInfo.menuInfosQuantity} />
-              </li>
-              <li>
-                <span className="font-semibold">Combos do cardápio:</span>{" "}
-                <Counter targetValue={databaseInfo.menuCombosQuantity} />
-              </li>
-            </ul>
+      <section className="flex flex-col items-center gap-4 text-primary-gold">
+        <div className="flex flex-col w-full gap-4 max-w-[720px]">
+          {/* Database info */}
+          <div className="rounded-xl border border-primary-gold/15 bg-secondary-black/40 p-4 flex flex-col gap-3">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
+              Banco de dados
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="flex flex-col gap-0.5 bg-primary-black/30 rounded-lg p-3 col-span-2 sm:col-span-3">
+                <span className="text-[10px] text-primary-gold/40 uppercase tracking-widest">
+                  Usuário ativo
+                </span>
+                <span className="text-sm text-primary-gold/80 truncate">
+                  {databaseInfo.currentUserEmail || "Não identificado"}
+                </span>
+              </div>
+              {[
+                { label: "Jogos", value: databaseInfo.boardgamesQuantity },
+                {
+                  label: "Itens cardápio",
+                  value: databaseInfo.menuItemsQuantity,
+                },
+                { label: "Avisos", value: databaseInfo.menuInfosQuantity },
+                { label: "Combos", value: databaseInfo.menuCombosQuantity },
+              ].map(({ label, value }) => (
+                <div
+                  key={label}
+                  className="flex flex-col gap-0.5 bg-primary-black/30 rounded-lg p-3"
+                >
+                  <span className="text-[10px] text-primary-gold/40 uppercase tracking-widest">
+                    {label}
+                  </span>
+                  <span className="text-xl font-semibold text-primary-gold">
+                    <Counter targetValue={value} />
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="p-3 rounded-lg shadow-card border w-full sm:max-w-[80%]">
-            <span className="text-lg font-semibold">Efeitos de mouse</span>
-            <Checkbox
-              checked={localGeneralConfigs?.clickEffect}
-              setChecked={(e) =>
-                setLocalGeneralConfigs({
-                  ...localGeneralConfigs,
-                  clickEffect: e.target.checked,
-                })
-              }
-              label="Ativar efeito de clique"
-            />
-            <Checkbox
-              checked={localGeneralConfigs?.followCursor}
-              setChecked={(e) =>
-                setLocalGeneralConfigs({
-                  ...localGeneralConfigs,
-                  followCursor: e.target.checked,
-                })
-              }
-              label="Ativar destaque de cursor"
-            />
-            <Checkbox
-              checked={localGeneralConfigs?.canvasCursor}
-              setChecked={(e) =>
-                setLocalGeneralConfigs({
-                  ...localGeneralConfigs,
-                  canvasCursor: e.target.checked,
-                })
-              }
-              label="Ativar efeito de cursor"
-            />
+
+          {/* Mouse effects */}
+          <div className="rounded-xl border border-primary-gold/15 bg-secondary-black/40 p-4 flex flex-col gap-3">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
+              Efeitos de mouse
+            </span>
+            <div className="flex flex-col gap-2">
+              <Checkbox
+                checked={localGeneralConfigs?.clickEffect}
+                setChecked={(e) =>
+                  setLocalGeneralConfigs({
+                    ...localGeneralConfigs,
+                    clickEffect: e.target.checked,
+                  })
+                }
+                label="Ativar efeito de clique"
+                variant
+              />
+              <Checkbox
+                checked={localGeneralConfigs?.followCursor}
+                setChecked={(e) =>
+                  setLocalGeneralConfigs({
+                    ...localGeneralConfigs,
+                    followCursor: e.target.checked,
+                  })
+                }
+                label="Ativar destaque de cursor"
+                variant
+              />
+              <Checkbox
+                checked={localGeneralConfigs?.canvasCursor}
+                setChecked={(e) =>
+                  setLocalGeneralConfigs({
+                    ...localGeneralConfigs,
+                    canvasCursor: e.target.checked,
+                  })
+                }
+                label="Ativar efeito de cursor"
+                variant
+              />
+            </div>
           </div>
-          <div className="flex flex-col items-center gap-6 p-3 pb-6 rounded-lg w-full sm:max-w-[80%] shadow-card border">
-            <span className="text-lg font-semibold">
+
+          <div className="flex flex-col gap-6 rounded-xl border border-primary-gold/15 bg-secondary-black/40 p-4 pb-6 w-full">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
               Configurações de reserva
             </span>
             <div className="flex w-full gap-8 flex-wrap justify-center">
@@ -322,10 +347,9 @@ export default function SettingsPage() {
             <DragCards />
           </div> */}
         </div>
-        <div className="flex justify-center w-full absolute bg-primary-black/50 backdrop-blur-[5px] bottom-0 z-80 py-4 ">
-          <div className="w-fit">
-            <Button onClick={saveGeneralConfigs}>Salvar configurações</Button>
-          </div>
+        {/* Save footer */}
+        <div className="absolute w-fit mx-auto px-6 bottom-0 left-0 right-0 flex justify-center py-3 bg-primary-black/80 backdrop-blur-[6px] border-t border-primary-gold/10 z-50">
+          <Button onClick={saveGeneralConfigs}>Salvar configurações</Button>
         </div>
       </section>
     </section>

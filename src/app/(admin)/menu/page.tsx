@@ -120,7 +120,7 @@ export default function MenuPage() {
         <div className="flex items-center justify-center gap-4 w-full">
           <div className="flex items-center gap-2">
             <LuPizza size={32} className="text-primary-gold/70 shrink-0" />
-            <h1 className="text-lg sm:text-3xl font-semibold text-primary-gold">
+            <h1 className="text-3xl font-semibold text-primary-gold">
               Cardápio
             </h1>
             <span className="text-xs text-primary-gold/35 mt-0.5">

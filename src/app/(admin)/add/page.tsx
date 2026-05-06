@@ -71,12 +71,18 @@ export default function AddPage() {
   const router = useRouter();
 
   return (
-    <section className="flex flex-col items-center gap-8 w-full h-full">
-      <section className="flex w-full justify-center items-center gap-2 text-primary-gold">
-        <LuPlus size={"48px"} className="min-w-[48px]" />
-        <h2 className="sm:text-5xl text-3xl text-primary-gold">Adicionar</h2>
-      </section>
-      <section className=" sm:scrollbar-none flex justify-center flex-wrap gap-6 px-2 py-4 overflow-y-scroll overflow-x-hidden">
+    <section className="flex flex-col gap-5 w-full h-full overflow-y-auto">
+      {/* Header */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-center gap-2">
+          <LuPlus size={32} className="text-primary-gold/70 shrink-0" />
+          <h1 className="text-3xl font-semibold text-primary-gold">
+            Adicionar
+          </h1>
+        </div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent" />
+      </div>
+      <section className="flex justify-center flex-wrap gap-4 pb-6 px-6">
         <Card
           title="Adicionar Jogo"
           description="Adicione um novo jogo a coleção do Carcassonne!"

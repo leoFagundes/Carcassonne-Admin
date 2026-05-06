@@ -15,12 +15,16 @@ export default function Card({
   return (
     <div
       {...props}
-      className="overflow-visible relative flex flex-col w-[250px] h-[130px] outline hover:outline-primary-gold outline-transparent border border-primary-gold transition-all duration-200 ease-in scrollbar-none gap-2 items-center bg-primary-black/80 p-4 rounded-lg text-primary-gold shadow-card cursor-pointer"
+      className="group relative flex flex-col w-[210px] rounded-xl border border-primary-gold/20 hover:border-primary-gold/50 bg-secondary-black/40 p-4 cursor-pointer transition-all duration-200 gap-3 text-primary-gold"
     >
-      <h2 className="text-2xl text-center">{title}</h2>
-      <p className="text-center font-light text-sm italic">{description}</p>
-      <div className="absolute p-2 rounded-full bg-primary-black -bottom-3 -right-3">
+      <div className="p-2 rounded-lg bg-primary-gold/10 border border-primary-gold/15 w-fit group-hover:bg-primary-gold/15 transition-all">
         {icon}
+      </div>
+      <div className="flex flex-col gap-1">
+        <h2 className="text-xl font-semibold leading-tight">{title}</h2>
+        <p className="text-xs text-primary-gold/50 font-light leading-relaxed">
+          {description}
+        </p>
       </div>
     </div>
   );

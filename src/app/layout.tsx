@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Pirata_One, Saira } from "next/font/google";
+import { Cormorant_Garamond, Saira } from "next/font/google";
 import "./globals.css";
 import { AlertProvider } from "@/contexts/alertProvider";
 import { Analytics } from "@vercel/analytics/next";
 
-const pirataOne = Pirata_One({
-  weight: "400",
+const cormorantGaramond = Cormorant_Garamond({
+  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-pirata-one",
   subsets: ["latin"],
 });
@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body
-        className={` ${pirataOne.variable} ${saira.variable} antialiased text-primary-white bg-primary-black`}
+        className={`${cormorantGaramond.variable} ${saira.variable} antialiased text-primary-white bg-primary-black`}
       >
         <Analytics />
         <div className="background-fixed" />

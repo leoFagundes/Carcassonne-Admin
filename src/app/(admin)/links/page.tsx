@@ -109,41 +109,51 @@ export default function LinksPage() {
   );
 
   return (
-    <section className="flex flex-col gap-8 w-full h-full px-3 overflow-y-scroll">
+    <section className="flex flex-col gap-5 w-full h-full overflow-y-auto">
       {loading && <LoaderFullscreen />}
 
       {/* Header */}
-      <section className="flex w-full justify-center items-center gap-2 text-primary-gold">
-        <LuExternalLink size={"42px"} className="min-w-[48px]" />
-        <h2 className="sm:text-5xl text-3xl text-primary-gold text-center">
-          Gerenciamento de Links
-        </h2>
-        <Tooltip direction="bottom" content="Criar um novo Link">
-          <div className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
-            <LuGitBranchPlus
-              onClick={() => {
-                setCurrentLink(patternLink);
-                setlinkFormsModal(true);
-              }}
-              size={"16px"}
-              className="min-w-[16px]"
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-center gap-4 w-full">
+          <div className="flex items-center gap-2">
+            <LuExternalLink
+              size={32}
+              className="text-primary-gold/70 shrink-0"
             />
+            <h1 className="text-3xl font-semibold text-primary-gold">
+              Gerenciamento de Links
+            </h1>
+            <span className="text-xs text-primary-gold/35 mt-0.5">
+              ({links.length})
+            </span>
           </div>
-        </Tooltip>
-        <Tooltip direction="bottom" content="Ir para visão do cliente">
-          <div className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
-            <LuLink
-              onClick={() => router.push("/linktree")}
-              size={"16px"}
-              className="min-w-[16px]"
-            />
+          <div className="flex items-center gap-2">
+            <Tooltip direction="bottom" content="Criar um novo Link">
+              <button
+                onClick={() => {
+                  setCurrentLink(patternLink);
+                  setlinkFormsModal(true);
+                }}
+                className="p-2 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+              >
+                <LuGitBranchPlus size={14} />
+              </button>
+            </Tooltip>
+            <Tooltip direction="bottom" content="Ir para visão do cliente">
+              <button
+                onClick={() => router.push("/linktree")}
+                className="p-2 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+              >
+                <LuLink size={14} />
+              </button>
+            </Tooltip>
           </div>
-        </Tooltip>
-      </section>
+        </div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent" />
+      </div>
 
-      {/* Saving order indicator */}
       {savingOrder && (
-        <p className="text-center text-xs text-white/40 animate-pulse">
+        <p className="text-center text-xs text-primary-gold/35 animate-pulse">
           Salvando nova ordem...
         </p>
       )}

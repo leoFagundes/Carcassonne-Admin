@@ -149,7 +149,7 @@ export default function MusicRecommendationPage() {
   }
 
   return (
-    <section className="flex flex-col gap-8 w-full h-full overflow-y-scroll overflow-hidden outline-none px-3 relative">
+    <section className="flex flex-col gap-5 w-full h-full overflow-y-auto outline-none relative">
       {fullLoading && <LoaderFullscreen />}
       {/* Animated SVG with glow */}
       <div className="fixed top-0 right-0 h-screen w-screen max-w-[500px] overflow-hidden pointer-events-none scale-110">
@@ -436,31 +436,51 @@ export default function MusicRecommendationPage() {
         </svg>
       </div>
 
-      <section className="relative px-2 py-1 flex w-full justify-center items-center gap-2 text-primary-gold rounded bg-primary-black/50 lg:bg-transparent backdrop-blur-[6px] lg:backdrop-blur-none z-10">
-        <LuMusic size={"48px"} className="min-w-[48px]" />
-        <h2 className="sm:text-5xl text-3xl text-primary-gold text-center">
-          Recomendações de Música
-        </h2>
-
-        <Tooltip direction="bottom" content="Ir para visão do cliente">
-          <div className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
-            <LuLink
-              onClick={() => router.push("/clientMusicRecommendation")}
-              size={"16px"}
-              className="min-w-[16px]"
-            />
+      {/* Header */}
+      <div className="relative z-10 flex flex-col gap-2">
+        <div className="flex items-center justify-center gap-4 w-full">
+          <div className="flex items-center gap-2">
+            <LuMusic size={32} className="text-primary-gold/70 shrink-0" />
+            <h1 className="text-3xl font-semibold text-primary-gold">
+              Recomendações de Música
+            </h1>
+            <span className="text-xs text-primary-gold/35 mt-0.5">
+              ({musicRecommendations.length})
+            </span>
           </div>
-        </Tooltip>
-        <div className="absolute px-2 py-1 flex w-fit top-full justify-center items-center rounded bg-primary-black/50 lg:bg-transparent backdrop-blur-[6px] lg:backdrop-blur-none z-10">
+          <div className="flex items-center gap-2">
+            <Tooltip direction="bottom" content="Ir para visão do cliente">
+              <button
+                onClick={() => router.push("/clientMusicRecommendation")}
+                className="p-2 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+              >
+                <LuLink size={14} />
+              </button>
+            </Tooltip>
+          </div>
+        </div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent" />
+        <div className="flex justify-center mt-1">
           <Checkbox
-            label={`${isMusicRecommendationEnable ? "ícone visível para clientes" : "ícone invisível para clientes"}`}
+            label={
+              isMusicRecommendationEnable
+                ? "Ícone visível para clientes"
+                : "Ícone invisível para clientes"
+            }
             checked={isMusicRecommendationEnable}
             setChecked={(e) => handleChecked(e)}
           />
         </div>
-      </section>
+      </div>
 
-      <section className="px-2 py-1 my-6 flex w-full flex-col  gap-2 text-primary-gold">
+      {/* Recommendations list */}
+      <section className="relative z-10 flex flex-col gap-2 pb-6">
+        {musicRecommendations.length === 0 && !fullLoading && (
+          <div className="flex flex-col items-center gap-2 py-12 text-primary-gold/35">
+            <LuMusic size={28} />
+            <p className="text-sm">Nenhuma recomendação ainda.</p>
+          </div>
+        )}
         {[...musicRecommendations]
           .sort((a, b) => {
             const dateA = a.createdAt
@@ -468,13 +488,11 @@ export default function MusicRecommendationPage() {
                 ? a.createdAt.getTime()
                 : a.createdAt.toDate().getTime()
               : 0;
-
             const dateB = b.createdAt
               ? b.createdAt instanceof Date
                 ? b.createdAt.getTime()
                 : b.createdAt.toDate().getTime()
               : 0;
-
             return dateB - dateA;
           })
           .map((recommendation, index) => {
@@ -491,31 +509,30 @@ export default function MusicRecommendationPage() {
                   year: "numeric",
                   hour: "2-digit",
                   minute: "2-digit",
-                  second: "2-digit",
                 })
               : "";
 
             return (
               <div
-                onClick={() => copyToClipboard(recommendation.name)}
-                className="flex gap-6 items-center shadow-card w-fit p-2 rounded bg-primary-black/50 lg:bg-transparent backdrop-blur-[6px] lg:backdrop-blur-none z-10"
                 key={recommendation.id ?? index}
+                onClick={() => copyToClipboard(recommendation.name)}
+                className="flex items-center justify-between w-fit mx-auto gap-4 min-w-[250px] max-w-[450px] border border-primary-gold/15 bg-secondary-black/40 rounded-xl px-4 py-3 cursor-pointer hover:border-primary-gold/30 transition-all"
               >
-                <div className="flex flex-col">
-                  <span>
-                    {index + 1 < 10 ? `0${index + 1}` : index + 1} -{" "}
-                    {formattedDate && `${formattedDate}`}
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-xs text-primary-gold/35">
+                    {formattedDate}
                   </span>
-                  <span>
-                    <strong>Recomendação:</strong> {recommendation.name}
+                  <span className="text-sm font-medium text-primary-gold/90 truncate">
+                    {index + 1 < 10 ? `0${index + 1}` : index + 1}.{" "}
+                    {recommendation.name}
                   </span>
                 </div>
-                <div
+                <button
                   onClick={(e) => handleDelete(e, recommendation.id)}
-                  className="p-2 rounded shadow-card cursor-pointer hover:text-invalid-color"
+                  className="p-1.5 cursor-pointer rounded-lg border border-primary-gold/15 hover:border-invalid-color/40 hover:text-invalid-color text-primary-gold/35 transition-all shrink-0"
                 >
-                  <LuTrash />
-                </div>
+                  <LuTrash size={14} />
+                </button>
               </div>
             );
           })}

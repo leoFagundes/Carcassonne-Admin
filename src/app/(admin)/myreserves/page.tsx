@@ -22,6 +22,7 @@ import {
   LuTrash,
   LuUserPlus,
   LuUserRoundCheck,
+  LuX,
 } from "react-icons/lu";
 import Tooltip from "@/components/Tooltip";
 import { useAlert } from "@/contexts/alertProvider";
@@ -491,88 +492,92 @@ export default function Rerserve() {
   }
 
   return (
-    <div className="flex flex-col gap-4 w-full h-full px-3 overflow-y-scroll">
+    <div className="flex flex-col gap-5 w-full h-full overflow-y-auto">
       {loading && <LoaderFullscreen />}
-      <section className="flex w-full justify-center items-center gap-3 text-primary-gold">
-        <div className="flex flex-col items-center gap-1">
-          <h2 className="sm:text-5xl text-3xl text-primary-gold text-center">
-            Reservas
-          </h2>{" "}
-          <div className="flex items-center gap-3">
-            <span>
-              {date.day < 10 ? `0${date.day}` : date.day}/
-              {date.month < 10 ? `0${date.month}` : date.month}/{date.year}
-            </span>
+
+      {/* Header */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-center gap-4 w-full">
+          <div className="flex items-center gap-2">
+            <LuCalendar size={32} className="text-primary-gold/70 shrink-0" />
+            <div className="flex flex-col">
+              <h1 className="text-3xl font-semibold text-primary-gold">
+                Reservas
+              </h1>
+              <span className="text-xs text-primary-gold/40">
+                {date.day < 10 ? `0${date.day}` : date.day}/
+                {date.month < 10 ? `0${date.month}` : date.month}/{date.year}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
             <Tooltip direction="bottom" content="Criar uma nova reserva">
-              <div
+              <button
                 onClick={() => {
                   setCalendarFormsModal(true);
                   setCurrentFormsType("add");
                 }}
-                className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer"
+                className="p-2 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
               >
-                <LuCalendarPlus size={"16px"} className="min-w-[16px]" />
-              </div>
+                <LuCalendarPlus size={14} />
+              </button>
             </Tooltip>
             <Tooltip direction="bottom" content="Adicionar um novo freelancer">
-              <div
-                onClick={() => {
-                  setFreelancerFormsModal(true);
-                }}
-                className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer"
+              <button
+                onClick={() => setFreelancerFormsModal(true)}
+                className="p-2 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
               >
-                <LuUserPlus size={"16px"} className="min-w-[16px]" />
-              </div>
+                <LuUserPlus size={14} />
+              </button>
             </Tooltip>
             <Tooltip direction="bottom" content="Ir para visão do cliente">
-              <div className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
-                <LuLink
-                  onClick={() => router.push("/reserve")}
-                  size={"16px"}
-                  className="min-w-[16px]"
-                />
-              </div>
+              <button
+                onClick={() => router.push("/reserve")}
+                className="p-2 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+              >
+                <LuLink size={14} />
+              </button>
             </Tooltip>
             <Tooltip direction="bottom" content="Abrir área de impressão">
-              <div className="p-2 sm:flex hidden items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
-                <LuPrinter
-                  onClick={() => setPrintModal(true)}
-                  size={"16px"}
-                  className="min-w-[16px]"
-                />
-              </div>
+              <button
+                onClick={() => setPrintModal(true)}
+                className="p-2 sm:flex hidden rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+              >
+                <LuPrinter size={14} />
+              </button>
             </Tooltip>
           </div>
         </div>
-      </section>
-      <div className="flex gap-6 flex-wrap sm:flex-nowrap justify-center sm:justify-start">
-        <section className="flex flex-col gap-2 p-2">
-          <div className="text-primary-gold flex items-center gap-2 w-full justify-center">
-            <LuCalendar size={20} className="min-w-[20px]" />
-            <span className="font-semibold text-xl">Carcarlendário</span>
-            <Tooltip direction="bottom" content="Expandir">
-              <div
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent" />
+      </div>
+      <div className="flex gap-4 flex-wrap sm:flex-nowrap items-start py-2 px-6">
+        {/* Left panel */}
+        <section className="flex flex-col gap-3 shrink-0">
+          {/* Calendar header */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-primary-gold/70 flex items-center gap-1.5">
+              <LuCalendar size={15} /> Carcarlendário
+            </span>
+            <Tooltip direction="bottom" content="Expandir calendário">
+              <button
                 onClick={() => setExpandedCalendarModal(true)}
-                className="p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer"
+                className="p-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
               >
-                <LuCalendarSearch
-                  onClick={() => ""}
-                  size={"16px"}
-                  className="min-w-[16px]"
-                />
-              </div>
+                <LuCalendarSearch size={13} />
+              </button>
             </Tooltip>
           </div>
+
           <Calendar
             aria-label="Date (Invalid on weekends)"
             value={date}
             onChange={setDate}
-            className=" bg-secondary-black/30 backdrop-blur-[2px] shadow-card-light"
+            className="bg-secondary-black/40 border border-primary-gold/15 rounded-xl shadow-card"
             classNames={{
               cell: "text-primary-gold",
               cellButton:
                 "hover:bg-dark-black cursor-pointer data-[selected=true]:bg-primary-gold data-[selected=true]:text-primary-black data-[selected=true]:font-semibold data-[outside-month=true]:text-gray-400",
-              header: "bg-transparent ",
+              header: "bg-transparent",
               title: "text-primary-gold font-bold",
               gridHeaderCell: "text-primary-gold font-semibold",
               prevButton: "text-primary-gold hover:text-secondary-gold",
@@ -580,260 +585,265 @@ export default function Rerserve() {
               errorMessage: "text-primary-gold text-sm italic",
             }}
           />
-          <div className="flex flex-col text-primary-gold gap-1 shadow-card-light p-2 bg-secondary-black/30 backdrop-blur-[2px]">
-            <span className="flex items-center gap-1">
-              <LuUserRoundCheck className="min-w-[16px]" />
+
+          {/* Stats */}
+          <div className="flex flex-col gap-1.5 bg-secondary-black/40 border border-primary-gold/15 rounded-xl p-3 text-sm">
+            <span className="flex items-center gap-2 text-primary-gold/80">
+              <LuUserRoundCheck
+                size={14}
+                className="text-primary-gold/50 shrink-0"
+              />
               {confirmedPeople}{" "}
-              {confirmedReserves === 1
+              {confirmedPeople === 1
                 ? "pessoa confirmada"
                 : "pessoas confirmadas"}
             </span>
-            <span className="flex items-center gap-1">
-              <LuUserRoundCheck className="min-w-[16px]" />
+            <span className="flex items-center gap-2 text-primary-gold/80">
+              <LuUserRoundCheck
+                size={14}
+                className="text-primary-gold/50 shrink-0"
+              />
               {activeFreelancers}{" "}
               {activeFreelancers === 1 ? "freelancer" : "freelancers"}
             </span>
-            <span className="flex items-center gap-1">
-              <LuBookCheck className="min-w-[16px]" />
+            <div className="h-px w-full bg-primary-gold/10 my-0.5" />
+            <span className="flex items-center gap-2 text-primary-gold/80">
+              <LuBookCheck size={14} className="text-green-600 shrink-0" />
               {confirmedReserves}{" "}
               {confirmedReserves === 1 ? "reserva ativa" : "reservas ativas"}
             </span>
-            <span className="flex items-center gap-1">
-              <LuBookX className="min-w-[16px]" />
+            <span className="flex items-center gap-2 text-primary-gold/80">
+              <LuBookX size={14} className="text-invalid-color shrink-0" />
               {canceledReserves}{" "}
               {canceledReserves === 1
                 ? "reserva cancelada"
                 : "reservas canceladas"}
             </span>
           </div>
+
+          {/* Freelancers */}
           {freelancers.length > 0 && (
-            <div className="flex flex-col gap-2 text-primary-gold bg-secondary-black/30 backdrop-blur-[2px] p-2 rounded shadow-card-light">
-              <div className="flex flex-col items-center justify-center p-1">
-                <span className="text-center w-full text-xl font-semibold">
+            <div className="flex flex-col gap-2 bg-secondary-black/40 border border-primary-gold/15 rounded-xl p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-semibold text-primary-gold/70">
                   Freelas
                 </span>
-                <span className="text-center w-full text-sm italic">
-                  ({date.day < 10 ? `0${date.day}` : date.day}/
-                  {date.month < 10 ? `0${date.month}` : date.month}/{date.year})
+                <span className="text-xs text-primary-gold/35">
+                  {date.day < 10 ? `0${date.day}` : date.day}/
+                  {date.month < 10 ? `0${date.month}` : date.month}/{date.year}
                 </span>
               </div>
               {freelancers.map((freela, index) => (
                 <div
-                  className="flex w-full items-center justify-between py-2 px-3 bg-dark-black/80 rounded shadow-card-light "
+                  className="flex w-full items-center justify-between py-2 px-3 bg-primary-black/40 border border-primary-gold/10 rounded-lg"
                   key={freela.id ?? index}
                 >
-                  <span>{freela.name}</span>
-                  <div className="flex items-center gap-2">
+                  <span className="text-sm text-primary-gold/80">
+                    {freela.name}
+                  </span>
+                  <div className="flex items-center gap-1.5">
                     <Tooltip
                       direction="top"
-                      content={`${freela.isStandby ? "Sobreaviso" : "Confirmado"}`}
+                      content={freela.isStandby ? "Sobreaviso" : "Confirmado"}
                     >
-                      <div
+                      <button
                         onClick={() => handleFreelaStandByStatus(freela)}
-                        className={`cursor-pointer hover:opacity-80 ${freela.isStandby ? "text-yellow-600" : "text-green-700"} bg-primary-black/80 p-2 rounded shadow-card-light`}
+                        className={`p-1.5 rounded-lg border transition-all cursor-pointer ${freela.isStandby ? "border-yellow-600/50 text-yellow-600" : "border-green-700/50 text-green-700"} bg-primary-black/60`}
                       >
                         {freela.isStandby ? (
-                          <LuSquareCheck className="min-w-[16px]" />
+                          <LuSquareCheck size={14} />
                         ) : (
-                          <LuSquareCheckBig className="min-w-[16px]" />
+                          <LuSquareCheckBig size={14} />
                         )}
-                      </div>
+                      </button>
                     </Tooltip>
                     <Tooltip
                       direction="top"
-                      content={`${freela.isPayed ? "Pago" : "Não Pago"}`}
+                      content={freela.isPayed ? "Pago" : "Não Pago"}
                     >
-                      <div
+                      <button
                         onClick={() => handleFreelaPaymentStatus(freela)}
-                        className={`cursor-pointer hover:opacity-80 ${freela.isPayed ? "text-green-700" : "text-invalid-color"} bg-primary-black/80 p-2 rounded shadow-card-light`}
+                        className={`p-1.5 rounded-lg border transition-all cursor-pointer ${freela.isPayed ? "border-green-700/50 text-green-700" : "border-invalid-color/50 text-invalid-color"} bg-primary-black/60`}
                       >
-                        <LuDollarSign className="min-w-[16px]" />
-                      </div>
+                        <LuDollarSign size={14} />
+                      </button>
                     </Tooltip>
                     <Tooltip direction="top" content={`Excluir ${freela.name}`}>
-                      <div
+                      <button
                         onClick={() => handleDeleteFreela(freela)}
-                        className={`cursor-pointer hover:opacity-80 bg-primary-black/80 p-2 rounded shadow-card-light`}
+                        className="p-1.5 rounded-lg border border-primary-gold/15 hover:border-invalid-color/50 hover:text-invalid-color text-primary-gold/40 bg-primary-black/60 transition-all cursor-pointer"
                       >
-                        <LuTrash className="min-w-[16px]" />
-                      </div>
+                        <LuTrash size={14} />
+                      </button>
                     </Tooltip>
                   </div>
                 </div>
               ))}
             </div>
           )}
+
+          {/* Delete today */}
           {reserves.length > 0 && (
-            <div
+            <button
               onClick={() => deleteTodayReserves()}
-              className="flex items-center gap-3 text-primary-gold bg-secondary-black/30 backdrop-blur-[2px] p-2 rounded shadow-card-light hover:text-invalid-color cursor-pointer transition-all duration-300"
+              className="flex items-center gap-2 text-primary-gold/40 hover:text-invalid-color border border-primary-gold/10 hover:border-invalid-color/30 rounded-xl px-3 py-2.5 text-sm cursor-pointer transition-all duration-200"
             >
-              <div className=" p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
-                <LuTrash
-                  onClick={() => ""}
-                  size={"16px"}
-                  className="min-w-[16px]"
-                />
-              </div>{" "}
-              <span className="flex items-center gap-1 text-sm italic">
-                Excluir reservas de hoje
-              </span>
-            </div>
+              <LuTrash size={14} className="shrink-0" />
+              <span className="italic">Excluir reservas de hoje</span>
+            </button>
           )}
         </section>
         {reserves.length === 0 ? (
-          <section className="flex flex-col items-center justify-center text-primary-gold p-3 w-full mr-5 rounded shadow-card-light bg-secondary-black/30 backdrop-blur-[2px]">
+          <section className="flex flex-col items-center justify-center text-primary-gold p-6 w-full rounded-xl border border-primary-gold/15 bg-secondary-black/40">
             <img
-              className="w-[200px]"
+              className="w-[160px] opacity-70"
               src="images/mascote-triste.png"
               alt="mascote-triste"
             />
-            <span className="text-xl sm:text-2xl text-center">
+            <span className="text-lg sm:text-xl text-center text-primary-gold/60 mt-2">
               Sem reservas para o dia{" "}
               {date.day < 10 ? `0${date.day}` : date.day}
             </span>
           </section>
         ) : (
-          <section className="flex flex-col text-primary-gold p-2 w-full mr-5">
-            <div className="w-full flex flex-col gap-4">
-              {Object.entries(groupedReservesByTime)
-                .sort(([timeA], [timeB]) => {
-                  const [hA, mA] = timeA.split(":").map(Number);
-                  const [hB, mB] = timeB.split(":").map(Number);
-                  return hA * 60 + mA - (hB * 60 + mB); // ordena em minutos
-                })
-                .map(([time, reserves]) => (
-                  <div key={time} className="flex flex-col w-full">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold sm:text-lg text-sm">
-                        {time}h
-                      </span>
-                      <span className="text-primary-gold/50 sm:text-lg text-sm whitespace-nowrap">
-                        -{" "}
-                        {reserves.reduce((total, reserve) => {
-                          return total + reserve.adults + reserve.childs;
-                        }, 0)}{" "}
-                        pessoas
-                      </span>
-                      <span className="text-primary-gold/50 sm:text-lg text-sm whitespace-nowrap">
-                        - ({reserves.length}{" "}
-                        {reserves.length === 1 ? "reserva" : "reservas"})
-                      </span>
-                    </div>
-                    <div className="sm:ml-4 flex flex-col gap-2 w-full">
-                      {reserves.map((reserve) => (
-                        <div
-                          className="flex justify-between bg-secondary-black/30 backdrop-blur-[2px]  shadow-card-light p-2 rounded w-full min-w-[250px] gap-2 flex-wrap"
-                          key={reserve.id}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <div className="flex sm:flex-row flex-col gap-1 sm:gap-2 text-sm items-start sm:items-center mb-2 sm:mb-0">
-                              <div className="flex items-center gap-1">
-                                <Tooltip
-                                  clickToStay
-                                  direction="right"
-                                  contentNode={
-                                    <div className="flex flex-col gap-1">
-                                      <span
-                                        onClick={() =>
-                                          changeReserveStatus(
-                                            reserve.id,
-                                            "confirmed",
-                                            reserve,
-                                          )
+          <section className="flex flex-col text-primary-gold w-full gap-4">
+            {Object.entries(groupedReservesByTime)
+              .sort(([timeA], [timeB]) => {
+                const [hA, mA] = timeA.split(":").map(Number);
+                const [hB, mB] = timeB.split(":").map(Number);
+                return hA * 60 + mA - (hB * 60 + mB);
+              })
+              .map(([time, reserves]) => (
+                <div key={time} className="flex flex-col w-full gap-2">
+                  {/* Time group header */}
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm px-2 py-0.5 rounded-md bg-primary-gold/10 border border-primary-gold/25 text-primary-gold">
+                      {time}h
+                    </span>
+                    <span className="text-primary-gold/45 text-xs">
+                      {reserves.reduce((t, r) => t + r.adults + r.childs, 0)}{" "}
+                      pessoas · {reserves.length}{" "}
+                      {reserves.length === 1 ? "reserva" : "reservas"}
+                    </span>
+                    <div className="flex-1 h-px bg-primary-gold/10" />
+                  </div>
+
+                  <div className="flex flex-col gap-2 w-full pl-2">
+                    {reserves.map((reserve) => (
+                      <div
+                        className={`flex justify-between border rounded-xl p-3 w-full gap-2 flex-wrap transition-all duration-200 ${
+                          reserve.status === "canceled"
+                            ? "border-invalid-color/20 bg-invalid-color/5"
+                            : "border-primary-gold/15 bg-secondary-black/40"
+                        }`}
+                        key={reserve.id}
+                      >
+                        <div className="flex flex-col gap-1">
+                          <div className="flex sm:flex-row flex-col gap-1 sm:gap-2 text-sm items-start sm:items-center mb-2 sm:mb-0">
+                            <div className="flex items-center gap-1">
+                              <Tooltip
+                                clickToStay
+                                direction="right"
+                                contentNode={
+                                  <div className="flex flex-col gap-1">
+                                    <span
+                                      onClick={() =>
+                                        changeReserveStatus(
+                                          reserve.id,
+                                          "confirmed",
+                                          reserve,
+                                        )
+                                      }
+                                      className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
+                                    >
+                                      <LuCalendarCheck className="text-green-600 min-w-[16px]" />{" "}
+                                      confirmar reserva
+                                    </span>
+                                    <span
+                                      onClick={() =>
+                                        changeReserveStatus(
+                                          reserve.id,
+                                          "canceled",
+                                          reserve,
+                                        )
+                                      }
+                                      className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
+                                    >
+                                      <LuCalendarX className="text-red-900 min-w-[16px]" />{" "}
+                                      cancelar reserva
+                                    </span>
+                                    <span
+                                      onClick={() => {
+                                        if (reserve.id) {
+                                          deleteReserve(reserve.id);
+                                        } else {
+                                          addAlert(
+                                            "Recarregue a página e tente novamente",
+                                          );
                                         }
-                                        className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
-                                      >
-                                        <LuCalendarCheck className="text-green-600 min-w-[16px]" />{" "}
-                                        confirmar reserva
-                                      </span>
-                                      <span
-                                        onClick={() =>
-                                          changeReserveStatus(
-                                            reserve.id,
-                                            "canceled",
-                                            reserve,
-                                          )
-                                        }
-                                        className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
-                                      >
-                                        <LuCalendarX className="text-red-900 min-w-[16px]" />{" "}
-                                        cancelar reserva
-                                      </span>
-                                      <span
-                                        onClick={() => {
-                                          if (reserve.id) {
-                                            deleteReserve(reserve.id);
-                                          } else {
-                                            addAlert(
-                                              "Recarregue a página e tente novamente",
-                                            );
-                                          }
-                                        }}
-                                        className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
-                                      >
-                                        <LuTrash className="text-red-900 min-w-[16px]" />{" "}
-                                        excluir reserva
-                                      </span>
-                                      <span
-                                        onClick={() => {
-                                          setCalendarFormsModal(true);
-                                          setCurrentFormsType("edit");
-                                          setCurrentReserve(reserve);
-                                        }}
-                                        className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
-                                      >
-                                        <LuCalendarCog className="text-primary-black min-w-[16px]" />{" "}
-                                        editar reserva
-                                      </span>
-                                    </div>
-                                  }
-                                >
-                                  {reserve.status === "confirmed" ? (
-                                    <LuCalendarCheck className="text-green-600 min-w-[16px]" />
-                                  ) : (
-                                    <LuCalendarX className="text-red-900 min-w-[16px]" />
-                                  )}
-                                </Tooltip>
-                                <span className="font-semibold text-center">
-                                  #{reserve.code}
-                                </span>{" "}
-                              </div>
-                              <span className="hidden sm:block">-</span>
-                              <span className="flex gap-1 font-semibold text-center">
-                                <span className="block sm:hidden">-</span>
-                                {reserve.name}
+                                      }}
+                                      className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
+                                    >
+                                      <LuTrash className="text-red-900 min-w-[16px]" />{" "}
+                                      excluir reserva
+                                    </span>
+                                    <span
+                                      onClick={() => {
+                                        setCalendarFormsModal(true);
+                                        setCurrentFormsType("edit");
+                                        setCurrentReserve(reserve);
+                                      }}
+                                      className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
+                                    >
+                                      <LuCalendarCog className="text-primary-black min-w-[16px]" />{" "}
+                                      editar reserva
+                                    </span>
+                                  </div>
+                                }
+                              >
+                                {reserve.status === "confirmed" ? (
+                                  <LuCalendarCheck className="text-green-600 min-w-[16px]" />
+                                ) : (
+                                  <LuCalendarX className="text-red-900 min-w-[16px]" />
+                                )}
+                              </Tooltip>
+                              <span className="font-semibold text-center">
+                                #{reserve.code}
                               </span>{" "}
-                              <span className="hidden sm:block">-</span>
-                              <span className="flex gap-1 font-semibold text-center">
-                                <span className="block sm:hidden">-</span>
-                                {reserve.adults + reserve.childs} pessoas
-                              </span>
                             </div>
-                            <div className="text-xs flex flex-col gap-1 text-primary-gold/90">
-                              <div>
-                                <span className="font-semibold">
-                                  telefone:{" "}
-                                </span>
-                                <span
-                                  onClick={() => openWhatsApp(reserve.phone)}
-                                  className="cursor-pointer hover:underline"
-                                >
-                                  {reserve.phone}{" "}
-                                </span>
-                                <span className="font-semibold">email: </span>
-                                <span
-                                  onClick={() =>
-                                    openEmail(
-                                      reserve.email,
-                                      "Sobre a sua reserva no Carcassonne Pub 🍻",
-                                      `Olá!
+                            <span className="hidden sm:block">-</span>
+                            <span className="flex gap-1 font-semibold text-center">
+                              <span className="block sm:hidden">-</span>
+                              {reserve.name}
+                            </span>{" "}
+                            <span className="hidden sm:block">-</span>
+                            <span className="flex gap-1 font-semibold text-center">
+                              <span className="block sm:hidden">-</span>
+                              {reserve.adults + reserve.childs} pessoas
+                            </span>
+                          </div>
+                          <div className="text-xs flex flex-col gap-1 text-primary-gold/90">
+                            <div>
+                              <span className="font-semibold">telefone: </span>
+                              <span
+                                onClick={() => openWhatsApp(reserve.phone)}
+                                className="cursor-pointer hover:underline"
+                              >
+                                {reserve.phone}{" "}
+                              </span>
+                              <span className="font-semibold">email: </span>
+                              <span
+                                onClick={() =>
+                                  openEmail(
+                                    reserve.email,
+                                    "Sobre a sua reserva no Carcassonne Pub 🍻",
+                                    `Olá!
 
 Recebemos sua solicitação de reserva no Carcassonne Pub e estamos muito felizes por você querer passar esse momento conosco!
 
 🗓️ Data: ${reserve.bookingDate.day}/${reserve.bookingDate.month}/${
-                                        reserve.bookingDate.year
-                                      }
+                                      reserve.bookingDate.year
+                                    }
 ⏰ Horário: ${reserve.time}h
 👥 Quantidade de pessoas: ${reserve.childs + reserve.adults} pessoas
 
@@ -841,70 +851,84 @@ Caso precise alterar ou cancelar sua reserva, por favor nos avise com antecedên
 
 Nos vemos em breve! 🍺
 Equipe Carcassonne Pub`,
-                                    )
-                                  }
-                                  className="cursor-pointer hover:underline"
-                                >
-                                  {reserve.email}
-                                </span>
-                              </div>
-                              {reserve.observation && (
-                                <div>
-                                  <span className="font-semibold">
-                                    observação:{" "}
-                                  </span>
-                                  <span>{reserve.observation}</span>
-                                </div>
-                              )}
-                              {reserve.createdAt && (
-                                <div>
-                                  <span className="font-semibold">
-                                    Reserva criada em{" "}
-                                  </span>
-                                  {reserve.createdAt
-                                    .toDate()
-                                    .toLocaleString("pt-BR", {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                </div>
-                              )}
+                                  )
+                                }
+                                className="cursor-pointer hover:underline"
+                              >
+                                {reserve.email}
+                              </span>
                             </div>
-                          </div>
-
-                          <div className="flex sm:flex-col items-center gap-1">
-                            <span>mesa</span>
-                            <Input
-                              placeholder="-"
-                              value={reserve.table ? reserve.table : ""}
-                              setValue={(e) =>
-                                handleTableChange(
-                                  reserve.id ? reserve.id : "",
-                                  e.target.value,
-                                )
-                              }
-                              width="!w-[40px] !min-w-[80px] !py-1 !px-0"
-                            />
+                            {reserve.observation && (
+                              <div>
+                                <span className="font-semibold">
+                                  observação:{" "}
+                                </span>
+                                <span>{reserve.observation}</span>
+                              </div>
+                            )}
+                            {reserve.createdAt && (
+                              <div>
+                                <span className="font-semibold">
+                                  Reserva criada em{" "}
+                                </span>
+                                {reserve.createdAt
+                                  .toDate()
+                                  .toLocaleString("pt-BR", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                              </div>
+                            )}
                           </div>
                         </div>
-                      ))}
-                    </div>
+
+                        <div className="flex sm:flex-col items-center gap-1">
+                          <span>mesa</span>
+                          <Input
+                            placeholder="-"
+                            value={reserve.table ? reserve.table : ""}
+                            setValue={(e) =>
+                              handleTableChange(
+                                reserve.id ? reserve.id : "",
+                                e.target.value,
+                              )
+                            }
+                            width="!w-[40px] !min-w-[80px] !py-1 !px-0"
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-            </div>
+                </div>
+              ))}
           </section>
         )}
       </div>
       <Modal
         isOpen={expandedCalendarModal}
         onClose={() => setExpandedCalendarModal(false)}
-        backgroundTransparent
+        noPadding
+        patternCloseButton={false}
       >
-        <div className="flex flex-col gap-3 items-center justify-center w-full h-full max-h-screen ">
-          <div className="p-4 sm:max-w-[80%] max-w-[100%] max-h-[80%] overflow-y-auto">
+        <div className="bg-secondary-black/95 border border-primary-gold/20 rounded-2xl w-[95vw] max-w-[1000px] max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-3 border-b border-primary-gold/10 shrink-0">
+            <span className="text-sm font-semibold text-primary-gold/70 flex items-center gap-2">
+              <LuCalendarSearch size={15} /> Calendário de Reservas
+            </span>
+            <button
+              onClick={() => setExpandedCalendarModal(false)}
+              className="p-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/60 hover:text-primary-gold transition-all cursor-pointer"
+            >
+              <LuX size={15} />
+            </button>
+          </div>
+
+          {/* Calendar */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-4">
             <FullCalendar
               plugins={[dayGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
@@ -913,23 +937,21 @@ Equipe Carcassonne Pub`,
               dateClick={(info) => {
                 const clickedDate = new CalendarDate(
                   info.date.getFullYear(),
-                  info.date.getMonth() + 1, // meses no CalendarDate são 1-based
+                  info.date.getMonth() + 1,
                   info.date.getDate(),
                 );
-
                 setDate(clickedDate);
                 setExpandedCalendarModal(false);
               }}
               eventContent={(arg) => {
                 const status = arg.event.extendedProps.status;
                 const isCanceled = status === "canceled";
-
                 return (
                   <div
-                    className={`min-w-[30px] flex items-center justify-center w-full font-semibold rounded my-1 ${
+                    className={`min-w-[30px] flex items-center justify-center w-full text-xs font-semibold rounded px-1 my-0.5 ${
                       isCanceled
-                        ? "bg-invalid-color text-white outline outline-invalid-color"
-                        : "bg-primary-gold text-primary-black outline outline-primary-gold"
+                        ? "bg-invalid-color text-white"
+                        : "bg-primary-gold text-primary-black"
                     }`}
                   >
                     {arg.event.title}
@@ -939,11 +961,13 @@ Equipe Carcassonne Pub`,
               locale={ptBrLocale}
               datesSet={(info) => {
                 const data = info.view.currentStart;
-                const year = data.getFullYear();
-                const month = data.getMonth() + 1;
-                const day = data.getDate();
-
-                setFullCalendarDate(new CalendarDate(year, month, day));
+                setFullCalendarDate(
+                  new CalendarDate(
+                    data.getFullYear(),
+                    data.getMonth() + 1,
+                    data.getDate(),
+                  ),
+                );
               }}
               headerToolbar={{
                 left: "",
@@ -953,26 +977,21 @@ Equipe Carcassonne Pub`,
             />
           </div>
 
-          <div
-            onClick={() =>
-              deleteThisMonthReserves(
-                fullCalendarDate.year,
-                fullCalendarDate.month,
-              )
-            }
-            className="flex items-center gap-3 text-primary-gold p-2 rounded hover:text-invalid-color cursor-pointer transition-all duration-300"
-          >
-            <div className=" p-2 flex items-center justify-center rounded-full bg-secondary-black shadow-card cursor-pointer">
-              <LuTrash
-                onClick={() => ""}
-                size={"16px"}
-                className="min-w-[16px]"
-              />
-            </div>{" "}
-            <span className="flex items-center gap-1 text-sm italic">
-              Excluir reservas deste mês/ano: {fullCalendarDate.month}/
+          {/* Footer */}
+          <div className="shrink-0 border-t border-primary-gold/10 px-5 py-3">
+            <button
+              onClick={() =>
+                deleteThisMonthReserves(
+                  fullCalendarDate.year,
+                  fullCalendarDate.month,
+                )
+              }
+              className="flex items-center gap-2 text-primary-gold/35 hover:text-invalid-color text-sm italic cursor-pointer transition-all duration-200"
+            >
+              <LuTrash size={13} className="shrink-0" />
+              Excluir reservas de {fullCalendarDate.month}/
               {fullCalendarDate.year}
-            </span>
+            </button>
           </div>
         </div>
       </Modal>
