@@ -1168,7 +1168,9 @@ function ReserveActionsMenu({
         )}
       </button>
       {open && (
-        <div className="absolute left-0 top-6 z-50 bg-secondary-black border border-primary-gold/20 rounded-lg shadow-xl p-1 flex flex-col gap-0.5 min-w-[250px]">
+        <div
+          className={`absolute left-0 top-6 z-50 bg-secondary-black border border-primary-gold/20 rounded-lg shadow-xl p-1 flex flex-col gap-0.5 min-w-[250px]`}
+        >
           <div className="flex items-center justify-between p-2 border-b border-primary-gold/60 w-full">
             <span className="text-center font-semibold">
               Reserva #{reserve.code}
@@ -1180,26 +1182,30 @@ function ReserveActionsMenu({
               <FiX />
             </div>
           </div>
-          <button
-            onClick={() => {
-              onConfirm();
-              setOpen(false);
-            }}
-            className="flex items-center gap-2 text-base font-medium px-3 py-3.5 rounded hover:bg-primary-gold/10 text-left cursor-pointer transition-colors"
-          >
-            <LuCalendarCheck className="text-green-600 min-w-[16px]" />
-            confirmar reserva
-          </button>
-          <button
-            onClick={() => {
-              onCancel();
-              setOpen(false);
-            }}
-            className="flex items-center gap-2 text-base font-medium px-3 py-3.5 rounded hover:bg-primary-gold/10 text-left cursor-pointer transition-colors"
-          >
-            <LuCalendarX className="text-red-900 min-w-[16px]" />
-            cancelar reserva
-          </button>
+          {reserve.status !== "confirmed" && (
+            <button
+              onClick={() => {
+                onConfirm();
+                setOpen(false);
+              }}
+              className="flex items-center gap-2 text-base font-medium px-3 py-3.5 rounded hover:bg-primary-gold/10 text-left cursor-pointer transition-colors"
+            >
+              <LuCalendarCheck className="text-green-600 min-w-[16px]" />
+              confirmar reserva
+            </button>
+          )}
+          {reserve.status === "confirmed" && (
+            <button
+              onClick={() => {
+                onCancel();
+                setOpen(false);
+              }}
+              className="flex items-center gap-2 text-base font-medium px-3 py-3.5 rounded hover:bg-primary-gold/10 text-left cursor-pointer transition-colors"
+            >
+              <LuCalendarX className="text-red-900 min-w-[16px]" />
+              cancelar reserva
+            </button>
+          )}
           <button
             onClick={() => {
               onDelete();
