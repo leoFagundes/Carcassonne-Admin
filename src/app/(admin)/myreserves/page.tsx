@@ -39,6 +39,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import FreelancerRepository from "@/services/repositories/FreelancerRepository";
 import FreelancerAdminForms from "@/components/freelancerAdminForms";
 import PrintModal from "./printModal";
+import { FiX } from "react-icons/fi";
 
 type EventFullCalendar = {
   title: string;
@@ -1166,9 +1167,19 @@ function ReserveActionsMenu({
           <LuCalendarX className="text-red-900 min-w-[16px]" />
         )}
       </button>
-
       {open && (
         <div className="absolute left-0 top-6 z-50 bg-secondary-black border border-primary-gold/20 rounded-lg shadow-xl p-1 flex flex-col gap-0.5 min-w-[250px]">
+          <div className="flex items-center justify-between p-2 border-b border-primary-gold/60 w-full">
+            <span className="text-center font-semibold">
+              Reserva #{reserve.code}
+            </span>
+            <div
+              className=" p-1 border border-primary-gold/20 hover:border-primary-gold/50 rounded text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+              onClick={() => setOpen(false)}
+            >
+              <FiX />
+            </div>
+          </div>
           <button
             onClick={() => {
               onConfirm();
