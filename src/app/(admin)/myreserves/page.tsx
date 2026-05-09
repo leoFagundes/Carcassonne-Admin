@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Calendar } from "@heroui/react";
 import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
@@ -748,72 +748,35 @@ export default function Rerserve() {
                         <div className="flex flex-col gap-1">
                           <div className="flex sm:flex-row flex-col gap-1 sm:gap-2 text-sm items-start sm:items-center mb-2 sm:mb-0">
                             <div className="flex items-center gap-1">
-                              <Tooltip
-                                clickToStay
-                                direction="right"
-                                contentNode={
-                                  <div className="flex flex-col gap-1">
-                                    <span
-                                      onClick={() =>
-                                        changeReserveStatus(
-                                          reserve.id,
-                                          "confirmed",
-                                          reserve,
-                                        )
-                                      }
-                                      className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
-                                    >
-                                      <LuCalendarCheck className="text-green-600 min-w-[16px]" />{" "}
-                                      confirmar reserva
-                                    </span>
-                                    <span
-                                      onClick={() =>
-                                        changeReserveStatus(
-                                          reserve.id,
-                                          "canceled",
-                                          reserve,
-                                        )
-                                      }
-                                      className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
-                                    >
-                                      <LuCalendarX className="text-red-900 min-w-[16px]" />{" "}
-                                      cancelar reserva
-                                    </span>
-                                    <span
-                                      onClick={() => {
-                                        if (reserve.id) {
-                                          deleteReserve(reserve.id);
-                                        } else {
-                                          addAlert(
-                                            "Recarregue a página e tente novamente",
-                                          );
-                                        }
-                                      }}
-                                      className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
-                                    >
-                                      <LuTrash className="text-red-900 min-w-[16px]" />{" "}
-                                      excluir reserva
-                                    </span>
-                                    <span
-                                      onClick={() => {
-                                        setCalendarFormsModal(true);
-                                        setCurrentFormsType("edit");
-                                        setCurrentReserve(reserve);
-                                      }}
-                                      className="flex items-center gap-1 font-medium border border-transparent transition-all duration-100 ease-in border-dashed rounded p-1 cursor-pointer hover:border-primary-black"
-                                    >
-                                      <LuCalendarCog className="text-primary-black min-w-[16px]" />{" "}
-                                      editar reserva
-                                    </span>
-                                  </div>
+                              <ReserveActionsMenu
+                                reserve={reserve}
+                                onConfirm={() =>
+                                  changeReserveStatus(
+                                    reserve.id,
+                                    "confirmed",
+                                    reserve,
+                                  )
                                 }
-                              >
-                                {reserve.status === "confirmed" ? (
-                                  <LuCalendarCheck className="text-green-600 min-w-[16px]" />
-                                ) : (
-                                  <LuCalendarX className="text-red-900 min-w-[16px]" />
-                                )}
-                              </Tooltip>
+                                onCancel={() =>
+                                  changeReserveStatus(
+                                    reserve.id,
+                                    "canceled",
+                                    reserve,
+                                  )
+                                }
+                                onDelete={() => {
+                                  if (reserve.id) deleteReserve(reserve.id);
+                                  else
+                                    addAlert(
+                                      "Recarregue a página e tente novamente",
+                                    );
+                                }}
+                                onEdit={() => {
+                                  setCalendarFormsModal(true);
+                                  setCurrentFormsType("edit");
+                                  setCurrentReserve(reserve);
+                                }}
+                              />
                               <span className="font-semibold text-center">
                                 #{reserve.code}
                               </span>{" "}
@@ -901,7 +864,9 @@ Equipe Carcassonne Pub`,
                                 {reserve.canceledAt && (
                                   <span className="text-invalid-color/70">
                                     <span className="font-semibold">Em: </span>
-                                    {new Date(reserve.canceledAt).toLocaleString("pt-BR", {
+                                    {new Date(
+                                      reserve.canceledAt,
+                                    ).toLocaleString("pt-BR", {
                                       day: "2-digit",
                                       month: "2-digit",
                                       year: "numeric",
@@ -912,7 +877,9 @@ Equipe Carcassonne Pub`,
                                 )}
                                 {reserve.canceledReason && (
                                   <span className="text-invalid-color/70">
-                                    <span className="font-semibold">Motivo: </span>
+                                    <span className="font-semibold">
+                                      Motivo:{" "}
+                                    </span>
                                     {reserve.canceledReason}
                                   </span>
                                 )}
@@ -921,20 +888,22 @@ Equipe Carcassonne Pub`,
                           </div>
                         </div>
 
-                        <div className="flex sm:flex-col items-center gap-1">
-                          <span>mesa</span>
-                          <Input
-                            placeholder="-"
-                            value={reserve.table ? reserve.table : ""}
-                            setValue={(e) =>
-                              handleTableChange(
-                                reserve.id ? reserve.id : "",
-                                e.target.value,
-                              )
-                            }
-                            width="!w-[40px] !min-w-[80px] !py-1 !px-0"
-                          />
-                        </div>
+                        {reserve.status !== "canceled" && (
+                          <div className="flex sm:flex-col items-center gap-1">
+                            <span>mesa</span>
+                            <Input
+                              placeholder="-"
+                              value={reserve.table ? reserve.table : ""}
+                              setValue={(e) =>
+                                handleTableChange(
+                                  reserve.id ? reserve.id : "",
+                                  e.target.value,
+                                )
+                              }
+                              width="!w-[40px] !min-w-[80px] !py-1 !px-0"
+                            />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1155,6 +1124,93 @@ Equipe Carcassonne Pub`,
           </div>
         </div>
       </PrintModal>
+    </div>
+  );
+}
+
+function ReserveActionsMenu({
+  reserve,
+  onConfirm,
+  onCancel,
+  onDelete,
+  onEdit,
+}: {
+  reserve: ReserveType;
+  onConfirm: () => void;
+  onCancel: () => void;
+  onDelete: () => void;
+  onEdit: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((prev) => !prev)}
+        className="cursor-pointer p-2 -m-2"
+      >
+        {reserve.status === "confirmed" ? (
+          <LuCalendarCheck className="text-green-600 min-w-[16px]" />
+        ) : (
+          <LuCalendarX className="text-red-900 min-w-[16px]" />
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-6 z-50 bg-secondary-black border border-primary-gold/20 rounded-lg shadow-xl p-1 flex flex-col gap-0.5 min-w-[250px]">
+          <button
+            onClick={() => {
+              onConfirm();
+              setOpen(false);
+            }}
+            className="flex items-center gap-2 text-base font-medium px-3 py-3.5 rounded hover:bg-primary-gold/10 text-left cursor-pointer transition-colors"
+          >
+            <LuCalendarCheck className="text-green-600 min-w-[16px]" />
+            confirmar reserva
+          </button>
+          <button
+            onClick={() => {
+              onCancel();
+              setOpen(false);
+            }}
+            className="flex items-center gap-2 text-base font-medium px-3 py-3.5 rounded hover:bg-primary-gold/10 text-left cursor-pointer transition-colors"
+          >
+            <LuCalendarX className="text-red-900 min-w-[16px]" />
+            cancelar reserva
+          </button>
+          <button
+            onClick={() => {
+              onDelete();
+              setOpen(false);
+            }}
+            className="flex items-center gap-2 text-base font-medium px-3 py-3.5 rounded hover:bg-primary-gold/10 text-left cursor-pointer transition-colors"
+          >
+            <LuTrash className="text-red-900 min-w-[16px]" />
+            excluir reserva
+          </button>
+          <button
+            onClick={() => {
+              onEdit();
+              setOpen(false);
+            }}
+            className="flex items-center gap-2 text-base font-medium px-3 py-3.5 rounded hover:bg-primary-gold/10 text-left cursor-pointer transition-colors"
+          >
+            <LuCalendarCog className="text-primary-gold/80 min-w-[16px]" />
+            editar reserva
+          </button>
+        </div>
+      )}
     </div>
   );
 }

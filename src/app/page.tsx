@@ -170,7 +170,7 @@ export default function Home() {
         }}
       >
         {/* ── LOGIN CARD ── */}
-        <section className="card-in flex flex-col items-center bg-primary-black/75 border border-primary-gold/25 rounded-2xl backdrop-blur-[4px] p-8 shadow-[0_0_60px_rgba(0,0,0,0.6)] gap-5 w-full max-w-[360px] mx-4 text-primary-gold">
+        <section className="card-in flex flex-col items-center bg-dark-black/65 border border-primary-gold/25 rounded-2xl backdrop-blur-[4px] p-8 shadow-[0_0_60px_rgba(0,0,0,0.6)] gap-5 w-full max-w-[360px] mx-4 text-primary-gold">
           {/* Title */}
           <div className="flex flex-col items-center gap-2 w-full">
             <h1 className="font-cinzel text-2xl sm:text-3xl text-center text-shimmer-gold tracking-widest uppercase leading-tight">
