@@ -152,7 +152,7 @@ export default function MusicRecommendationPage() {
     <section className="flex flex-col gap-5 w-full h-full overflow-y-auto outline-none relative">
       {fullLoading && <LoaderFullscreen />}
       {/* Animated SVG with glow */}
-      <div className="fixed top-0 right-0 h-screen w-screen max-w-[500px] overflow-hidden pointer-events-none scale-110">
+      <div className="hidden sm:block fixed top-0 right-0 h-screen w-screen max-w-[500px] overflow-hidden pointer-events-none scale-110 z-0">
         <svg
           className="w-full h-full sm:translate-0 translate-x-35 svg-music-glow"
           viewBox="0 0 600 1027"

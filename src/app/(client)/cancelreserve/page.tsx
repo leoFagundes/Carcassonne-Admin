@@ -66,12 +66,13 @@ export default function CancelReserve() {
 
     setcomponentLoading(true);
     try {
+      const canceledReason = cancelReason.trim();
       await ReserveRepository.update(reserveFound.id!, {
         ...reserveFound,
         status: "canceled",
         canceledAt: new Date().toISOString(),
         canceledBy: "user",
-        canceledReason: cancelReason.trim() || undefined,
+        ...(canceledReason ? { canceledReason } : {}),
       });
       setAllReserves((prev) =>
         prev.map((r) =>

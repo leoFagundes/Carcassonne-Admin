@@ -164,7 +164,7 @@ export default function Home() {
       `}</style>
 
       <div
-        className="flex flex-col justify-center items-center gap-3 bg-cover bg-center min-h-screen w-full"
+        className="flex flex-col justify-center items-center gap-3 bg-cover bg-center min-h-screen w-full px-2"
         style={{
           backgroundImage: `url(${carcaPuzzle ? carcassonneBoardgame.src : carcassonneBackground.src})`,
         }}

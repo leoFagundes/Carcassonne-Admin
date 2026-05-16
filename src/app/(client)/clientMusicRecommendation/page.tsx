@@ -430,9 +430,10 @@ export default function MusicRecommendationPage() {
               placeholder="Nome da música ou playlist"
               label="Nome da música ou playlist"
               variant
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
             />
             <div className="w-fit">
-              <Button onClick={handleSubmit}>
+              <Button onClick={handleSubmit} disabled={loading}>
                 {loading ? <Loader /> : "Recomendar"}
               </Button>
             </div>

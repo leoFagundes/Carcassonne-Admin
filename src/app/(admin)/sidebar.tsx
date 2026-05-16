@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import React, { ReactNode, useEffect, useState } from "react";
+import React, { ReactNode, useEffect, useRef, useState } from "react";
 import {
   LuDices,
   LuPizza,
@@ -63,8 +63,8 @@ function Item({
       )}
       <span className="shrink-0">{icon}</span>
       <span className="text-lg font-light">{message}</span>
-      {notify && notify.length > 0 && path === "/musicRecommendation" && (
-        <div className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary-gold text-primary-black text-[10px] font-bold animate-bounce">
+      {notify && notify.length > 0 && path === "/musicRecommendation" && !isActive && (
+        <div className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary-gold text-primary-black text-[10px] font-bold animate-pulse">
           {notify.length}
         </div>
       )}
@@ -80,7 +80,13 @@ export default function Sidebar() {
 
   const { addAlert } = useAlert();
   const router = useRouter();
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
   const toggleSidebar = () => setIsOpen(!isOpen);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("songsToNotify") || "[]");
@@ -90,6 +96,14 @@ export default function Sidebar() {
   useEffect(() => {
     localStorage.setItem("songsToNotify", JSON.stringify(songsToNotify));
   }, [songsToNotify]);
+
+  // Limpa o badge automaticamente ao entrar na página de músicas
+  useEffect(() => {
+    if (pathname === "/musicRecommendation") {
+      localStorage.setItem("songsToNotify", JSON.stringify([]));
+      setSongsToNotify([]);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     const interval: NodeJS.Timeout = setInterval(checkUpdates, 10000);
@@ -114,14 +128,17 @@ export default function Sidebar() {
           );
 
           if (newSongs.length > 0) {
-            setSongsToNotify((prev) => [...prev, ...newSongs]);
-            addAlert(`${newSongs.length} nova música adicionada! 🎵`);
-
             const updatedIds = [...storedIds, ...newSongs.map((m) => m.id)];
             localStorage.setItem(
               "songsAlreadyNotified",
               JSON.stringify(updatedIds),
             );
+
+            // Não acumula notificações se já está na página de músicas
+            if (pathnameRef.current !== "/musicRecommendation") {
+              setSongsToNotify((prev) => [...prev, ...newSongs]);
+              addAlert(`${newSongs.length} nova música adicionada! 🎵`);
+            }
           }
         }
       } catch (error) {

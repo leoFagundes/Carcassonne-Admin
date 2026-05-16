@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useRef, useState, ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { FiX } from "react-icons/fi";
 
@@ -25,9 +25,10 @@ export const useAlert = () => {
 
 export function AlertProvider({ children }: { children: ReactNode }) {
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const idCounter = useRef(0);
 
   const addAlert = (message: string) => {
-    const id = Date.now();
+    const id = ++idCounter.current;
     setAlerts((prev) => [...prev, { id, message }]);
 
     // Auto-remove após 4 segundos

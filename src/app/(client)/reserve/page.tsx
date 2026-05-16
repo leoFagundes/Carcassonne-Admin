@@ -6,7 +6,6 @@ import Button from "@/components/button";
 import Calendar from "react-calendar";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
 import { GeneralConfigsType, ReserveType } from "@/types";
-import { randomCodeGenerator } from "@/utils/utilFunctions";
 import {
   daysArray,
   longMonths,
@@ -60,7 +59,7 @@ export default function Reserve() {
     useState<GeneralConfigsType>(patternGeneralConfigs);
   const [reserve, setReserve] = useState<ReserveType>({
     name: "",
-    code: randomCodeGenerator(),
+    code: "",
     bookingDate: { day: "", month: "", year: "" },
     time: "",
     phone: "",
@@ -71,6 +70,12 @@ export default function Reserve() {
     status: "confirmed",
     table: "",
   });
+
+  useEffect(() => {
+    ReserveRepository.generateUniqueCode().then((code) =>
+      setReserve((prev) => ({ ...prev, code })),
+    );
+  }, []);
 
   const { width, height } = useWindowSize();
   const { addAlert } = useAlert();
@@ -451,6 +456,7 @@ export default function Reserve() {
                     ? "my-disabled-day"
                     : null
                 }
+                showNeighboringMonth={false}
               />
 
               {reserve.bookingDate.day &&
@@ -671,8 +677,13 @@ export default function Reserve() {
 
         {/* Page 5 — sucesso */}
         {page === 5 && (
-          <div className="relative z-10 flex flex-col items-center gap-4 text-primary-gold max-w-[400px] w-full">
-            <Confetti width={width} height={height} numberOfPieces={40} />
+          <div className="z-10 flex flex-col items-center gap-4 text-primary-gold max-w-[400px] w-full">
+            <Confetti
+              className="absolute"
+              width={width}
+              height={height}
+              numberOfPieces={100}
+            />
 
             <div className="flex flex-col items-center gap-5 bg-secondary-black/60 border border-primary-gold/20 rounded-xl p-6 w-full text-center">
               <img

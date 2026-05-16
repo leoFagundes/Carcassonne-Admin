@@ -1,7 +1,7 @@
 "use client";
 
 import { ReserveType } from "@/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LuClock,
   LuUser,
@@ -15,7 +15,6 @@ import {
   LuCalendarCog,
 } from "react-icons/lu";
 import Input from "./input";
-import { randomCodeGenerator } from "@/utils/utilFunctions";
 import { Calendar } from "@heroui/calendar";
 import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
 import Button from "./button";
@@ -45,7 +44,7 @@ export default function ReserveAdminForms({
       ? reserve
       : {
           name: "",
-          code: randomCodeGenerator(),
+          code: "",
           bookingDate: {
             day: date.day.toString(),
             month: date.month.toString(),
@@ -61,6 +60,14 @@ export default function ReserveAdminForms({
           table: "",
         }
   );
+
+  useEffect(() => {
+    if (type !== "edit") {
+      ReserveRepository.generateUniqueCode().then((code) =>
+        setLocalReserve((prev) => ({ ...prev, code }))
+      );
+    }
+  }, [type]);
 
   const isReserveFormValid = () => {
     if (!localReserve.name.trim()) {

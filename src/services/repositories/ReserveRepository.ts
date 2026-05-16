@@ -10,9 +10,11 @@ import {
   deleteDoc,
   serverTimestamp,
   query,
-  orderBy,
+  where,
+  Timestamp,
 } from "firebase/firestore";
 import { ReserveType } from "@/types";
+import { randomCodeGenerator } from "@/utils/utilFunctions";
 
 class ReserveRepository {
   static collectionName = "reserves";
@@ -115,19 +117,38 @@ class ReserveRepository {
     }
   }
 
+  static async generateUniqueCode(): Promise<string> {
+    let code: string;
+    let exists: boolean;
+    do {
+      code = randomCodeGenerator();
+      // Busca tanto o código exato quanto a versão em minúsculas para cobrir registros antigos
+      const colRef = collection(db, this.collectionName);
+      const [snapshotExact, snapshotLower] = await Promise.all([
+        getDocs(query(colRef, where("code", "==", code))),
+        getDocs(query(colRef, where("code", "==", code.toLowerCase()))),
+      ]);
+      exists = !snapshotExact.empty || !snapshotLower.empty;
+    } while (exists);
+    return code;
+  }
+
   static async getAll(): Promise<(ReserveType & { id: string })[]> {
     try {
       const colRef = collection(db, this.collectionName);
-      const q = query(colRef, orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
+      const snapshot = await getDocs(colRef);
 
-      return snapshot.docs.map((docSnap) => {
-        const data = docSnap.data() as ReserveType;
-        return {
-          id: docSnap.id,
-          ...data,
-        };
-      });
+      return snapshot.docs
+        .map((docSnap) => {
+          const data = docSnap.data() as ReserveType;
+          return { id: docSnap.id, ...data };
+        })
+        .sort((a, b) => {
+          // Registros antigos podem não ter createdAt — ficam no final
+          const aTime = (a.createdAt as Timestamp)?.toMillis?.() ?? 0;
+          const bTime = (b.createdAt as Timestamp)?.toMillis?.() ?? 0;
+          return bTime - aTime;
+        });
     } catch (error) {
       console.error("Erro ao buscar reservas: ", error);
       return [];
