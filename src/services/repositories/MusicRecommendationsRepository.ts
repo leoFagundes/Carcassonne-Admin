@@ -64,12 +64,12 @@ class MusicRecommendationRepository {
         createdAt: serverTimestamp(),
       });
       console.log("Recomendação criada com ID:", docRef.id);
-      // Atualiza o meta para o polling do admin detectar a novidade
-      await setDoc(
+      // Atualiza o meta para o polling do admin detectar a novidade (best-effort)
+      setDoc(
         doc(db, this.collectionName, "meta"),
         { lastUpdate: serverTimestamp() },
         { merge: true }
-      );
+      ).catch(() => {});
       return true;
     } catch (error) {
       console.error("Erro ao criar recomendação de música: ", error);
