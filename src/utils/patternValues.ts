@@ -10,6 +10,8 @@ import {
   PopupType,
   FreelancerControllType,
   LinkType,
+  EventItemType,
+  BolaoTeamType,
 } from "@/types";
 
 export const longMonths: { [key: string]: string } = {
@@ -165,4 +167,18 @@ export const patternFreelancer: FreelancerControllType = {
     month: "",
     year: "",
   },
+};
+
+export const patternEvent: EventItemType = {
+  name: "",
+  description: "",
+  icon: "",
+  subtype: "bolao",
+  isActive: true,
+};
+
+export const patternBolaoTeam: BolaoTeamType = {
+  name: "",
+  image: "",
+  eventId: "",
 };

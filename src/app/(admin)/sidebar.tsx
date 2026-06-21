@@ -13,6 +13,7 @@ import {
   LuExternalLink,
   LuListPlus,
   LuLogOut,
+  LuTrophy,
 } from "react-icons/lu";
 import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebaseConfig";
@@ -63,11 +64,14 @@ function Item({
       )}
       <span className="shrink-0">{icon}</span>
       <span className="text-lg font-light">{message}</span>
-      {notify && notify.length > 0 && path === "/musicRecommendation" && !isActive && (
-        <div className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary-gold text-primary-black text-[10px] font-bold animate-pulse">
-          {notify.length}
-        </div>
-      )}
+      {notify &&
+        notify.length > 0 &&
+        path === "/musicRecommendation" &&
+        !isActive && (
+          <div className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary-gold text-primary-black text-[10px] font-bold animate-pulse">
+            {notify.length}
+          </div>
+        )}
     </div>
   );
 }
@@ -164,6 +168,7 @@ export default function Sidebar() {
       icon: <LuMusic size={18} />,
     },
     { path: "/links", message: "Links", icon: <LuExternalLink size={18} /> },
+    { path: "/eventos", message: "Eventos", icon: <LuTrophy size={18} /> },
     { path: "/add", message: "Adicionar", icon: <LuListPlus size={18} /> },
     {
       path: "/carcassonne",

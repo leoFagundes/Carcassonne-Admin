@@ -159,3 +159,38 @@ export interface LinkType {
   url: string;
   order?: number;
 }
+
+export interface EventItemType {
+  id?: string;
+  name: string;
+  description: string;
+  icon: string;
+  subtype: "bolao";
+  isActive: boolean;
+  createdAt?: Timestamp;
+}
+
+export interface BolaoTeamType {
+  id?: string;
+  name: string;
+  image: string;
+  eventId: string;
+}
+
+export interface BolaoMatchType {
+  id?: string;
+  eventId: string;
+  teamAId: string;
+  teamBId: string;
+  date?: string;
+  order?: number;
+}
+
+export interface BolaoParticipantType {
+  id?: string;
+  eventId: string;
+  participantId: string;
+  name: string;
+  predictions: Record<string, { scoreA: number; scoreB: number }>;
+  createdAt?: Timestamp;
+}
