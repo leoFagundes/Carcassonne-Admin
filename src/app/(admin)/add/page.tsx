@@ -13,6 +13,7 @@ import {
   LuPizza,
   LuPlus,
   LuText,
+  LuTrophy,
   LuUserPlus,
 } from "react-icons/lu";
 import Card from "./card";
@@ -154,6 +155,12 @@ export default function AddPage() {
           description="Adicione um novo Link ao Linktree do Carcassonne"
           icon={<LuExternalLink size={"32px"} className="min-w-[32px]" />}
           onClick={() => router.push(`/links?createlink=true`)}
+        />
+        <Card
+          title="Adicionar Evento"
+          description="Crie um novo evento como bolão, votação ou qualquer outra atividade!"
+          icon={<LuTrophy size={"32px"} className="min-w-[32px]" />}
+          onClick={() => router.push(`/eventos?createevento=true`)}
         />
       </section>
 

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   LuCalendarDays,
   LuPencil,
@@ -39,6 +40,16 @@ type BolaoTab = "times" | "partidas" | "palpites";
 
 const patternTeamForm: TeamFormState = { name: "", imageUrl: "" };
 const patternMatchForm: MatchFormState = { teamAId: "", teamBId: "", date: "" };
+
+function SearchParamsTrigger({ onTrigger }: { onTrigger: () => void }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("createevento") === "true") {
+      onTrigger();
+    }
+  }, []);
+  return null;
+}
 
 function TabHint({ children }: { children: React.ReactNode }) {
   return (
@@ -355,6 +366,10 @@ export default function EventosPage() {
   return (
     <section className="flex flex-col gap-5 w-full h-full overflow-y-auto">
       {loading && <LoaderFullscreen />}
+
+      <Suspense>
+        <SearchParamsTrigger onTrigger={() => { setCurrentEvent(patternEvent); setEventFormsModal(true); }} />
+      </Suspense>
 
       {/* Header */}
       <div className="flex flex-col gap-2">

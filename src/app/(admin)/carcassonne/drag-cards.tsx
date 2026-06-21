@@ -167,38 +167,38 @@ export const DragCards = () => {
             carcaImages.map((img, index) => (
               <div
                 key={img.id || index}
-                className="group relative rounded-xl overflow-hidden border border-primary-gold/15 hover:border-primary-gold/45 transition-all duration-300"
-                style={{ aspectRatio: "1" }}
+                className="group flex flex-col rounded-xl overflow-hidden border border-primary-gold/15 hover:border-primary-gold/45 transition-all duration-300"
               >
-                <img
-                  src={img.src}
-                  alt={img.description}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
+                {/* Image */}
+                <div
+                  className="relative overflow-hidden shrink-0"
+                  style={showDescriptions ? { height: "140px" } : { aspectRatio: "1" }}
+                >
+                  <img
+                    src={img.src}
+                    alt={img.description}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
 
-                {/* Hover overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-primary-black via-primary-black/70 to-primary-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-2.5">
-                  {(showDescriptions || img.description) && (
-                    <p className="text-[11px] text-primary-gold/85 leading-relaxed line-clamp-3 mb-2">
-                      {img.description}
-                    </p>
-                  )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(img.id);
-                    }}
-                    className="self-end p-1.5 rounded-lg bg-invalid-color/15 border border-invalid-color/35 text-invalid-color/80 hover:bg-invalid-color/25 hover:text-invalid-color transition-all cursor-pointer"
-                  >
-                    <LuTrash size={12} />
-                  </button>
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary-black via-primary-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-2.5">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(img.id);
+                      }}
+                      className="self-end p-1.5 rounded-lg bg-invalid-color/15 border border-invalid-color/35 text-invalid-color/80 hover:bg-invalid-color/25 hover:text-invalid-color transition-all cursor-pointer"
+                    >
+                      <LuTrash size={12} />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Always-visible description badge when toggled */}
-                {showDescriptions && img.description && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-primary-black/70 backdrop-blur-sm px-2 py-1.5 group-hover:opacity-0 transition-opacity">
-                    <p className="text-[10px] text-primary-gold/65 line-clamp-2">
-                      {img.description}
+                {/* Full description below image when toggled */}
+                {showDescriptions && (
+                  <div className="px-2.5 py-2 bg-primary-black/40 border-t border-primary-gold/10">
+                    <p className="text-[10px] text-primary-gold/65 leading-relaxed">
+                      {img.description || <span className="italic text-primary-gold/25">Sem descrição</span>}
                     </p>
                   </div>
                 )}
