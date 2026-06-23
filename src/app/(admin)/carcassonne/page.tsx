@@ -21,12 +21,14 @@ import {
   LuTrendingDown,
   LuClock,
   LuCalendarDays,
+  LuExternalLink,
 } from "react-icons/lu";
 import { onAuthStateChanged } from "firebase/auth";
 import BoardgameRepository from "@/services/repositories/BoardGameRepository";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import InfoRepository from "@/services/repositories/InfoRepository";
 import ComboRepository from "@/services/repositories/ComboRepository";
+import LinksRepository from "@/services/repositories/LinksRepository";
 import Counter from "@/components/mage-ui/text/counter";
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import Input from "@/components/input";
@@ -132,6 +134,9 @@ export default function SettingsPage() {
   const [chartPeriod, setChartPeriod] = useState<"30d" | "all">("30d");
   const [statusData, setStatusData] = useState<
     { name: string; value: number; fill: string }[]
+  >([]);
+  const [linkClicksData, setLinkClicksData] = useState<
+    { name: string; clicks: number }[]
   >([]);
 
   const { addAlert } = useAlert();
@@ -292,6 +297,7 @@ export default function SettingsPage() {
           menuInfos,
           menuCombos,
           reserves,
+          links,
         ] = await Promise.all([
           getCurrentUserEmail(),
           BoardgameRepository.getAll(),
@@ -299,7 +305,11 @@ export default function SettingsPage() {
           InfoRepository.getAll(),
           ComboRepository.getAll(),
           ReserveRepository.getAll(),
+          LinksRepository.getAll(),
         ]);
+
+        const sortedLinks = [...links].sort((a, b) => (b.clicks ?? 0) - (a.clicks ?? 0));
+        setLinkClicksData(sortedLinks.map((l) => ({ name: l.name, clicks: l.clicks ?? 0 })));
 
         setDatabaseInfo({
           currentUserEmail: userEmail,
@@ -563,6 +573,65 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+      {/* ── LINK CLICKS CHART ── */}
+      {linkClicksData.length > 0 && (
+        <div className="bg-secondary-black/40 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <LuExternalLink size={14} className="text-primary-gold/50" />
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
+              Cliques por link
+            </span>
+            <span className="text-[10px] text-primary-gold/25 ml-auto">histórico total</span>
+          </div>
+          <ResponsiveContainer width="100%" height={Math.max(160, linkClicksData.length * 36)}>
+            <BarChart
+              data={linkClicksData}
+              layout="vertical"
+              margin={{ top: 4, right: 24, left: 8, bottom: 0 }}
+            >
+              <XAxis
+                type="number"
+                tick={{ fill: "#e6c56b", fontSize: 10, opacity: 0.4 }}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+              />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={120}
+                tick={{ fill: "#e6c56b", fontSize: 11, opacity: 0.65 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className="bg-primary-black border border-primary-gold/20 rounded-lg px-3 py-2 text-xs text-primary-gold shadow-lg">
+                      <p className="font-semibold mb-0.5">{label}</p>
+                      <p>{payload[0].value} clique{payload[0].value !== 1 ? "s" : ""}</p>
+                    </div>
+                  );
+                }}
+                cursor={{ fill: "rgba(230,197,107,0.05)" }}
+              />
+              <Bar dataKey="clicks" radius={[0, 4, 4, 0]}>
+                {linkClicksData.map((entry, index) => {
+                  const max = Math.max(...linkClicksData.map((d) => d.clicks));
+                  return (
+                    <Cell
+                      key={index}
+                      fill={entry.clicks === max && max > 0 ? GOLD : GOLD_DIM + "60"}
+                    />
+                  );
+                })}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
       {/* ── DATABASE INFO ── */}
       <div className="flex flex-col gap-4">
         <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">

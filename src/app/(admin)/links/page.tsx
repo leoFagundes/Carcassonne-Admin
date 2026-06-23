@@ -14,6 +14,8 @@ import {
   LuChevronDown,
   LuChevronUp,
   LuExternalLink,
+  LuEye,
+  LuEyeOff,
   LuGitBranchPlus,
   LuLink,
   LuPencil,
@@ -26,6 +28,12 @@ export default function LinksPage() {
   const [links, setLinks] = useState<LinkType[]>([]);
   const [currentLink, setCurrentLink] = useState<LinkType>(patternLink);
   const [savingOrder, setSavingOrder] = useState(false);
+
+  const handleToggleVisible = async (link: LinkType) => {
+    const next = link.isVisible === false ? true : false;
+    setLinks((prev) => prev.map((l) => (l.id === link.id ? { ...l, isVisible: next } : l)));
+    await LinksRepository.update(link.id!, { isVisible: next });
+  };
 
   const router = useRouter();
 
@@ -169,7 +177,11 @@ export default function LinksPage() {
             return (
               <div
                 key={link.id}
-                className="w-full max-w-[400px] group relative flex items-center gap-4 p-4 rounded-xl bg-secondary-black border border-white/10 hover:border-primary-gold transition-all duration-200 shadow-card"
+                className={`w-full max-w-[400px] group relative flex items-center gap-4 p-4 rounded-xl bg-secondary-black border transition-all duration-200 shadow-card ${
+                  link.isVisible === false
+                    ? "border-white/5 opacity-50 hover:opacity-80"
+                    : "border-white/10 hover:border-primary-gold"
+                }`}
               >
                 {/* Up / Down arrows */}
                 <div className="flex flex-col gap-0.5">
@@ -215,6 +227,19 @@ export default function LinksPage() {
                     {link.url}
                   </a>
                 </div>
+
+                {/* Visibility toggle */}
+                <Tooltip content={link.isVisible === false ? "Mostrar no linktree" : "Ocultar do linktree"}>
+                  <button
+                    onClick={() => handleToggleVisible(link)}
+                    className="transition-opacity p-2 rounded-md hover:bg-white/10 cursor-pointer"
+                  >
+                    {link.isVisible === false
+                      ? <LuEyeOff size={16} className="text-primary-gold/30" />
+                      : <LuEye size={16} className="text-primary-gold/70" />
+                    }
+                  </button>
+                </Tooltip>
 
                 {/* Edit button */}
                 <Tooltip content="Editar">

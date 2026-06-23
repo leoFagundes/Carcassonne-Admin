@@ -155,9 +155,8 @@ import { useEffect, useMemo, useState } from "react";
 //   ),
 // };
 
-function LinkCard({ link, index }: { link: LinkType; index: number }) {
+function LinkCard({ link, index }: { link: LinkType & { id: string }; index: number }) {
   const [hovered, setHovered] = useState(false);
-  //   const Icon = ICONS[link.icon] ?? ICONS["dice-5"];
   const Icon = getLucideIcon(link.icon);
 
   return (
@@ -165,6 +164,7 @@ function LinkCard({ link, index }: { link: LinkType; index: number }) {
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => LinksRepository.incrementClicks(link.id)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -222,7 +222,7 @@ function LinkCard({ link, index }: { link: LinkType; index: number }) {
 
 export default function LinktreePage() {
   const [mounted, setMounted] = useState(false);
-  const [links, setLinks] = useState<LinkType[]>([]);
+  const [links, setLinks] = useState<(LinkType & { id: string })[]>([]);
 
   const fetchLinks = async () => {
     try {
@@ -239,9 +239,9 @@ export default function LinktreePage() {
   }, []);
 
   const sortedLinks = useMemo(() => {
-    return [...links].sort((a, b) => {
-      return (a.order ?? 9999) - (b.order ?? 9999);
-    });
+    return [...links]
+      .filter((l) => l.isVisible !== false)
+      .sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
   }, [links]);
 
   return (
@@ -394,7 +394,7 @@ export default function LinktreePage() {
           <div className="flex flex-col items-center gap-3 w-full">
             {mounted ? (
               sortedLinks.map((link, i) => (
-                <LinkCard key={link.id} link={link} index={i} />
+                <LinkCard key={link.id} link={link as LinkType & { id: string }} index={i} />
               ))
             ) : (
               <Loader />

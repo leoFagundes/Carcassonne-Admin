@@ -8,6 +8,8 @@ import {
   deleteDoc,
   serverTimestamp,
   Timestamp,
+  onSnapshot,
+  deleteField,
 } from "firebase/firestore";
 import { EventItemType } from "@/types";
 
@@ -35,6 +37,27 @@ class EventRepository {
     }
   }
 
+  static subscribeToEvent(
+    id: string,
+    callback: (event: (EventItemType & { id: string }) | null) => void
+  ): () => void {
+    const eventRef = doc(db, this.collectionName, id);
+    return onSnapshot(
+      eventRef,
+      (snap) => {
+        if (snap.exists()) {
+          callback({ id: snap.id, ...(snap.data() as EventItemType) });
+        } else {
+          callback(null);
+        }
+      },
+      (error) => {
+        console.error("Erro ao ouvir evento:", error);
+        callback(null);
+      }
+    );
+  }
+
   static async create(data: Omit<EventItemType, "id" | "createdAt">): Promise<string | null> {
     try {
       const docRef = await addDoc(collection(db, this.collectionName), {
@@ -56,6 +79,39 @@ class EventRepository {
       console.error("Erro ao atualizar evento: ", error);
       return false;
     }
+  }
+
+  static async startQuiz(id: string): Promise<boolean> {
+    return this.update(id, {
+      quizStatus: "running",
+      quizStartedAt: Timestamp.now(),
+    });
+  }
+
+  static async endQuiz(id: string): Promise<boolean> {
+    return this.update(id, { quizStatus: "finished" });
+  }
+
+  static async resetQuiz(id: string): Promise<boolean> {
+    try {
+      await updateDoc(doc(db, this.collectionName, id), {
+        quizStatus: "waiting",
+        quizResultsVisible: false,
+        quizChampionId: deleteField(),
+      });
+      return true;
+    } catch (error) {
+      console.error("Erro ao reiniciar quiz:", error);
+      return false;
+    }
+  }
+
+  static async showQuizResults(id: string): Promise<boolean> {
+    return this.update(id, { quizResultsVisible: true });
+  }
+
+  static async setQuizChampion(id: string, participantId: string): Promise<boolean> {
+    return this.update(id, { quizChampionId: participantId });
   }
 
   static async delete(id: string): Promise<boolean> {

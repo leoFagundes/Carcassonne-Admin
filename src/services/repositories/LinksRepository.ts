@@ -9,6 +9,7 @@ import {
   deleteDoc,
   query,
   orderBy,
+  increment,
 } from "firebase/firestore";
 import { LinkType } from "@/types";
 
@@ -76,6 +77,14 @@ class LinksRepository {
         updateDoc(doc(db, "links", id), { order }),
       ),
     );
+  }
+
+  static async incrementClicks(id: string) {
+    try {
+      await updateDoc(doc(db, this.collectionName, id), { clicks: increment(1) });
+    } catch (error) {
+      console.error("Erro ao incrementar cliques: ", error);
+    }
   }
 
   static async delete(id: string) {

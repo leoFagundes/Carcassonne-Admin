@@ -12,6 +12,7 @@ import {
   LinkType,
   EventItemType,
   BolaoTeamType,
+  QuizQuestionType,
 } from "@/types";
 
 export const longMonths: { [key: string]: string } = {
@@ -181,4 +182,15 @@ export const patternBolaoTeam: BolaoTeamType = {
   name: "",
   image: "",
   eventId: "",
+};
+
+export const patternQuizQuestion: QuizQuestionType = {
+  eventId: "",
+  text: "",
+  type: "multiple_choice",
+  options: ["", ""],
+  correctOption: 0,
+  points: 1,
+  timeSeconds: 30,
+  order: 0,
 };

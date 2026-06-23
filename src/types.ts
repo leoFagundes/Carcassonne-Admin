@@ -158,6 +158,8 @@ export interface LinkType {
   icon: string;
   url: string;
   order?: number;
+  clicks?: number;
+  isVisible?: boolean;
 }
 
 export interface EventItemType {
@@ -165,9 +167,45 @@ export interface EventItemType {
   name: string;
   description: string;
   icon: string;
-  subtype: "bolao";
+  subtype: "bolao" | "quiz";
   isActive: boolean;
   createdAt?: Timestamp;
+  // Quiz-specific
+  quizStatus?: "waiting" | "running" | "finished";
+  quizDuration?: number; // seconds (legacy)
+  quizStartedAt?: Timestamp;
+  quizPrize?: string;
+  quizResultsVisible?: boolean;
+  quizChampionId?: string; // participantId of the crowned champion
+}
+
+export interface QuizQuestionType {
+  id?: string;
+  eventId: string;
+  text: string;
+  type: "multiple_choice" | "text";
+  options?: string[];
+  correctOption?: number; // index (0-based)
+  points: number;
+  timeSeconds: number; // seconds the participant has to answer this question
+  order?: number;
+}
+
+export interface QuizParticipantType {
+  id?: string;
+  eventId: string;
+  participantId: string;
+  name: string;
+  mesa?: string;
+  answers: Record<string, {
+    answer: string | number;
+    isCorrect?: boolean;
+    pointsEarned?: number;
+  }>;
+  totalScore: number;
+  timeTakenSeconds?: number; // sum of per-correct-question times in seconds (float, ms precision)
+  questionTimes?: Record<string, number>; // ms spent per question, keyed by questionId
+  submittedAt?: Timestamp;
 }
 
 export interface BolaoTeamType {
