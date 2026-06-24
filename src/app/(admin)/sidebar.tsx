@@ -14,6 +14,7 @@ import {
   LuListPlus,
   LuLogOut,
   LuTrophy,
+  LuCircleHelp,
 } from "react-icons/lu";
 import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebaseConfig";
@@ -260,14 +261,28 @@ export default function Sidebar() {
             ))}
           </nav>
 
-          {/* Logout */}
-          <div className="p-3 border-t border-primary-gold/10">
+          {/* Bottom actions */}
+          <div className="p-3 border-t border-primary-gold/10 space-y-1">
+            <div
+              onClick={() => {
+                router.push("/ajuda");
+                setIsOpen(false);
+              }}
+              className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 select-none ${
+                pathname === "/ajuda"
+                  ? "bg-primary-gold/10 border border-primary-gold/25 text-primary-gold"
+                  : "text-primary-gold/35 border border-transparent hover:text-primary-gold/70 hover:bg-primary-gold/5"
+              }`}
+            >
+              <LuCircleHelp size={17} className="shrink-0" />
+              <span className="text-sm font-medium">Ajuda</span>
+            </div>
             <div
               onClick={() => {
                 handleLogout();
                 setIsOpen(false);
               }}
-              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 text-primary-gold/35 hover:text-invalid-color hover:bg-invalid-color/5 select-none"
+              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 text-primary-gold/35 hover:text-invalid-color hover:bg-invalid-color/5 select-none border border-transparent"
             >
               <LuLogOut size={17} className="shrink-0" />
               <span className="text-sm font-medium">Sair</span>
