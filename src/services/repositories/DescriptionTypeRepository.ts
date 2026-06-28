@@ -1,4 +1,4 @@
-import { db } from "@/services/firebaseConfig";
+﻿import { db } from "@/services/firebaseConfig";
 import {
   collection,
   addDoc,
@@ -24,7 +24,7 @@ class DescriptionRepository {
         ...(doc.data() as DescriptionTypeProps),
       }));
     } catch (error) {
-      console.error("Erro ao buscar descrições: ", error);
+      console.error("Erro ao buscar descriÃ§Ãµes: ", error);
       return [];
     }
   }
@@ -43,7 +43,7 @@ class DescriptionRepository {
       }
       return null;
     } catch (error) {
-      console.error("Erro ao buscar descrição por ID: ", error);
+      console.error("Erro ao buscar descriÃ§Ã£o por ID: ", error);
       return null;
     }
   }
@@ -51,10 +51,9 @@ class DescriptionRepository {
   static async create(data: DescriptionTypeProps) {
     try {
       const docRef = await addDoc(collection(db, this.collectionName), data);
-      console.log("Descrição criada com ID:", docRef.id);
       return docRef.id;
     } catch (error) {
-      console.error("Erro ao criar descrição: ", error);
+      console.error("Erro ao criar descriÃ§Ã£o: ", error);
       return false;
     }
   }
@@ -63,10 +62,9 @@ class DescriptionRepository {
     try {
       const docRef = doc(db, this.collectionName, id);
       await updateDoc(docRef, data);
-      console.log("Descrição atualizada com sucesso.");
       return true;
     } catch (error) {
-      console.error("Erro ao atualizar descrição: ", error);
+      console.error("Erro ao atualizar descriÃ§Ã£o: ", error);
       return false;
     }
   }
@@ -74,10 +72,9 @@ class DescriptionRepository {
   static async delete(id: string) {
     try {
       await deleteDoc(doc(db, this.collectionName, id));
-      console.log("Descrição deletada com sucesso.");
       return true;
     } catch (error) {
-      console.error("Erro ao deletar descrição: ", error);
+      console.error("Erro ao deletar descriÃ§Ã£o: ", error);
       return false;
     }
   }

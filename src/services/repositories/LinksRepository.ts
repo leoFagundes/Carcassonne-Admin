@@ -1,4 +1,4 @@
-import { db } from "@/services/firebaseConfig";
+﻿import { db } from "@/services/firebaseConfig";
 import {
   collection,
   addDoc,
@@ -49,7 +49,6 @@ class LinksRepository {
   static async create(data: LinkType) {
     try {
       const docRef = await addDoc(collection(db, this.collectionName), data);
-      console.log("Link criado com ID:", docRef.id);
       return true;
     } catch (error) {
       console.error("Erro ao criar link: ", error);
@@ -61,7 +60,6 @@ class LinksRepository {
     try {
       const docRef = doc(db, this.collectionName, id);
       await updateDoc(docRef, data);
-      console.log("Link atualizado com sucesso.");
       return true;
     } catch (error) {
       console.error("Erro ao atualizar link: ", error);
@@ -73,7 +71,7 @@ class LinksRepository {
     // Ex: batch update no Firestore, Supabase, etc.
     await Promise.all(
       updates.map(({ id, order }) =>
-        // sua lógica de update aqui, ex:
+        // sua lÃ³gica de update aqui, ex:
         updateDoc(doc(db, "links", id), { order }),
       ),
     );
@@ -81,7 +79,11 @@ class LinksRepository {
 
   static async incrementClicks(id: string) {
     try {
-      await updateDoc(doc(db, this.collectionName, id), { clicks: increment(1) });
+      const today = new Date().toISOString().slice(0, 10);
+      await updateDoc(doc(db, this.collectionName, id), {
+        clicks: increment(1),
+        [`clicksByDay.${today}`]: increment(1),
+      });
     } catch (error) {
       console.error("Erro ao incrementar cliques: ", error);
     }
@@ -90,7 +92,6 @@ class LinksRepository {
   static async delete(id: string) {
     try {
       await deleteDoc(doc(db, this.collectionName, id));
-      console.log("Link deletado com sucesso.");
       return true;
     } catch (error) {
       console.error("Erro ao deletar link: ", error);

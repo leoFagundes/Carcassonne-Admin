@@ -1,4 +1,4 @@
-import { db } from "@/services/firebaseConfig";
+﻿import { db } from "@/services/firebaseConfig";
 import {
   collection,
   addDoc,
@@ -30,7 +30,6 @@ class PopupRepository {
   static async create(data: Omit<PopupType, "id">): Promise<string | null> {
     try {
       const docRef = await addDoc(collection(db, this.collectionName), data);
-      console.log("Popup criado com ID:", docRef.id);
       return docRef.id;
     } catch (error) {
       console.error("Erro ao criar popup: ", error);
@@ -44,7 +43,6 @@ class PopupRepository {
   ): Promise<boolean> {
     try {
       await updateDoc(doc(db, this.collectionName, id), data);
-      console.log("Popup atualizado com sucesso.");
       return true;
     } catch (error) {
       console.error("Erro ao atualizar popup: ", error);
@@ -55,7 +53,6 @@ class PopupRepository {
   static async delete(id: string): Promise<boolean> {
     try {
       await deleteDoc(doc(db, this.collectionName, id));
-      console.log("Popup deletado com sucesso.");
       return true;
     } catch (error) {
       console.error("Erro ao deletar popup: ", error);

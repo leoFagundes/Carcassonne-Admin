@@ -1,4 +1,4 @@
-import { db } from "@/services/firebaseConfig";
+﻿import { db } from "@/services/firebaseConfig";
 import {
   collection,
   addDoc,
@@ -85,7 +85,6 @@ class FreelancerRepository {
   static async create(data: FreelancerControllType) {
     try {
       const docRef = await addDoc(collection(db, this.collectionName), data);
-      console.log("Freelancer criado com ID:", docRef.id);
       return true;
     } catch (error) {
       console.error("Erro ao criar freelancer: ", error);
@@ -97,7 +96,6 @@ class FreelancerRepository {
     try {
       const docRef = doc(db, this.collectionName, id);
       await updateDoc(docRef, data);
-      console.log("Freelancer atualizado com sucesso.");
       return true;
     } catch (error) {
       console.error("Erro ao atualizar freelancer: ", error);
@@ -108,7 +106,6 @@ class FreelancerRepository {
   static async delete(id: string) {
     try {
       await deleteDoc(doc(db, this.collectionName, id));
-      console.log("Freelancer deletado com sucesso.");
       return true;
     } catch (error) {
       console.error("Erro ao deletar freelancer: ", error);

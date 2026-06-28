@@ -1,4 +1,4 @@
-import { db } from "@/services/firebaseConfig";
+﻿import { db } from "@/services/firebaseConfig";
 import {
   collection,
   addDoc,
@@ -24,7 +24,7 @@ class InfoRepository {
         ...(doc.data() as InfoType),
       }));
     } catch (error) {
-      console.error("Erro ao buscar informações: ", error);
+      console.error("Erro ao buscar informaÃ§Ãµes: ", error);
       return [];
     }
   }
@@ -40,7 +40,7 @@ class InfoRepository {
       }
       return null;
     } catch (error) {
-      console.error("Erro ao buscar informação por ID: ", error);
+      console.error("Erro ao buscar informaÃ§Ã£o por ID: ", error);
       return null;
     }
   }
@@ -48,10 +48,9 @@ class InfoRepository {
   static async create(data: InfoType) {
     try {
       const docRef = await addDoc(collection(db, this.collectionName), data);
-      console.log("Informação criada com ID:", docRef.id);
       return true;
     } catch (error) {
-      console.error("Erro ao criar informação: ", error);
+      console.error("Erro ao criar informaÃ§Ã£o: ", error);
       return false;
     }
   }
@@ -60,10 +59,9 @@ class InfoRepository {
     try {
       const docRef = doc(db, this.collectionName, id);
       await updateDoc(docRef, data);
-      console.log("Informação atualizada com sucesso.");
       return true;
     } catch (error) {
-      console.error("Erro ao atualizar informação: ", error);
+      console.error("Erro ao atualizar informaÃ§Ã£o: ", error);
       return false;
     }
   }
@@ -71,10 +69,9 @@ class InfoRepository {
   static async delete(id: string) {
     try {
       await deleteDoc(doc(db, this.collectionName, id));
-      console.log("Informação deletada com sucesso.");
       return true;
     } catch (error) {
-      console.error("Erro ao deletar informação: ", error);
+      console.error("Erro ao deletar informaÃ§Ã£o: ", error);
       return false;
     }
   }

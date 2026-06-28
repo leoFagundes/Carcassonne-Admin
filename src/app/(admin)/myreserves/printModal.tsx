@@ -57,7 +57,7 @@ export default function PrintModal({
 
       {/* Conteúdo do modal */}
       <div
-        className="text-black p-6 rounded-md flex justify-center items-center z-10"
+        className="text-black p-6 rounded-md flex justify-center items-start z-10 overflow-y-auto max-h-[calc(100vh-10rem)]"
         onClick={(e) => e.stopPropagation()}
       >
         {children}

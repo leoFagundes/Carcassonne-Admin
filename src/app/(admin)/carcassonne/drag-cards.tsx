@@ -177,8 +177,8 @@ export const DragCards = () => {
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
 
-                  {/* Hover overlay — description + delete */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-primary-black via-primary-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-2.5 gap-1.5">
+                  {/* Hover overlay — description + delete (desktop only) */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary-black via-primary-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden sm:flex flex-col justify-end p-2.5 gap-1.5">
                     {img.description && (
                       <p className="text-[10px] text-primary-gold/85 leading-relaxed">
                         {img.description}

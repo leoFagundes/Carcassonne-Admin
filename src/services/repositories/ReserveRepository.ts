@@ -1,4 +1,4 @@
-// src/repositories/ReserveRepository.ts
+﻿// src/repositories/ReserveRepository.ts
 import { db } from "@/services/firebaseConfig";
 import {
   collection,
@@ -35,7 +35,7 @@ class ReserveRepository {
   static async getFromTodayOn(): Promise<(ReserveType & { id: string })[]> {
     try {
       const today = new Date();
-      today.setHours(0, 0, 0, 0); // Zera horário pra pegar só a data exata
+      today.setHours(0, 0, 0, 0); // Zera horÃ¡rio pra pegar sÃ³ a data exata
 
       const colRef = collection(db, this.collectionName);
       const snapshot = await getDocs(colRef);
@@ -79,11 +79,11 @@ class ReserveRepository {
           const reservaDate = this.parseBookingDate(reserva.bookingDate);
           return (
             reservaDate.getFullYear() === year &&
-            reservaDate.getMonth() === month - 1 // JS começa em 0
+            reservaDate.getMonth() === month - 1 // JS comeÃ§a em 0
           );
         });
     } catch (error) {
-      console.error("Erro ao buscar reservas por mês: ", error);
+      console.error("Erro ao buscar reservas por mÃªs: ", error);
       return [];
     }
   }
@@ -122,7 +122,7 @@ class ReserveRepository {
     let exists: boolean;
     do {
       code = randomCodeGenerator();
-      // Busca tanto o código exato quanto a versão em minúsculas para cobrir registros antigos
+      // Busca tanto o cÃ³digo exato quanto a versÃ£o em minÃºsculas para cobrir registros antigos
       const colRef = collection(db, this.collectionName);
       const [snapshotExact, snapshotLower] = await Promise.all([
         getDocs(query(colRef, where("code", "==", code))),
@@ -144,7 +144,7 @@ class ReserveRepository {
           return { id: docSnap.id, ...data };
         })
         .sort((a, b) => {
-          // Registros antigos podem não ter createdAt — ficam no final
+          // Registros antigos podem nÃ£o ter createdAt â€” ficam no final
           const aTime = (a.createdAt as Timestamp)?.toMillis?.() ?? 0;
           const bTime = (b.createdAt as Timestamp)?.toMillis?.() ?? 0;
           return bTime - aTime;
@@ -179,7 +179,7 @@ class ReserveRepository {
   // static async create(data: ReserveType) {
   //   try {
   //     await addDoc(collection(db, this.collectionName), data);
-  //     console.log("Reserva criada com sucesso.");
+  //
   //     return true;
   //   } catch (error) {
   //     console.error("Erro ao criar reserva: ", error);
@@ -203,8 +203,6 @@ class ReserveRepository {
         _id: docSnap.id,
         ...(docSnap.data() as ReserveType),
       };
-
-      console.log("Reserva criada com sucesso:", createdReserve);
       return createdReserve;
     } catch (error) {
       console.error("Erro ao criar reserva: ", error);
@@ -216,7 +214,6 @@ class ReserveRepository {
     try {
       const docRef = doc(db, this.collectionName, id);
       await updateDoc(docRef, data);
-      console.log("Reserva atualizada com sucesso.");
       return true;
     } catch (error) {
       console.error("Erro ao atualizar reserva: ", error);
@@ -227,7 +224,6 @@ class ReserveRepository {
   static async delete(id: string) {
     try {
       await deleteDoc(doc(db, this.collectionName, id));
-      console.log("Reserva deletada com sucesso.");
       return true;
     } catch (error) {
       console.error("Erro ao deletar reserva: ", error);
@@ -240,18 +236,15 @@ class ReserveRepository {
       const reservasDoMes = await this.getByMonth(year, month);
 
       if (reservasDoMes.length === 0) {
-        console.log("Nenhuma reserva encontrada para o mês especificado.");
         return false;
       }
 
       await Promise.all(
         reservasDoMes.map((reserva) => this.delete(reserva.id))
       );
-
-      console.log(`Todas as reservas de ${month}/${year} foram deletadas.`);
       return true;
     } catch (error) {
-      console.error("Erro ao deletar reservas do mês especificado:", error);
+      console.error("Erro ao deletar reservas do mÃªs especificado:", error);
       return false;
     }
   }

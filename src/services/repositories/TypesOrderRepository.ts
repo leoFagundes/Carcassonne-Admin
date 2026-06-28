@@ -1,4 +1,4 @@
-import { db } from "@/services/firebaseConfig";
+﻿import { db } from "@/services/firebaseConfig";
 import {
   collection,
   addDoc,
@@ -26,7 +26,7 @@ class TypesOrderRepository {
         ...(doc.data() as TypeOrderType),
       }));
     } catch (error) {
-      console.error("Erro ao buscar ordenações de tipos:", error);
+      console.error("Erro ao buscar ordenaÃ§Ãµes de tipos:", error);
       return [];
     }
   }
@@ -42,7 +42,7 @@ class TypesOrderRepository {
       }
       return null;
     } catch (error) {
-      console.error("Erro ao buscar ordenação por ID:", error);
+      console.error("Erro ao buscar ordenaÃ§Ã£o por ID:", error);
       return null;
     }
   }
@@ -50,14 +50,13 @@ class TypesOrderRepository {
   static async create(data: TypeOrderType) {
     try {
       const docRef = await addDoc(collection(db, this.collectionName), data);
-      console.log("Ordenação criada com ID:", docRef.id);
 
       return {
         id: docRef.id,
         ...data,
       };
     } catch (error) {
-      console.error("Erro ao criar ordenação:", error);
+      console.error("Erro ao criar ordenaÃ§Ã£o:", error);
       return null;
     }
   }
@@ -66,10 +65,9 @@ class TypesOrderRepository {
     try {
       const docRef = doc(db, this.collectionName, id);
       await updateDoc(docRef, data);
-      console.log("Ordenação atualizada com sucesso.");
       return true;
     } catch (error) {
-      console.error("Erro ao atualizar ordenação:", error);
+      console.error("Erro ao atualizar ordenaÃ§Ã£o:", error);
       return false;
     }
   }
@@ -77,10 +75,9 @@ class TypesOrderRepository {
   static async delete(id: string) {
     try {
       await deleteDoc(doc(db, this.collectionName, id));
-      console.log("Ordenação deletada com sucesso.");
       return true;
     } catch (error) {
-      console.error("Erro ao deletar ordenação:", error);
+      console.error("Erro ao deletar ordenaÃ§Ã£o:", error);
       return false;
     }
   }

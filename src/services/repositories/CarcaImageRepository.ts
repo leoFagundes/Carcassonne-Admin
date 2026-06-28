@@ -1,4 +1,4 @@
-import { db } from "@/services/firebaseConfig";
+﻿import { db } from "@/services/firebaseConfig";
 import {
   collection,
   addDoc,
@@ -50,7 +50,6 @@ class CarcaImageRepository {
   static async create(data: CarcaImageType) {
     try {
       const docRef = await addDoc(collection(db, this.collectionName), data);
-      console.log("Imagem criada com ID:", docRef.id);
       return true;
     } catch (error) {
       console.error("Erro ao criar imagem: ", error);
@@ -62,7 +61,6 @@ class CarcaImageRepository {
     try {
       const docRef = doc(db, this.collectionName, id);
       await updateDoc(docRef, data);
-      console.log("Imagem atualizada com sucesso.");
       return true;
     } catch (error) {
       console.error("Erro ao atualizar imagem: ", error);
@@ -73,7 +71,6 @@ class CarcaImageRepository {
   static async delete(id: string) {
     try {
       await deleteDoc(doc(db, this.collectionName, id));
-      console.log("Imagem deletada com sucesso.");
       return true;
     } catch (error) {
       console.error("Erro ao deletar imagem: ", error);

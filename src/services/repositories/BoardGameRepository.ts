@@ -1,4 +1,4 @@
-import { db } from "@/services/firebaseConfig";
+﻿import { db } from "@/services/firebaseConfig";
 import {
   collection,
   addDoc,
@@ -48,7 +48,6 @@ class BoardgameRepository {
   static async create(data: BoardgameType) {
     try {
       const docRef = await addDoc(collection(db, this.collectionName), data);
-      console.log("Jogo criado com ID:", docRef.id);
       return true;
     } catch (error) {
       console.error("Erro ao criar jogo de tabuleiro: ", error);
@@ -60,7 +59,6 @@ class BoardgameRepository {
     try {
       const docRef = doc(db, this.collectionName, id);
       await updateDoc(docRef, data);
-      console.log("Jogo atualizado com sucesso.");
       return true;
     } catch (error) {
       console.error("Erro ao atualizar jogo: ", error);
@@ -71,7 +69,6 @@ class BoardgameRepository {
   static async delete(id: string) {
     try {
       await deleteDoc(doc(db, this.collectionName, id));
-      console.log("Jogo deletado com sucesso.");
       return true;
     } catch (error) {
       console.error("Erro ao deletar jogo: ", error);

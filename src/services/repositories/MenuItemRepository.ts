@@ -1,4 +1,4 @@
-import { db } from "@/services/firebaseConfig";
+﻿import { db } from "@/services/firebaseConfig";
 import {
   collection,
   addDoc,
@@ -24,7 +24,7 @@ class MenuItemRepository {
         ...(doc.data() as MenuItemType),
       }));
     } catch (error) {
-      console.error("Erro ao buscar itens do cardápio: ", error);
+      console.error("Erro ao buscar itens do cardÃ¡pio: ", error);
       return [];
     }
   }
@@ -40,7 +40,7 @@ class MenuItemRepository {
       }
       return null;
     } catch (error) {
-      console.error("Erro ao buscar item do cardápio por ID: ", error);
+      console.error("Erro ao buscar item do cardÃ¡pio por ID: ", error);
       return null;
     }
   }
@@ -48,10 +48,9 @@ class MenuItemRepository {
   static async create(data: MenuItemType) {
     try {
       const docRef = await addDoc(collection(db, this.collectionName), data);
-      console.log("Item do cardápio criado com ID:", docRef.id);
       return true;
     } catch (error) {
-      console.error("Erro ao criar item do cardápio: ", error);
+      console.error("Erro ao criar item do cardÃ¡pio: ", error);
       return false;
     }
   }
@@ -62,15 +61,14 @@ class MenuItemRepository {
       const currentSnap = await getDoc(docRef);
 
       if (!currentSnap.exists()) {
-        console.error("Item do cardápio não encontrado.");
+        console.error("Item do cardÃ¡pio nÃ£o encontrado.");
         return false;
       }
 
       await updateDoc(docRef, data);
-      console.log("Item do cardápio atualizado com sucesso.");
       return true;
     } catch (error) {
-      console.error("Erro ao atualizar item do cardápio: ", error);
+      console.error("Erro ao atualizar item do cardÃ¡pio: ", error);
       return false;
     }
   }
@@ -79,10 +77,9 @@ class MenuItemRepository {
     try {
       const docRef = doc(db, this.collectionName, id);
       await deleteDoc(docRef);
-      console.log("Item do cardápio deletado com sucesso.");
       return true;
     } catch (error) {
-      console.error("Erro ao deletar item do cardápio: ", error);
+      console.error("Erro ao deletar item do cardÃ¡pio: ", error);
       return false;
     }
   }

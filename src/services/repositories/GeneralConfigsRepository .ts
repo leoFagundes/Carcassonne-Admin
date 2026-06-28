@@ -1,4 +1,4 @@
-import { db } from "@/services/firebaseConfig";
+﻿import { db } from "@/services/firebaseConfig";
 import {
   collection,
   addDoc,
@@ -25,7 +25,7 @@ class GeneralConfigsRepository {
       }
       return null;
     } catch (error) {
-      console.error("Erro ao buscar configuração geral: ", error);
+      console.error("Erro ao buscar configuraÃ§Ã£o geral: ", error);
       return null;
     }
   }
@@ -34,15 +34,14 @@ class GeneralConfigsRepository {
     try {
       const snapshot = await getDocs(collection(db, this.collectionName));
       if (!snapshot.empty) {
-        console.warn("Já existe uma configuração geral. Criação bloqueada.");
+        console.warn("JÃ¡ existe uma configuraÃ§Ã£o geral. CriaÃ§Ã£o bloqueada.");
         return false;
       }
 
       const docRef = await addDoc(collection(db, this.collectionName), data);
-      console.log("Configuração criada com ID:", docRef.id);
       return true;
     } catch (error) {
-      console.error("Erro ao criar configuração geral: ", error);
+      console.error("Erro ao criar configuraÃ§Ã£o geral: ", error);
       return false;
     }
   }
@@ -53,16 +52,15 @@ class GeneralConfigsRepository {
     try {
       const snapshot = await getDocs(collection(db, this.collectionName));
       if (snapshot.empty) {
-        console.warn("Nenhuma configuração encontrada para atualizar.");
+        console.warn("Nenhuma configuraÃ§Ã£o encontrada para atualizar.");
         return false;
       }
 
       const configDoc = snapshot.docs[0];
       await updateDoc(doc(db, this.collectionName, configDoc.id), data);
-      console.log("Configuração atualizada com sucesso.");
       return true;
     } catch (error) {
-      console.error("Erro ao atualizar configuração geral: ", error);
+      console.error("Erro ao atualizar configuraÃ§Ã£o geral: ", error);
       return false;
     }
   }
@@ -71,16 +69,15 @@ class GeneralConfigsRepository {
     try {
       const snapshot = await getDocs(collection(db, this.collectionName));
       if (snapshot.empty) {
-        console.warn("Nenhuma configuração encontrada para deletar.");
+        console.warn("Nenhuma configuraÃ§Ã£o encontrada para deletar.");
         return false;
       }
 
       const configDoc = snapshot.docs[0];
       await deleteDoc(doc(db, this.collectionName, configDoc.id));
-      console.log("Configuração deletada com sucesso.");
       return true;
     } catch (error) {
-      console.error("Erro ao deletar configuração geral: ", error);
+      console.error("Erro ao deletar configuraÃ§Ã£o geral: ", error);
       return false;
     }
   }

@@ -159,6 +159,7 @@ export interface LinkType {
   url: string;
   order?: number;
   clicks?: number;
+  clicksByDay?: Record<string, number>;
   isVisible?: boolean;
 }
 

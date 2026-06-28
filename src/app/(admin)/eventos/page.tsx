@@ -245,6 +245,17 @@ export default function EventosPage() {
 
   const { addAlert } = useAlert();
 
+  const [simpleConfirmModal, setSimpleConfirmModal] = useState<{
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+  const [deleteTypedModal, setDeleteTypedModal] = useState<{
+    title: string;
+    description: string;
+    onConfirm: () => void;
+  } | null>(null);
+  const [deleteTypedInput, setDeleteTypedInput] = useState("");
+
   // ── Admin current-question indicator ─────────────────────────────────────────
 
   useEffect(() => {
@@ -453,15 +464,19 @@ export default function EventosPage() {
     }
   };
 
-  const handleDeleteTeam = async (team: BolaoTeamType & { id: string }) => {
-    if (!window.confirm(`Deletar o time "${team.name}"?`)) return;
-    try {
-      await BolaoTeamRepository.delete(team.id);
-      setTeams((prev) => prev.filter((t) => t.id !== team.id));
-      addAlert(`Time "${team.name}" removido.`);
-    } catch {
-      addAlert("Erro ao remover time.");
-    }
+  const handleDeleteTeam = (team: BolaoTeamType & { id: string }) => {
+    setSimpleConfirmModal({
+      message: `Deletar o time "${team.name}"?`,
+      onConfirm: async () => {
+        try {
+          await BolaoTeamRepository.delete(team.id);
+          setTeams((prev) => prev.filter((t) => t.id !== team.id));
+          addAlert(`Time "${team.name}" removido.`);
+        } catch {
+          addAlert("Erro ao remover time.");
+        }
+      },
+    });
   };
 
   const handleAddMatch = async () => {
@@ -504,47 +519,56 @@ export default function EventosPage() {
     }
   };
 
-  const handleDeleteMatch = async (match: BolaoMatchType & { id: string }) => {
+  const handleDeleteMatch = (match: BolaoMatchType & { id: string }) => {
     const teamA = teams.find((t) => t.id === match.teamAId)?.name ?? "?";
     const teamB = teams.find((t) => t.id === match.teamBId)?.name ?? "?";
-    if (!window.confirm(`Deletar a partida ${teamA} x ${teamB}?`)) return;
-    try {
-      await BolaoMatchRepository.delete(match.id);
-      setMatches((prev) => prev.filter((m) => m.id !== match.id));
-      addAlert("Partida removida.");
-    } catch {
-      addAlert("Erro ao remover partida.");
-    }
+    setSimpleConfirmModal({
+      message: `Deletar a partida ${teamA} x ${teamB}?`,
+      onConfirm: async () => {
+        try {
+          await BolaoMatchRepository.delete(match.id);
+          setMatches((prev) => prev.filter((m) => m.id !== match.id));
+          addAlert("Partida removida.");
+        } catch {
+          addAlert("Erro ao remover partida.");
+        }
+      },
+    });
   };
 
-  const handleDeleteParticipant = async (
+  const handleDeleteParticipant = (
     participant: BolaoParticipantType & { id: string },
   ) => {
-    if (!window.confirm(`Excluir o palpite de "${participant.name}"?`)) return;
-    try {
-      await BolaoParticipantRepository.delete(participant.id);
-      setParticipants((prev) => prev.filter((p) => p.id !== participant.id));
-      addAlert(`Palpite de "${participant.name}" excluído.`);
-    } catch {
-      addAlert("Erro ao excluir palpite.");
-    }
+    setSimpleConfirmModal({
+      message: `Excluir o palpite de "${participant.name}"?`,
+      onConfirm: async () => {
+        try {
+          await BolaoParticipantRepository.delete(participant.id);
+          setParticipants((prev) => prev.filter((p) => p.id !== participant.id));
+          addAlert(`Palpite de "${participant.name}" excluído.`);
+        } catch {
+          addAlert("Erro ao excluir palpite.");
+        }
+      },
+    });
   };
 
-  const handleDeleteAllParticipants = async () => {
+  const handleDeleteAllParticipants = () => {
     if (!selectedEvent) return;
-    if (
-      !window.confirm(
-        `Excluir TODOS os ${participants.length} palpites? Irreversível.`,
-      )
-    )
-      return;
-    try {
-      await BolaoParticipantRepository.deleteAllByEventId(selectedEvent.id);
-      setParticipants([]);
-      addAlert("Todos os palpites foram excluídos.");
-    } catch {
-      addAlert("Erro ao excluir palpites.");
-    }
+    setDeleteTypedInput("");
+    setDeleteTypedModal({
+      title: `Excluir todos os ${participants.length} palpites`,
+      description: "Isso irá remover permanentemente todos os palpites do bolão. Esta ação não pode ser desfeita.",
+      onConfirm: async () => {
+        try {
+          await BolaoParticipantRepository.deleteAllByEventId(selectedEvent.id);
+          setParticipants([]);
+          addAlert("Todos os palpites foram excluídos.");
+        } catch {
+          addAlert("Erro ao excluir palpites.");
+        }
+      },
+    });
   };
 
   // ── Quiz handlers ─────────────────────────────────────────────────────────────
@@ -615,16 +639,19 @@ export default function EventosPage() {
     }
   };
 
-  const handleDeleteQuestion = async (q: QuizQuestionType & { id: string }) => {
-    if (!window.confirm(`Deletar a pergunta "${q.text.substring(0, 40)}..."?`))
-      return;
-    try {
-      await QuizQuestionRepository.delete(q.id);
-      setQuestions((prev) => prev.filter((item) => item.id !== q.id));
-      addAlert("Pergunta removida.");
-    } catch {
-      addAlert("Erro ao remover pergunta.");
-    }
+  const handleDeleteQuestion = (q: QuizQuestionType & { id: string }) => {
+    setSimpleConfirmModal({
+      message: `Deletar a pergunta "${q.text.substring(0, 40)}..."?`,
+      onConfirm: async () => {
+        try {
+          await QuizQuestionRepository.delete(q.id);
+          setQuestions((prev) => prev.filter((item) => item.id !== q.id));
+          addAlert("Pergunta removida.");
+        } catch {
+          addAlert("Erro ao remover pergunta.");
+        }
+      },
+    });
   };
 
   const handleGradeAnswer = async (
@@ -687,36 +714,41 @@ export default function EventosPage() {
     });
   };
 
-  const handleDeleteQuizParticipant = async (
+  const handleDeleteQuizParticipant = (
     participant: QuizParticipantType & { id: string },
   ) => {
-    if (!window.confirm(`Excluir respostas de "${participant.name}"?`)) return;
-    try {
-      await QuizParticipantRepository.delete(participant.id);
-      setQuizParticipants((prev) =>
-        prev.filter((p) => p.id !== participant.id),
-      );
-      addAlert(`Respostas de "${participant.name}" excluídas.`);
-    } catch {
-      addAlert("Erro ao excluir participante.");
-    }
+    setSimpleConfirmModal({
+      message: `Excluir respostas de "${participant.name}"?`,
+      onConfirm: async () => {
+        try {
+          await QuizParticipantRepository.delete(participant.id);
+          setQuizParticipants((prev) =>
+            prev.filter((p) => p.id !== participant.id),
+          );
+          addAlert(`Respostas de "${participant.name}" excluídas.`);
+        } catch {
+          addAlert("Erro ao excluir participante.");
+        }
+      },
+    });
   };
 
-  const handleDeleteAllQuizParticipants = async () => {
+  const handleDeleteAllQuizParticipants = () => {
     if (!selectedEvent) return;
-    if (
-      !window.confirm(
-        `Excluir TODAS as respostas de ${quizParticipants.length} participantes? Irreversível.`,
-      )
-    )
-      return;
-    try {
-      await QuizParticipantRepository.deleteAllByEventId(selectedEvent.id);
-      setQuizParticipants([]);
-      addAlert("Todas as respostas foram excluídas.");
-    } catch {
-      addAlert("Erro ao excluir participantes.");
-    }
+    setDeleteTypedInput("");
+    setDeleteTypedModal({
+      title: `Excluir todas as respostas de ${quizParticipants.length} participantes`,
+      description: "Isso irá remover permanentemente todas as respostas desta rodada do quiz. Esta ação não pode ser desfeita.",
+      onConfirm: async () => {
+        try {
+          await QuizParticipantRepository.deleteAllByEventId(selectedEvent.id);
+          setQuizParticipants([]);
+          addAlert("Todas as respostas foram excluídas.");
+        } catch {
+          addAlert("Erro ao excluir participantes.");
+        }
+      },
+    });
   };
 
   const handleSetChampion = async (
@@ -811,37 +843,38 @@ export default function EventosPage() {
     }
   };
 
-  const handleResetQuiz = async () => {
+  const handleResetQuiz = () => {
     if (!selectedEvent) return;
-    if (
-      !window.confirm(
-        "Reiniciar o quiz?\n\nIsso vai APAGAR todos os participantes e respostas desta rodada. Essa ação não pode ser desfeita.",
-      )
-    )
-      return;
-    setQuizActionLoading(true);
-    try {
-      await Promise.all([
-        EventRepository.resetQuiz(selectedEvent.id),
-        QuizParticipantRepository.deleteAllByEventId(selectedEvent.id),
-      ]);
-      const updated = {
-        ...selectedEvent,
-        quizStatus: "waiting" as const,
-        quizResultsVisible: false,
-        quizChampionId: undefined,
-      };
-      setSelectedEvent(updated);
-      setEvents((prev) =>
-        prev.map((e) => (e.id === selectedEvent.id ? updated : e)),
-      );
-      setQuizParticipants([]);
-      addAlert("Quiz reiniciado. Todos os participantes foram removidos.");
-    } catch {
-      addAlert("Erro ao reiniciar quiz.");
-    } finally {
-      setQuizActionLoading(false);
-    }
+    setDeleteTypedInput("");
+    setDeleteTypedModal({
+      title: "Reiniciar o quiz",
+      description: "Isso vai apagar todos os participantes e respostas desta rodada. Esta ação não pode ser desfeita.",
+      onConfirm: async () => {
+        setQuizActionLoading(true);
+        try {
+          await Promise.all([
+            EventRepository.resetQuiz(selectedEvent.id),
+            QuizParticipantRepository.deleteAllByEventId(selectedEvent.id),
+          ]);
+          const updated = {
+            ...selectedEvent,
+            quizStatus: "waiting" as const,
+            quizResultsVisible: false,
+            quizChampionId: undefined,
+          };
+          setSelectedEvent(updated);
+          setEvents((prev) =>
+            prev.map((e) => (e.id === selectedEvent.id ? updated : e)),
+          );
+          setQuizParticipants([]);
+          addAlert("Quiz reiniciado. Todos os participantes foram removidos.");
+        } catch {
+          addAlert("Erro ao reiniciar quiz.");
+        } finally {
+          setQuizActionLoading(false);
+        }
+      },
+    });
   };
 
   // ── UI Helpers ────────────────────────────────────────────────────────────────
@@ -2608,6 +2641,100 @@ export default function EventosPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Modal de confirmação simples */}
+      {simpleConfirmModal && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+          onClick={() => setSimpleConfirmModal(null)}
+        >
+          <div
+            className="bg-secondary-black border border-primary-gold/20 rounded-2xl w-full max-w-[380px] shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 flex flex-col gap-4">
+              <p className="text-sm text-primary-gold/80">{simpleConfirmModal.message}</p>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setSimpleConfirmModal(null)}
+                  className="px-4 py-1.5 text-sm rounded-lg border border-primary-gold/20 text-primary-gold/50 hover:text-primary-gold hover:border-primary-gold/40 transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => { simpleConfirmModal.onConfirm(); setSimpleConfirmModal(null); }}
+                  className="px-4 py-1.5 text-sm rounded-lg border border-invalid-color/40 text-invalid-color bg-invalid-color/10 hover:bg-invalid-color/20 transition-all cursor-pointer"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmação destrutiva com digitação */}
+      {deleteTypedModal && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+          onClick={() => setDeleteTypedModal(null)}
+        >
+          <div
+            className="bg-secondary-black border border-invalid-color/30 rounded-2xl w-full max-w-[420px] shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-3 border-b border-invalid-color/20">
+              <span className="text-sm font-semibold text-invalid-color flex items-center gap-2">
+                <LuTrash size={14} />
+                {deleteTypedModal.title}
+              </span>
+              <button
+                onClick={() => setDeleteTypedModal(null)}
+                className="p-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+              >
+                <LuX size={13} />
+              </button>
+            </div>
+            <div className="px-5 py-4 flex flex-col gap-4">
+              <p className="text-sm text-primary-gold/60">{deleteTypedModal.description}</p>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-primary-gold/40">
+                  Digite <span className="font-mono font-bold text-invalid-color/80">EXCLUIR</span> para confirmar
+                </label>
+                <input
+                  type="text"
+                  value={deleteTypedInput}
+                  onChange={(e) => setDeleteTypedInput(e.target.value)}
+                  placeholder="EXCLUIR"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && deleteTypedInput === "EXCLUIR") {
+                      deleteTypedModal.onConfirm();
+                      setDeleteTypedModal(null);
+                    }
+                  }}
+                  className="bg-primary-black/50 border border-primary-gold/20 rounded-lg px-3 py-2 text-sm text-primary-gold placeholder:text-primary-gold/20 focus:outline-none focus:border-invalid-color/40 transition-colors font-mono"
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setDeleteTypedModal(null)}
+                  className="px-4 py-1.5 text-sm rounded-lg border border-primary-gold/20 text-primary-gold/50 hover:text-primary-gold hover:border-primary-gold/40 transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  disabled={deleteTypedInput !== "EXCLUIR"}
+                  onClick={() => { deleteTypedModal.onConfirm(); setDeleteTypedModal(null); }}
+                  className="px-4 py-1.5 text-sm rounded-lg border border-invalid-color/40 text-invalid-color bg-invalid-color/10 hover:bg-invalid-color/20 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Excluir
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

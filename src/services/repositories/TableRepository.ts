@@ -1,4 +1,4 @@
-import { db } from "@/services/firebaseConfig";
+﻿import { db } from "@/services/firebaseConfig";
 import {
   collection,
   addDoc,
@@ -48,7 +48,6 @@ class TableRepository {
   static async create(data: TableType) {
     try {
       const docRef = await addDoc(collection(db, this.collectionName), data);
-      console.log("Mesa criada com ID:", docRef.id);
       return true;
     } catch (error) {
       console.error("Erro ao criar mesa: ", error);
@@ -60,7 +59,6 @@ class TableRepository {
     try {
       const docRef = doc(db, this.collectionName, id);
       await updateDoc(docRef, data);
-      console.log("Mesa atualizada com sucesso.");
       return true;
     } catch (error) {
       console.error("Erro ao atualizar mesa: ", error);
@@ -71,7 +69,6 @@ class TableRepository {
   static async delete(id: string) {
     try {
       await deleteDoc(doc(db, this.collectionName, id));
-      console.log("Mesa deletada com sucesso.");
       return true;
     } catch (error) {
       console.error("Erro ao deletar mesa: ", error);

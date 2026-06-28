@@ -73,7 +73,6 @@ const FollowCursor: React.FC<FollowCursorProps> = ({ color = "#323232a6" }) => {
 
     const init = () => {
       if (prefersReducedMotion.matches) {
-        console.log("Reduced motion enabled, cursor effect skipped.");
         return;
       }
       canvas = document.createElement("canvas");

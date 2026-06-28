@@ -1,4 +1,4 @@
-import { db } from "@/services/firebaseConfig";
+﻿import { db } from "@/services/firebaseConfig";
 import {
   collection,
   addDoc,
@@ -24,7 +24,7 @@ class UserRepository {
         ...(doc.data() as User),
       }));
     } catch (error) {
-      console.error("Erro ao buscar usuários: ", error);
+      console.error("Erro ao buscar usuÃ¡rios: ", error);
       return [];
     }
   }
@@ -38,7 +38,7 @@ class UserRepository {
       }
       return null;
     } catch (error) {
-      console.error("Erro ao buscar usuário por ID: ", error);
+      console.error("Erro ao buscar usuÃ¡rio por ID: ", error);
       return null;
     }
   }
@@ -46,10 +46,9 @@ class UserRepository {
   static async create(data: User) {
     try {
       const docRef = await addDoc(collection(db, this.collectionName), data);
-      console.log("Usuário criado com ID:", docRef.id);
       return true;
     } catch (error) {
-      console.error("Erro ao criar usuário: ", error);
+      console.error("Erro ao criar usuÃ¡rio: ", error);
       return false;
     }
   }
@@ -58,10 +57,9 @@ class UserRepository {
     try {
       const docRef = doc(db, this.collectionName, id);
       await updateDoc(docRef, data);
-      console.log("Usuário atualizado com sucesso.");
       return true;
     } catch (error) {
-      console.error("Erro ao atualizar usuário: ", error);
+      console.error("Erro ao atualizar usuÃ¡rio: ", error);
       return false;
     }
   }
@@ -69,10 +67,9 @@ class UserRepository {
   static async delete(id: string) {
     try {
       await deleteDoc(doc(db, this.collectionName, id));
-      console.log("Usuário deletado com sucesso.");
       return true;
     } catch (error) {
-      console.error("Erro ao deletar usuário: ", error);
+      console.error("Erro ao deletar usuÃ¡rio: ", error);
       return false;
     }
   }

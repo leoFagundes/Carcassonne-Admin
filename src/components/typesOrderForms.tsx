@@ -76,10 +76,9 @@ export default function TypesOrderForms({
     async function fetchInfos() {
       try {
         const infosFetched = await InfoRepository.getAll();
-        console.log(infosFetched);
         setInfos(infosFetched);
       } catch (error) {
-        console.log(error);
+        console.error(error);
       }
     }
 
@@ -103,7 +102,6 @@ export default function TypesOrderForms({
 
     try {
       const createdTypeOrder = await TypesOrderRepository.create(typeInOrder);
-      console.log(createdTypeOrder);
       setTypeInOrder(patternTypeOrder);
       setTypesOrder([...typesOrder].concat(createdTypeOrder || typeInOrder));
       addAlert(`${typeInOrder.type.name} adicionado com sucesso!`);

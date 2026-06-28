@@ -11,12 +11,14 @@ import {
   LuCalendar,
   LuCalendarCheck,
   LuCalendarCog,
+  LuCalendarDays,
   LuCalendarPlus,
   LuCalendarSearch,
   LuCalendarX,
   LuDollarSign,
   LuLink,
   LuPrinter,
+  LuSearch,
   LuSquareCheck,
   LuSquareCheckBig,
   LuTrash,
@@ -81,6 +83,17 @@ export default function Rerserve() {
   );
   const [currentReserve, setCurrentReserve] = useState<ReserveType>();
   const [printModal, setPrintModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    title: string;
+    description: string;
+    onConfirm: () => void;
+  } | null>(null);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
+  const [simpleConfirmModal, setSimpleConfirmModal] = useState<{
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   const [printConfigs, setPrintConfigs] = useState<PrintProps>({
     printTime: false,
@@ -225,10 +238,6 @@ export default function Rerserve() {
       try {
         const dataBusca = new Date(date.year, date.month - 1, date.day); // mês é 0-indexado (7 = agosto)
         const fetchedReserves = await ReserveRepository.getByDate(dataBusca);
-        console.log(
-          `Reservas para ${dataBusca.toLocaleDateString()}:`,
-          fetchedReserves,
-        );
         setReserves(fetchedReserves);
       } catch (error) {
         addAlert("Erro ao carregar as reservas desse dia.");
@@ -244,10 +253,6 @@ export default function Rerserve() {
         const dataBusca = new Date(date.year, date.month - 1, date.day); // mês é 0-indexado (7 = agosto)
         const fetchedFreelancers =
           await FreelancerRepository.getByDate(dataBusca);
-        console.log(
-          `Freelancers para ${dataBusca.toLocaleDateString()}:`,
-          fetchedFreelancers,
-        );
         setFrelancers(fetchedFreelancers);
       } catch (error) {
         addAlert("Erro ao carregar os freelancers desse dia.");
@@ -321,68 +326,76 @@ export default function Rerserve() {
     }
   }
 
-  async function deleteTodayReserves() {
-    const confirmed = window.confirm(
-      "Tem certeza que deseja deletar todas as reservas de hoje?",
-    );
-    if (!confirmed) return;
+  function openDeleteConfirm(title: string, description: string, onConfirm: () => void) {
+    setDeleteConfirmInput("");
+    setDeleteConfirmModal({ title, description, onConfirm });
+  }
 
-    setLoading(true);
-    try {
-      reserves.map(async (reserve) => {
-        if (!reserve.id) return;
-        return await ReserveRepository.delete(reserve.id);
-      });
-      setReserves([]);
-      addAlert("Reservas de hoje foram deletadas com sucesso.");
-    } catch (error) {
-      addAlert(`Erro ao deletar reservas do dia atual.`);
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+  async function deleteTodayReserves() {
+    openDeleteConfirm(
+      `Excluir reservas de ${date.day < 10 ? `0${date.day}` : date.day}/${date.month < 10 ? `0${date.month}` : date.month}`,
+      `Isso irá remover permanentemente ${reserves.length} reserva${reserves.length !== 1 ? "s" : ""} do dia. Esta ação não pode ser desfeita.`,
+      async () => {
+        setLoading(true);
+        try {
+          await Promise.all(
+            reserves
+              .filter((r) => r.id)
+              .map((r) => ReserveRepository.delete(r.id!)),
+          );
+          setReserves([]);
+          addAlert("Reservas do dia foram deletadas com sucesso.");
+        } catch (error) {
+          addAlert(`Erro ao deletar reservas do dia.`);
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
+      },
+    );
   }
 
   async function deleteThisMonthReserves(year: number, month: number) {
-    const confirmed = window.confirm(
-      "Tem certeza que deseja deletar todas as reservas deste mês?",
+    const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+    openDeleteConfirm(
+      `Excluir todas as reservas de ${monthNames[month - 1]} ${year}`,
+      `Isso irá remover permanentemente todas as reservas do mês inteiro. Esta ação não pode ser desfeita.`,
+      async () => {
+        setLoading(true);
+        try {
+          await ReserveRepository.deleteByMonth(year, month);
+          const updated = await ReserveRepository.getAll();
+          setAllReserves(updated);
+          addAlert("Reservas do mês foram deletadas com sucesso.");
+        } catch (error) {
+          addAlert(`Erro ao deletar reservas do mês.`);
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
+      },
     );
-    if (!confirmed) return;
-
-    setLoading(true);
-    try {
-      await ReserveRepository.deleteByMonth(year, month);
-      const allReserves = await ReserveRepository.getAll();
-      setAllReserves(allReserves);
-      addAlert("Reservas deste mês foram deletadas com sucesso.");
-    } catch (error) {
-      addAlert(`Erro ao deletar reservas do dia atual.`);
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
   }
 
   async function deleteReserve(id: string) {
-    const confirmed = window.confirm(
-      "Tem certeza que deseja deletar essa reserva?",
-    );
-    if (!confirmed) return;
-
-    setLoading(true);
-    try {
-      await ReserveRepository.delete(id);
-      const dataBusca = new Date(date.year, date.month - 1, date.day); // mês é 0-indexado (7 = agosto)
-      const fetchedReserves = await ReserveRepository.getByDate(dataBusca);
-
-      setReserves(fetchedReserves);
-      addAlert("Reserva deletada com sucesso.");
-    } catch (error) {
-      addAlert(`Erro ao deletar reservas do dia atual.`);
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+    setSimpleConfirmModal({
+      message: "Tem certeza que deseja deletar essa reserva?",
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          await ReserveRepository.delete(id);
+          const dataBusca = new Date(date.year, date.month - 1, date.day);
+          const fetchedReserves = await ReserveRepository.getByDate(dataBusca);
+          setReserves(fetchedReserves);
+          addAlert("Reserva deletada com sucesso.");
+        } catch (error) {
+          addAlert("Erro ao deletar reserva.");
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
   }
 
   const groupedReservesByTime = reserves.reduce(
@@ -410,6 +423,25 @@ export default function Rerserve() {
     (reserve) => reserve.status === "canceled",
   ).length;
   const activeFreelancers = freelancers.length;
+
+  const isSearching = searchQuery.trim().length > 0;
+  const searchResults = isSearching
+    ? [...allReserves]
+        .filter((r) => {
+          const q = searchQuery.toLowerCase();
+          return (
+            r.name?.toLowerCase().includes(q) ||
+            r.phone?.includes(q) ||
+            r.email?.toLowerCase().includes(q) ||
+            r.code?.toLowerCase().includes(q)
+          );
+        })
+        .sort((a, b) => {
+          const dA = new Date(Number(a.bookingDate.year), Number(a.bookingDate.month) - 1, Number(a.bookingDate.day));
+          const dB = new Date(Number(b.bookingDate.year), Number(b.bookingDate.month) - 1, Number(b.bookingDate.day));
+          return dB.getTime() - dA.getTime();
+        })
+    : [];
 
   const handleTableChange = async (id: string, newTable: string) => {
     setReserves((prev) =>
@@ -479,24 +511,23 @@ export default function Rerserve() {
       return;
     }
 
-    try {
-      const confirmDelete = window.confirm(
-        `Tem certeza que deseja deletar o freelancer ${freela.name}?`,
-      );
-
-      if (!confirmDelete) return;
-
-      const success = await FreelancerRepository.delete(freela.id);
-      if (success) {
-        setFrelancers((prev) => prev.filter((f) => f.id !== freela.id));
-        addAlert(`Freelancer ${freela.name} deletado com sucesso`);
-      } else {
-        addAlert("Erro ao deletar freelancer.");
-      }
-    } catch (error) {
-      console.error("Erro ao deletar freelancer:", error);
-      addAlert("Erro ao deletar freelancer.");
-    }
+    setSimpleConfirmModal({
+      message: `Tem certeza que deseja deletar o freelancer ${freela.name}?`,
+      onConfirm: async () => {
+        try {
+          const success = await FreelancerRepository.delete(freela.id!);
+          if (success) {
+            setFrelancers((prev) => prev.filter((f) => f.id !== freela.id));
+            addAlert(`Freelancer ${freela.name} deletado com sucesso`);
+          } else {
+            addAlert("Erro ao deletar freelancer.");
+          }
+        } catch (error) {
+          console.error("Erro ao deletar freelancer:", error);
+          addAlert("Erro ao deletar freelancer.");
+        }
+      },
+    });
   }
 
   return (
@@ -518,7 +549,7 @@ export default function Rerserve() {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
             <Tooltip direction="bottom" content="Criar uma nova reserva">
               <button
                 onClick={() => {
@@ -557,6 +588,25 @@ export default function Rerserve() {
           </div>
         </div>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent" />
+        {/* Search bar */}
+        <div className="relative w-full max-w-sm mx-auto">
+          <LuSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-gold/35 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar por nome, telefone, email ou código..."
+            className="w-full bg-secondary-black/40 border border-primary-gold/15 rounded-xl pl-8 pr-8 py-2 text-sm text-primary-gold placeholder:text-primary-gold/25 focus:outline-none focus:border-primary-gold/35 transition-colors"
+          />
+          {isSearching && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-primary-gold/35 hover:text-primary-gold/70 transition-colors cursor-pointer"
+            >
+              <LuX size={13} />
+            </button>
+          )}
+        </div>
       </div>
       <div className="flex gap-4 flex-wrap sm:flex-nowrap items-start py-2 px-6">
         {/* Left panel */}
@@ -566,14 +616,26 @@ export default function Rerserve() {
             <span className="text-sm font-semibold text-primary-gold/70 flex items-center gap-1.5">
               <LuCalendar size={15} /> Carcarlendário
             </span>
-            <Tooltip direction="bottom" content="Expandir calendário">
-              <button
-                onClick={() => setExpandedCalendarModal(true)}
-                className="p-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
-              >
-                <LuCalendarSearch size={13} />
-              </button>
-            </Tooltip>
+            <div className="flex items-center gap-1.5">
+              <Tooltip direction="bottom" content="Ir para hoje">
+                <button
+                  onClick={() => setDate(TODAY)}
+                  disabled={date.compare(TODAY) === 0}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer text-[10px] font-medium disabled:opacity-30 disabled:cursor-default"
+                >
+                  <LuCalendarDays size={11} />
+                  Hoje
+                </button>
+              </Tooltip>
+              <Tooltip direction="bottom" content="Expandir calendário">
+                <button
+                  onClick={() => setExpandedCalendarModal(true)}
+                  className="p-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+                >
+                  <LuCalendarSearch size={13} />
+                </button>
+              </Tooltip>
+            </div>
           </div>
 
           <Calendar
@@ -701,7 +763,72 @@ export default function Rerserve() {
             </button>
           )}
         </section>
-        {reserves.length === 0 ? (
+        {isSearching ? (
+          <section className="flex flex-col text-primary-gold w-full gap-3">
+            <div className="flex items-center gap-2 text-xs text-primary-gold/40">
+              <LuSearch size={12} />
+              {searchResults.length === 0
+                ? "Nenhuma reserva encontrada"
+                : `${searchResults.length} reserva${searchResults.length !== 1 ? "s" : ""} encontrada${searchResults.length !== 1 ? "s" : ""}`}
+            </div>
+            {searchResults.map((reserve) => {
+              const d = reserve.bookingDate;
+              const dateStr = `${String(d.day).padStart(2, "0")}/${String(d.month).padStart(2, "0")}/${d.year}`;
+              return (
+                <div
+                  key={reserve.id}
+                  className={`flex justify-between border rounded-xl p-3 w-full gap-2 flex-wrap transition-all duration-200 ${
+                    reserve.status === "canceled"
+                      ? "border-invalid-color/20 bg-invalid-color/5"
+                      : "border-primary-gold/15 bg-secondary-black/40"
+                  }`}
+                >
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary-gold/10 border border-primary-gold/20 text-primary-gold/60 font-mono">
+                        {dateStr} · {reserve.time}h
+                      </span>
+                      {reserve.status === "canceled" && (
+                        <span className="text-[10px] text-invalid-color/70">cancelada</span>
+                      )}
+                    </div>
+                    <div className="flex sm:flex-row flex-col gap-1 sm:gap-2 text-sm items-start sm:items-center">
+                      <span className="font-semibold">#{reserve.code}</span>
+                      <span className="hidden sm:block text-primary-gold/30">—</span>
+                      <span className="font-semibold">{reserve.name}</span>
+                      <span className="hidden sm:block text-primary-gold/30">—</span>
+                      <span className="font-semibold">{reserve.adults + reserve.childs} pessoas</span>
+                    </div>
+                    <div className="text-xs flex flex-col gap-0.5 text-primary-gold/80 mt-0.5">
+                      <span
+                        onClick={() => openWhatsApp(reserve.phone)}
+                        className="cursor-pointer hover:underline"
+                      >
+                        {reserve.phone}
+                      </span>
+                      <span
+                        onClick={() => openEmail(reserve.email, "Sobre a sua reserva no Carcassonne Pub 🍻", "")}
+                        className="cursor-pointer hover:underline"
+                      >
+                        {reserve.email}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const cd = new CalendarDate(Number(d.year), Number(d.month), Number(d.day));
+                      setDate(cd);
+                      setSearchQuery("");
+                    }}
+                    className="self-start text-[10px] px-2 py-1 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/40 hover:text-primary-gold transition-all cursor-pointer whitespace-nowrap"
+                  >
+                    Ver dia
+                  </button>
+                </div>
+              );
+            })}
+          </section>
+        ) : reserves.length === 0 ? (
           <section className="flex flex-col items-center justify-center text-primary-gold p-6 w-full rounded-xl border border-primary-gold/15 bg-secondary-black/40">
             <img
               className="w-[160px] opacity-70"
@@ -1125,6 +1252,106 @@ Equipe Carcassonne Pub`,
           </div>
         </div>
       </PrintModal>
+
+      {/* Modal de confirmação simples */}
+      {simpleConfirmModal && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+          onClick={() => setSimpleConfirmModal(null)}
+        >
+          <div
+            className="bg-secondary-black border border-primary-gold/20 rounded-2xl w-full max-w-[380px] shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 flex flex-col gap-4">
+              <p className="text-sm text-primary-gold/80">{simpleConfirmModal.message}</p>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setSimpleConfirmModal(null)}
+                  className="px-4 py-1.5 text-sm rounded-lg border border-primary-gold/20 text-primary-gold/50 hover:text-primary-gold hover:border-primary-gold/40 transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    simpleConfirmModal.onConfirm();
+                    setSimpleConfirmModal(null);
+                  }}
+                  className="px-4 py-1.5 text-sm rounded-lg border border-invalid-color/40 text-invalid-color bg-invalid-color/10 hover:bg-invalid-color/20 transition-all cursor-pointer"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmação de exclusão em massa */}
+      {deleteConfirmModal && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+          onClick={() => setDeleteConfirmModal(null)}
+        >
+          <div
+            className="bg-secondary-black border border-invalid-color/30 rounded-2xl w-full max-w-[420px] shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-3 border-b border-invalid-color/20">
+              <span className="text-sm font-semibold text-invalid-color flex items-center gap-2">
+                <LuTrash size={14} />
+                {deleteConfirmModal.title}
+              </span>
+              <button
+                onClick={() => setDeleteConfirmModal(null)}
+                className="p-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+              >
+                <LuX size={13} />
+              </button>
+            </div>
+            <div className="px-5 py-4 flex flex-col gap-4">
+              <p className="text-sm text-primary-gold/60">{deleteConfirmModal.description}</p>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-primary-gold/40">
+                  Digite <span className="font-mono font-bold text-invalid-color/80">EXCLUIR</span> para confirmar
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmInput}
+                  onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                  placeholder="EXCLUIR"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && deleteConfirmInput === "EXCLUIR") {
+                      deleteConfirmModal.onConfirm();
+                      setDeleteConfirmModal(null);
+                    }
+                  }}
+                  className="bg-primary-black/50 border border-primary-gold/20 rounded-lg px-3 py-2 text-sm text-primary-gold placeholder:text-primary-gold/20 focus:outline-none focus:border-invalid-color/40 transition-colors font-mono"
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setDeleteConfirmModal(null)}
+                  className="px-4 py-1.5 text-sm rounded-lg border border-primary-gold/20 text-primary-gold/50 hover:text-primary-gold hover:border-primary-gold/40 transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  disabled={deleteConfirmInput !== "EXCLUIR"}
+                  onClick={() => {
+                    deleteConfirmModal.onConfirm();
+                    setDeleteConfirmModal(null);
+                  }}
+                  className="px-4 py-1.5 text-sm rounded-lg border border-invalid-color/40 text-invalid-color bg-invalid-color/10 hover:bg-invalid-color/20 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Excluir
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -31,7 +31,6 @@ export default function SessionTimer() {
         signOut(auth);
         localStorage.removeItem("session_expires_at");
         addAlert("Sua sessão expirou.");
-        console.log("Sessão expirada por inatividade.");
         return true;
       }
       return false;
