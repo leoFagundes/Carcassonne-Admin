@@ -555,18 +555,14 @@ export default function SettingsPage() {
 
     // Link clicks
     const linkData = links.map((l) => {
-      let clicks: number;
-      if (period === "all") {
-        clicks = l.clicks ?? 0;
-      } else {
-        const byDay = l.clicksByDay ?? {};
-        clicks = Object.entries(byDay)
-          .filter(([dateStr]) => {
-            const d = new Date(dateStr + "T00:00:00");
-            return (!startDate || d >= startDate) && d <= endDate;
-          })
-          .reduce((sum, [, count]) => sum + count, 0);
-      }
+      const byDay = l.clicksByDay ?? {};
+      const clicks = Object.entries(byDay)
+        .filter(([dateStr]) => {
+          if (period === "all") return true;
+          const d = new Date(dateStr + "T00:00:00");
+          return (!startDate || d >= startDate) && d <= endDate;
+        })
+        .reduce((sum, [, count]) => sum + count, 0);
       return { name: l.name, clicks };
     });
     const sorted = [...linkData].sort((a, b) => b.clicks - a.clicks);
