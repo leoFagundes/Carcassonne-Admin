@@ -543,26 +543,43 @@ export default function SettingsPage() {
         })),
     );
 
+    // Datas em UTC como string YYYY-MM-DD para evitar problemas de fuso
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let startStr: string | null = null;
+    if (period !== "all") {
+      const ms =
+        period === "7d" ? 7 :
+        period === "30d" ? 30 :
+        period === "3m" ? 90 :
+        period === "6m" ? 180 :
+        period === "1y" ? 365 : null;
+      if (ms !== null) {
+        startStr = new Date(Date.now() - ms * 86400000).toISOString().slice(0, 10);
+      } else if (period === "custom") {
+        startStr = cStart || null;
+      }
+    }
+    const endStr = period === "custom" && cEnd ? cEnd : todayStr;
+
     // First click date (earliest clicksByDay key across all links)
     const allDayKeys = links.flatMap((l) => Object.keys(l.clicksByDay ?? {}));
     if (allDayKeys.length > 0) {
-      const earliest = allDayKeys.sort()[0];
+      const earliest = [...allDayKeys].sort()[0];
       const [y, m, d] = earliest.split("-");
       setFirstClickDate(`${d}/${m}/${y}`);
     } else {
       setFirstClickDate("");
     }
 
-    // Link clicks
+    // Link clicks — compara strings YYYY-MM-DD (evita mismatch de fuso)
     const linkData = links.map((l) => {
       const byDay = l.clicksByDay ?? {};
-      const clicks = Object.entries(byDay)
-        .filter(([dateStr]) => {
-          if (period === "all") return true;
-          const d = new Date(dateStr + "T00:00:00");
-          return (!startDate || d >= startDate) && d <= endDate;
-        })
-        .reduce((sum, [, count]) => sum + count, 0);
+      const clicks = Object.entries(byDay).reduce((sum, [dateStr, count]) => {
+        if (period === "all") return sum + count;
+        if (startStr && dateStr < startStr) return sum;
+        if (dateStr > endStr) return sum;
+        return sum + count;
+      }, 0);
       return { name: l.name, clicks };
     });
     const sorted = [...linkData].sort((a, b) => b.clicks - a.clicks);
