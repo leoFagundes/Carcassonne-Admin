@@ -965,9 +965,9 @@ export default function EventosPage() {
                 setCurrentEvent(patternEvent);
                 setEventFormsModal(true);
               }}
-              className="p-2 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+              className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
             >
-              <LuPlus size={14} />
+              <LuPlus size={16} />
             </button>
           </Tooltip>
         </div>

@@ -200,6 +200,8 @@ export default function Reserve() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (componentLoading) return;
+
     if (!reserve.name.trim()) {
       addAlert("Por favor, preencha o nome.");
       return;
@@ -212,6 +214,8 @@ export default function Reserve() {
       addAlert("Por favor, insira um telefone válido.");
       return;
     }
+
+    setcomponentLoading(true);
 
     const freshConfigs = await GeneralConfigsRepository.get();
     if (!freshConfigs) {
@@ -233,8 +237,6 @@ export default function Reserve() {
       setcomponentLoading(false);
       return;
     }
-
-    setcomponentLoading(true);
     try {
       const createdReserve = await ReserveRepository.create(reserve);
       if (!createdReserve || !createdReserve._id)

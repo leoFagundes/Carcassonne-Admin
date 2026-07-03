@@ -556,33 +556,33 @@ export default function Rerserve() {
                   setCalendarFormsModal(true);
                   setCurrentFormsType("add");
                 }}
-                className="p-2 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+                className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
               >
-                <LuCalendarPlus size={14} />
+                <LuCalendarPlus size={16} />
               </button>
             </Tooltip>
             <Tooltip direction="bottom" content="Adicionar um novo freelancer">
               <button
                 onClick={() => setFreelancerFormsModal(true)}
-                className="p-2 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+                className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
               >
-                <LuUserPlus size={14} />
+                <LuUserPlus size={16} />
               </button>
             </Tooltip>
             <Tooltip direction="bottom" content="Ir para visão do cliente">
               <button
                 onClick={() => router.push("/reserve")}
-                className="p-2 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+                className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
               >
-                <LuLink size={14} />
+                <LuLink size={16} />
               </button>
             </Tooltip>
             <Tooltip direction="bottom" content="Abrir área de impressão">
               <button
                 onClick={() => setPrintModal(true)}
-                className="p-2 sm:flex hidden rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+                className="p-2.5 sm:flex hidden rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
               >
-                <LuPrinter size={14} />
+                <LuPrinter size={16} />
               </button>
             </Tooltip>
           </div>

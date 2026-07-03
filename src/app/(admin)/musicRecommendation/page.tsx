@@ -452,9 +452,9 @@ export default function MusicRecommendationPage() {
             <Tooltip direction="bottom" content="Ir para visão do cliente">
               <button
                 onClick={() => router.push("/clientMusicRecommendation")}
-                className="p-2 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+                className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
               >
-                <LuLink size={14} />
+                <LuLink size={16} />
               </button>
             </Tooltip>
           </div>
