@@ -23,11 +23,11 @@ export default function ComboCard({
       <div
         className="w-full h-[120px] bg-contain bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url(${"images/mascote-combo-2.png"})`,
+          backgroundImage: `url(${"images/[oficial]-mascote-combo.png"})`,
         }}
       />
 
-      {/* Info */}
+      {/* Combo */}
       <div className="flex flex-col gap-1.5 px-3 py-2.5">
         <span
           className="font-semibold text-sm text-primary-gold leading-tight line-clamp-2"

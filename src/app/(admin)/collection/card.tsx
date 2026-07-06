@@ -88,7 +88,7 @@ export default function Card({
       <div
         className="w-full h-[120px] bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url(${boardgame.image || "images/patternBoardgameImage.png"})`,
+          backgroundImage: `url(${boardgame.image || "images/[oficial]-pattern-boardgame-image.png"})`,
         }}
       >
         {/* For sale badge */}

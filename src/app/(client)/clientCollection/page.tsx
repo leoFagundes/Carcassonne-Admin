@@ -562,7 +562,7 @@ export default function ClientCollectionPage() {
                   src={
                     currentGame.image
                       ? currentGame.image
-                      : "images/patternBoardgameImage.png"
+                      : "images/[oficial]-pattern-boardgame-image.png"
                   }
                   alt="boardgame"
                 />

@@ -23,7 +23,7 @@ export default function InfoCard({
       <div
         className="w-full h-[120px] bg-contain bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url(${"images/mascote-aviso-2.png"})`,
+          backgroundImage: `url(${"images/[oficial]-mascote-aviso.png"})`,
         }}
       />
 

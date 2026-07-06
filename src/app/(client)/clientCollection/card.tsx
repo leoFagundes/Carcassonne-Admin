@@ -12,7 +12,7 @@ import {
   FiUsers,
 } from "react-icons/fi";
 import { LuPlus, LuSparkles, LuX } from "react-icons/lu";
-import patternBoardGameImage from "../../../../public/images/patternBoardgameImage.png";
+import patternBoardGameImage from "../../../../public/images/[oficial]-pattern-boardgame-image.png";
 import Button from "@/components/button";
 import ReactConfetti from "react-confetti";
 
@@ -93,7 +93,9 @@ export default function Card({
             {boardgame.name}
           </span>
           {boardgame.isForSale && (
-            <span className="text-xs text-primary-gold/70">{boardgame.value}</span>
+            <span className="text-xs text-primary-gold/70">
+              {boardgame.value}
+            </span>
           )}
           {!isSmallScreen && (
             <span className="flex items-center gap-1.5 text-xs text-primary-gold/60 shrink-0">
@@ -127,7 +129,10 @@ export default function Card({
                 />
               )}
             </div>
-            <FiArrowRight size={"16px"} className="min-w-[16px] text-primary-gold/50" />
+            <FiArrowRight
+              size={"16px"}
+              className="min-w-[16px] text-primary-gold/50"
+            />
           </div>
         </div>
       ) : (
@@ -194,10 +199,7 @@ export default function Card({
               <FiLayers size={"13px"} className="min-w-[13px]" />
               {truncateText(boardgame.types.join(", "), 24)}
             </span>
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="pt-1.5"
-            >
+            <div onClick={(e) => e.stopPropagation()} className="pt-1.5">
               {mode === "default" ? (
                 <Button onClick={() => addBoardGameToList(boardgame)}>
                   Adicionar a minha lista

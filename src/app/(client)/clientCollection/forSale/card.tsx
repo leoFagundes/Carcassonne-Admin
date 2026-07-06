@@ -11,7 +11,7 @@ import {
   FiUsers,
 } from "react-icons/fi";
 import { LuSparkles } from "react-icons/lu";
-import patternBoardGameImage from "../../../../../public/images/patternBoardgameImage.png";
+import patternBoardGameImage from "../../../../../public/images/[oficial]-pattern-boardgame-image.png";
 
 interface CardProps extends ComponentProps<"div"> {
   boardgame: BoardgameType;

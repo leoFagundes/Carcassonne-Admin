@@ -14,12 +14,16 @@ import {
   LuSearch,
   LuCircleHelp,
   LuEgg,
+  LuCode,
+  LuGithub,
 } from "react-icons/lu";
 
 interface HelpCard {
   title: string;
   description: string;
   category: string;
+  link?: string;
+  linkLabel?: string;
 }
 
 const categories = [
@@ -37,6 +41,11 @@ const categories = [
     icon: <LuSettings size={14} />,
   },
   { key: "easteregg", label: "Easter Egg", icon: <LuEgg size={14} /> },
+  {
+    key: "desenvolvedor",
+    label: "Desenvolvedor",
+    icon: <LuCode size={14} />,
+  },
 ];
 
 const helpCards: HelpCard[] = [
@@ -445,6 +454,22 @@ Resultado: "Klaus Jürgen". Digite exatamente isso no campo do 7º ponto e press
 
 Ao acertar, a página é desbloqueada: o fundo muda para a arte do jogo de tabuleiro Carcassonne e dois cards aparecem nos cantos da tela (só em desktop) — um com a foto e a biografia de Klaus-Jürgen Wrede, o designer alemão que criou o jogo em 2000, e outro com a foto e a história de Fábio Almeida e Salimar Morais, os fundadores do Carcassonne Pub em 2013. Para voltar à visão padrão, clique em "Voltar à visão padrão" no rodapé.`,
   },
+
+  // ── DESENVOLVEDOR ─────────────────────────────────────────────
+  {
+    category: "desenvolvedor",
+    title: "Tecnologias usadas no projeto",
+    description:
+      "O Carcassonne Admin é construído em Next.js (App Router) com React e TypeScript. O estilo visual usa Tailwind CSS, com componentes de UI do HeroUI e Radix, ícones do Lucide (via react-icons) e animações com Framer Motion. Os dados são armazenados no Firebase (Firestore) e o Firebase Admin cuida das operações protegidas no servidor. Calendários usam FullCalendar e react-calendar, gráficos usam Recharts, e o envio de e-mails é feito com Resend e React Email.",
+  },
+  {
+    category: "desenvolvedor",
+    title: "Repositório do projeto no GitHub",
+    description:
+      "O código-fonte do Carcassonne Admin está hospedado no GitHub. Acesse o link abaixo para ver o repositório, o histórico de commits e a documentação técnica.",
+    link: "https://github.com/leoFagundes/Carcassonne-Admin",
+    linkLabel: "github.com/leoFagundes/Carcassonne-Admin",
+  },
 ];
 
 function AccordionCard({
@@ -487,6 +512,18 @@ function AccordionCard({
       {isOpen && (
         <div className="px-4 pb-4 text-sm text-primary-gold/60 leading-relaxed border-t border-primary-gold/10 pt-3 whitespace-pre-line">
           {card.description}
+          {card.link && (
+            <a
+              href={card.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="mt-3 flex items-center gap-2 w-fit text-primary-gold/80 hover:text-primary-gold underline underline-offset-2 transition-colors"
+            >
+              <LuGithub size={14} />
+              {card.linkLabel ?? card.link}
+            </a>
+          )}
         </div>
       )}
     </div>

@@ -223,8 +223,8 @@ export default function Sidebar() {
           <div className="flex flex-col items-center gap-3 px-4 pt-6 pb-4 border-b border-primary-gold/10">
             <div className="relative">
               <img
-                className="w-[90px]"
-                src="images/mascote-3.png"
+                className="w-[120px]"
+                src="images/[oficial]-mascote-admin.png"
                 alt="meeple"
               />
               <div className="absolute top-2 left-2">

@@ -19,7 +19,9 @@ export default function MenuCard({ item, index, ...props }: MenuCardProps) {
       <div className="relative h-fit w-fit">
         <img
           className="w-[100px] h-[100px] object-cover rounded shadow-card sm:group-hover:shadow-none transition-all ease-in duration-200"
-          src={item.image ? item.image : "images/patternMenuImage.png"}
+          src={
+            item.image ? item.image : "images/[oficial]-pattern-menu-image.png"
+          }
           alt="menu item"
         />
         {item.isVegan && (

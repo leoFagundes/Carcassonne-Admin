@@ -100,7 +100,7 @@ export default function MenuCard({
       <div
         className="w-full h-[120px] bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url(${item.image || "images/patternMenuImage.png"})`,
+          backgroundImage: `url(${item.image || "images/[oficial]-pattern-menu-image.png"})`,
         }}
       />
 

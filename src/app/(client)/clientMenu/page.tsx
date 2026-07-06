@@ -508,7 +508,7 @@ export default function ClientMenuPage() {
                   src={
                     currentItem.image
                       ? currentItem.image
-                      : "images/patternMenuImage.png"
+                      : "images/[oficial]-pattern-menu-image.png"
                   }
                   alt="menu item"
                 />
