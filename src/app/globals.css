@@ -423,6 +423,24 @@ input:-webkit-autofill {
   pointer-events: none;
 }
 
+input[type="date"] {
+  color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(0.85) brightness(1.4);
+}
+
+.my-blocked-day {
+  border-color: var(--color-invalid-color) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--color-invalid-color) 18%,
+    var(--color-primary-black)
+  );
+}
+
 .react-calendar__navigation {
   display: flex;
   justify-content: center; /* centraliza */

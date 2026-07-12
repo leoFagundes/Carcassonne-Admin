@@ -8,6 +8,7 @@ import {
   deleteDoc,
   query,
   where,
+  onSnapshot,
 } from "firebase/firestore";
 import { QuizQuestionType } from "@/types";
 
@@ -25,6 +26,26 @@ class QuizQuestionRepository {
       console.error("Erro ao buscar perguntas:", error);
       return [];
     }
+  }
+
+  static subscribeToEventQuestions(
+    eventId: string,
+    callback: (questions: (QuizQuestionType & { id: string })[]) => void
+  ): () => void {
+    const q = query(collection(db, this.collectionName), where("eventId", "==", eventId));
+    return onSnapshot(
+      q,
+      (snap) => {
+        const questions = snap.docs
+          .map((d) => ({ id: d.id, ...(d.data() as QuizQuestionType) }))
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        callback(questions);
+      },
+      (error) => {
+        console.error("Erro ao ouvir perguntas:", error);
+        callback([]);
+      }
+    );
   }
 
   static async create(data: QuizQuestionType): Promise<string | null> {

@@ -11,6 +11,7 @@ import {
   LuChevronUp,
   LuClock,
   LuCircleHelp,
+  LuCircleSlash,
   LuCrown,
   LuImage,
   LuInfo,
@@ -544,7 +545,9 @@ export default function EventosPage() {
       onConfirm: async () => {
         try {
           await BolaoParticipantRepository.delete(participant.id);
-          setParticipants((prev) => prev.filter((p) => p.id !== participant.id));
+          setParticipants((prev) =>
+            prev.filter((p) => p.id !== participant.id),
+          );
           addAlert(`Palpite de "${participant.name}" excluído.`);
         } catch {
           addAlert("Erro ao excluir palpite.");
@@ -558,7 +561,8 @@ export default function EventosPage() {
     setDeleteTypedInput("");
     setDeleteTypedModal({
       title: `Excluir todos os ${participants.length} palpites`,
-      description: "Isso irá remover permanentemente todos os palpites do bolão. Esta ação não pode ser desfeita.",
+      description:
+        "Isso irá remover permanentemente todos os palpites do bolão. Esta ação não pode ser desfeita.",
       onConfirm: async () => {
         try {
           await BolaoParticipantRepository.deleteAllByEventId(selectedEvent.id);
@@ -593,7 +597,10 @@ export default function EventosPage() {
         type: questionForm.type,
         points: questionForm.points,
         timeSeconds: questionForm.timeSeconds,
-        order: questions.length,
+        order:
+          questions.length > 0
+            ? Math.max(...questions.map((q) => q.order ?? 0)) + 1
+            : 0,
         ...(questionForm.type === "multiple_choice" && {
           options: questionForm.options.map((o) => o.trim()),
           correctOption: questionForm.correctOption,
@@ -710,7 +717,8 @@ export default function EventosPage() {
     await updateDoc(participantDocRef, {
       answers: updatedAnswers,
       totalScore: newTotalScore,
-      timeTakenSeconds: newTimeTakenSeconds !== undefined ? newTimeTakenSeconds : deleteField(),
+      timeTakenSeconds:
+        newTimeTakenSeconds !== undefined ? newTimeTakenSeconds : deleteField(),
     });
   };
 
@@ -738,7 +746,8 @@ export default function EventosPage() {
     setDeleteTypedInput("");
     setDeleteTypedModal({
       title: `Excluir todas as respostas de ${quizParticipants.length} participantes`,
-      description: "Isso irá remover permanentemente todas as respostas desta rodada do quiz. Esta ação não pode ser desfeita.",
+      description:
+        "Isso irá remover permanentemente todas as respostas desta rodada do quiz. Esta ação não pode ser desfeita.",
       onConfirm: async () => {
         try {
           await QuizParticipantRepository.deleteAllByEventId(selectedEvent.id);
@@ -848,7 +857,8 @@ export default function EventosPage() {
     setDeleteTypedInput("");
     setDeleteTypedModal({
       title: "Reiniciar o quiz",
-      description: "Isso vai apagar todos os participantes e respostas desta rodada. Esta ação não pode ser desfeita.",
+      description:
+        "Isso vai apagar todos os participantes e respostas desta rodada. Esta ação não pode ser desfeita.",
       onConfirm: async () => {
         setQuizActionLoading(true);
         try {
@@ -1100,7 +1110,7 @@ export default function EventosPage() {
         noPadding
         patternCloseButton={false}
       >
-        <div className="bg-secondary-black/95 border border-primary-gold/20 rounded-2xl w-[95vw] max-w-[580px] max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+        <div className="bg-secondary-black/95 border border-primary-gold/20 rounded-none sm:rounded-2xl w-full sm:w-[95vw] h-full sm:h-auto max-w-none sm:max-w-[580px] max-h-full sm:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
           {/* ── Modal Header ── */}
           <div className="flex flex-col border-b border-primary-gold/10 shrink-0">
             {/* Row 1: info + close */}
@@ -1186,9 +1196,9 @@ export default function EventosPage() {
                     selectedEventUnsubRef.current = null;
                   }
                 }}
-                className="p-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/60 hover:text-primary-gold transition-all cursor-pointer shrink-0"
+                className="p-2 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/60 hover:text-primary-gold transition-all cursor-pointer shrink-0"
               >
-                <LuX size={15} />
+                <LuX size={16} />
               </button>
             </div>
 
@@ -1199,13 +1209,13 @@ export default function EventosPage() {
                   <button
                     onClick={handleStartQuiz}
                     disabled={quizActionLoading || questions.length === 0}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-700/20 border border-green-700/30 text-green-400 text-xs font-medium hover:bg-green-700/30 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-green-700/20 border border-green-700/30 text-green-400 text-xs font-medium hover:bg-green-700/30 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {quizActionLoading ? (
                       <Loader />
                     ) : (
                       <>
-                        <LuPlay size={12} /> Iniciar
+                        <LuPlay size={13} /> Iniciar
                       </>
                     )}
                   </button>
@@ -1214,13 +1224,13 @@ export default function EventosPage() {
                   <button
                     onClick={handleEndQuiz}
                     disabled={quizActionLoading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-900/20 border border-red-700/30 text-red-400 text-xs font-medium hover:bg-red-900/30 transition-all cursor-pointer disabled:opacity-40"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-red-900/20 border border-red-700/30 text-red-400 text-xs font-medium hover:bg-red-900/30 transition-all cursor-pointer disabled:opacity-40"
                   >
                     {quizActionLoading ? (
                       <Loader />
                     ) : (
                       <>
-                        <LuSquare size={12} /> Encerrar
+                        <LuSquare size={13} /> Encerrar
                       </>
                     )}
                   </button>
@@ -1230,13 +1240,13 @@ export default function EventosPage() {
                     <button
                       onClick={handleShowResults}
                       disabled={quizActionLoading}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-gold/15 border border-primary-gold/40 text-primary-gold text-xs font-semibold hover:bg-primary-gold/25 transition-all cursor-pointer disabled:opacity-40"
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary-gold/15 border border-primary-gold/40 text-primary-gold text-xs font-semibold hover:bg-primary-gold/25 transition-all cursor-pointer disabled:opacity-40"
                     >
                       {quizActionLoading ? (
                         <Loader />
                       ) : (
                         <>
-                          <LuEye size={12} /> Liberar Resultados
+                          <LuEye size={13} /> Liberar Resultados
                         </>
                       )}
                     </button>
@@ -1245,13 +1255,13 @@ export default function EventosPage() {
                   <button
                     onClick={handleResetQuiz}
                     disabled={quizActionLoading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-gold/10 border border-primary-gold/20 text-primary-gold/60 text-xs font-medium hover:bg-primary-gold/20 transition-all cursor-pointer disabled:opacity-40"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary-gold/10 border border-primary-gold/20 text-primary-gold/60 text-xs font-medium hover:bg-primary-gold/20 transition-all cursor-pointer disabled:opacity-40"
                   >
                     {quizActionLoading ? (
                       <Loader />
                     ) : (
                       <>
-                        <LuRefreshCw size={12} /> Reiniciar
+                        <LuRefreshCw size={13} /> Reiniciar
                       </>
                     )}
                   </button>
@@ -1267,16 +1277,16 @@ export default function EventosPage() {
                   <button
                     key={tab}
                     onClick={() => setQuizTab(tab)}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-all cursor-pointer ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium transition-all cursor-pointer ${
                       quizTab === tab
                         ? "text-primary-gold border-b-2 border-primary-gold"
                         : "text-primary-gold/40 hover:text-primary-gold/70"
                     }`}
                   >
                     {tab === "perguntas" ? (
-                      <LuCircleHelp size={13} />
+                      <LuCircleHelp size={14} />
                     ) : (
-                      <LuUsers size={13} />
+                      <LuUsers size={14} />
                     )}
                     {tab === "perguntas" ? "Perguntas" : "Participantes"}
                     {tab === "participantes" && quizParticipants.length > 0 && (
@@ -1290,15 +1300,15 @@ export default function EventosPage() {
                   <button
                     key={tab}
                     onClick={() => setBolaoTab(tab)}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-all cursor-pointer ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium transition-all cursor-pointer ${
                       bolaoTab === tab
                         ? "text-primary-gold border-b-2 border-primary-gold"
                         : "text-primary-gold/40 hover:text-primary-gold/70"
                     }`}
                   >
-                    {tab === "times" && <LuShield size={13} />}
-                    {tab === "partidas" && <LuSwords size={13} />}
-                    {tab === "palpites" && <LuTrophy size={13} />}
+                    {tab === "times" && <LuShield size={14} />}
+                    {tab === "partidas" && <LuSwords size={14} />}
+                    {tab === "palpites" && <LuTrophy size={14} />}
                     {tab === "times"
                       ? "Times"
                       : tab === "partidas"
@@ -1554,21 +1564,29 @@ export default function EventosPage() {
                                     )}
                                   </div>
                                   {selectedEvent.quizStatus !== "running" && (
-                                    <div className="flex items-center gap-1 shrink-0">
-                                      <Tooltip content="Editar" direction="left">
+                                    <div className="flex items-center gap-0.5 shrink-0">
+                                      <Tooltip
+                                        content="Editar"
+                                        direction="left"
+                                      >
                                         <button
                                           onClick={() => setEditingQuestion(q)}
-                                          className="p-1.5 rounded-md hover:bg-primary-gold/10 text-primary-gold/40 hover:text-primary-gold transition-all cursor-pointer"
+                                          className="w-9 h-9 flex items-center justify-center rounded-md hover:bg-primary-gold/10 text-primary-gold/40 hover:text-primary-gold transition-all cursor-pointer"
                                         >
-                                          <LuPencil size={13} />
+                                          <LuPencil size={14} />
                                         </button>
                                       </Tooltip>
-                                      <Tooltip content="Remover" direction="left">
+                                      <Tooltip
+                                        content="Remover"
+                                        direction="left"
+                                      >
                                         <button
-                                          onClick={() => handleDeleteQuestion(q)}
-                                          className="p-1.5 rounded-md hover:bg-invalid-color/10 text-primary-gold/40 hover:text-invalid-color transition-all cursor-pointer"
+                                          onClick={() =>
+                                            handleDeleteQuestion(q)
+                                          }
+                                          className="w-9 h-9 flex items-center justify-center rounded-md hover:bg-invalid-color/10 text-primary-gold/40 hover:text-invalid-color transition-all cursor-pointer"
                                         >
-                                          <LuTrash size={13} />
+                                          <LuTrash size={14} />
                                         </button>
                                       </Tooltip>
                                     </div>
@@ -1582,163 +1600,167 @@ export default function EventosPage() {
                     )}
 
                     {/* Add question form */}
-                    {!editingQuestion && selectedEvent.quizStatus !== "running" && (
-                      <div className="flex flex-col gap-3 p-4 rounded-xl border border-primary-gold/10 bg-primary-black/20">
-                        <span className="text-xs font-semibold text-primary-gold/50 uppercase tracking-wider flex items-center gap-1.5">
-                          <LuPlus size={12} /> Adicionar pergunta
-                        </span>
+                    {!editingQuestion &&
+                      selectedEvent.quizStatus !== "running" && (
+                        <div className="flex flex-col gap-3 p-4 rounded-xl border border-primary-gold/10 bg-primary-black/20">
+                          <span className="text-xs font-semibold text-primary-gold/50 uppercase tracking-wider flex items-center gap-1.5">
+                            <LuPlus size={12} /> Adicionar pergunta
+                          </span>
 
-                        <textarea
-                          value={questionForm.text}
-                          onChange={(e) =>
-                            setQuestionForm((p) => ({
-                              ...p,
-                              text: e.target.value,
-                            }))
-                          }
-                          rows={2}
-                          placeholder="Texto da pergunta..."
-                          className="w-full bg-primary-black/50 border border-primary-gold/20 rounded-lg px-3 py-2 text-sm text-primary-gold placeholder-primary-gold/25 outline-none focus:border-primary-gold/50 resize-none transition-all"
-                        />
+                          <textarea
+                            value={questionForm.text}
+                            onChange={(e) =>
+                              setQuestionForm((p) => ({
+                                ...p,
+                                text: e.target.value,
+                              }))
+                            }
+                            rows={2}
+                            placeholder="Texto da pergunta..."
+                            className="w-full bg-primary-black/50 border border-primary-gold/20 rounded-lg px-3 py-2 text-sm text-primary-gold placeholder-primary-gold/25 outline-none focus:border-primary-gold/50 resize-none transition-all"
+                          />
 
-                        <div className="flex items-center gap-4 flex-wrap">
-                          <div className="flex flex-col gap-1.5">
-                            <span className="text-[10px] text-primary-gold/50 uppercase tracking-wider">
-                              Tipo
-                            </span>
-                            <select
-                              value={questionForm.type}
-                              onChange={(e) =>
-                                setQuestionForm((p) => ({
-                                  ...p,
-                                  type: e.target.value as
-                                    | "multiple_choice"
-                                    | "text",
-                                }))
-                              }
-                              className={
-                                selectClass + " !w-auto !py-1.5 !text-xs"
-                              }
-                            >
-                              <option value="multiple_choice">
-                                Múltipla escolha
-                              </option>
-                              <option value="text">Texto livre</option>
-                            </select>
+                          <div className="flex items-center gap-4 flex-wrap">
+                            <div className="flex flex-col gap-1.5">
+                              <span className="text-[10px] text-primary-gold/50 uppercase tracking-wider">
+                                Tipo
+                              </span>
+                              <select
+                                value={questionForm.type}
+                                onChange={(e) =>
+                                  setQuestionForm((p) => ({
+                                    ...p,
+                                    type: e.target.value as
+                                      | "multiple_choice"
+                                      | "text",
+                                  }))
+                                }
+                                className={
+                                  selectClass + " !w-auto !py-1.5 !text-xs"
+                                }
+                              >
+                                <option value="multiple_choice">
+                                  Múltipla escolha
+                                </option>
+                                <option value="text">Texto livre</option>
+                              </select>
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                              <span className="text-[10px] text-primary-gold/50 uppercase tracking-wider">
+                                Tempo
+                              </span>
+                              <NumberStepper
+                                value={questionForm.timeSeconds}
+                                onChange={(v) =>
+                                  setQuestionForm((p) => ({
+                                    ...p,
+                                    timeSeconds: v,
+                                  }))
+                                }
+                                min={5}
+                                max={300}
+                                step={5}
+                                suffix="s"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                              <span className="text-[10px] text-primary-gold/50 uppercase tracking-wider">
+                                Pontos
+                              </span>
+                              <NumberStepper
+                                value={questionForm.points}
+                                onChange={(v) =>
+                                  setQuestionForm((p) => ({ ...p, points: v }))
+                                }
+                                min={1}
+                                max={100}
+                              />
+                            </div>
                           </div>
-                          <div className="flex flex-col gap-1.5">
-                            <span className="text-[10px] text-primary-gold/50 uppercase tracking-wider">
-                              Tempo
-                            </span>
-                            <NumberStepper
-                              value={questionForm.timeSeconds}
-                              onChange={(v) =>
-                                setQuestionForm((p) => ({
-                                  ...p,
-                                  timeSeconds: v,
-                                }))
-                              }
-                              min={5}
-                              max={300}
-                              step={5}
-                              suffix="s"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            <span className="text-[10px] text-primary-gold/50 uppercase tracking-wider">
-                              Pontos
-                            </span>
-                            <NumberStepper
-                              value={questionForm.points}
-                              onChange={(v) =>
-                                setQuestionForm((p) => ({ ...p, points: v }))
-                              }
-                              min={1}
-                              max={100}
-                            />
-                          </div>
-                        </div>
 
-                        {/* Options (MC) */}
-                        {questionForm.type === "multiple_choice" && (
-                          <div className="flex flex-col gap-2">
-                            <span className="text-[10px] text-primary-gold/50 uppercase tracking-wider">
-                              Opções — clique no círculo para marcar a correta
-                            </span>
-                            {questionForm.options.map((opt, i) => (
-                              <div key={i} className="flex items-center gap-2">
+                          {/* Options (MC) */}
+                          {questionForm.type === "multiple_choice" && (
+                            <div className="flex flex-col gap-2">
+                              <span className="text-[10px] text-primary-gold/50 uppercase tracking-wider">
+                                Opções — clique no círculo para marcar a correta
+                              </span>
+                              {questionForm.options.map((opt, i) => (
+                                <div
+                                  key={i}
+                                  className="flex items-center gap-2"
+                                >
+                                  <button
+                                    onClick={() =>
+                                      setQuestionForm((p) => ({
+                                        ...p,
+                                        correctOption: i,
+                                      }))
+                                    }
+                                    className={`w-4 h-4 rounded-full border-2 shrink-0 transition-all cursor-pointer ${
+                                      questionForm.correctOption === i
+                                        ? "bg-green-500 border-green-500"
+                                        : "border-primary-gold/30 hover:border-primary-gold"
+                                    }`}
+                                  />
+                                  <input
+                                    value={opt}
+                                    onChange={(e) => {
+                                      const newOpts = [...questionForm.options];
+                                      newOpts[i] = e.target.value;
+                                      setQuestionForm((p) => ({
+                                        ...p,
+                                        options: newOpts,
+                                      }));
+                                    }}
+                                    placeholder={`Opção ${i + 1}`}
+                                    className="flex-1 bg-primary-black/50 border border-primary-gold/15 rounded px-2 py-1.5 text-xs text-primary-gold placeholder-primary-gold/20 outline-none focus:border-primary-gold/40 transition-all"
+                                  />
+                                  {questionForm.options.length > 2 && (
+                                    <button
+                                      onClick={() => {
+                                        const newOpts =
+                                          questionForm.options.filter(
+                                            (_, idx) => idx !== i,
+                                          );
+                                        const newCorrect =
+                                          questionForm.correctOption >=
+                                          newOpts.length
+                                            ? newOpts.length - 1
+                                            : questionForm.correctOption;
+                                        setQuestionForm((p) => ({
+                                          ...p,
+                                          options: newOpts,
+                                          correctOption: newCorrect,
+                                        }));
+                                      }}
+                                      className="text-primary-gold/30 hover:text-invalid-color transition-all cursor-pointer shrink-0"
+                                    >
+                                      <LuX size={12} />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                              {questionForm.options.length < 6 && (
                                 <button
                                   onClick={() =>
                                     setQuestionForm((p) => ({
                                       ...p,
-                                      correctOption: i,
+                                      options: [...p.options, ""],
                                     }))
                                   }
-                                  className={`w-4 h-4 rounded-full border-2 shrink-0 transition-all cursor-pointer ${
-                                    questionForm.correctOption === i
-                                      ? "bg-green-500 border-green-500"
-                                      : "border-primary-gold/30 hover:border-primary-gold"
-                                  }`}
-                                />
-                                <input
-                                  value={opt}
-                                  onChange={(e) => {
-                                    const newOpts = [...questionForm.options];
-                                    newOpts[i] = e.target.value;
-                                    setQuestionForm((p) => ({
-                                      ...p,
-                                      options: newOpts,
-                                    }));
-                                  }}
-                                  placeholder={`Opção ${i + 1}`}
-                                  className="flex-1 bg-primary-black/50 border border-primary-gold/15 rounded px-2 py-1.5 text-xs text-primary-gold placeholder-primary-gold/20 outline-none focus:border-primary-gold/40 transition-all"
-                                />
-                                {questionForm.options.length > 2 && (
-                                  <button
-                                    onClick={() => {
-                                      const newOpts =
-                                        questionForm.options.filter(
-                                          (_, idx) => idx !== i,
-                                        );
-                                      const newCorrect =
-                                        questionForm.correctOption >=
-                                        newOpts.length
-                                          ? newOpts.length - 1
-                                          : questionForm.correctOption;
-                                      setQuestionForm((p) => ({
-                                        ...p,
-                                        options: newOpts,
-                                        correctOption: newCorrect,
-                                      }));
-                                    }}
-                                    className="text-primary-gold/30 hover:text-invalid-color transition-all cursor-pointer shrink-0"
-                                  >
-                                    <LuX size={12} />
-                                  </button>
-                                )}
-                              </div>
-                            ))}
-                            {questionForm.options.length < 6 && (
-                              <button
-                                onClick={() =>
-                                  setQuestionForm((p) => ({
-                                    ...p,
-                                    options: [...p.options, ""],
-                                  }))
-                                }
-                                className="flex items-center gap-1 text-xs text-primary-gold/40 hover:text-primary-gold transition-all cursor-pointer w-fit"
-                              >
-                                <LuPlus size={11} /> Adicionar opção
-                              </button>
-                            )}
-                          </div>
-                        )}
+                                  className="flex items-center gap-1 text-xs text-primary-gold/40 hover:text-primary-gold transition-all cursor-pointer w-fit"
+                                >
+                                  <LuPlus size={11} /> Adicionar opção
+                                </button>
+                              )}
+                            </div>
+                          )}
 
-                        <Button onClick={handleAddQuestion}>
-                          {questionSaving ? <Loader /> : "Adicionar pergunta"}
-                        </Button>
-                      </div>
-                    )}
+                          <Button onClick={handleAddQuestion}>
+                            {questionSaving ? <Loader /> : "Adicionar pergunta"}
+                          </Button>
+                        </div>
+                      )}
 
                     {/* Warning if quiz running */}
                     {selectedEvent?.quizStatus === "running" && (
@@ -1871,16 +1893,16 @@ export default function EventosPage() {
                                     )}
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-1 shrink-0">
+                                <div className="flex items-center gap-0.5 shrink-0">
                                   {isExpanded ? (
                                     <LuChevronUp
-                                      size={14}
-                                      className="text-primary-gold/40"
+                                      size={16}
+                                      className="text-primary-gold/40 mx-1"
                                     />
                                   ) : (
                                     <LuChevronDown
-                                      size={14}
-                                      className="text-primary-gold/40"
+                                      size={16}
+                                      className="text-primary-gold/40 mx-1"
                                     />
                                   )}
                                   <Tooltip
@@ -1898,14 +1920,14 @@ export default function EventosPage() {
                                         handleSetChampion(participant);
                                       }}
                                       disabled={quizActionLoading}
-                                      className={`p-1 rounded-md transition-all cursor-pointer disabled:opacity-40 ${
+                                      className={`w-9 h-9 flex items-center justify-center rounded-md transition-all cursor-pointer disabled:opacity-40 ${
                                         selectedEvent?.quizChampionId ===
                                         participant.participantId
                                           ? "text-yellow-400 bg-yellow-400/10"
                                           : "text-primary-gold/30 hover:text-yellow-400 hover:bg-yellow-400/10"
                                       }`}
                                     >
-                                      <LuCrown size={13} />
+                                      <LuCrown size={15} />
                                     </button>
                                   </Tooltip>
                                   <Tooltip
@@ -1919,9 +1941,9 @@ export default function EventosPage() {
                                           participant,
                                         );
                                       }}
-                                      className="p-1 rounded-md hover:bg-invalid-color/10 text-primary-gold/30 hover:text-invalid-color transition-all cursor-pointer"
+                                      className="w-9 h-9 flex items-center justify-center rounded-md hover:bg-invalid-color/10 text-primary-gold/30 hover:text-invalid-color transition-all cursor-pointer"
                                     >
-                                      <LuTrash size={12} />
+                                      <LuTrash size={14} />
                                     </button>
                                   </Tooltip>
                                 </div>
@@ -1936,17 +1958,20 @@ export default function EventosPage() {
                                       return (
                                         <div
                                           key={q.id}
-                                          className="flex items-start gap-2 text-xs"
+                                          className="flex items-start gap-2 text-xs rounded-lg p-2 bg-yellow-900/10 border border-yellow-700/20"
                                         >
-                                          <span className="text-primary-gold/20 font-mono shrink-0 w-4 text-right">
+                                          <span className="text-primary-gold/30 font-mono shrink-0 w-4 text-right mt-0.5">
                                             {qi + 1}.
                                           </span>
-                                          <span className="text-primary-gold/30 italic flex-1 truncate">
-                                            {q.text}
-                                          </span>
-                                          <span className="text-primary-gold/20 shrink-0">
-                                            —
-                                          </span>
+                                          <div className="flex flex-col gap-1 flex-1 min-w-0">
+                                            <span className="text-primary-gold/50 leading-snug">
+                                              {q.text}
+                                            </span>
+                                            <span className="flex items-center gap-1 text-yellow-400/80 font-medium">
+                                              <LuCircleSlash size={11} />
+                                              Não respondida
+                                            </span>
+                                          </div>
                                         </div>
                                       );
                                     }
@@ -2006,7 +2031,7 @@ export default function EventosPage() {
                                                 &quot;{ans.answer}&quot;
                                               </span>
                                               {ans.isCorrect === undefined ? (
-                                                <div className="flex gap-1.5">
+                                                <div className="flex gap-2">
                                                   <button
                                                     onClick={() =>
                                                       handleGradeAnswer(
@@ -2015,9 +2040,9 @@ export default function EventosPage() {
                                                         true,
                                                       )
                                                     }
-                                                    className="flex items-center gap-1 px-2 py-1 rounded bg-green-900/30 border border-green-700/30 text-green-400 text-[11px] hover:bg-green-900/50 cursor-pointer transition-all"
+                                                    className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg bg-green-900/30 border border-green-700/30 text-green-400 text-xs font-medium hover:bg-green-900/50 cursor-pointer transition-all"
                                                   >
-                                                    <LuCheck size={10} />{" "}
+                                                    <LuCheck size={13} />
                                                     Correta (+{q.points}pts)
                                                   </button>
                                                   <button
@@ -2028,13 +2053,13 @@ export default function EventosPage() {
                                                         false,
                                                       )
                                                     }
-                                                    className="flex items-center gap-1 px-2 py-1 rounded bg-red-900/20 border border-red-700/20 text-red-400 text-[11px] hover:bg-red-900/30 cursor-pointer transition-all"
+                                                    className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg bg-red-900/20 border border-red-700/20 text-red-400 text-xs font-medium hover:bg-red-900/30 cursor-pointer transition-all"
                                                   >
-                                                    <LuX size={10} /> Errada
+                                                    <LuX size={13} /> Errada
                                                   </button>
                                                 </div>
                                               ) : (
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center justify-between gap-2">
                                                   <span
                                                     className={
                                                       ans.isCorrect
@@ -2056,7 +2081,7 @@ export default function EventosPage() {
                                                         !ans.isCorrect,
                                                       )
                                                     }
-                                                    className="text-[10px] text-primary-gold/30 hover:text-primary-gold underline cursor-pointer"
+                                                    className="px-2.5 py-1.5 -mr-1 text-[11px] text-primary-gold/40 hover:text-primary-gold underline cursor-pointer"
                                                   >
                                                     corrigir
                                                   </button>
@@ -2653,7 +2678,9 @@ export default function EventosPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-5 py-4 flex flex-col gap-4">
-              <p className="text-sm text-primary-gold/80">{simpleConfirmModal.message}</p>
+              <p className="text-sm text-primary-gold/80">
+                {simpleConfirmModal.message}
+              </p>
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={() => setSimpleConfirmModal(null)}
@@ -2662,7 +2689,10 @@ export default function EventosPage() {
                   Cancelar
                 </button>
                 <button
-                  onClick={() => { simpleConfirmModal.onConfirm(); setSimpleConfirmModal(null); }}
+                  onClick={() => {
+                    simpleConfirmModal.onConfirm();
+                    setSimpleConfirmModal(null);
+                  }}
                   className="px-4 py-1.5 text-sm rounded-lg border border-invalid-color/40 text-invalid-color bg-invalid-color/10 hover:bg-invalid-color/20 transition-all cursor-pointer"
                 >
                   Confirmar
@@ -2696,10 +2726,16 @@ export default function EventosPage() {
               </button>
             </div>
             <div className="px-5 py-4 flex flex-col gap-4">
-              <p className="text-sm text-primary-gold/60">{deleteTypedModal.description}</p>
+              <p className="text-sm text-primary-gold/60">
+                {deleteTypedModal.description}
+              </p>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-primary-gold/40">
-                  Digite <span className="font-mono font-bold text-invalid-color/80">EXCLUIR</span> para confirmar
+                  Digite{" "}
+                  <span className="font-mono font-bold text-invalid-color/80">
+                    EXCLUIR
+                  </span>{" "}
+                  para confirmar
                 </label>
                 <input
                   type="text"
@@ -2708,7 +2744,10 @@ export default function EventosPage() {
                   placeholder="EXCLUIR"
                   autoFocus
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && deleteTypedInput === "EXCLUIR") {
+                    if (
+                      e.key === "Enter" &&
+                      deleteTypedInput.toUpperCase() === "EXCLUIR"
+                    ) {
                       deleteTypedModal.onConfirm();
                       setDeleteTypedModal(null);
                     }
@@ -2724,8 +2763,11 @@ export default function EventosPage() {
                   Cancelar
                 </button>
                 <button
-                  disabled={deleteTypedInput !== "EXCLUIR"}
-                  onClick={() => { deleteTypedModal.onConfirm(); setDeleteTypedModal(null); }}
+                  disabled={deleteTypedInput.toUpperCase() !== "EXCLUIR"}
+                  onClick={() => {
+                    deleteTypedModal.onConfirm();
+                    setDeleteTypedModal(null);
+                  }}
                   className="px-4 py-1.5 text-sm rounded-lg border border-invalid-color/40 text-invalid-color bg-invalid-color/10 hover:bg-invalid-color/20 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   Excluir

@@ -23,6 +23,10 @@ import {
   LuCalendarDays,
   LuExternalLink,
   LuCheck,
+  LuTrash,
+  LuPlus,
+  LuCalendarOff,
+  LuTriangleAlert,
 } from "react-icons/lu";
 import { onAuthStateChanged } from "firebase/auth";
 import BoardgameRepository from "@/services/repositories/BoardGameRepository";
@@ -198,6 +202,10 @@ export default function SettingsPage() {
   const [localGeneralConfigs, setLocalGeneralConfigs] =
     useState<GeneralConfigsType>(patternGeneralConfigs);
   const [loading, setLoading] = useState(true);
+  const [newBlockedDate, setNewBlockedDate] = useState("");
+  const [newBlockedReason, setNewBlockedReason] = useState("");
+  const [savedConfigsSnapshot, setSavedConfigsSnapshot] =
+    useState<GeneralConfigsType>(patternGeneralConfigs);
 
   const [databaseInfo, setDatabaseInfo] = useState({
     currentUserEmail: "",
@@ -420,6 +428,7 @@ export default function SettingsPage() {
           return;
         }
         setLocalGeneralConfigs(generalConfigs);
+        setSavedConfigsSnapshot(generalConfigs);
       } catch (error) {
         addAlert(`Erro ao buscar configurações: ${error}`);
       }
@@ -432,11 +441,45 @@ export default function SettingsPage() {
   const [savingSection, setSavingSection] = useState<"reserva" | "efeitos" | null>(null);
   const [savedSection, setSavedSection] = useState<"reserva" | "efeitos" | null>(null);
 
+  const addBlockedDate = () => {
+    if (!newBlockedDate) {
+      addAlert("Selecione uma data.");
+      return;
+    }
+    const existing = localGeneralConfigs.blockedDates ?? [];
+    if (existing.some((b) => b.date === newBlockedDate)) {
+      addAlert("Essa data já está bloqueada.");
+      return;
+    }
+    const updated = [
+      ...existing,
+      {
+        date: newBlockedDate,
+        ...(newBlockedReason.trim() && { reason: newBlockedReason.trim() }),
+      },
+    ].sort((a, b) => a.date.localeCompare(b.date));
+    setLocalGeneralConfigs({ ...localGeneralConfigs, blockedDates: updated });
+    setNewBlockedDate("");
+    setNewBlockedReason("");
+  };
+
+  const removeBlockedDate = (date: string) => {
+    setLocalGeneralConfigs({
+      ...localGeneralConfigs,
+      blockedDates: (localGeneralConfigs.blockedDates ?? []).filter(
+        (b) => b.date !== date,
+      ),
+    });
+  };
+
   const saveSection = async (section: "reserva" | "efeitos") => {
     if (!localGeneralConfigs?._id) { addAlert("ID Inválido."); return; }
     setSavingSection(section);
     try {
       await GeneralConfigsRepository.update({ ...localGeneralConfigs });
+      // O documento inteiro é salvo a cada clique em "Salvar", então o snapshot
+      // de referência para detectar alterações pendentes vale para as duas seções.
+      setSavedConfigsSnapshot(localGeneralConfigs);
       setSavedSection(section);
       addAlert("Configurações salvas com sucesso!");
       setTimeout(() => setSavedSection(null), 2500);
@@ -446,6 +489,34 @@ export default function SettingsPage() {
       setSavingSection(null);
     }
   };
+
+  const RESERVA_CONFIG_FIELDS: (keyof GeneralConfigsType)[] = [
+    "enabledTimes",
+    "disabledDays",
+    "maxCapacityInDay",
+    "maxCapacityInReserve",
+    "maxMonthsInAdvance",
+    "hoursToCloseReserve",
+    "blockedDates",
+  ];
+
+  const isReservaDirty = RESERVA_CONFIG_FIELDS.some(
+    (field) =>
+      JSON.stringify(localGeneralConfigs[field]) !==
+      JSON.stringify(savedConfigsSnapshot[field]),
+  );
+
+  const EFEITOS_CONFIG_FIELDS: (keyof GeneralConfigsType)[] = [
+    "clickEffect",
+    "followCursor",
+    "canvasCursor",
+  ];
+
+  const isEfeitosDirty = EFEITOS_CONFIG_FIELDS.some(
+    (field) =>
+      JSON.stringify(localGeneralConfigs[field]) !==
+      JSON.stringify(savedConfigsSnapshot[field]),
+  );
 
   function computeChartData(
     reserves: ReserveType[],
@@ -1257,8 +1328,76 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
+
+            {/* Datas bloqueadas */}
+            <div className="flex flex-col gap-3 pt-2 border-t border-primary-gold/10">
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
+                <LuCalendarOff size={13} />
+                Datas bloqueadas
+              </span>
+              <p className="text-xs text-primary-gold/40 -mt-1">
+                Datas específicas em que o Carcassonne Pub não vai aceitar
+                reservas. O cliente ainda pode clicar na data, mas verá o
+                motivo e não conseguirá continuar.
+              </p>
+
+              <div className="flex items-end gap-2 flex-wrap">
+                <input
+                  type="date"
+                  value={newBlockedDate}
+                  onChange={(e) => setNewBlockedDate(e.target.value)}
+                  className="bg-primary-black/50 border border-primary-gold/20 rounded-lg px-3 py-1.5 text-xs text-primary-gold outline-none focus:border-primary-gold/40 transition-colors"
+                />
+                <input
+                  type="text"
+                  placeholder="Motivo (opcional)"
+                  value={newBlockedReason}
+                  onChange={(e) => setNewBlockedReason(e.target.value)}
+                  className="flex-1 min-w-[160px] bg-primary-black/50 border border-primary-gold/20 rounded-lg px-3 py-1.5 text-xs text-primary-gold placeholder:text-primary-gold/30 outline-none focus:border-primary-gold/40 transition-colors"
+                />
+                <button
+                  onClick={addBlockedDate}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary-gold/30 text-primary-gold/80 text-xs font-medium hover:border-primary-gold/60 hover:text-primary-gold hover:bg-primary-gold/5 transition-all cursor-pointer shrink-0"
+                >
+                  <LuPlus size={13} /> Adicionar
+                </button>
+              </div>
+
+              {(localGeneralConfigs.blockedDates ?? []).length > 0 && (
+                <div className="flex flex-col gap-1.5 mt-1">
+                  {(localGeneralConfigs.blockedDates ?? []).map((b) => {
+                    const [y, m, d] = b.date.split("-");
+                    return (
+                      <div
+                        key={b.date}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary-black/30 border border-primary-gold/10"
+                      >
+                        <span className="text-xs font-mono text-primary-gold/70 shrink-0">
+                          {d}/{m}/{y}
+                        </span>
+                        <span className="text-xs text-primary-gold/45 flex-1 truncate italic">
+                          {b.reason || "Sem motivo especificado"}
+                        </span>
+                        <button
+                          onClick={() => removeBlockedDate(b.date)}
+                          className="p-1 rounded-md hover:bg-invalid-color/10 text-primary-gold/30 hover:text-invalid-color transition-all cursor-pointer shrink-0"
+                        >
+                          <LuTrash size={13} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
-          <div className="flex justify-end px-4 py-3 border-t border-primary-gold/10 bg-primary-black/20">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-primary-gold/10 bg-primary-black/20">
+            {isReservaDirty && savingSection !== "reserva" && (
+              <span className="flex items-center gap-1.5 text-xs text-yellow-400/90">
+                <LuTriangleAlert size={13} className="shrink-0" />
+                Você tem alterações não salvas
+              </span>
+            )}
             <SaveButton
               saving={savingSection === "reserva"}
               saved={savedSection === "reserva"}
@@ -1309,7 +1448,13 @@ export default function SettingsPage() {
               />
             </div>
           </div>
-          <div className="flex justify-end px-4 py-3 border-t border-primary-gold/10 bg-primary-black/20">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-primary-gold/10 bg-primary-black/20">
+            {isEfeitosDirty && savingSection !== "efeitos" && (
+              <span className="flex items-center gap-1.5 text-xs text-yellow-400/90">
+                <LuTriangleAlert size={13} className="shrink-0" />
+                Você tem alterações não salvas
+              </span>
+            )}
             <SaveButton
               saving={savingSection === "efeitos"}
               saved={savedSection === "efeitos"}

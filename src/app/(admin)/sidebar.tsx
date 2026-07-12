@@ -21,6 +21,7 @@ import { auth } from "@/services/firebaseConfig";
 import Tooltip from "@/components/Tooltip";
 import { MusicRecommendationType } from "@/types";
 import MusicRecommendationRepository from "@/services/repositories/MusicRecommendationsRepository";
+import EventRepository from "@/services/repositories/EventRepository";
 import { useAlert } from "@/contexts/alertProvider";
 
 interface ItemProps {
@@ -32,6 +33,7 @@ interface ItemProps {
   setSongsToNotify?: React.Dispatch<
     React.SetStateAction<(MusicRecommendationType & { id: string })[]>
   >;
+  activeCount?: number;
 }
 
 function Item({
@@ -41,6 +43,7 @@ function Item({
   onClick,
   notify,
   setSongsToNotify,
+  activeCount,
 }: ItemProps) {
   const pathname = usePathname();
   const isActive = pathname === path;
@@ -73,6 +76,16 @@ function Item({
             {notify.length}
           </div>
         )}
+      {path === "/eventos" && !!activeCount && (
+        <Tooltip
+          content={`${activeCount} evento${activeCount !== 1 ? "s" : ""} ativado${activeCount !== 1 ? "s" : ""}`}
+          direction="right"
+        >
+          <div className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-green-500 text-primary-black text-[10px] font-bold">
+            {activeCount}
+          </div>
+        </Tooltip>
+      )}
     </div>
   );
 }
@@ -82,6 +95,7 @@ export default function Sidebar() {
   const [songsToNotify, setSongsToNotify] = useState<
     (MusicRecommendationType & { id: string })[]
   >([]);
+  const [activeEventsCount, setActiveEventsCount] = useState(0);
 
   const { addAlert } = useAlert();
   const router = useRouter();
@@ -109,6 +123,13 @@ export default function Sidebar() {
       setSongsToNotify([]);
     }
   }, [pathname]);
+
+  useEffect(() => {
+    const unsub = EventRepository.subscribeToAll((events) => {
+      setActiveEventsCount(events.filter((e) => e.isActive).length);
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     const interval: NodeJS.Timeout = setInterval(checkUpdates, 10000);
@@ -257,6 +278,9 @@ export default function Sidebar() {
                 path={item.path}
                 notify={songsToNotify}
                 setSongsToNotify={setSongsToNotify}
+                activeCount={
+                  item.path === "/eventos" ? activeEventsCount : undefined
+                }
               />
             ))}
           </nav>

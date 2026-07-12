@@ -15,6 +15,7 @@ import {
   LuBadgeInfo,
   LuCalendar,
   LuCalendarOff,
+  LuCircleAlert,
   LuClock,
   LuCopy,
   LuMessageCircleWarning,
@@ -189,6 +190,17 @@ export default function Reserve() {
     );
   }
 
+  function getBlockedDate(date: Date) {
+    return (localGeneralConfigs.blockedDates ?? []).find((b) => {
+      const [y, m, d] = b.date.split("-").map(Number);
+      return (
+        y === date.getFullYear() &&
+        m === date.getMonth() + 1 &&
+        d === date.getDate()
+      );
+    });
+  }
+
   function isValidEmail(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
@@ -299,6 +311,8 @@ export default function Reserve() {
       setcomponentLoading(false);
     }
   }
+
+  const blockedInfo = date instanceof Date ? getBlockedDate(date) : undefined;
 
   return (
     <>
@@ -453,11 +467,12 @@ export default function Reserve() {
                 onChange={setDate}
                 value={date}
                 tileDisabled={disableDate}
-                tileClassName={({ date, view }) =>
-                  view === "month" && disableDate({ date, view })
-                    ? "my-disabled-day"
-                    : null
-                }
+                tileClassName={({ date, view }) => {
+                  if (view !== "month") return null;
+                  if (disableDate({ date, view })) return "my-disabled-day";
+                  if (getBlockedDate(date)) return "my-blocked-day";
+                  return null;
+                }}
                 showNeighboringMonth={false}
               />
 
@@ -470,22 +485,35 @@ export default function Reserve() {
                   </span>
                 )}
 
+              {blockedInfo && (
+                <div className="w-full flex items-start gap-2.5 bg-invalid-color/10 border border-invalid-color/40 rounded-lg px-4 py-3 text-sm text-invalid-color">
+                  <LuCircleAlert size={18} className="shrink-0 mt-0.5" />
+                  <span className="font-medium">
+                    {blockedInfo.reason?.trim()
+                      ? blockedInfo.reason
+                      : "O Carcassonne Pub não estará aberto nesse dia."}
+                  </span>
+                </div>
+              )}
+
               {/* Time pills */}
-              <div className="flex gap-2 flex-wrap justify-center">
-                {localGeneralConfigs.enabledTimes.map((time, index) => (
-                  <div
-                    key={index}
-                    onClick={() => setReserve({ ...reserve, time })}
-                    className={`py-2 px-5 rounded-lg border text-sm cursor-pointer transition-all duration-200 ${
-                      time === reserve.time
-                        ? "border-primary-gold bg-primary-gold/10 text-primary-gold"
-                        : "border-primary-gold/20 bg-primary-black/40 text-primary-gold/70 hover:border-primary-gold/50"
-                    }`}
-                  >
-                    {time}
-                  </div>
-                ))}
-              </div>
+              {!blockedInfo && (
+                <div className="flex gap-2 flex-wrap justify-center">
+                  {localGeneralConfigs.enabledTimes.map((time, index) => (
+                    <div
+                      key={index}
+                      onClick={() => setReserve({ ...reserve, time })}
+                      className={`py-2 px-5 rounded-lg border text-sm cursor-pointer transition-all duration-200 ${
+                        time === reserve.time
+                          ? "border-primary-gold bg-primary-gold/10 text-primary-gold"
+                          : "border-primary-gold/20 bg-primary-black/40 text-primary-gold/70 hover:border-primary-gold/50"
+                      }`}
+                    >
+                      {time}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="flex gap-2">
                 <Button
@@ -503,6 +531,7 @@ export default function Reserve() {
                 </Button>
                 <Button
                   disabled={
+                    !!blockedInfo ||
                     !reserve.time ||
                     !(
                       reserve.bookingDate.day &&

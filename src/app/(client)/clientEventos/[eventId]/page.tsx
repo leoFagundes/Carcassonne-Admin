@@ -313,6 +313,9 @@ function QuizSection({
   const answersRef = useRef<Record<string, string | number>>({});
   // Time (ms) spent on each question, keyed by questionId
   const questionTimesRef = useRef<Record<string, number>>({});
+  // Latest unsent text-question draft, kept in sync on every keystroke so it
+  // can be auto-saved if time runs out before the participant clicks "Responder"
+  const pendingDraftRef = useRef<{ questionId: string; text: string } | null>(null);
   const participantIdRef = useRef<string>("");
   const submitCalledRef = useRef(false);
   const prevQuizStatusRef = useRef(event.quizStatus);
@@ -330,7 +333,17 @@ function QuizSection({
   // One-time setup
   useEffect(() => {
     participantIdRef.current = getOrCreateParticipantId();
-    loadQuizData();
+    loadExistingParticipant();
+  }, [eventId]);
+
+  // Live-subscribe to quiz questions so late additions/edits by the admin
+  // (e.g. joining the waiting room before setup is finished) are always reflected.
+  useEffect(() => {
+    const unsub = QuizQuestionRepository.subscribeToEventQuestions(eventId, (fetched) => {
+      setQuestions(fetched);
+      setQuestionsLoaded(true);
+    });
+    return () => unsub();
   }, [eventId]);
 
   // Reset client state when admin resets the quiz (transition to "waiting")
@@ -358,8 +371,30 @@ function QuizSection({
 
   const serverQuestionIndex = serverPhase.type === "question" ? serverPhase.index : -1;
 
-  // Reset per-question state when server advances to next question
+  // Reset per-question state when server advances to next question.
+  // Before resetting, auto-save any text draft the participant typed but
+  // never clicked "Responder" for — otherwise it's silently discarded when
+  // time runs out (or the admin ends the quiz early).
   useEffect(() => {
+    const pending = pendingDraftRef.current;
+    if (
+      pending &&
+      pending.text.trim() &&
+      answersRef.current[pending.questionId] === undefined
+    ) {
+      answersRef.current = {
+        ...answersRef.current,
+        [pending.questionId]: pending.text.trim(),
+      };
+      const pendingQuestion = questions.find((q) => q.id === pending.questionId);
+      if (pendingQuestion) {
+        questionTimesRef.current = {
+          ...questionTimesRef.current,
+          [pending.questionId]: pendingQuestion.timeSeconds * 1000,
+        };
+      }
+    }
+    pendingDraftRef.current = null;
     setAnsweredThisQuestion(false);
     setLastAnswerTimeMs(null);
     setTextDraft("");
@@ -391,23 +426,20 @@ function QuizSection({
     return () => { participantUnsubRef.current?.(); };
   }, [submitted]);
 
-  const loadQuizData = async () => {
+  const loadExistingParticipant = async () => {
     try {
-      const [fetchedQuestions, existing] = await Promise.all([
-        QuizQuestionRepository.getByEventId(eventId),
-        QuizParticipantRepository.getByParticipantId(eventId, participantIdRef.current),
-      ]);
-      setQuestions(fetchedQuestions);
+      const existing = await QuizParticipantRepository.getByParticipantId(
+        eventId,
+        participantIdRef.current,
+      );
       if (existing) {
         setExistingParticipant(existing);
         setName(existing.name);
         setSubmitted(true);
         submitCalledRef.current = true;
       }
-      setQuestionsLoaded(true);
     } catch (error) {
       console.error("Erro ao carregar quiz:", error);
-      setQuestionsLoaded(true);
     }
   };
 
@@ -427,6 +459,7 @@ function QuizSection({
       setLastAnswerTimeMs(timeTakenMs);
     }
     answersRef.current = { ...answersRef.current, [questionId]: answer };
+    pendingDraftRef.current = null;
     // Always show "Respondido!" — submit happens when server phase moves to "done"
     setAnsweredThisQuestion(true);
   };
@@ -940,7 +973,10 @@ function QuizSection({
                 rows={3}
                 placeholder="Digite sua resposta..."
                 value={textDraft}
-                onChange={(e) => setTextDraft(e.target.value)}
+                onChange={(e) => {
+                  setTextDraft(e.target.value);
+                  pendingDraftRef.current = { questionId: q.id, text: e.target.value };
+                }}
                 className="w-full bg-primary-black/50 border border-primary-gold/20 rounded-xl px-4 py-3 text-sm text-primary-gold placeholder-primary-gold/25 outline-none focus:border-primary-gold/50 resize-none transition-all"
               />
               <button

@@ -37,6 +37,26 @@ class EventRepository {
     }
   }
 
+  static subscribeToAll(
+    callback: (events: (EventItemType & { id: string })[]) => void
+  ): () => void {
+    const colRef = collection(db, this.collectionName);
+    return onSnapshot(
+      colRef,
+      (snapshot) => {
+        const events = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...(docSnap.data() as EventItemType),
+        }));
+        callback(events);
+      },
+      (error) => {
+        console.error("Erro ao ouvir eventos:", error);
+        callback([]);
+      }
+    );
+  }
+
   static subscribeToEvent(
     id: string,
     callback: (event: (EventItemType & { id: string }) | null) => void
