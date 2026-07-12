@@ -1,6 +1,5 @@
 "use client";
 
-import Button from "@/components/button";
 import Checkbox from "@/components/checkbox";
 import { useAlert } from "@/contexts/alertProvider";
 import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
@@ -86,7 +85,8 @@ function DateInput({
     const raw = e.target.value.replace(/\D/g, "").slice(0, 8);
     let formatted = raw;
     if (raw.length > 2) formatted = raw.slice(0, 2) + "/" + raw.slice(2);
-    if (raw.length > 4) formatted = formatted.slice(0, 5) + "/" + formatted.slice(5);
+    if (raw.length > 4)
+      formatted = formatted.slice(0, 5) + "/" + formatted.slice(5);
     setDisplay(formatted);
     if (raw.length === 8) {
       const d = raw.slice(0, 2);
@@ -238,8 +238,8 @@ export default function SettingsPage() {
     "7d" | "30d" | "3m" | "6m" | "1y" | "all" | "custom"
   >("30d");
   const [customStart, setCustomStart] = useState("");
-  const [customEnd, setCustomEnd] = useState(
-    () => new Date().toISOString().slice(0, 10),
+  const [customEnd, setCustomEnd] = useState(() =>
+    new Date().toISOString().slice(0, 10),
   );
   const debouncedCustomStart = useDebounce(customStart, 400);
   const debouncedCustomEnd = useDebounce(customEnd, 400);
@@ -251,7 +251,9 @@ export default function SettingsPage() {
   const [linkClicksData, setLinkClicksData] = useState<
     { name: string; clicks: number }[]
   >([]);
-  const [hourData, setHourData] = useState<{ name: string; reservas: number }[]>([]);
+  const [hourData, setHourData] = useState<
+    { name: string; reservas: number }[]
+  >([]);
   const [groupSizeData, setGroupSizeData] = useState<
     { name: string; reservas: number }[]
   >([]);
@@ -261,7 +263,9 @@ export default function SettingsPage() {
   const [monthlyData, setMonthlyData] = useState<
     { name: string; reservas: number }[]
   >([]);
-  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(() =>
+    new Date().getFullYear(),
+  );
 
   const { addAlert } = useAlert();
   const muralRef = useRef<HTMLDivElement>(null);
@@ -438,8 +442,12 @@ export default function SettingsPage() {
     fetchGeneralConfigs();
   }, []);
 
-  const [savingSection, setSavingSection] = useState<"reserva" | "efeitos" | null>(null);
-  const [savedSection, setSavedSection] = useState<"reserva" | "efeitos" | null>(null);
+  const [savingSection, setSavingSection] = useState<
+    "reserva" | "efeitos" | null
+  >(null);
+  const [savedSection, setSavedSection] = useState<
+    "reserva" | "efeitos" | null
+  >(null);
 
   const addBlockedDate = () => {
     if (!newBlockedDate) {
@@ -473,7 +481,10 @@ export default function SettingsPage() {
   };
 
   const saveSection = async (section: "reserva" | "efeitos") => {
-    if (!localGeneralConfigs?._id) { addAlert("ID Inválido."); return; }
+    if (!localGeneralConfigs?._id) {
+      addAlert("ID Inválido.");
+      return;
+    }
     setSavingSection(section);
     try {
       await GeneralConfigsRepository.update({ ...localGeneralConfigs });
@@ -526,9 +537,7 @@ export default function SettingsPage() {
     cEnd: string,
   ) {
     const endDate =
-      period === "custom" && cEnd
-        ? new Date(cEnd + "T23:59:59")
-        : new Date();
+      period === "custom" && cEnd ? new Date(cEnd + "T23:59:59") : new Date();
     let startDate: Date | null = null;
     if (period !== "all") {
       if (period === "custom") {
@@ -564,7 +573,9 @@ export default function SettingsPage() {
       );
       dowCount[d.getDay()]++;
     });
-    setDayOfWeekData(DAY_NAMES.map((name, i) => ({ name, reservas: dowCount[i] })));
+    setDayOfWeekData(
+      DAY_NAMES.map((name, i) => ({ name, reservas: dowCount[i] })),
+    );
     setStatusData([
       { name: "Confirmadas", value: confirmedF.length, fill: GOLD },
       { name: "Canceladas", value: canceledF.length, fill: RED },
@@ -619,13 +630,21 @@ export default function SettingsPage() {
     let startStr: string | null = null;
     if (period !== "all") {
       const ms =
-        period === "7d" ? 7 :
-        period === "30d" ? 30 :
-        period === "3m" ? 90 :
-        period === "6m" ? 180 :
-        period === "1y" ? 365 : null;
+        period === "7d"
+          ? 7
+          : period === "30d"
+            ? 30
+            : period === "3m"
+              ? 90
+              : period === "6m"
+                ? 180
+                : period === "1y"
+                  ? 365
+                  : null;
       if (ms !== null) {
-        startStr = new Date(Date.now() - ms * 86400000).toISOString().slice(0, 10);
+        startStr = new Date(Date.now() - ms * 86400000)
+          .toISOString()
+          .slice(0, 10);
       } else if (period === "custom") {
         startStr = cStart || null;
       }
@@ -659,12 +678,37 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (rawReserves.length > 0 || rawLinks.length > 0) {
-      computeChartData(rawReserves, rawLinks, chartPeriod, debouncedCustomStart, debouncedCustomEnd);
+      computeChartData(
+        rawReserves,
+        rawLinks,
+        chartPeriod,
+        debouncedCustomStart,
+        debouncedCustomEnd,
+      );
     }
-  }, [rawReserves, rawLinks, chartPeriod, debouncedCustomStart, debouncedCustomEnd]);
+  }, [
+    rawReserves,
+    rawLinks,
+    chartPeriod,
+    debouncedCustomStart,
+    debouncedCustomEnd,
+  ]);
 
   function computeMonthlyData(reserves: ReserveType[], year: number) {
-    const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    const months = [
+      "Jan",
+      "Fev",
+      "Mar",
+      "Abr",
+      "Mai",
+      "Jun",
+      "Jul",
+      "Ago",
+      "Set",
+      "Out",
+      "Nov",
+      "Dez",
+    ];
     const counts = Array(12).fill(0);
     reserves.forEach((r) => {
       if (Number(r.bookingDate.year) === year && r.status === "confirmed") {
@@ -837,7 +881,9 @@ export default function SettingsPage() {
                 />
                 <Bar dataKey="reservas" radius={[4, 4, 0, 0]}>
                   {dayOfWeekData.map((entry, index) => {
-                    const max = Math.max(...dayOfWeekData.map((d) => d.reservas));
+                    const max = Math.max(
+                      ...dayOfWeekData.map((d) => d.reservas),
+                    );
                     return (
                       <Cell
                         key={index}
@@ -960,7 +1006,11 @@ export default function SettingsPage() {
                     return (
                       <Cell
                         key={index}
-                        fill={entry.reservas === max && max > 0 ? GOLD : GOLD_DIM + "60"}
+                        fill={
+                          entry.reservas === max && max > 0
+                            ? GOLD
+                            : GOLD_DIM + "60"
+                        }
                       />
                     );
                   })}
@@ -1002,23 +1052,31 @@ export default function SettingsPage() {
                 <Tooltip
                   cursor={{ fill: "rgba(230,197,107,0.05)" }}
                   content={(props: any) => {
-                    if (!props.active || !props.payload?.length || !props.label) return null;
+                    if (!props.active || !props.payload?.length || !props.label)
+                      return null;
                     const { label } = props;
-                    const items: { date: string; code: string }[] = groupSizeDetails[label] ?? [];
+                    const items: { date: string; code: string }[] =
+                      groupSizeDetails[label] ?? [];
                     return (
                       <div className="bg-primary-black border border-primary-gold/20 rounded-lg px-3 py-2 text-xs text-primary-gold shadow-lg max-w-[210px]">
                         <p className="font-semibold mb-1">{label}</p>
                         <p className="text-primary-gold/60 mb-1.5">
-                          {props.payload[0].value} reserva{props.payload[0].value !== 1 ? "s" : ""}
+                          {props.payload[0].value} reserva
+                          {props.payload[0].value !== 1 ? "s" : ""}
                         </p>
                         <div className="flex flex-col gap-0.5 border-t border-primary-gold/10 pt-1.5">
                           {items.slice(0, 6).map((item, i) => (
                             <p key={i} className="text-primary-gold/55">
-                              <span className="text-primary-gold/35">#{item.code}</span> — {item.date}
+                              <span className="text-primary-gold/35">
+                                #{item.code}
+                              </span>{" "}
+                              — {item.date}
                             </p>
                           ))}
                           {items.length > 6 && (
-                            <p className="text-primary-gold/30 italic">+{items.length - 6} mais</p>
+                            <p className="text-primary-gold/30 italic">
+                              +{items.length - 6} mais
+                            </p>
                           )}
                         </div>
                       </div>
@@ -1027,11 +1085,17 @@ export default function SettingsPage() {
                 />
                 <Bar dataKey="reservas" radius={[4, 4, 0, 0]}>
                   {groupSizeData.map((entry, index) => {
-                    const max = Math.max(...groupSizeData.map((d) => d.reservas));
+                    const max = Math.max(
+                      ...groupSizeData.map((d) => d.reservas),
+                    );
                     return (
                       <Cell
                         key={index}
-                        fill={entry.reservas === max && max > 0 ? GOLD : GOLD_DIM + "60"}
+                        fill={
+                          entry.reservas === max && max > 0
+                            ? GOLD
+                            : GOLD_DIM + "60"
+                        }
                       />
                     );
                   })}
@@ -1060,7 +1124,9 @@ export default function SettingsPage() {
               </span>
               <button
                 onClick={() =>
-                  setSelectedYear((y) => Math.min(y + 1, new Date().getFullYear()))
+                  setSelectedYear((y) =>
+                    Math.min(y + 1, new Date().getFullYear()),
+                  )
                 }
                 disabled={selectedYear >= new Date().getFullYear()}
                 className="text-[10px] px-1.5 py-0.5 rounded border border-primary-gold/15 text-primary-gold/40 hover:border-primary-gold/30 hover:text-primary-gold/70 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
@@ -1096,7 +1162,11 @@ export default function SettingsPage() {
                   return (
                     <Cell
                       key={index}
-                      fill={entry.reservas === max && max > 0 ? GOLD : GOLD_DIM + "60"}
+                      fill={
+                        entry.reservas === max && max > 0
+                          ? GOLD
+                          : GOLD_DIM + "60"
+                      }
                     />
                   );
                 })}
@@ -1115,11 +1185,16 @@ export default function SettingsPage() {
             </span>
             {chartPeriod === "all" && (
               <span className="text-[10px] text-primary-gold/25 ml-auto">
-                {firstClickDate ? `desde ${firstClickDate}` : "acumulado histórico"}
+                {firstClickDate
+                  ? `desde ${firstClickDate}`
+                  : "acumulado histórico"}
               </span>
             )}
           </div>
-          <ResponsiveContainer width="100%" height={Math.max(160, linkClicksData.length * 36)}>
+          <ResponsiveContainer
+            width="100%"
+            height={Math.max(160, linkClicksData.length * 36)}
+          >
             <BarChart
               data={linkClicksData}
               layout="vertical"
@@ -1146,7 +1221,10 @@ export default function SettingsPage() {
                   return (
                     <div className="bg-primary-black border border-primary-gold/20 rounded-lg px-3 py-2 text-xs text-primary-gold shadow-lg">
                       <p className="font-semibold mb-0.5">{label}</p>
-                      <p>{payload[0].value} clique{payload[0].value !== 1 ? "s" : ""}</p>
+                      <p>
+                        {payload[0].value} clique
+                        {payload[0].value !== 1 ? "s" : ""}
+                      </p>
                     </div>
                   );
                 }}
@@ -1158,7 +1236,9 @@ export default function SettingsPage() {
                   return (
                     <Cell
                       key={index}
-                      fill={entry.clicks === max && max > 0 ? GOLD : GOLD_DIM + "60"}
+                      fill={
+                        entry.clicks === max && max > 0 ? GOLD : GOLD_DIM + "60"
+                      }
                     />
                   );
                 })}
@@ -1220,11 +1300,20 @@ export default function SettingsPage() {
         {/* Configurações de reserva */}
         <div className="flex flex-col rounded-xl border border-primary-gold/15 bg-secondary-black/40 overflow-hidden flex-1 w-full">
           <div className="flex flex-col gap-6 p-4">
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
+            <span className="text-[14px] font-semibold uppercase tracking-widest text-primary-gold/45">
               Configurações de reserva
             </span>
-            <div className="flex w-full gap-8 flex-wrap text-primary-gold">
-              <div className="flex flex-col gap-8">
+            {/* Horários e disponibilidade */}
+            <div className="flex flex-col gap-3">
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
+                <LuClock size={13} />
+                Horários e disponibilidade
+              </span>
+              <p className="text-xs text-primary-gold/40 -mt-1">
+                Horários que os clientes podem escolher ao reservar e os dias da
+                semana em que o Carcassonne Pub não aceita reservas.
+              </p>
+              <div className="flex gap-8 text-primary-gold mt-6 flex-wrap">
                 <OptionsInput
                   label="Horários disponíveis"
                   placeholder="Horários disponíveis"
@@ -1273,7 +1362,19 @@ export default function SettingsPage() {
                   width="!sm:w-[300px] !w-[280px]"
                 />
               </div>
-              <div className="flex flex-col gap-8">
+            </div>
+
+            {/* Capacidade e antecedência */}
+            <div className="flex flex-col gap-3 pt-2 border-t border-primary-gold/10">
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
+                <LuUsers size={13} />
+                Capacidade e antecedência
+              </span>
+              <p className="text-xs text-primary-gold/40 -mt-1">
+                Limites de pessoas por dia e por reserva, e até quando os
+                clientes podem agendar.
+              </p>
+              <div className="flex flex-wrap gap-6 mt-6 text-primary-gold">
                 <Input
                   placeholder="Capacidade máxima em um dia"
                   label="Capacidade máxima em um dia"
@@ -1337,8 +1438,8 @@ export default function SettingsPage() {
               </span>
               <p className="text-xs text-primary-gold/40 -mt-1">
                 Datas específicas em que o Carcassonne Pub não vai aceitar
-                reservas. O cliente ainda pode clicar na data, mas verá o
-                motivo e não conseguirá continuar.
+                reservas. O cliente ainda pode clicar na data, mas verá o motivo
+                e não conseguirá continuar.
               </p>
 
               <div className="flex items-end gap-2 flex-wrap">
@@ -1409,7 +1510,7 @@ export default function SettingsPage() {
         {/* Efeitos de mouse */}
         <div className="rounded-xl border border-primary-gold/15 bg-secondary-black/40 overflow-hidden w-full md:w-auto md:shrink-0">
           <div className="p-4 flex flex-col gap-3">
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
+            <span className="text-[14px] font-semibold uppercase tracking-widest text-primary-gold/45">
               Efeitos de mouse
             </span>
             <div className="flex flex-col gap-2">
