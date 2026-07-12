@@ -36,7 +36,6 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import Modal from "@/components/modal";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import ReserveAdminForms from "@/components/reserveAdminForms";
-import { useRouter } from "next/navigation";
 import interactionPlugin from "@fullcalendar/interaction";
 import FreelancerRepository from "@/services/repositories/FreelancerRepository";
 import FreelancerAdminForms from "@/components/freelancerAdminForms";
@@ -108,8 +107,6 @@ export default function Rerserve() {
 
   const isLargeScreen = useIsLargeScreen();
   const { addAlert } = useAlert();
-
-  const router = useRouter();
 
   useEffect(() => {
     if (typeof window === "undefined") return; // garante que roda só no client
@@ -571,7 +568,9 @@ export default function Rerserve() {
             </Tooltip>
             <Tooltip direction="bottom" content="Ir para visão do cliente">
               <button
-                onClick={() => router.push("/reserve")}
+                onClick={() =>
+                  window.open("/reserve", "_blank", "noopener,noreferrer")
+                }
                 className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
               >
                 <LuLink size={16} />

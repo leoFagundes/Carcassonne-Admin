@@ -8,7 +8,6 @@ import LinksRepository from "@/services/repositories/LinksRepository";
 import { LinkType } from "@/types";
 import { patternLink } from "@/utils/patternValues";
 import { getLucideIcon } from "@/utils/utilFunctions";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   LuChevronDown,
@@ -34,8 +33,6 @@ export default function LinksPage() {
     setLinks((prev) => prev.map((l) => (l.id === link.id ? { ...l, isVisible: next } : l)));
     await LinksRepository.update(link.id!, { isVisible: next });
   };
-
-  const router = useRouter();
 
   const fetchLinks = async () => {
     setLoading(true);
@@ -149,7 +146,9 @@ export default function LinksPage() {
             </Tooltip>
             <Tooltip direction="bottom" content="Ir para visão do cliente">
               <button
-                onClick={() => router.push("/linktree")}
+                onClick={() =>
+                  window.open("/linktree", "_blank", "noopener,noreferrer")
+                }
                 className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
               >
                 <LuLink size={16} />

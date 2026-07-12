@@ -7,7 +7,6 @@ import { useAlert } from "@/contexts/alertProvider";
 import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 import MusicRecommendationRepository from "@/services/repositories/MusicRecommendationsRepository";
 import { MusicRecommendationType } from "@/types";
-import { useRouter } from "next/navigation";
 import { ChangeEvent, useEffect, useState } from "react";
 import { LuLink, LuMusic, LuTrash } from "react-icons/lu";
 
@@ -19,7 +18,6 @@ export default function MusicRecommendationPage() {
   const [isMusicRecommendationEnable, setIsMusicRecommendationEnable] =
     useState(false);
 
-  const router = useRouter();
   const { addAlert } = useAlert();
 
   useEffect(() => {
@@ -451,7 +449,13 @@ export default function MusicRecommendationPage() {
           <div className="flex items-center gap-2">
             <Tooltip direction="bottom" content="Ir para visão do cliente">
               <button
-                onClick={() => router.push("/clientMusicRecommendation")}
+                onClick={() =>
+                  window.open(
+                    "/clientMusicRecommendation",
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
+                }
                 className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
               >
                 <LuLink size={16} />

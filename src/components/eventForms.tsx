@@ -148,19 +148,15 @@ export default function EventForms({
           />
 
           {/* Tipo do evento */}
-          <div className="flex flex-col gap-1 w-[250px]" ref={subtypeRef}>
-            <span className="text-xs text-primary-gold/60 uppercase tracking-wider">
-              Tipo do evento
-            </span>
+          <div className="w-[250px]" ref={subtypeRef}>
             <div className="relative">
+              <span className="absolute bottom-full left-1 text-xs text-gradient-gold font-semibold">
+                Tipo do evento
+              </span>
               <button
                 type="button"
                 onClick={() => setSubtypeOpen((o) => !o)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-sm transition-all cursor-pointer ${
-                  subtypeOpen
-                    ? "border-primary-gold/50 bg-primary-black/50"
-                    : "border-primary-gold/20 bg-primary-black/30 hover:border-primary-gold/40"
-                } text-primary-gold`}
+                className="relative w-full flex items-center justify-between bg-primary-black/80 py-2 sm:py-3 px-3 sm:px-4 rounded-sm text-sm gap-2 shadow-card border border-primary-gold text-primary-gold transition-all cursor-pointer"
               >
                 <span className="flex items-center gap-2">
                   <span>{localItem.subtype === "bolao" ? "⚽" : "🧠"}</span>
@@ -251,18 +247,23 @@ export default function EventForms({
           </div>
 
           {/* Ativo/Inativo */}
-          <div className="flex items-center justify-between w-[250px] px-3 py-2.5 rounded-lg border border-primary-gold/20 bg-primary-black/30">
-            <span className="text-sm text-primary-gold/80">Evento ativo</span>
-            <button
-              onClick={() => setLocalItem({ ...localItem, isActive: !localItem.isActive })}
-              className="text-primary-gold cursor-pointer transition-colors"
-            >
-              {localItem.isActive ? (
-                <LuToggleRight size={28} className="text-green-500" />
-              ) : (
-                <LuToggleLeft size={28} className="text-primary-gold/30" />
-              )}
-            </button>
+          <div className="relative w-[250px]">
+            <span className="absolute bottom-full left-1 text-xs text-gradient-gold font-semibold">
+              Status do evento
+            </span>
+            <div className="flex items-center justify-between bg-primary-black/80 py-2 sm:py-3 px-3 sm:px-4 rounded-sm text-sm gap-2 shadow-card border border-primary-gold text-primary-gold">
+              <span>Evento ativo</span>
+              <button
+                onClick={() => setLocalItem({ ...localItem, isActive: !localItem.isActive })}
+                className="text-primary-gold cursor-pointer transition-colors"
+              >
+                {localItem.isActive ? (
+                  <LuToggleRight size={26} className="text-green-500" />
+                ) : (
+                  <LuToggleLeft size={26} className="text-primary-gold/30" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

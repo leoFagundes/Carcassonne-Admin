@@ -11,7 +11,6 @@ import { useAlert } from "@/contexts/alertProvider";
 import BoardgameRepository from "@/services/repositories/BoardGameRepository";
 import { difficultiesOptions, patternBoardgame } from "@/utils/patternValues";
 import LoaderFullscreen from "@/components/loaderFullscreen";
-import { useRouter } from "next/navigation";
 import Tooltip from "@/components/Tooltip";
 import Checkbox from "@/components/checkbox";
 import Dropdown from "@/components/dropdown";
@@ -30,7 +29,6 @@ export default function CollectionPage() {
     useState<BoardgameType>(patternBoardgame);
 
   const { addAlert } = useAlert();
-  const router = useRouter();
 
   useEffect(() => {
     const fetchBoardgames = async () => {
@@ -90,7 +88,9 @@ export default function CollectionPage() {
           <div className="flex items-center gap-2">
             <Tooltip direction="bottom" content="Visão do cliente">
               <button
-                onClick={() => router.push("/clientCollection")}
+                onClick={() =>
+                  window.open("/clientCollection", "_blank", "noopener,noreferrer")
+                }
                 className="p-2 cursor-pointer rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all"
               >
                 <LuLink size={14} />
@@ -98,7 +98,13 @@ export default function CollectionPage() {
             </Tooltip>
             <Tooltip direction="bottom" content="Jogos à venda (cliente)">
               <button
-                onClick={() => router.push("/clientCollection/forSale")}
+                onClick={() =>
+                  window.open(
+                    "/clientCollection/forSale",
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
+                }
                 className="p-2 cursor-pointer rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all"
               >
                 <LuDollarSign size={14} />
