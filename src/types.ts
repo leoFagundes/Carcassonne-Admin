@@ -71,6 +71,7 @@ export interface GeneralConfigsType {
   hoursToCloseReserve: number;
   isMusicRecommendationEnable: boolean;
   blockedDates: { date: string; reason?: string }[]; // date as "YYYY-MM-DD"
+  specialDates: { date: string; description?: string }[]; // date as "YYYY-MM-DD"
 }
 
 export interface PopupType {

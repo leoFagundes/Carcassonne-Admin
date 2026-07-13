@@ -27,6 +27,7 @@ import {
   LuPlus,
   LuCalendarOff,
   LuTriangleAlert,
+  LuPartyPopper,
 } from "react-icons/lu";
 import { onAuthStateChanged } from "firebase/auth";
 import BoardgameRepository from "@/services/repositories/BoardGameRepository";
@@ -205,6 +206,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [newBlockedDate, setNewBlockedDate] = useState("");
   const [newBlockedReason, setNewBlockedReason] = useState("");
+  const [newSpecialDate, setNewSpecialDate] = useState("");
+  const [newSpecialDescription, setNewSpecialDescription] = useState("");
   const [savedConfigsSnapshot, setSavedConfigsSnapshot] =
     useState<GeneralConfigsType>(patternGeneralConfigs);
 
@@ -481,6 +484,39 @@ export default function SettingsPage() {
     });
   };
 
+  const addSpecialDate = () => {
+    if (!newSpecialDate) {
+      addAlert("Selecione uma data.");
+      return;
+    }
+    const existing = localGeneralConfigs.specialDates ?? [];
+    if (existing.some((s) => s.date === newSpecialDate)) {
+      addAlert("Essa data já está marcada como especial.");
+      return;
+    }
+    const updated = [
+      ...existing,
+      {
+        date: newSpecialDate,
+        ...(newSpecialDescription.trim() && {
+          description: newSpecialDescription.trim(),
+        }),
+      },
+    ].sort((a, b) => a.date.localeCompare(b.date));
+    setLocalGeneralConfigs({ ...localGeneralConfigs, specialDates: updated });
+    setNewSpecialDate("");
+    setNewSpecialDescription("");
+  };
+
+  const removeSpecialDate = (date: string) => {
+    setLocalGeneralConfigs({
+      ...localGeneralConfigs,
+      specialDates: (localGeneralConfigs.specialDates ?? []).filter(
+        (s) => s.date !== date,
+      ),
+    });
+  };
+
   const saveSection = async (section: "reserva" | "efeitos") => {
     if (!localGeneralConfigs?._id) {
       addAlert("ID Inválido.");
@@ -510,6 +546,7 @@ export default function SettingsPage() {
     "maxMonthsInAdvance",
     "hoursToCloseReserve",
     "blockedDates",
+    "specialDates",
   ];
 
   const isReservaDirty = RESERVA_CONFIG_FIELDS.some(
@@ -1482,6 +1519,68 @@ export default function SettingsPage() {
                         </span>
                         <button
                           onClick={() => removeBlockedDate(b.date)}
+                          className="p-1 rounded-md hover:bg-invalid-color/10 text-primary-gold/30 hover:text-invalid-color transition-all cursor-pointer shrink-0"
+                        >
+                          <LuTrash size={13} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Datas especiais */}
+            <div className="flex flex-col gap-3 pt-2 border-t border-primary-gold/10">
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
+                <LuPartyPopper size={13} />
+                Datas especiais
+              </span>
+              <p className="text-xs text-primary-gold/40 -mt-1">
+                Datas de eventos ou ocasiões especiais. Elas continuam abertas
+                para reservas — o cliente só vê a data destacada em verde e a
+                descrição do evento.
+              </p>
+
+              <div className="flex items-end gap-2 flex-wrap">
+                <input
+                  type="date"
+                  value={newSpecialDate}
+                  onChange={(e) => setNewSpecialDate(e.target.value)}
+                  className="bg-primary-black/50 border border-primary-gold/20 rounded-lg px-3 py-1.5 text-xs text-primary-gold outline-none focus:border-primary-gold/40 transition-colors"
+                />
+                <input
+                  type="text"
+                  placeholder="Descrição do evento (opcional)"
+                  value={newSpecialDescription}
+                  onChange={(e) => setNewSpecialDescription(e.target.value)}
+                  className="flex-1 min-w-[160px] bg-primary-black/50 border border-primary-gold/20 rounded-lg px-3 py-1.5 text-xs text-primary-gold placeholder:text-primary-gold/30 outline-none focus:border-primary-gold/40 transition-colors"
+                />
+                <button
+                  onClick={addSpecialDate}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary-gold/30 text-primary-gold/80 text-xs font-medium hover:border-primary-gold/60 hover:text-primary-gold hover:bg-primary-gold/5 transition-all cursor-pointer shrink-0"
+                >
+                  <LuPlus size={13} /> Adicionar
+                </button>
+              </div>
+
+              {(localGeneralConfigs.specialDates ?? []).length > 0 && (
+                <div className="flex flex-col gap-1.5 mt-1">
+                  {(localGeneralConfigs.specialDates ?? []).map((s) => {
+                    const [y, m, d] = s.date.split("-");
+                    return (
+                      <div
+                        key={s.date}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary-black/30 border border-primary-gold/10"
+                      >
+                        <span className="text-xs font-mono text-primary-gold/70 shrink-0">
+                          {d}/{m}/{y}
+                        </span>
+                        <span className="text-xs text-primary-gold/45 flex-1 truncate italic">
+                          {s.description || "Sem descrição especificada"}
+                        </span>
+                        <button
+                          onClick={() => removeSpecialDate(s.date)}
                           className="p-1 rounded-md hover:bg-invalid-color/10 text-primary-gold/30 hover:text-invalid-color transition-all cursor-pointer shrink-0"
                         >
                           <LuTrash size={13} />

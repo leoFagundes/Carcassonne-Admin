@@ -441,6 +441,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   );
 }
 
+.my-special-day {
+  border-color: #22c55e !important;
+  background-color: color-mix(in srgb, #22c55e 18%, var(--color-primary-black));
+}
+
 .react-calendar__navigation {
   display: flex;
   justify-content: center; /* centraliza */

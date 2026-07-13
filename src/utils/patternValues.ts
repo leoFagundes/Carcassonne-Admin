@@ -127,6 +127,7 @@ export const patternGeneralConfigs: GeneralConfigsType = {
   hoursToCloseReserve: 0,
   isMusicRecommendationEnable: false,
   blockedDates: [],
+  specialDates: [],
 };
 
 export const patternPopup: PopupType = {

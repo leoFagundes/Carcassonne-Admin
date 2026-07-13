@@ -19,6 +19,7 @@ import {
   LuClock,
   LuCopy,
   LuMessageCircleWarning,
+  LuPartyPopper,
   LuUsers,
 } from "react-icons/lu";
 import Input from "@/components/input";
@@ -201,6 +202,17 @@ export default function Reserve() {
     });
   }
 
+  function getSpecialDate(date: Date) {
+    return (localGeneralConfigs.specialDates ?? []).find((s) => {
+      const [y, m, d] = s.date.split("-").map(Number);
+      return (
+        y === date.getFullYear() &&
+        m === date.getMonth() + 1 &&
+        d === date.getDate()
+      );
+    });
+  }
+
   function isValidEmail(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
@@ -313,6 +325,7 @@ export default function Reserve() {
   }
 
   const blockedInfo = date instanceof Date ? getBlockedDate(date) : undefined;
+  const specialInfo = date instanceof Date ? getSpecialDate(date) : undefined;
 
   return (
     <>
@@ -471,6 +484,7 @@ export default function Reserve() {
                   if (view !== "month") return null;
                   if (disableDate({ date, view })) return "my-disabled-day";
                   if (getBlockedDate(date)) return "my-blocked-day";
+                  if (getSpecialDate(date)) return "my-special-day";
                   return null;
                 }}
                 showNeighboringMonth={false}
@@ -492,6 +506,17 @@ export default function Reserve() {
                     {blockedInfo.reason?.trim()
                       ? blockedInfo.reason
                       : "O Carcassonne Pub não estará aberto nesse dia."}
+                  </span>
+                </div>
+              )}
+
+              {!blockedInfo && specialInfo && (
+                <div className="w-full flex items-start gap-2.5 bg-green-500/10 border border-green-500/40 rounded-lg px-4 py-3 text-sm text-green-400">
+                  <LuPartyPopper size={18} className="shrink-0 mt-0.5" />
+                  <span className="font-medium">
+                    {specialInfo.description?.trim()
+                      ? specialInfo.description
+                      : "Dia especial no Carcassonne Pub!"}
                   </span>
                 </div>
               )}

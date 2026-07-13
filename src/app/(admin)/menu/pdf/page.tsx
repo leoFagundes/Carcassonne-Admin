@@ -1,7 +1,7 @@
 "use client";
 
 import LoaderFullscreen from "@/components/loaderFullscreen";
-import MenuPDF from "@/components/menupdf";
+import MenuPDF, { PDF_PALETTES, PDFTheme } from "@/components/menupdf";
 import { useAlert } from "@/contexts/alertProvider";
 import ComboRepository from "@/services/repositories/ComboRepository";
 import DescriptionRepository from "@/services/repositories/DescriptionTypeRepository";
@@ -17,7 +17,7 @@ import {
 } from "@/types";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import { LuDownload, LuFileText, LuPrinter } from "react-icons/lu";
+import { LuDownload, LuFileText, LuPalette, LuPrinter } from "react-icons/lu";
 import Loader from "@/components/loader";
 import { FiSkipBack } from "react-icons/fi";
 
@@ -30,6 +30,7 @@ export default function PDFPage() {
   const [typesOrder, setTypesOrder] = useState<TypeOrderType[]>([]);
   const [isPrinting, setIsPrinting] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [theme, setTheme] = useState<PDFTheme>("black");
 
   const { addAlert } = useAlert();
   const router = useRouter();
@@ -127,7 +128,7 @@ export default function PDFPage() {
             scale: 2,
             useCORS: true,
             allowTaint: false,
-            backgroundColor: "#121111",
+            backgroundColor: PDF_PALETTES[theme].BG,
             logging: false,
           },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
@@ -174,6 +175,29 @@ export default function PDFPage() {
             </div>
 
             <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 p-1 rounded-lg border border-primary-gold/20 bg-primary-black/30">
+                <LuPalette size={13} className="text-primary-gold/40 ml-1" />
+                <button
+                  onClick={() => setTheme("black")}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                    theme === "black"
+                      ? "bg-primary-gold/20 text-primary-gold"
+                      : "text-primary-gold/50 hover:text-primary-gold/80"
+                  }`}
+                >
+                  Preto
+                </button>
+                <button
+                  onClick={() => setTheme("white")}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                    theme === "white"
+                      ? "bg-primary-gold/20 text-primary-gold"
+                      : "text-primary-gold/50 hover:text-primary-gold/80"
+                  }`}
+                >
+                  Branco
+                </button>
+              </div>
               <button
                 onClick={downloadPDF}
                 disabled={downloading}
@@ -249,6 +273,7 @@ export default function PDFPage() {
           infos={infos}
           descriptions={descriptions}
           typesOrder={typesOrder}
+          theme={theme}
         />
       </div>
     </div>

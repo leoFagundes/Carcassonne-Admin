@@ -1,5 +1,6 @@
 "use client";
 
+import { createContext, useContext } from "react";
 import {
   MenuItemType,
   ComboType,
@@ -9,11 +10,29 @@ import {
 } from "@/types";
 import { LuVegan, LuStar } from "react-icons/lu";
 
-const G = "#e6c56b"; // primary gold
-const G2 = "#d4af37"; // secondary gold
-const BG = "#121111"; // primary black
-const BG2 = "#1a1a1a"; // secondary black
-const TEXT = "#f9f9f9";
+export type PDFTheme = "black" | "white";
+
+type Palette = { G: string; G2: string; BG: string; BG2: string; TEXT: string };
+
+export const PDF_PALETTES: Record<PDFTheme, Palette> = {
+  black: {
+    G: "#e6c56b", // primary gold
+    G2: "#d4af37", // secondary gold
+    BG: "#121111", // primary black
+    BG2: "#1a1a1a", // secondary black
+    TEXT: "#f9f9f9",
+  },
+  white: {
+    G: "#9c7a23", // dark gold (contrast on white)
+    G2: "#6b5416", // darker gold/bronze
+    BG: "#fdfbf6", // warm white
+    BG2: "#f4eddd", // light card background
+    TEXT: "#2b2b2b",
+  },
+};
+
+const PDFPaletteContext = createContext<Palette>(PDF_PALETTES.black);
+const usePDFPalette = () => useContext(PDFPaletteContext);
 
 type Props = {
   items?: MenuItemType[];
@@ -21,6 +40,7 @@ type Props = {
   infos?: InfoType[];
   descriptions?: DescriptionTypeProps[];
   typesOrder?: TypeOrderType[];
+  theme?: PDFTheme;
 };
 
 export default function MenuPDF({
@@ -29,7 +49,9 @@ export default function MenuPDF({
   infos = [],
   descriptions = [],
   typesOrder = [],
+  theme = "black",
 }: Props) {
+  const { G, G2, BG, BG2, TEXT } = PDF_PALETTES[theme];
   const visibleItems = items.filter((i) => i.isVisible);
 
   const orderedTypes = [...new Set(visibleItems.map((i) => i.type))].sort(
@@ -43,6 +65,7 @@ export default function MenuPDF({
   );
 
   return (
+    <PDFPaletteContext.Provider value={PDF_PALETTES[theme]}>
     <div
       id="cardapio-pdf"
       style={{
@@ -401,6 +424,7 @@ export default function MenuPDF({
         </div>
       </footer>
     </div>
+    </PDFPaletteContext.Provider>
   );
 }
 
@@ -414,6 +438,7 @@ function PDFSection({
   subtitle?: string;
   children: React.ReactNode;
 }) {
+  const { G } = usePDFPalette();
   return (
     <section style={{ marginBottom: "32px" }}>
       {/* Section header */}
@@ -488,6 +513,7 @@ function ItemGrid({ items }: { items: MenuItemType[] }) {
 
 /* ─── Menu item ─── */
 function MenuItem({ item }: { item: MenuItemType }) {
+  const { G, G2, BG2, TEXT } = usePDFPalette();
   const imgSrc = item.image || "/images/[oficial]-pattern-menu-image.png";
 
   return (
@@ -606,6 +632,7 @@ function MenuItem({ item }: { item: MenuItemType }) {
 
 /* ─── Legend item ─── */
 function LegendItem({ icon, label }: { icon?: string; label: string }) {
+  const { G } = usePDFPalette();
   return (
     <div
       style={{
