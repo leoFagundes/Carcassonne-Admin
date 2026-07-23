@@ -102,8 +102,8 @@ export default function FreelancerAdminForms({
             setDates={setSelectedDates}
             label="Já escalar em algum dia? (opcional)"
           />
-          <section className="flex flex-col gap-6">
-            <div className="flex items-center gap-4">
+          <section className="flex flex-col gap-6 w-full sm:w-auto">
+            <div className="flex items-center gap-4 flex-wrap">
               <FreelancerPhotoPicker
                 photoUrl={currentFreelancer.photoUrl}
                 onChange={(photo) =>
@@ -130,7 +130,7 @@ export default function FreelancerAdminForms({
               }
               variant
               icon={<LuUser size={"20px"} />}
-              width="!w-[250px]"
+              width="!w-[min(250px,100%)]"
             />
             <Input
               label="WhatsApp (opcional)"
@@ -144,7 +144,7 @@ export default function FreelancerAdminForms({
               }
               variant
               icon={<FaWhatsapp size={"20px"} />}
-              width="!w-[250px]"
+              width="!w-[min(250px,100%)]"
             />
             <Input
               label="Observações (opcional)"
@@ -158,7 +158,7 @@ export default function FreelancerAdminForms({
               }
               variant
               icon={<LuNotebookPen size={"20px"} />}
-              width="!w-[250px]"
+              width="!w-[min(250px,100%)]"
             />
           </section>
         </div>

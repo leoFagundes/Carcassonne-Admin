@@ -157,19 +157,19 @@ export default function FreelancerAdminPage() {
 
       {/* Header */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-center gap-4 w-full">
+        <div className="flex items-center justify-center gap-3 sm:gap-4 w-full flex-wrap px-2">
           <Tooltip direction="bottom" content="Voltar para reservas">
             <button
               onClick={() => router.push("/myreserves")}
-              className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+              className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer shrink-0"
             >
               <LuArrowLeft size={16} />
             </button>
           </Tooltip>
-          <div className="flex items-center gap-2">
-            <LuUsers size={32} className="text-primary-gold/70 shrink-0" />
-            <div className="flex flex-col">
-              <h1 className="text-3xl font-semibold text-primary-gold">
+          <div className="flex items-center gap-2 min-w-0">
+            <LuUsers size={28} className="text-primary-gold/70 shrink-0" />
+            <div className="flex flex-col min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-semibold text-primary-gold truncate">
                 Freelancers
               </h1>
               <span className="text-xs text-primary-gold/40">
@@ -181,7 +181,7 @@ export default function FreelancerAdminPage() {
           <Tooltip direction="bottom" content="Cadastrar novo freelancer">
             <button
               onClick={() => setCreateModal(true)}
-              className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+              className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer shrink-0"
             >
               <LuUserPlus size={16} />
             </button>

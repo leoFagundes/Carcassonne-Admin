@@ -16,7 +16,11 @@ import {
   LuCalendarPlus,
 } from "react-icons/lu";
 import { FaWhatsapp } from "react-icons/fa";
-import { FreelancerBookingStatus, FreelancerBookingType, FreelancerType } from "@/types";
+import {
+  FreelancerBookingStatus,
+  FreelancerBookingType,
+  FreelancerType,
+} from "@/types";
 import { useAlert } from "@/contexts/alertProvider";
 import FreelancerRepository from "@/services/repositories/FreelancerRepository";
 import FreelancerBookingRepository from "@/services/repositories/FreelancerBookingRepository";
@@ -129,7 +133,9 @@ export default function FreelancerCard({
 
   async function handleStatusClick(booking: BookingWithId) {
     const next =
-      STATUS_ORDER[(STATUS_ORDER.indexOf(booking.status) + 1) % STATUS_ORDER.length];
+      STATUS_ORDER[
+        (STATUS_ORDER.indexOf(booking.status) + 1) % STATUS_ORDER.length
+      ];
     const ok = await FreelancerBookingRepository.update(booking.id, {
       status: next,
     });
@@ -267,13 +273,16 @@ export default function FreelancerCard({
           {expanded ? (
             <LuChevronUp size={16} className="text-primary-gold/50 shrink-0" />
           ) : (
-            <LuChevronDown size={16} className="text-primary-gold/50 shrink-0" />
+            <LuChevronDown
+              size={16}
+              className="text-primary-gold/50 shrink-0"
+            />
           )}
           {freelancer.photoUrl && (
             <img
               src={freelancer.photoUrl}
               alt={freelancer.name}
-              className="w-6 h-6 rounded-full object-cover border border-primary-gold/25 shrink-0"
+              className="w-12 h-12 rounded-full object-cover border border-primary-gold/25 shrink-0"
             />
           )}
           <span className="font-semibold text-primary-gold truncate">
@@ -299,7 +308,8 @@ export default function FreelancerCard({
           </span>
           {pendingPaymentCount > 0 && (
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-invalid-color/10 border border-invalid-color/30 text-invalid-color">
-              {pendingPaymentCount} não pago{pendingPaymentCount !== 1 ? "s" : ""}
+              {pendingPaymentCount} não pago
+              {pendingPaymentCount !== 1 ? "s" : ""}
             </span>
           )}
           <Tooltip content="Editar freelancer" direction="top">
@@ -350,7 +360,7 @@ export default function FreelancerCard({
                   setEditDraft({ ...editDraft, name: e.target.value })
                 }
                 variant
-                width="!w-[240px]"
+                width="!w-[min(240px,100%)]"
               />
               <Input
                 label="WhatsApp"
@@ -360,7 +370,7 @@ export default function FreelancerCard({
                   setEditDraft({ ...editDraft, phone: e.target.value })
                 }
                 variant
-                width="!w-[240px]"
+                width="!w-[min(240px,100%)]"
               />
               <Input
                 label="Observações"
@@ -370,7 +380,7 @@ export default function FreelancerCard({
                   setEditDraft({ ...editDraft, notes: e.target.value })
                 }
                 variant
-                width="!w-[240px]"
+                width="!w-[min(240px,100%)]"
               />
               <div className="flex gap-2">
                 <button

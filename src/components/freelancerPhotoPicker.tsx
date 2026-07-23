@@ -19,7 +19,7 @@ interface FreelancerPhotoPickerProps {
 export default function FreelancerPhotoPicker({
   photoUrl,
   onChange,
-  size = 64,
+  size = 76,
 }: FreelancerPhotoPickerProps) {
   const { addAlert } = useAlert();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -97,7 +97,7 @@ export default function FreelancerPhotoPicker({
               className="w-full h-full object-cover"
             />
           ) : (
-            <LuCamera size={18} className="text-primary-gold/50" />
+            <LuCamera size={22} className="text-primary-gold/50" />
           )}
           {uploading && (
             <div className="absolute inset-0 bg-primary-black/70 flex items-center justify-center">
@@ -107,7 +107,7 @@ export default function FreelancerPhotoPicker({
         </button>
 
         {menuOpen && (
-          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50 bg-secondary-black border border-primary-gold/20 rounded-lg shadow-xl p-1 flex flex-col gap-0.5 min-w-[190px]">
+          <div className="absolute left-0 top-full mt-2 z-50 bg-secondary-black border border-primary-gold/20 rounded-lg shadow-xl p-1 flex flex-col gap-0.5 w-[190px] max-w-[80vw]">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
