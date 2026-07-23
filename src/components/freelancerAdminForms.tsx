@@ -1,74 +1,85 @@
 "use client";
 
-import { FreelancerControllType } from "@/types";
+import { FreelancerType } from "@/types";
 import { useState } from "react";
-import { LuUser, LuUserPlus } from "react-icons/lu";
+import { LuUser, LuNotebookPen, LuUserPlus } from "react-icons/lu";
+import { FaWhatsapp } from "react-icons/fa";
+import { CalendarDate } from "@internationalized/date";
 import Input from "./input";
-import { Calendar } from "@heroui/calendar";
-import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
 import Button from "./button";
 import { useAlert } from "@/contexts/alertProvider";
-import { patternFreelancer } from "@/utils/patternValues";
+import { patternFreelancerType } from "@/utils/patternValues";
 import FreelancerRepository from "@/services/repositories/FreelancerRepository";
-import Checkbox from "./checkbox";
+import FreelancerBookingRepository from "@/services/repositories/FreelancerBookingRepository";
+import MultiDatePicker from "./multiDatePicker";
+import FreelancerPhotoPicker from "./freelancerPhotoPicker";
 
-interface ReserveAdminFormsType {
+interface FreelancerAdminFormsType {
   onClose: VoidFunction;
-  dateProps?: CalendarDate;
+  onCreated: VoidFunction;
 }
 
 export default function FreelancerAdminForms({
   onClose,
-  dateProps,
-}: ReserveAdminFormsType) {
-  const [date, setDate] = useState(() =>
-    dateProps ? dateProps : today(getLocalTimeZone())
-  );
-
+  onCreated,
+}: FreelancerAdminFormsType) {
   const { addAlert } = useAlert();
 
-  const [currentFreelancer, setCurrentFreelancer] =
-    useState<FreelancerControllType>({
-      ...patternFreelancer,
-      bookingDate: {
-        day: date.day.toString(),
-        month: date.month.toString(),
-        year: date.year.toString(),
-      },
-    });
+  const [currentFreelancer, setCurrentFreelancer] = useState<FreelancerType>({
+    ...patternFreelancerType,
+  });
+  const [selectedDates, setSelectedDates] = useState<CalendarDate[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
-  const isFreelancerValid = () => {
+  function isFreelancerValid() {
     if (!currentFreelancer.name.trim()) {
       addAlert("O nome é obrigatório.");
       return false;
     }
-
-    if (
-      !currentFreelancer.bookingDate.day ||
-      !currentFreelancer.bookingDate.month ||
-      !currentFreelancer.bookingDate.year
-    ) {
-      addAlert("A data do freelancer é obrigatória.");
-      return false;
-    }
-
     return true;
-  };
+  }
 
   async function handleCreateFreelancer(
-    event: React.FormEvent<HTMLFormElement>
+    event: React.FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
-    if (!isFreelancerValid()) return;
+    if (!isFreelancerValid() || submitting) return;
 
+    setSubmitting(true);
     try {
-      await FreelancerRepository.create(currentFreelancer);
-      addAlert(`Freelancer criado com sucesso!`);
+      const freelancerId = await FreelancerRepository.create(
+        currentFreelancer,
+      );
 
+      if (!freelancerId) {
+        addAlert("Erro ao criar freelancer.");
+        return;
+      }
+
+      if (selectedDates.length > 0) {
+        await FreelancerBookingRepository.createMany(
+          selectedDates.map((date) => ({
+            freelancerId,
+            freelancerName: currentFreelancer.name,
+            status: "confirmed",
+            isPayed: false,
+            bookingDate: {
+              day: date.day.toString(),
+              month: date.month.toString(),
+              year: date.year.toString(),
+            },
+          })),
+        );
+      }
+
+      addAlert(`Freelancer ${currentFreelancer.name} criado com sucesso!`);
+      onCreated();
       onClose();
     } catch (error) {
-      addAlert("Erro ao criar uma nova reserva!");
+      addAlert("Erro ao criar um novo freelancer!");
       console.error(error);
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -81,88 +92,83 @@ export default function FreelancerAdminForms({
         <div className="w-full text-center">
           <h1 className="text-xl sm:text-2xl text-gradient-gold flex items-center justify-center gap-2">
             <LuUserPlus size={20} className="shrink-0" />
-            Criar um novo freelancer
+            Novo freelancer
           </h1>
           <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
         </div>
         <div className="flex gap-6 flex-wrap justify-center">
-          <section className="flex flex-col items-center gap-2">
-            <Calendar
-              aria-label="Date (Invalid on weekends)"
-              value={date}
-              onChange={(e) => {
-                setDate(e);
+          <MultiDatePicker
+            dates={selectedDates}
+            setDates={setSelectedDates}
+            label="Já escalar em algum dia? (opcional)"
+          />
+          <section className="flex flex-col gap-6">
+            <div className="flex items-center gap-4">
+              <FreelancerPhotoPicker
+                photoUrl={currentFreelancer.photoUrl}
+                onChange={(photo) =>
+                  setCurrentFreelancer({
+                    ...currentFreelancer,
+                    photoUrl: photo?.url ?? "",
+                    photoSource: photo?.source ?? "",
+                  })
+                }
+              />
+              <span className="text-xs text-primary-gold/40 max-w-[150px]">
+                Foto opcional, aparece ao lado do nome na lista.
+              </span>
+            </div>
+            <Input
+              label="Nome"
+              placeholder="Nome do Freelancer"
+              value={currentFreelancer.name}
+              setValue={(e) =>
                 setCurrentFreelancer({
                   ...currentFreelancer,
-                  bookingDate: {
-                    day: e.day.toString(),
-                    month: e.month.toString(),
-                    year: e.year.toString(),
-                  },
-                });
-              }}
-              className=" bg-secondary-black/30 shadow-card-light"
-              classNames={{
-                cell: "text-primary-gold",
-                cellButton:
-                  "hover:bg-dark-black cursor-pointer data-[selected=true]:bg-primary-gold data-[selected=true]:text-primary-black data-[selected=true]:font-semibold data-[outside-month=true]:text-gray-400",
-                header: "bg-transparent ",
-                title: "text-primary-gold font-bold",
-                gridHeaderCell: "text-primary-gold font-semibold",
-                prevButton: "text-primary-gold hover:text-secondary-gold",
-                nextButton: "text-primary-gold hover:text-secondary-gold",
-                errorMessage: "text-primary-gold text-sm italic",
-              }}
+                  name: e.target.value,
+                })
+              }
+              variant
+              icon={<LuUser size={"20px"} />}
+              width="!w-[250px]"
             />
-            <span>
-              {date.day < 10 ? `0${date.day}` : date.day}/
-              {date.month < 10 ? `0${date.month}` : date.month}/{date.year}
-            </span>
-          </section>
-          <section className="flex justify-center gap-6 flex-wrap">
-            <div className="flex flex-col gap-6">
-              <Input
-                label="Nome"
-                placeholder="Nome do Freelancer"
-                value={currentFreelancer.name}
-                setValue={(e) =>
-                  setCurrentFreelancer({
-                    ...currentFreelancer,
-                    name: e.target.value,
-                  })
-                }
-                variant
-                icon={<LuUser size={"20px"} />}
-                width="!w-[250px]"
-              />
-              <Checkbox
-                label="Freela sob aviso?"
-                variant
-                checked={currentFreelancer.isStandby}
-                setChecked={() =>
-                  setCurrentFreelancer({
-                    ...currentFreelancer,
-                    isStandby: !currentFreelancer.isStandby,
-                  })
-                }
-              />
-              <Checkbox
-                label="Freela está pago?"
-                variant
-                checked={currentFreelancer.isPayed}
-                setChecked={() =>
-                  setCurrentFreelancer({
-                    ...currentFreelancer,
-                    isPayed: !currentFreelancer.isPayed,
-                  })
-                }
-              />
-            </div>
+            <Input
+              label="WhatsApp (opcional)"
+              placeholder="Número de WhatsApp"
+              value={currentFreelancer.phone ?? ""}
+              setValue={(e) =>
+                setCurrentFreelancer({
+                  ...currentFreelancer,
+                  phone: e.target.value,
+                })
+              }
+              variant
+              icon={<FaWhatsapp size={"20px"} />}
+              width="!w-[250px]"
+            />
+            <Input
+              label="Observações (opcional)"
+              placeholder="Ex: bom de bar, atrasa às vezes..."
+              value={currentFreelancer.notes ?? ""}
+              setValue={(e) =>
+                setCurrentFreelancer({
+                  ...currentFreelancer,
+                  notes: e.target.value,
+                })
+              }
+              variant
+              icon={<LuNotebookPen size={"20px"} />}
+              width="!w-[250px]"
+            />
           </section>
         </div>
         <div className="flex gap-3">
-          <Button onClick={() => onClose()}>Cancelar</Button>
-          <Button type="submit">Criar</Button>
+          <Button onClick={() => onClose()} type="button">
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={submitting}>
+            Criar
+          </Button>
         </div>
       </form>
     </div>

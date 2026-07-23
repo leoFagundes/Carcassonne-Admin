@@ -1,5 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as Icons from "lucide-react";
+import {
+  subDays,
+  addDays,
+  startOfDay,
+  isBefore,
+  isAfter,
+  isToday,
+  format,
+} from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+type BookingDate = { day: string; month: string; year: string };
 
 export const truncateText = (text: string, maxLength: number): string => {
   return text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
@@ -83,3 +95,48 @@ export function getLucideIcon(name: string) {
 }
 
 export const iconNames = Object.keys(Icons);
+
+export function bookingDateToDate(bookingDate: BookingDate): Date {
+  return new Date(
+    Number(bookingDate.year),
+    Number(bookingDate.month) - 1,
+    Number(bookingDate.day),
+  );
+}
+
+export function formatBookingDate(bookingDate: BookingDate): string {
+  const day = String(bookingDate.day).padStart(2, "0");
+  const month = String(bookingDate.month).padStart(2, "0");
+  return `${day}/${month}/${bookingDate.year}`;
+}
+
+export function formatBookingWeekday(bookingDate: BookingDate): string {
+  return format(bookingDateToDate(bookingDate), "EEE", { locale: ptBR });
+}
+
+// Data de corte da "janela recente" (padrão: hoje - 7 dias).
+export function getRecentWindowCutoff(daysBack: number = 7): Date {
+  return startOfDay(subDays(new Date(), daysBack));
+}
+
+export function isWithinRecentWindow(
+  bookingDate: BookingDate,
+  daysBack: number = 7,
+): boolean {
+  return !isBefore(bookingDateToDate(bookingDate), getRecentWindowCutoff(daysBack));
+}
+
+export function isBookingToday(bookingDate: BookingDate): boolean {
+  return isToday(bookingDateToDate(bookingDate));
+}
+
+// Janela de "hoje até daqui `days` dias" (inclusiva nas duas pontas).
+export function isBookingWithinNextDays(
+  bookingDate: BookingDate,
+  days: number = 7,
+): boolean {
+  const target = bookingDateToDate(bookingDate);
+  const start = startOfDay(new Date());
+  const end = addDays(start, days - 1);
+  return !isBefore(target, start) && !isAfter(target, end);
+}

@@ -141,16 +141,32 @@ export interface MusicRecommendationType {
   createdAt?: Date | Timestamp;
 }
 
-export interface FreelancerControllType {
+export type FreelancerBookingStatus = "confirmed" | "standby" | "canceled";
+
+export interface FreelancerType {
   id?: string;
   name: string;
+  phone?: string;
+  notes?: string;
+  photoUrl?: string;
+  // "upload" = arquivo exclusivo do perfil (apagar do Storage ao trocar/remover/excluir).
+  // "mural" = referência a uma imagem do mural do Carcassonne (nunca apagar o arquivo por aqui).
+  photoSource?: "upload" | "mural" | "";
+  createdAt?: Date | Timestamp;
+}
+
+export interface FreelancerBookingType {
+  id?: string;
+  freelancerId: string;
+  freelancerName: string;
+  status: FreelancerBookingStatus;
   isPayed: boolean;
-  isStandby: boolean;
   bookingDate: {
     day: string;
     month: string;
     year: string;
   };
+  createdAt?: Date | Timestamp;
 }
 
 export interface LinkType {

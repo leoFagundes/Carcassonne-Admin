@@ -8,7 +8,8 @@ import {
   CarcaImageType,
   TypeOrderType,
   PopupType,
-  FreelancerControllType,
+  FreelancerType,
+  FreelancerBookingType,
   LinkType,
   EventItemType,
   BolaoTeamType,
@@ -161,10 +162,19 @@ export const patternLink: LinkType = {
   url: "",
 };
 
-export const patternFreelancer: FreelancerControllType = {
+export const patternFreelancerType: FreelancerType = {
   name: "",
+  phone: "",
+  notes: "",
+  photoUrl: "",
+  photoSource: "",
+};
+
+export const patternFreelancerBooking: FreelancerBookingType = {
+  freelancerId: "",
+  freelancerName: "",
+  status: "confirmed",
   isPayed: false,
-  isStandby: false,
   bookingDate: {
     day: "",
     month: "",

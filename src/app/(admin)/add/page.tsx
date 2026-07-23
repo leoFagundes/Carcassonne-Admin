@@ -133,10 +133,10 @@ export default function AddPage() {
           onClick={() => router.push(`/myreserves?createreserve=true`)}
         />
         <Card
-          title="Adicionar Freelancer"
-          description="Adicione um novo freelancer em um determinado dia!"
+          title="Gerenciar Freelancers"
+          description="Cadastre freelancers e escale eles em um ou vários dias!"
           icon={<LuUserPlus size={"32px"} className="min-w-[32px]" />}
-          onClick={() => router.push(`/myreserves?createfreela=true`)}
+          onClick={() => router.push(`/myreserves/freelancer`)}
         />
         {/* <Card
           title="Adicionar Foto ao Mural"

@@ -100,9 +100,15 @@ const helpCards: HelpCard[] = [
   },
   {
     category: "reservas",
-    title: "Como adicionar um freelancer ao dia",
+    title: "Como gerenciar os freelancers",
     description:
-      "Clique no ícone de pessoa com + (tooltip: 'Adicionar um novo freelancer') no cabeçalho. Preencha o nome do freelancer e confirme. O freelancer aparecerá no painel esquerdo, na seção 'Freelas', com dois botões: status de confirmação (amarelo = sobreaviso, verde = confirmado) e status de pagamento (verde = pago, vermelho = não pago). Para remover, clique na lixeira ao lado do nome.",
+      "Clique no ícone de pessoas (tooltip: 'Gerenciar freelancers') no cabeçalho, ou vá em Adicionar → 'Gerenciar Freelancers'. Isso abre a página /myreserves/freelancer, onde cada freelancer é cadastrado uma única vez e pode ser escalado em um ou vários dias de uma vez, sem precisar digitar o nome de novo a cada agendamento. Clique num freelancer da lista para expandir e ver os dias agendados dele, adicionar novos dias, mudar o status (confirmado, sobreaviso ou cancelado) e o status de pagamento de cada dia, tudo na mesma tela — sem precisar navegar dia a dia no calendário. Por padrão só aparecem os agendamentos dos últimos 7 dias em diante; use 'Ver todos os agendamentos antigos' para revelar o histórico completo, e 'Excluir agendamentos antigos' para limpar tudo que passou desse período de uma vez.",
+  },
+  {
+    category: "reservas",
+    title: "Como os freelancers aparecem na página de Reservas",
+    description:
+      "Os freelancers escalados para o dia selecionado continuam aparecendo no painel esquerdo de /myreserves, na seção 'Freelas', com os mesmos controles rápidos de status e pagamento. Agendamentos cancelados ficam com visual apagado e não contam no resumo de 'freelancers ativos' do dia.",
   },
   {
     category: "reservas",
@@ -360,7 +366,7 @@ const helpCards: HelpCard[] = [
     category: "adicionar",
     title: "O que cada card faz na página Adicionar",
     description:
-      "Adicionar Jogo → abre formulário de novo jogo (modal). Adicionar Item → abre formulário de item do cardápio (modal). Adicionar Descrição → descrição de tipo de item existente (modal). Adicionar Combo → formulário de combo (modal). Adicionar Aviso → texto de aviso para o cardápio (modal). Adicionar Popup → popup do site (modal). Ordenar Tipos → gerencia tipos e subtipos do cardápio (modal). Adicionar Reserva → vai para Reservas com formulário aberto. Adicionar Freelancer → vai para Reservas com formulário de freelancer aberto. Adicionar uma Música → vai para a página de recomendação de música do cliente. Adicionar um Link → vai para Links com formulário aberto. Adicionar Evento → vai para Eventos com formulário aberto.",
+      "Adicionar Jogo → abre formulário de novo jogo (modal). Adicionar Item → abre formulário de item do cardápio (modal). Adicionar Descrição → descrição de tipo de item existente (modal). Adicionar Combo → formulário de combo (modal). Adicionar Aviso → texto de aviso para o cardápio (modal). Adicionar Popup → popup do site (modal). Ordenar Tipos → gerencia tipos e subtipos do cardápio (modal). Adicionar Reserva → vai para Reservas com formulário aberto. Gerenciar Freelancers → vai para a página de gestão de freelancers (/myreserves/freelancer). Adicionar uma Música → vai para a página de recomendação de música do cliente. Adicionar um Link → vai para Links com formulário aberto. Adicionar Evento → vai para Eventos com formulário aberto.",
   },
 
   // ── CONFIGURAÇÕES ─────────────────────────────────────────────

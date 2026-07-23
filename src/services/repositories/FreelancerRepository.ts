@@ -1,4 +1,4 @@
-﻿import { db } from "@/services/firebaseConfig";
+import { db } from "@/services/firebaseConfig";
 import {
   collection,
   addDoc,
@@ -9,19 +9,25 @@ import {
   deleteDoc,
   query,
   orderBy,
+  serverTimestamp,
 } from "firebase/firestore";
-import { FreelancerControllType } from "@/types";
+import { FreelancerType } from "@/types";
+import FreelancerBookingRepository from "./FreelancerBookingRepository";
+import {
+  deleteImageFromFirebase,
+  getPathFromFirebaseUrl,
+} from "./FirebaseImageUtils";
 
 class FreelancerRepository {
   static collectionName = "freelancers";
 
-  static async getAll(): Promise<(FreelancerControllType & { id: string })[]> {
+  static async getAll(): Promise<(FreelancerType & { id: string })[]> {
     try {
       const colRef = collection(db, this.collectionName);
       const snapshot = await getDocs(query(colRef, orderBy("name", "asc")));
       return snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...(doc.data() as FreelancerControllType),
+        ...(doc.data() as FreelancerType),
       }));
     } catch (error) {
       console.error("Erro ao buscar freelancers: ", error);
@@ -29,50 +35,16 @@ class FreelancerRepository {
     }
   }
 
-  static async getByDate(
-    date: Date
-  ): Promise<(FreelancerControllType & { id: string })[]> {
-    try {
-      const colRef = collection(db, this.collectionName);
-      const snapshot = await getDocs(colRef);
-
-      return snapshot.docs
-        .map((doc) => {
-          const data = doc.data() as FreelancerControllType;
-          return {
-            id: doc.id,
-            ...data,
-          };
-        })
-        .filter((freelancer) => {
-          const { day, month, year } = freelancer.bookingDate;
-          const bookingDate = new Date(
-            Number(year),
-            Number(month) - 1,
-            Number(day)
-          );
-          return (
-            bookingDate.getFullYear() === date.getFullYear() &&
-            bookingDate.getMonth() === date.getMonth() &&
-            bookingDate.getDate() === date.getDate()
-          );
-        });
-    } catch (error) {
-      console.error("Erro ao buscar freelancers por data: ", error);
-      return [];
-    }
-  }
-
   static async getById(
     id: string
-  ): Promise<(FreelancerControllType & { id: string }) | null> {
+  ): Promise<(FreelancerType & { id: string }) | null> {
     try {
       const docRef = doc(db, this.collectionName, id);
       const snapshot = await getDoc(docRef);
       if (snapshot.exists()) {
         return {
           id: snapshot.id,
-          ...(snapshot.data() as FreelancerControllType),
+          ...(snapshot.data() as FreelancerType),
         };
       }
       return null;
@@ -82,20 +54,46 @@ class FreelancerRepository {
     }
   }
 
-  static async create(data: FreelancerControllType) {
+  static async create(data: FreelancerType) {
     try {
-      const docRef = await addDoc(collection(db, this.collectionName), data);
-      return true;
+      const docRef = await addDoc(collection(db, this.collectionName), {
+        ...data,
+        createdAt: serverTimestamp(),
+      });
+      return docRef.id;
     } catch (error) {
       console.error("Erro ao criar freelancer: ", error);
-      return false;
+      return null;
     }
   }
 
-  static async update(id: string, data: Partial<FreelancerControllType>) {
+  // Atualiza os dados do freelancer. Se o nome mudar, propaga o novo nome
+  // para todos os agendamentos dele (o nome fica desnormalizado nos bookings
+  // para a página de reservas não precisar cruzar as duas coleções).
+  // Se a foto mudar e a antiga era um upload exclusivo do perfil (não uma
+  // referência ao mural), o arquivo antigo é apagado do Storage.
+  static async update(id: string, data: Partial<FreelancerType>) {
     try {
+      if (data.photoUrl !== undefined) {
+        const current = await this.getById(id);
+        if (
+          current?.photoSource === "upload" &&
+          current.photoUrl &&
+          current.photoUrl !== data.photoUrl
+        ) {
+          await deleteImageFromFirebase(
+            getPathFromFirebaseUrl(current.photoUrl)
+          );
+        }
+      }
+
       const docRef = doc(db, this.collectionName, id);
       await updateDoc(docRef, data);
+
+      if (data.name) {
+        await FreelancerBookingRepository.renameFreelancer(id, data.name);
+      }
+
       return true;
     } catch (error) {
       console.error("Erro ao atualizar freelancer: ", error);
@@ -103,9 +101,21 @@ class FreelancerRepository {
     }
   }
 
+  // Apaga o freelancer, todos os agendamentos dele e, se a foto era um
+  // upload exclusivo do perfil (não uma referência ao mural), o arquivo dela.
   static async delete(id: string) {
     try {
+      const current = await this.getById(id);
+
+      await FreelancerBookingRepository.deleteAllByFreelancerId(id);
       await deleteDoc(doc(db, this.collectionName, id));
+
+      if (current?.photoSource === "upload" && current.photoUrl) {
+        await deleteImageFromFirebase(
+          getPathFromFirebaseUrl(current.photoUrl)
+        );
+      }
+
       return true;
     } catch (error) {
       console.error("Erro ao deletar freelancer: ", error);
