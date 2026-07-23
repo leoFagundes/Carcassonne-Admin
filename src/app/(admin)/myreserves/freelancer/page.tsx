@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LuArrowLeft, LuSearch, LuUserPlus, LuUsers, LuX } from "react-icons/lu";
+import {
+  LuArrowLeft,
+  LuCalendarRange,
+  LuSearch,
+  LuUserPlus,
+  LuUsers,
+  LuX,
+} from "react-icons/lu";
 import { FreelancerType, FreelancerBookingType } from "@/types";
 import FreelancerRepository from "@/services/repositories/FreelancerRepository";
 import FreelancerBookingRepository from "@/services/repositories/FreelancerBookingRepository";
@@ -12,9 +19,11 @@ import Modal from "@/components/modal";
 import Tooltip from "@/components/Tooltip";
 import FreelancerAdminForms from "@/components/freelancerAdminForms";
 import FreelancerCard from "@/components/freelancerCard";
+import FreelancerBulkAssignForm from "@/components/freelancerBulkAssignForm";
 import {
   bookingDateToDate,
   isBookingToday,
+  isBookingUpToToday,
   isBookingWithinNextDays,
 } from "@/utils/utilFunctions";
 
@@ -41,6 +50,7 @@ export default function FreelancerAdminPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
   const [createModal, setCreateModal] = useState(false);
+  const [bulkAssignModal, setBulkAssignModal] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{
     message: string;
     onConfirm: () => void;
@@ -105,8 +115,10 @@ export default function FreelancerAdminPage() {
   const allBookings = Object.values(bookingsByFreelancer).flat();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  // Pendência de pagamento só conta dias de hoje pra trás — um dia futuro
+  // ainda não aconteceu, então ainda não ter sido pago não é uma pendência.
   const totalUnpaid = allBookings.filter(
-    (b) => !b.isPayed && b.status !== "canceled",
+    (b) => !b.isPayed && b.status !== "canceled" && isBookingUpToToday(b.bookingDate),
   ).length;
   const totalUpcoming = allBookings.filter(
     (b) => b.status !== "canceled" && bookingDateToDate(b.bookingDate) >= today,
@@ -123,9 +135,9 @@ export default function FreelancerAdminPage() {
     return upcoming.length > 0 ? Math.min(...upcoming) : Infinity;
   }
 
-  function freelancerMatchesFilter(freelancerId: string): boolean {
+  function freelancerMatchesFilter(freelancerId: string, mode: FilterMode): boolean {
     const bookings = bookingsByFreelancer[freelancerId] ?? [];
-    switch (filterMode) {
+    switch (mode) {
       case "today":
         return bookings.some(
           (b) => b.status !== "canceled" && isBookingToday(b.bookingDate),
@@ -135,17 +147,33 @@ export default function FreelancerAdminPage() {
           (b) => b.status !== "canceled" && isBookingWithinNextDays(b.bookingDate, 7),
         );
       case "unpaid":
-        return bookings.some((b) => b.status !== "canceled" && !b.isPayed);
+        return bookings.some(
+          (b) =>
+            b.status !== "canceled" &&
+            !b.isPayed &&
+            isBookingUpToToday(b.bookingDate),
+        );
       default:
         return true;
     }
   }
 
-  const filteredFreelancers = freelancers
-    .filter((f) =>
-      f.name.toLowerCase().includes(searchQuery.trim().toLowerCase()),
-    )
-    .filter((f) => freelancerMatchesFilter(f.id))
+  const searchedFreelancers = freelancers.filter((f) =>
+    f.name.toLowerCase().includes(searchQuery.trim().toLowerCase()),
+  );
+
+  const filterCounts: Record<FilterMode, number> = {
+    all: searchedFreelancers.length,
+    today: searchedFreelancers.filter((f) => freelancerMatchesFilter(f.id, "today"))
+      .length,
+    week: searchedFreelancers.filter((f) => freelancerMatchesFilter(f.id, "week"))
+      .length,
+    unpaid: searchedFreelancers.filter((f) => freelancerMatchesFilter(f.id, "unpaid"))
+      .length,
+  };
+
+  const filteredFreelancers = searchedFreelancers
+    .filter((f) => freelancerMatchesFilter(f.id, filterMode))
     .sort((a, b) => {
       const diff = getNextBookingTimestamp(a.id) - getNextBookingTimestamp(b.id);
       return diff !== 0 ? diff : a.name.localeCompare(b.name);
@@ -184,6 +212,14 @@ export default function FreelancerAdminPage() {
               className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer shrink-0"
             >
               <LuUserPlus size={16} />
+            </button>
+          </Tooltip>
+          <Tooltip direction="bottom" content="Atribuir freelancers a um ou mais dias">
+            <button
+              onClick={() => setBulkAssignModal(true)}
+              className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer shrink-0"
+            >
+              <LuCalendarRange size={16} />
             </button>
           </Tooltip>
         </div>
@@ -237,7 +273,7 @@ export default function FreelancerAdminPage() {
                   : "border-primary-gold/20 text-primary-gold/50 hover:border-primary-gold/50 hover:text-primary-gold"
               }`}
             >
-              {filter.label}
+              {filter.label} ({filterCounts[filter.key]})
             </button>
           ))}
         </div>
@@ -277,6 +313,15 @@ export default function FreelancerAdminPage() {
         <FreelancerAdminForms
           onClose={() => setCreateModal(false)}
           onCreated={loadAll}
+        />
+      </Modal>
+
+      <Modal isOpen={bulkAssignModal} onClose={() => setBulkAssignModal(false)}>
+        <FreelancerBulkAssignForm
+          freelancers={freelancers}
+          bookingsByFreelancer={bookingsByFreelancer}
+          onClose={() => setBulkAssignModal(false)}
+          onAssigned={loadAll}
         />
       </Modal>
 

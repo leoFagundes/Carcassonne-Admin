@@ -5,6 +5,7 @@ import {
   LuExpand,
   LuImage,
   LuMinimize2,
+  LuPencil,
   LuPlus,
   LuText,
   LuTrash,
@@ -25,9 +26,17 @@ export const DragCards = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCarcaImage, setNewCarcaImage] = useState(patternCarcaImage);
   const [imageFile, setImageFile] = React.useState<File | null>(null);
-  const [showDescriptions, setShowDescriptions] = useState(false);
+  const [showDescriptions, setShowDescriptions] = useState(true);
   const [carcaImages, setCarcaImages] = useState<CarcaImageType[]>([]);
   const [saving, setSaving] = useState(false);
+  const [expandedImage, setExpandedImage] = useState<CarcaImageType | null>(
+    null,
+  );
+  const [editingImage, setEditingImage] = useState<CarcaImageType | null>(
+    null,
+  );
+  const [editingDescription, setEditingDescription] = useState("");
+  const [savingDescription, setSavingDescription] = useState(false);
 
   const { addAlert } = useAlert();
 
@@ -86,6 +95,34 @@ export const DragCards = () => {
       addAlert(`Erro ao adicionar: ${error}`);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const openEditDescription = (img: CarcaImageType) => {
+    setEditingImage(img);
+    setEditingDescription(img.description ?? "");
+  };
+
+  const handleSaveDescription = async () => {
+    if (!editingImage?.id) return;
+    setSavingDescription(true);
+    try {
+      await CarcaImageRepository.update(editingImage.id, {
+        description: editingDescription,
+      });
+      setCarcaImages((prev) =>
+        prev.map((img) =>
+          img.id === editingImage.id
+            ? { ...img, description: editingDescription }
+            : img,
+        ),
+      );
+      addAlert("Descrição atualizada.");
+      setEditingImage(null);
+    } catch {
+      addAlert("Erro ao atualizar descrição.");
+    } finally {
+      setSavingDescription(false);
     }
   };
 
@@ -170,29 +207,48 @@ export const DragCards = () => {
                 className="group flex flex-col rounded-xl overflow-hidden border border-primary-gold/15 hover:border-primary-gold/45 transition-all duration-300"
               >
                 {/* Image — always square */}
-                <div className="relative overflow-hidden shrink-0" style={{ aspectRatio: "1" }}>
+                <div
+                  onClick={() => setExpandedImage(img)}
+                  className="relative overflow-hidden shrink-0 cursor-pointer"
+                  style={{ aspectRatio: "1" }}
+                >
                   <img
                     src={img.src}
                     alt={img.description}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
 
-                  {/* Hover overlay — description + delete (desktop only) */}
+                  {/* Hover overlay — expand hint + description + delete (desktop only) */}
                   <div className="absolute inset-0 bg-gradient-to-t from-primary-black via-primary-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden sm:flex flex-col justify-end p-2.5 gap-1.5">
-                    {img.description && (
+                    <LuExpand
+                      size={18}
+                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary-gold/90"
+                    />
+                    {!showDescriptions && img.description && (
                       <p className="text-[10px] text-primary-gold/85 leading-relaxed">
                         {img.description}
                       </p>
                     )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(img.id);
-                      }}
-                      className="self-end p-1.5 rounded-lg bg-invalid-color/15 border border-invalid-color/35 text-invalid-color/80 hover:bg-invalid-color/25 hover:text-invalid-color transition-all cursor-pointer"
-                    >
-                      <LuTrash size={12} />
-                    </button>
+                    <div className="self-end flex items-center gap-1.5">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditDescription(img);
+                        }}
+                        className="p-1.5 rounded-lg bg-primary-gold/15 border border-primary-gold/35 text-primary-gold/80 hover:bg-primary-gold/25 hover:text-primary-gold transition-all cursor-pointer"
+                      >
+                        <LuPencil size={12} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(img.id);
+                        }}
+                        className="p-1.5 rounded-lg bg-invalid-color/15 border border-invalid-color/35 text-invalid-color/80 hover:bg-invalid-color/25 hover:text-invalid-color transition-all cursor-pointer"
+                      >
+                        <LuTrash size={12} />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -316,6 +372,99 @@ export const DragCards = () => {
                 className="px-5 py-2 text-sm rounded-lg border border-primary-gold/50 bg-primary-gold/10 text-primary-gold hover:bg-primary-gold/15 transition-all disabled:opacity-50 flex items-center gap-2"
               >
                 {saving ? <Loader /> : "Adicionar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Expanded image lightbox */}
+      {expandedImage && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-[6px] px-4"
+          onClick={() => setExpandedImage(null)}
+        >
+          <div
+            className="flex flex-col items-center gap-3 max-w-[90vw] max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative">
+              <img
+                src={expandedImage.src}
+                alt={expandedImage.description}
+                className="max-w-[90vw] max-h-[75vh] object-contain rounded-xl border border-primary-gold/20 shadow-2xl"
+              />
+              <button
+                onClick={() => setExpandedImage(null)}
+                className="absolute -top-3 -right-3 p-1.5 rounded-full bg-secondary-black border border-primary-gold/30 text-primary-gold/70 hover:text-primary-gold hover:border-primary-gold/60 transition-all cursor-pointer"
+              >
+                <LuX size={14} />
+              </button>
+            </div>
+            {expandedImage.description && (
+              <p className="text-sm text-primary-gold/80 text-center max-w-[500px]">
+                {expandedImage.description}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit description modal */}
+      {editingImage && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-[4px] px-4"
+          onClick={() => setEditingImage(null)}
+        >
+          <div
+            className="bg-secondary-black/95 border border-primary-gold/20 rounded-2xl w-full max-w-[420px] shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-3 border-b border-primary-gold/10 shrink-0">
+              <div className="w-full text-center">
+                <h2 className="text-lg text-gradient-gold">Editar descrição</h2>
+              </div>
+              <button
+                onClick={() => setEditingImage(null)}
+                className="p-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/60 hover:text-primary-gold transition-all shrink-0 ml-2 cursor-pointer"
+              >
+                <LuX size={14} />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-4 p-5">
+              <div className="rounded-xl overflow-hidden border border-primary-gold/15 w-full aspect-video">
+                <img
+                  src={editingImage.src}
+                  alt={editingImage.description}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <Input
+                multiline
+                rows={3}
+                placeholder="Descrição da foto"
+                label="Descrição"
+                value={editingDescription}
+                setValue={(e) => setEditingDescription(e.target.value)}
+                variant
+                width="!w-full"
+              />
+            </div>
+
+            <div className="flex justify-center gap-3 px-5 py-3 border-t border-primary-gold/10 shrink-0">
+              <button
+                onClick={() => setEditingImage(null)}
+                className="px-4 py-2 text-sm rounded-lg border border-primary-gold/20 text-primary-gold/60 hover:border-primary-gold/40 hover:text-primary-gold transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveDescription}
+                disabled={savingDescription}
+                className="px-5 py-2 text-sm rounded-lg border border-primary-gold/50 bg-primary-gold/10 text-primary-gold hover:bg-primary-gold/15 transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+              >
+                {savingDescription ? <Loader /> : "Salvar"}
               </button>
             </div>
           </div>

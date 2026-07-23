@@ -30,6 +30,7 @@ import {
   formatBookingWeekday,
   getRecentWindowCutoff,
   isBookingToday,
+  isBookingUpToToday,
   isWithinRecentWindow,
   openWhatsApp,
 } from "@/utils/utilFunctions";
@@ -111,8 +112,11 @@ export default function FreelancerCard({
     (b) => !isWithinRecentWindow(b.bookingDate),
   );
   const visibleBookings = showAllBookings ? sortedBookings : recentBookings;
+  // Só conta como "pendente" dias de hoje pra trás — um dia futuro ainda não
+  // aconteceu, então ainda não pagar por ele não é uma pendência.
   const pendingPaymentCount = bookings.filter(
-    (b) => !b.isPayed && b.status !== "canceled",
+    (b) =>
+      !b.isPayed && b.status !== "canceled" && isBookingUpToToday(b.bookingDate),
   ).length;
 
   const disabledCalendarDates = bookings.map(

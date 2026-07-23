@@ -130,6 +130,12 @@ export function isBookingToday(bookingDate: BookingDate): boolean {
   return isToday(bookingDateToDate(bookingDate));
 }
 
+// Hoje ou antes — usado para pendências de pagamento (dia futuro ainda não
+// aconteceu, então não é "pendente", é só ainda não vencido).
+export function isBookingUpToToday(bookingDate: BookingDate): boolean {
+  return !isAfter(bookingDateToDate(bookingDate), startOfDay(new Date()));
+}
+
 // Janela de "hoje até daqui `days` dias" (inclusiva nas duas pontas).
 export function isBookingWithinNextDays(
   bookingDate: BookingDate,
