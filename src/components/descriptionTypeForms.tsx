@@ -37,7 +37,7 @@ export default function DescriptionTypeForms({
       try {
         const fecthedMenuItens = await MenuItemRepository.getAll();
         const uniqueTypes = Array.from(
-          new Set(fecthedMenuItens.map((item) => item.type))
+          new Set(fecthedMenuItens.map((item) => item.type)),
         );
         setTypeOptions(uniqueTypes);
       } catch (error) {
@@ -78,7 +78,7 @@ export default function DescriptionTypeForms({
     setAddLoading(true);
     try {
       const createdDescriptionId = await DescriptionRepository.create(
-        currentDescriptionType
+        currentDescriptionType,
       );
 
       if (!createdDescriptionId || typeof createdDescriptionId !== "string") {
@@ -103,7 +103,7 @@ export default function DescriptionTypeForms({
   };
 
   const handleDeleteDescription = async (
-    descriptionType: DescriptionTypeProps
+    descriptionType: DescriptionTypeProps,
   ) => {
     setFetchLoading(true);
     try {
@@ -116,8 +116,8 @@ export default function DescriptionTypeForms({
       addAlert(`Descrição deletada com sucesso!`);
       setDescriptions(
         [...descriptions].filter(
-          (description) => description.id !== descriptionType.id
-        )
+          (description) => description.id !== descriptionType.id,
+        ),
       );
     } catch (error) {
       addAlert(`Erro ao deletar descrição: ${error}`);
@@ -130,7 +130,9 @@ export default function DescriptionTypeForms({
     <div className="flex flex-col items-center overflow-y-auto px-2 w-full">
       {fetchLoading && <LoaderFullscreen />}
       <div className="w-full text-center mb-4">
-        <h1 className="text-xl sm:text-2xl text-gradient-gold">Adicionar uma nova descrição</h1>
+        <span className="text-xl sm:text-2xl text-gradient-gold">
+          Adicionar uma nova descrição
+        </span>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
       </div>
 
@@ -166,7 +168,7 @@ export default function DescriptionTypeForms({
           width="!w-[250px]"
         />
       </div>
-      <div className="flex gap-2 pt-3 border-t border-primary-gold/10 w-full justify-center my-4">
+      <div className="flex gap-2 pt-3 border-t border-primary-gold/10 w-fit justify-center my-4">
         <Button onClick={handleCreateDescription}>
           {addLoading ? <Loader /> : "Adicionar"}
         </Button>

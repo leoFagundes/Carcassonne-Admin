@@ -35,7 +35,7 @@ export default function ReserveAdminForms({
   dateProps,
 }: ReserveAdminFormsType) {
   const [date, setDate] = useState(() =>
-    dateProps ? dateProps : today(getLocalTimeZone())
+    dateProps ? dateProps : today(getLocalTimeZone()),
   );
   const { addAlert } = useAlert();
 
@@ -58,13 +58,13 @@ export default function ReserveAdminForms({
           childs: 0,
           status: "confirmed",
           table: "",
-        }
+        },
   );
 
   useEffect(() => {
     if (type !== "edit") {
       ReserveRepository.generateUniqueCode().then((code) =>
-        setLocalReserve((prev) => ({ ...prev, code }))
+        setLocalReserve((prev) => ({ ...prev, code })),
       );
     }
   }, [type]);
@@ -188,7 +188,7 @@ export default function ReserveAdminForms({
     if (!isReserveFormValid()) return;
     if (!localReserve.id) {
       addAlert(
-        "Reserv não encontrada para edição, recarregue a página e tente novamente."
+        "Reserv não encontrada para edição, recarregue a página e tente novamente.",
       );
       return;
     }
@@ -212,14 +212,14 @@ export default function ReserveAdminForms({
         className="flex flex-col items-center w-fit rounded px-3 py-6 sm:p-8 gap-8 overflow-y-auto max-h-[100%] max-w-[100%] sm:max-h-[90%] sm:max-w-[90%]"
       >
         <div className="w-full text-center">
-          <h1 className="text-xl sm:text-2xl text-gradient-gold flex items-center justify-center gap-2">
+          <span className="text-xl sm:text-2xl text-gradient-gold flex items-center justify-center gap-2">
             {type === "add" ? (
               <LuCalendarPlus size={20} className="shrink-0" />
             ) : (
               <LuCalendarCog size={20} className="shrink-0" />
             )}
             {type === "add" ? "Criar uma nova Reserva" : "Editar Reserva"}
-          </h1>
+          </span>
           <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
         </div>
         <div className="flex gap-6 flex-wrap justify-center">

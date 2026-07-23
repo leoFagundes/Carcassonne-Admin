@@ -92,6 +92,13 @@ export interface CarcaImageType {
   rotate: string;
 }
 
+export interface SnakeScoreType {
+  id?: string;
+  name: string;
+  score: number;
+  createdAt?: Date | Timestamp;
+}
+
 export interface TypeOrderType {
   id?: string;
   type: {

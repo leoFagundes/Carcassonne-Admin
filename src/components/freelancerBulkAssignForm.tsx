@@ -137,10 +137,10 @@ export default function FreelancerBulkAssignForm({
     <div className="flex justify-center w-full h-full text-primary-gold">
       <div className="flex flex-col items-center w-fit rounded px-3 py-6 sm:p-8 gap-6 overflow-y-auto max-h-[100%] max-w-[100%] sm:max-h-[90%] sm:max-w-[90%]">
         <div className="w-full text-center">
-          <h1 className="text-xl sm:text-2xl text-gradient-gold flex items-center justify-center gap-2">
+          <span className="text-xl sm:text-2xl text-gradient-gold flex items-center justify-center gap-2">
             <LuCalendarRange size={20} className="shrink-0" />
             Atribuir freelancers a dia(s)
-          </h1>
+          </span>
           <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
         </div>
 

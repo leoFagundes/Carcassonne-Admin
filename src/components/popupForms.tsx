@@ -184,9 +184,9 @@ export default function PopupForms({ closeForms }: DescriptionTypeFormsProps) {
     <div className="flex flex-col items-center overflow-y-auto px-2 w-full">
       {fetchLoading && <LoaderFullscreen />}
       <div className="w-full text-center mb-4">
-        <h1 className="text-xl sm:text-2xl text-gradient-gold">
+        <span className="text-xl sm:text-2xl text-gradient-gold">
           Adicionar um novo Popup
-        </h1>
+        </span>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
       </div>
 
@@ -209,7 +209,7 @@ export default function PopupForms({ closeForms }: DescriptionTypeFormsProps) {
                 src: "",
               });
             }}
-            width={`!min-w-[250px]   ${
+            width={`!min-w-[250px]  ${
               !imageFile ? "!h-[100px]" : "!min-h-[250px]"
             }`}
             previewUrl={currentPopup.src}
@@ -225,7 +225,7 @@ export default function PopupForms({ closeForms }: DescriptionTypeFormsProps) {
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 m-auto">
           <Button onClick={handleSavePopup} disabled={loading}>
             {loading ? <Loader /> : "Adicionar"}
           </Button>

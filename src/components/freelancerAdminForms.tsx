@@ -47,9 +47,7 @@ export default function FreelancerAdminForms({
 
     setSubmitting(true);
     try {
-      const freelancerId = await FreelancerRepository.create(
-        currentFreelancer,
-      );
+      const freelancerId = await FreelancerRepository.create(currentFreelancer);
 
       if (!freelancerId) {
         addAlert("Erro ao criar freelancer.");
@@ -90,10 +88,10 @@ export default function FreelancerAdminForms({
         className="flex flex-col items-center w-fit rounded px-3 py-6 sm:p-8 gap-8 overflow-y-auto max-h-[100%] max-w-[100%] sm:max-h-[90%] sm:max-w-[90%]"
       >
         <div className="w-full text-center">
-          <h1 className="text-xl sm:text-2xl text-gradient-gold flex items-center justify-center gap-2">
+          <span className="text-xl sm:text-2xl text-gradient-gold flex items-center justify-center gap-2">
             <LuUserPlus size={20} className="shrink-0" />
             Novo freelancer
-          </h1>
+          </span>
           <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
         </div>
         <div className="flex gap-6 flex-wrap justify-center">

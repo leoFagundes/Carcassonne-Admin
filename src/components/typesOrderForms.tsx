@@ -42,8 +42,8 @@ export default function TypesOrderForms({
           new Set(
             menuItems
               .map((item) => item.type)
-              .filter((type): type is string => !!type && type.trim() !== "")
-          )
+              .filter((type): type is string => !!type && type.trim() !== ""),
+          ),
         );
 
         const fetchedSubtypes = Array.from(
@@ -52,9 +52,9 @@ export default function TypesOrderForms({
               .map((item) => item.subtype)
               .filter(
                 (subtype): subtype is string =>
-                  !!subtype && subtype.trim() !== ""
-              )
-          )
+                  !!subtype && subtype.trim() !== "",
+              ),
+          ),
         );
 
         const fetchedTypesOrder = await TypesOrderRepository.getAll();
@@ -160,7 +160,9 @@ export default function TypesOrderForms({
     <div className="flex flex-col items-center overflow-y-auto px-2 min-h-[250px] w-full">
       {fetchLoading && <LoaderFullscreen />}
       <div className="w-full text-center mb-4">
-        <h1 className="text-xl sm:text-2xl text-gradient-gold">Adicionar tipo</h1>
+        <span className="text-xl sm:text-2xl text-gradient-gold">
+          Adicionar tipo
+        </span>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
       </div>
 

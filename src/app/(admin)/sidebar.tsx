@@ -23,6 +23,7 @@ import { MusicRecommendationType } from "@/types";
 import MusicRecommendationRepository from "@/services/repositories/MusicRecommendationsRepository";
 import EventRepository from "@/services/repositories/EventRepository";
 import { useAlert } from "@/contexts/alertProvider";
+import { useLogoEasterEgg } from "@/hooks/useLogoEasterEgg";
 
 interface ItemProps {
   message: string;
@@ -102,6 +103,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
   const toggleSidebar = () => setIsOpen(!isOpen);
+  const onLogoClick = useLogoEasterEgg();
 
   useEffect(() => {
     pathnameRef.current = pathname;
@@ -244,9 +246,10 @@ export default function Sidebar() {
           <div className="flex flex-col items-center gap-3 px-4 pt-6 pb-4 border-b border-primary-gold/10">
             <div className="relative">
               <img
-                className="w-[120px] contrast-[1.1] brightness-90"
+                className="w-[120px] contrast-[1.1] brightness-90 cursor-pointer"
                 src="images/[oficial]-logo.png"
                 alt="meeple"
+                onClick={onLogoClick}
               />
               <div className="absolute top-2 left-2">
                 <Tooltip content="Eu sou o Duque e pego 3" direction="right">

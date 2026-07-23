@@ -55,7 +55,7 @@ export default function CollectionForms({
         const fetchedBoardgames = await BoardgameRepository.getAll();
 
         const boardgameTypes = Array.from(
-          new Set(fetchedBoardgames.flatMap((b) => b.types))
+          new Set(fetchedBoardgames.flatMap((b) => b.types)),
         );
 
         setBoardgamesTypes(boardgameTypes);
@@ -152,9 +152,9 @@ export default function CollectionForms({
   return (
     <>
       <div className="w-full text-center">
-        <h1 className="text-xl sm:text-2xl text-gradient-gold">
+        <span className="text-xl sm:text-2xl text-gradient-gold">
           {localItem.name ? localItem.name : "Jogo sem nome"}
-        </h1>
+        </span>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
       </div>
       <div className="flex flex-wrap justify-center py-4 text-primary-gold gap-6 overflow-y-auto px-2 flex-1 min-h-0 w-full">

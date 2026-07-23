@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { LuSignature, LuText, LuToggleLeft, LuToggleRight, LuChevronDown, LuCheck } from "react-icons/lu";
+import {
+  LuSignature,
+  LuText,
+  LuToggleLeft,
+  LuToggleRight,
+  LuChevronDown,
+  LuCheck,
+} from "react-icons/lu";
 import Button from "./button";
 import Input from "./input";
 import { EventItemType } from "@/types";
@@ -33,7 +40,10 @@ export default function EventForms({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (subtypeRef.current && !subtypeRef.current.contains(e.target as Node)) {
+      if (
+        subtypeRef.current &&
+        !subtypeRef.current.contains(e.target as Node)
+      ) {
         setSubtypeOpen(false);
       }
     };
@@ -120,9 +130,9 @@ export default function EventForms({
   return (
     <>
       <div className="w-full text-center">
-        <h1 className="text-xl sm:text-2xl text-gradient-gold">
+        <span className="text-xl sm:text-2xl text-gradient-gold">
           {localItem.name ? localItem.name : "Novo Evento"}
-        </h1>
+        </span>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
       </div>
 
@@ -132,7 +142,9 @@ export default function EventForms({
             label="Nome"
             placeholder="Ex: Quiz da Copa"
             value={localItem.name}
-            setValue={(e) => setLocalItem({ ...localItem, name: e.target.value })}
+            setValue={(e) =>
+              setLocalItem({ ...localItem, name: e.target.value })
+            }
             variant
             icon={<LuSignature size={20} />}
             width="!w-[250px]"
@@ -141,7 +153,9 @@ export default function EventForms({
             label="Descrição"
             placeholder="Descrição do evento"
             value={localItem.description}
-            setValue={(e) => setLocalItem({ ...localItem, description: e.target.value })}
+            setValue={(e) =>
+              setLocalItem({ ...localItem, description: e.target.value })
+            }
             variant
             icon={<LuText size={20} />}
             width="!w-[250px]"
@@ -160,7 +174,9 @@ export default function EventForms({
               >
                 <span className="flex items-center gap-2">
                   <span>{localItem.subtype === "bolao" ? "⚽" : "🧠"}</span>
-                  <span>{localItem.subtype === "bolao" ? "Bolão" : "Quiz"}</span>
+                  <span>
+                    {localItem.subtype === "bolao" ? "Bolão" : "Quiz"}
+                  </span>
                 </span>
                 <LuChevronDown
                   size={14}
@@ -189,7 +205,10 @@ export default function EventForms({
                         <span>{opt === "bolao" ? "Bolão" : "Quiz"}</span>
                       </span>
                       {localItem.subtype === opt && (
-                        <LuCheck size={13} className="text-primary-gold shrink-0" />
+                        <LuCheck
+                          size={13}
+                          className="text-primary-gold shrink-0"
+                        />
                       )}
                     </button>
                   ))}
@@ -203,7 +222,9 @@ export default function EventForms({
             <div className="flex flex-col gap-1 w-[250px]">
               <span className="text-xs text-primary-gold/60 uppercase tracking-wider flex items-center gap-1.5">
                 🏆 Prêmio do quiz
-                <span className="text-primary-gold/30 normal-case font-normal">(opcional)</span>
+                <span className="text-primary-gold/30 normal-case font-normal">
+                  (opcional)
+                </span>
               </span>
               <input
                 type="text"
@@ -254,7 +275,9 @@ export default function EventForms({
             <div className="flex items-center justify-between bg-primary-black/80 py-2 sm:py-3 px-3 sm:px-4 rounded-sm text-sm gap-2 shadow-card border border-primary-gold text-primary-gold">
               <span>Evento ativo</span>
               <button
-                onClick={() => setLocalItem({ ...localItem, isActive: !localItem.isActive })}
+                onClick={() =>
+                  setLocalItem({ ...localItem, isActive: !localItem.isActive })
+                }
                 className="text-primary-gold cursor-pointer transition-colors"
               >
                 {localItem.isActive ? (

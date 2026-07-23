@@ -460,6 +460,12 @@ Resultado: "Klaus Jürgen". Digite exatamente isso no campo do 7º ponto e press
 
 Ao acertar, a página é desbloqueada: o fundo muda para a arte do jogo de tabuleiro Carcassonne e dois cards aparecem nos cantos da tela (só em desktop) — um com a foto e a biografia de Klaus-Jürgen Wrede, o designer alemão que criou o jogo em 2000, e outro com a foto e a história de Fábio Almeida e Salimar Morais, os fundadores do Carcassonne Pub em 2013. Para voltar à visão padrão, clique em "Voltar à visão padrão" no rodapé.`,
   },
+  {
+    category: "easteregg",
+    title: "Como desbloquear o Snake escondido",
+    description:
+      "Clique 5 vezes bem rápido (menos de 1 segundo entre cada clique) na logo do Carcassonne no topo da barra lateral. Ao completar os 5 cliques, você é levado direto para a página /snake — um joguinho da cobrinha com tema dourado/preto do painel. Jogue com as setas do teclado ou WASD (ou arraste/use os botões na tela no celular), e aperte espaço ou toque na tela pra pausar/continuar. Existe um placar global: toda vez que alguém supera o recorde atual, um campo aparece na hora para digitar um nome e salvar aquela pontuação no placar — pontuações que não batem o recorde não entram na lista, só recordes reais ficam registrados.",
+  },
 
   // ── DESENVOLVEDOR ─────────────────────────────────────────────
   {

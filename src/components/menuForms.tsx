@@ -69,14 +69,14 @@ export default function MenuForms({
           new Set(
             fetchedItems
               .map((b) => b.subtype)
-              .filter((subtype): subtype is string => subtype !== undefined)
-          )
+              .filter((subtype): subtype is string => subtype !== undefined),
+          ),
         );
         const allObservations = Array.from(
-          new Set(fetchedItems.flatMap((item) => item.observation ?? []))
+          new Set(fetchedItems.flatMap((item) => item.observation ?? [])),
         );
         const allSideDishes = Array.from(
-          new Set(fetchedItems.flatMap((item) => item.sideDish ?? []))
+          new Set(fetchedItems.flatMap((item) => item.sideDish ?? [])),
         );
 
         setTypes(menuTypes);
@@ -186,9 +186,9 @@ export default function MenuForms({
     <>
       {fullscreenLoading && <LoaderFullscreen />}
       <div className="w-full text-center">
-        <h1 className="text-xl sm:text-2xl text-gradient-gold">
+        <span className="text-xl sm:text-2xl text-gradient-gold">
           {localItem.name ? localItem.name : "Item sem nome"}
-        </h1>
+        </span>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
       </div>
       <div className="flex flex-wrap justify-center py-4 text-primary-gold gap-6 overflow-y-auto px-2 flex-1 min-h-0 w-full">
