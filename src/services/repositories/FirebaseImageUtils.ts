@@ -1,5 +1,4 @@
 import imageCompression from "browser-image-compression";
-import heic2any from "heic2any";
 import {
   getStorage,
   ref,
@@ -29,6 +28,10 @@ function isHeicFile(file: File): boolean {
 }
 
 async function convertHeicToJpeg(file: File): Promise<File> {
+  // Import dinâmico: um dos módulos internos do heic2any referencia `window`
+  // já na avaliação do módulo, o que quebra o build (SSR/prerender no Next
+  // roda em Node, sem `window`). Import dinâmico só carrega no navegador.
+  const { default: heic2any } = await import("heic2any");
   const result = await heic2any({
     blob: file,
     toType: "image/jpeg",
