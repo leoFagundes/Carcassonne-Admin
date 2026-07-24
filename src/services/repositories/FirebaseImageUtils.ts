@@ -1,4 +1,5 @@
 import imageCompression from "browser-image-compression";
+import heic2any from "heic2any";
 import {
   getStorage,
   ref,
@@ -11,6 +12,36 @@ import { v4 as uuidv4 } from "uuid";
 const tamanhoMaximoMB = 10;
 const tamanhoMaximoBytes = tamanhoMaximoMB * 1024 * 1024;
 
+// Fotos tiradas em iPhone (config. padrão) vêm no formato HEIC/HEIF, que os
+// navegadores não sabem decodificar em canvas — é por isso que a compressão
+// falha silenciosamente só em algumas fotos do celular (as em HEIC), e nunca
+// quando a mesma foto chega por um caminho que já converte pra JPEG (ex:
+// mandar pro computador via WhatsApp/e-mail).
+function isHeicFile(file: File): boolean {
+  const type = file.type.toLowerCase();
+  const name = file.name.toLowerCase();
+  return (
+    type === "image/heic" ||
+    type === "image/heif" ||
+    name.endsWith(".heic") ||
+    name.endsWith(".heif")
+  );
+}
+
+async function convertHeicToJpeg(file: File): Promise<File> {
+  const result = await heic2any({
+    blob: file,
+    toType: "image/jpeg",
+    quality: 0.9,
+  });
+  const convertedBlob = Array.isArray(result) ? result[0] : result;
+  const newName = file.name.replace(/\.(heic|heif)$/i, ".jpg") || "foto.jpg";
+  return new File([convertedBlob], newName, {
+    type: "image/jpeg",
+    lastModified: Date.now(),
+  });
+}
+
 export const uploadImageToFirebase = async (
   file: File,
   folderPath = "uploads"
@@ -22,9 +53,21 @@ export const uploadImageToFirebase = async (
   };
 
   try {
-    const compressedBlob = await imageCompression(file, options);
+    let sourceFile = file;
+    if (isHeicFile(file)) {
+      try {
+        sourceFile = await convertHeicToJpeg(file);
+      } catch (heicError) {
+        console.error("Erro ao converter HEIC para JPEG:", heicError);
+        throw new Error(
+          "Não foi possível processar essa foto (formato HEIC do iPhone). Tente novamente ou, em Ajustes > Câmera > Formatos, troque para 'Mais compatível'."
+        );
+      }
+    }
 
-    const compressedFile = new File([compressedBlob], file.name, {
+    const compressedBlob = await imageCompression(sourceFile, options);
+
+    const compressedFile = new File([compressedBlob], sourceFile.name, {
       type: compressedBlob.type,
       lastModified: Date.now(),
     });

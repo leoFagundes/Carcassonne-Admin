@@ -118,19 +118,17 @@ export default function FreelancerAdminPage() {
   // Pendência de pagamento só conta dias de hoje pra trás — um dia futuro
   // ainda não aconteceu, então ainda não ter sido pago não é uma pendência.
   const totalUnpaid = allBookings.filter(
-    (b) => !b.isPayed && b.status !== "canceled" && isBookingUpToToday(b.bookingDate),
+    (b) => !b.isPayed && isBookingUpToToday(b.bookingDate),
   ).length;
   const totalUpcoming = allBookings.filter(
-    (b) => b.status !== "canceled" && bookingDateToDate(b.bookingDate) >= today,
+    (b) => bookingDateToDate(b.bookingDate) >= today,
   ).length;
 
-  // Timestamp do próximo dia agendado (não cancelado, hoje em diante) — usado
-  // pra ordenar a lista com quem vai trabalhar em breve no topo.
+  // Timestamp do próximo dia agendado (hoje em diante) — usado pra ordenar a
+  // lista com quem vai trabalhar em breve no topo.
   function getNextBookingTimestamp(freelancerId: string): number {
     const upcoming = (bookingsByFreelancer[freelancerId] ?? [])
-      .filter(
-        (b) => b.status !== "canceled" && bookingDateToDate(b.bookingDate) >= today,
-      )
+      .filter((b) => bookingDateToDate(b.bookingDate) >= today)
       .map((b) => bookingDateToDate(b.bookingDate).getTime());
     return upcoming.length > 0 ? Math.min(...upcoming) : Infinity;
   }
@@ -139,19 +137,14 @@ export default function FreelancerAdminPage() {
     const bookings = bookingsByFreelancer[freelancerId] ?? [];
     switch (mode) {
       case "today":
-        return bookings.some(
-          (b) => b.status !== "canceled" && isBookingToday(b.bookingDate),
-        );
+        return bookings.some((b) => isBookingToday(b.bookingDate));
       case "week":
-        return bookings.some(
-          (b) => b.status !== "canceled" && isBookingWithinNextDays(b.bookingDate, 7),
+        return bookings.some((b) =>
+          isBookingWithinNextDays(b.bookingDate, 7),
         );
       case "unpaid":
         return bookings.some(
-          (b) =>
-            b.status !== "canceled" &&
-            !b.isPayed &&
-            isBookingUpToToday(b.bookingDate),
+          (b) => !b.isPayed && isBookingUpToToday(b.bookingDate),
         );
       default:
         return true;

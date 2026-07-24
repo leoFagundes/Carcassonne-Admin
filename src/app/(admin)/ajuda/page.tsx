@@ -102,13 +102,13 @@ const helpCards: HelpCard[] = [
     category: "reservas",
     title: "Como gerenciar os freelancers",
     description:
-      "Clique no ícone de pessoas (tooltip: 'Gerenciar freelancers') no cabeçalho, ou vá em Adicionar → 'Gerenciar Freelancers'. Isso abre a página /myreserves/freelancer, onde cada freelancer é cadastrado uma única vez e pode ser escalado em um ou vários dias de uma vez, sem precisar digitar o nome de novo a cada agendamento. Clique num freelancer da lista para expandir e ver os dias agendados dele, adicionar novos dias, mudar o status (confirmado, sobreaviso ou cancelado) e o status de pagamento de cada dia, tudo na mesma tela — sem precisar navegar dia a dia no calendário. Por padrão só aparecem os agendamentos dos últimos 7 dias em diante; use 'Ver todos os agendamentos antigos' para revelar o histórico completo, e 'Excluir agendamentos antigos' para limpar tudo que passou desse período de uma vez.",
+      "Clique no ícone de pessoas (tooltip: 'Gerenciar freelancers') no cabeçalho, ou vá em Adicionar → 'Gerenciar Freelancers'. Isso abre a página /myreserves/freelancer, onde cada freelancer é cadastrado uma única vez e pode ser escalado em um ou vários dias de uma vez, sem precisar digitar o nome de novo a cada agendamento. Clique num freelancer da lista para expandir e ver os dias agendados dele, adicionar novos dias, mudar o status (confirmado ou sobreaviso) e o status de pagamento de cada dia, tudo na mesma tela — sem precisar navegar dia a dia no calendário. Por padrão só aparecem os agendamentos dos últimos 7 dias em diante; use 'Ver todos os agendamentos antigos' para revelar o histórico completo, e 'Excluir agendamentos antigos' para limpar tudo que passou desse período de uma vez.",
   },
   {
     category: "reservas",
     title: "Como os freelancers aparecem na página de Reservas",
     description:
-      "Os freelancers escalados para o dia selecionado continuam aparecendo no painel esquerdo de /myreserves, na seção 'Freelas', com os mesmos controles rápidos de status e pagamento. Agendamentos cancelados ficam com visual apagado e não contam no resumo de 'freelancers ativos' do dia.",
+      "Os freelancers escalados para o dia selecionado continuam aparecendo no painel esquerdo de /myreserves, na seção 'Freelas', com os mesmos controles rápidos de status e pagamento.",
   },
   {
     category: "reservas",

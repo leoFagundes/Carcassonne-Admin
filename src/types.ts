@@ -148,7 +148,7 @@ export interface MusicRecommendationType {
   createdAt?: Date | Timestamp;
 }
 
-export type FreelancerBookingStatus = "confirmed" | "standby" | "canceled";
+export type FreelancerBookingStatus = "confirmed" | "standby";
 
 export interface FreelancerType {
   id?: string;

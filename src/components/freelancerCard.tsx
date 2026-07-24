@@ -10,7 +10,6 @@ import {
   LuDollarSign,
   LuSquareCheckBig,
   LuSquareCheck,
-  LuBan,
   LuCheck,
   LuX,
   LuCalendarPlus,
@@ -42,11 +41,7 @@ import FreelancerPhotoPicker from "./freelancerPhotoPicker";
 type FreelancerWithId = FreelancerType & { id: string };
 type BookingWithId = FreelancerBookingType & { id: string };
 
-const STATUS_ORDER: FreelancerBookingStatus[] = [
-  "confirmed",
-  "standby",
-  "canceled",
-];
+const STATUS_ORDER: FreelancerBookingStatus[] = ["confirmed", "standby"];
 
 const STATUS_META: Record<
   FreelancerBookingStatus,
@@ -61,11 +56,6 @@ const STATUS_META: Record<
     label: "Sobreaviso",
     icon: <LuSquareCheck size={14} />,
     className: "border-yellow-600/50 text-yellow-600",
-  },
-  canceled: {
-    label: "Cancelado",
-    icon: <LuBan size={14} />,
-    className: "border-invalid-color/50 text-invalid-color",
   },
 };
 
@@ -115,8 +105,7 @@ export default function FreelancerCard({
   // Só conta como "pendente" dias de hoje pra trás — um dia futuro ainda não
   // aconteceu, então ainda não pagar por ele não é uma pendência.
   const pendingPaymentCount = bookings.filter(
-    (b) =>
-      !b.isPayed && b.status !== "canceled" && isBookingUpToToday(b.bookingDate),
+    (b) => !b.isPayed && isBookingUpToToday(b.bookingDate),
   ).length;
 
   const disabledCalendarDates = bookings.map(
@@ -451,11 +440,7 @@ export default function FreelancerCard({
                 return (
                   <div
                     key={booking.id}
-                    className={`flex items-center justify-between gap-2 py-2 px-3 bg-primary-black/40 border rounded-lg flex-wrap ${
-                      booking.status === "canceled"
-                        ? "border-invalid-color/15 opacity-60"
-                        : "border-primary-gold/10"
-                    }`}
+                    className="flex items-center justify-between gap-2 py-2 px-3 bg-primary-black/40 border border-primary-gold/10 rounded-lg flex-wrap"
                   >
                     <span className="text-sm text-primary-gold/80 capitalize flex items-center gap-1.5 flex-wrap">
                       {formatBookingWeekday(booking.bookingDate)}{" "}

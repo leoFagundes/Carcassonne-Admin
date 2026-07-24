@@ -7,7 +7,6 @@ import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
 import { FreelancerBookingStatus, FreelancerBookingType, ReserveType } from "@/types";
 import {
-  LuBan,
   LuBookCheck,
   LuBookX,
   LuCalendar,
@@ -49,11 +48,7 @@ type EventFullCalendar = {
   extendedProps?: { status?: "confirmed" | "canceled"; type?: "freelancer" };
 };
 
-const FREELA_STATUS_ORDER: FreelancerBookingStatus[] = [
-  "confirmed",
-  "standby",
-  "canceled",
-];
+const FREELA_STATUS_ORDER: FreelancerBookingStatus[] = ["confirmed", "standby"];
 
 const FREELA_STATUS_META: Record<
   FreelancerBookingStatus,
@@ -68,11 +63,6 @@ const FREELA_STATUS_META: Record<
     label: "Sobreaviso",
     icon: <LuSquareCheck size={14} />,
     className: "border-yellow-600/50 text-yellow-600",
-  },
-  canceled: {
-    label: "Cancelado",
-    icon: <LuBan size={14} />,
-    className: "border-invalid-color/50 text-invalid-color",
   },
 };
 
@@ -192,14 +182,12 @@ export default function Rerserve() {
       groupedByDateCanceled[dateKey].totalReserves += 1;
     });
 
-    freelancers
-      .filter((f) => f.status !== "canceled")
-      .forEach((f) => {
-        const { year, month, day } = f.bookingDate;
-        const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        groupedByDateFreelancers[dateKey] =
-          (groupedByDateFreelancers[dateKey] ?? 0) + 1;
-      });
+    freelancers.forEach((f) => {
+      const { year, month, day } = f.bookingDate;
+      const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      groupedByDateFreelancers[dateKey] =
+        (groupedByDateFreelancers[dateKey] ?? 0) + 1;
+    });
 
     const events: EventFullCalendar[] = [];
 
@@ -444,9 +432,7 @@ export default function Rerserve() {
   const canceledReserves = reserves.filter(
     (reserve) => reserve.status === "canceled",
   ).length;
-  const activeFreelancers = freelancers.filter(
-    (f) => f.status !== "canceled",
-  ).length;
+  const activeFreelancers = freelancers.length;
 
   const isSearching = searchQuery.trim().length > 0;
   const searchResults = isSearching
@@ -740,11 +726,7 @@ export default function Rerserve() {
               </div>
               {freelancers.map((freela, index) => (
                 <div
-                  className={`flex w-full items-center justify-between py-2 px-3 bg-primary-black/40 border rounded-lg ${
-                    freela.status === "canceled"
-                      ? "border-invalid-color/15 opacity-60"
-                      : "border-primary-gold/10"
-                  }`}
+                  className="flex w-full items-center justify-between py-2 px-3 bg-primary-black/40 border border-primary-gold/10 rounded-lg"
                   key={freela.id ?? index}
                 >
                   <span className="text-sm text-primary-gold/80">
