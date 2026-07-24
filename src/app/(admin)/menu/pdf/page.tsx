@@ -17,7 +17,13 @@ import {
 } from "@/types";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import { LuDownload, LuFileText, LuPalette, LuPrinter } from "react-icons/lu";
+import {
+  LuDownload,
+  LuFileText,
+  LuMonitor,
+  LuPalette,
+  LuPrinter,
+} from "react-icons/lu";
 import Loader from "@/components/loader";
 import { FiSkipBack } from "react-icons/fi";
 
@@ -149,32 +155,53 @@ export default function PDFPage() {
   const itemCount = menuItems.filter((i) => i.isVisible).length;
 
   return (
-    <div className="flex flex-col items-center bg-primary-black text-primary-gold">
+    <div className="flex flex-col items-center bg-primary-black text-primary-gold min-h-screen">
       {loading && <LoaderFullscreen />}
 
+      {/* ── Telas pequenas: pede pra acessar por um computador ── */}
+      <div className="flex lg:hidden flex-col items-center text-center gap-4 px-6 py-16 max-w-sm">
+        <LuMonitor size={32} className="text-primary-gold/50" />
+        <h1 className="text-lg font-semibold text-primary-gold">
+          Cardápio em PDF
+        </h1>
+        <p className="text-sm text-primary-gold/55 leading-relaxed">
+          Essa página precisa de mais espaço de tela pra mostrar a
+          pré-visualização e gerar o PDF corretamente. Acesse por um
+          computador pra usar essa função.
+        </p>
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/60 hover:text-primary-gold transition-all text-sm cursor-pointer"
+        >
+          <FiSkipBack size={14} /> Voltar
+        </button>
+      </div>
+
+      {/* ── Telas grandes: conteúdo completo ── */}
+      <div className="hidden lg:flex flex-col items-center w-full">
       {/* ── CONTROLES (escondidos na impressão) ── */}
-      <div className={`${isPrinting ? "hidden" : "flex"} flex-col items-center w-full max-w-[900px] px-6 py-6 gap-4 print:hidden`}>
+      <div className={`${isPrinting ? "hidden" : "flex"} flex-col items-center w-full max-w-[900px] px-3 sm:px-6 py-6 gap-4 print:hidden`}>
 
         {/* Header */}
         <div className="flex flex-col gap-2 w-full">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-3 w-full flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
               <button
                 onClick={() => router.back()}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/60 hover:text-primary-gold transition-all text-sm cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/60 hover:text-primary-gold transition-all text-sm cursor-pointer shrink-0"
               >
                 <FiSkipBack size={14} /> Voltar
               </button>
-              <LuFileText size={20} className="text-primary-gold/70" />
-              <h1 className="text-lg sm:text-xl font-semibold text-primary-gold">
-                Visualizador de Cardápio PDF
+              <LuFileText size={20} className="text-primary-gold/70 shrink-0" />
+              <h1 className="text-base sm:text-xl font-semibold text-primary-gold">
+                Cardápio PDF
               </h1>
-              <span className="text-xs text-primary-gold/35">
+              <span className="text-xs text-primary-gold/35 whitespace-nowrap">
                 ({itemCount} itens visíveis)
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1 p-1 rounded-lg border border-primary-gold/20 bg-primary-black/30">
                 <LuPalette size={13} className="text-primary-gold/40 ml-1" />
                 <button
@@ -201,10 +228,12 @@ export default function PDFPage() {
               <button
                 onClick={downloadPDF}
                 disabled={downloading}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-primary-gold/40 hover:border-primary-gold/70 bg-primary-gold/10 hover:bg-primary-gold/15 text-primary-gold text-sm font-medium transition-all cursor-pointer disabled:opacity-50"
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg border border-primary-gold/40 hover:border-primary-gold/70 bg-primary-gold/10 hover:bg-primary-gold/15 text-primary-gold text-sm font-medium transition-all cursor-pointer disabled:opacity-50"
               >
                 {downloading ? <Loader /> : <LuDownload size={15} />}
-                {downloading ? "Gerando..." : "Baixar PDF"}
+                <span className="hidden sm:inline">
+                  {downloading ? "Gerando..." : "Baixar PDF"}
+                </span>
               </button>
               <button
                 onClick={printPDF}
@@ -275,6 +304,7 @@ export default function PDFPage() {
           typesOrder={typesOrder}
           theme={theme}
         />
+      </div>
       </div>
     </div>
   );

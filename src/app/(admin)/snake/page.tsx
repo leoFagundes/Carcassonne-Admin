@@ -2,6 +2,8 @@
 
 import { useCallback, useState } from "react";
 import { LuGauge, LuTrophy, LuX } from "react-icons/lu";
+import Confetti from "react-confetti";
+import { useWindowSize } from "react-use";
 import SnakeGame from "./SnakeGame";
 import { speedMultiplierForScore, speedPercentForScore } from "./gameLogic";
 import { useSnakeLeaderboard } from "./useSnakeLeaderboard";
@@ -18,6 +20,7 @@ export default function SnakePage() {
 
   const { leaderboard, topScore, loading, isNewRecord, submitScore } =
     useSnakeLeaderboard();
+  const { width, height } = useWindowSize();
 
   const speedMultiplier = speedMultiplierForScore(score);
   const speedPercent = speedPercentForScore(score);
@@ -54,6 +57,17 @@ export default function SnakePage() {
 
   return (
     <section className="flex flex-col gap-6 w-full items-center text-primary-gold pb-8">
+      {pendingRecordScore != null && (
+        <Confetti
+          width={width}
+          height={height}
+          numberOfPieces={250}
+          recycle={false}
+          gravity={0.25}
+          className="!fixed inset-0 pointer-events-none z-50"
+        />
+      )}
+
       <div className="flex flex-col items-center gap-2 text-center">
         <img
           src="/images/mascote-feliz.png"

@@ -342,12 +342,12 @@ export default function MenuForms({
 
           <div className="flex flex-col gap-1 border p-1 rounded shadow-card border-dashed border-primary-gold/20">
             <InputImage
-              onChange={(file) => {
+              onChange={(file, previewUrl) => {
                 if (file) {
                   setImageFile(file);
                   setLocalItem({
                     ...localItem,
-                    image: URL.createObjectURL(file),
+                    image: previewUrl ?? "",
                   });
                 }
               }}

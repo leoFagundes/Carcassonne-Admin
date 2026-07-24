@@ -193,12 +193,12 @@ export default function PopupForms({ closeForms }: DescriptionTypeFormsProps) {
       <div className="rounded-xl border border-primary-gold/15 bg-secondary-black/40 p-4 mb-4 gap-5 flex flex-col w-full">
         <div className="flex flex-col items-center gap-6 text-primary-gold">
           <InputImage
-            onChange={(file) => {
+            onChange={(file, previewUrl) => {
               if (file) {
                 setImageFile(file);
                 setCurrentPopup({
                   ...currentPopup,
-                  src: URL.createObjectURL(file),
+                  src: previewUrl ?? "",
                 });
               }
             }}

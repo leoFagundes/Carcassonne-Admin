@@ -295,10 +295,13 @@ export const DragCards = () => {
               <div className="flex flex-col gap-4 flex-1">
                 <div className="rounded-xl border border-primary-gold/15 overflow-hidden">
                   <InputImage
-                    onChange={(file) => {
+                    onChange={(file, previewUrl) => {
                       if (file) {
                         setImageFile(file);
-                        setNewCarcaImage({ ...newCarcaImage, src: URL.createObjectURL(file) });
+                        setNewCarcaImage({
+                          ...newCarcaImage,
+                          src: previewUrl ?? "",
+                        });
                       }
                     }}
                     onCloseImage={() => {

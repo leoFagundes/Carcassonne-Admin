@@ -21,6 +21,7 @@ import {
 
 const MAX_QUEUED_DIRECTIONS = 2;
 const SWIPE_THRESHOLD = 24; // px mínimos pra contar como um swipe, não um toque
+const MIN_IMMEDIATE_STEP_GAP_MS = 16; // ~1 frame — evita duplo processamento no mesmo instante, imperceptível
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
@@ -93,6 +94,53 @@ export default function SnakeGame({
     queue.push(dir);
   }
 
+  /**
+   * Aplica a virada agora mesmo — avança um passo no grid na hora do aperto,
+   * em vez de esperar o próximo tick agendado. É isso que faz a resposta
+   * parecer instantânea. Antes de trocar a posição, congela a posição visual
+   * interpolada atual (a cobra pode estar no meio do deslize entre duas
+   * células) e usa ela como ponto de partida da próxima animação, pra não
+   * dar um "pulo" na tela. Cai de volta pra fila normal (`queueDirection`)
+   * quando não é seguro adiantar: jogo parado, direção inválida, ou passo
+   * real tempo demais recente.
+   */
+  function tryImmediateStep(newDirection: Direction): boolean {
+    if (statusRef.current !== "playing") return false;
+    if (lastTickRef.current === null) return false;
+
+    const s = stateRef.current;
+    if (newDirection === s.direction || isOpposite(s.direction, newDirection)) {
+      return false;
+    }
+
+    const now = performance.now();
+    const elapsedSinceTick = now - lastTickRef.current;
+    if (elapsedSinceTick < MIN_IMMEDIATE_STEP_GAP_MS) return false;
+
+    const tickDuration = tickDurationForScore(s.score);
+    const progress = Math.min(elapsedSinceTick / tickDuration, 1);
+    const prevSnake = prevSnakeRef.current;
+    const interpolatedSnake = s.snake.map((seg, i) => {
+      const from = prevSnake[i] ?? prevSnake[prevSnake.length - 1] ?? seg;
+      return { x: lerp(from.x, seg.x, progress), y: lerp(from.y, seg.y, progress) };
+    });
+
+    prevSnakeRef.current = interpolatedSnake;
+    lastTickRef.current = now;
+    directionQueueRef.current = []; // a virada já foi aplicada, fila antiga fica obsoleta
+    stateRef.current = step(s, newDirection);
+
+    if (stateRef.current.score !== lastReportedScoreRef.current) {
+      reportScore(stateRef.current.score);
+    }
+    if (stateRef.current.gameOver) {
+      setStatus("over");
+      onGameOverRef.current(stateRef.current.score);
+    }
+
+    return true;
+  }
+
   function reportScore(newScore: number) {
     lastReportedScoreRef.current = newScore;
     setDisplayScore(newScore);
@@ -157,7 +205,9 @@ export default function SnakeGame({
     } else if (statusRef.current === "over") {
       restartGame();
     }
-    queueDirection(dir);
+    if (!tryImmediateStep(dir)) {
+      queueDirection(dir);
+    }
   }
 
   function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {

@@ -13,7 +13,7 @@ import {
 } from "@/utils/patternValues";
 import { auth } from "@/services/firebaseConfig";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   LuSettings,
   LuCalendar,
@@ -204,6 +204,9 @@ export default function SettingsPage() {
   const [localGeneralConfigs, setLocalGeneralConfigs] =
     useState<GeneralConfigsType>(patternGeneralConfigs);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"stats" | "settings" | "mural">(
+    "stats",
+  );
   const [newBlockedDate, setNewBlockedDate] = useState("");
   const [newBlockedReason, setNewBlockedReason] = useState("");
   const [newSpecialDate, setNewSpecialDate] = useState("");
@@ -272,13 +275,12 @@ export default function SettingsPage() {
   );
 
   const { addAlert } = useAlert();
-  const muralRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("createimage") === "true") {
-      muralRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setActiveTab("mural");
     }
   }, []);
 
@@ -775,6 +777,32 @@ export default function SettingsPage() {
         </div>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent" />
       </div>
+
+      {/* Abas */}
+      <div className="flex items-center justify-center gap-2 flex-wrap">
+        {(
+          [
+            { key: "stats", label: "Estatísticas" },
+            { key: "settings", label: "Configurações" },
+            { key: "mural", label: "Mural de fotos" },
+          ] as const
+        ).map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`text-xs px-4 py-1.5 rounded-full border transition-all cursor-pointer ${
+              activeTab === tab.key
+                ? "bg-primary-gold text-primary-black border-primary-gold font-semibold"
+                : "border-primary-gold/20 text-primary-gold/50 hover:border-primary-gold/50 hover:text-primary-gold"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "stats" && (
+        <>
       {/* ── RESERVE STATS ── */}
       <div className="flex flex-col gap-4">
         <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
@@ -1333,7 +1361,10 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-      {/* ── MOUSE EFFECTS + RESERVE CONFIGS lado a lado ── */}
+        </>
+      )}
+
+      {activeTab === "settings" && (
       <div className="flex flex-col md:flex-row gap-4 items-start">
         {/* Configurações de reserva */}
         <div className="flex flex-col rounded-xl border border-primary-gold/15 bg-secondary-black/40 overflow-hidden flex-1 w-full">
@@ -1364,7 +1395,7 @@ export default function SettingsPage() {
                   }
                   withIndex={false}
                   variant
-                  width="!sm:w-[300px] !w-[280px]"
+                  width="!w-[min(280px,100%)] sm:!w-[300px]"
                 />
                 <OptionsInput
                   label="Dias da semana inválidos"
@@ -1397,7 +1428,7 @@ export default function SettingsPage() {
                   }}
                   withIndex={false}
                   variant
-                  width="!sm:w-[300px] !w-[280px]"
+                  width="!w-[min(280px,100%)] sm:!w-[300px]"
                 />
               </div>
             </div>
@@ -1424,7 +1455,7 @@ export default function SettingsPage() {
                     })
                   }
                   variant
-                  width="!sm:w-[300px] !w-[280px]"
+                  width="!w-[min(280px,100%)] sm:!w-[300px]"
                 />
                 <Input
                   placeholder="Capacidade máxima em uma reserva"
@@ -1437,7 +1468,7 @@ export default function SettingsPage() {
                     })
                   }
                   variant
-                  width="!sm:w-[300px] !w-[280px]"
+                  width="!w-[min(280px,100%)] sm:!w-[300px]"
                 />
                 <Input
                   placeholder="Permitido fazer reserva em até (meses)"
@@ -1450,7 +1481,7 @@ export default function SettingsPage() {
                     })
                   }
                   variant
-                  width="!sm:w-[300px] !w-[280px]"
+                  width="!w-[min(280px,100%)] sm:!w-[300px]"
                 />
                 <Input
                   placeholder="Aceitar reservas até (hora cheia)"
@@ -1463,7 +1494,7 @@ export default function SettingsPage() {
                     })
                   }
                   variant
-                  width="!sm:w-[300px] !w-[280px]"
+                  width="!w-[min(280px,100%)] sm:!w-[300px]"
                 />
               </div>
             </div>
@@ -1664,8 +1695,14 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-      {/* ── MURAL DE FOTOS ── */}
-      <DragCards />
+      )}
+
+      {activeTab === "mural" && (
+        <>
+          {/* ── MURAL DE FOTOS ── */}
+          <DragCards />
+        </>
+      )}
     </section>
   );
 }

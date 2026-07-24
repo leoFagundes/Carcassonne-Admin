@@ -2,9 +2,15 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { LuImagePlus, LuX } from "react-icons/lu";
+import {
+  isHeicFile,
+  convertHeicToJpeg,
+} from "@/services/repositories/FirebaseImageUtils";
 
 interface InputImageProps {
-  onChange: (file: File | null) => void;
+  // previewUrl (2º argumento) já vem pronto pra exibir — pode ser diferente
+  // do arquivo original (ex: convertido de HEIC pra JPEG só pra preview).
+  onChange: (file: File | null, previewUrl?: string) => void;
   previewUrl?: string;
   width?: string;
   onCloseImage?: VoidFunction;
@@ -25,11 +31,22 @@ export default function InputImage({
     setLocalPreview(previewUrl);
   }, [previewUrl]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
+    if (!file) return;
+
+    // Fotos HEIC/HEIF (padrão do iPhone) não renderizam em <img> na maioria
+    // dos navegadores — sem isso, a pré-visualização fica em branco mesmo
+    // quando o envio (que já converte pra JPEG) funciona normalmente.
+    try {
+      const previewSource = isHeicFile(file)
+        ? await convertHeicToJpeg(file)
+        : file;
+      const imageUrl = URL.createObjectURL(previewSource);
       setLocalPreview(imageUrl);
+      onChange(file, imageUrl);
+    } catch (error) {
+      console.error("Erro ao gerar pré-visualização da imagem:", error);
       onChange(file);
     }
   };

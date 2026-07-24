@@ -16,7 +16,7 @@ const tamanhoMaximoBytes = tamanhoMaximoMB * 1024 * 1024;
 // falha silenciosamente só em algumas fotos do celular (as em HEIC), e nunca
 // quando a mesma foto chega por um caminho que já converte pra JPEG (ex:
 // mandar pro computador via WhatsApp/e-mail).
-function isHeicFile(file: File): boolean {
+export function isHeicFile(file: File): boolean {
   const type = file.type.toLowerCase();
   const name = file.name.toLowerCase();
   return (
@@ -27,7 +27,7 @@ function isHeicFile(file: File): boolean {
   );
 }
 
-async function convertHeicToJpeg(file: File): Promise<File> {
+export async function convertHeicToJpeg(file: File): Promise<File> {
   // Import dinâmico: um dos módulos internos do heic2any referencia `window`
   // já na avaliação do módulo, o que quebra o build (SSR/prerender no Next
   // roda em Node, sem `window`). Import dinâmico só carrega no navegador.
