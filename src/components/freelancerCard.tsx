@@ -102,10 +102,12 @@ export default function FreelancerCard({
     (b) => !isWithinRecentWindow(b.bookingDate),
   );
   const visibleBookings = showAllBookings ? sortedBookings : recentBookings;
-  // Só conta como "pendente" dias de hoje pra trás — um dia futuro ainda não
-  // aconteceu, então ainda não pagar por ele não é uma pendência.
+  // Só conta como "pendente" dias de hoje pra trás (um dia futuro ainda não
+  // aconteceu, então ainda não pagar por ele não é uma pendência) e só quando
+  // confirmado — sobreaviso não necessariamente trabalhou, não há cobrança.
   const pendingPaymentCount = bookings.filter(
-    (b) => !b.isPayed && isBookingUpToToday(b.bookingDate),
+    (b) =>
+      !b.isPayed && b.status === "confirmed" && isBookingUpToToday(b.bookingDate),
   ).length;
 
   const disabledCalendarDates = bookings.map(

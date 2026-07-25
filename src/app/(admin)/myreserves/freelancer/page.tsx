@@ -115,10 +115,12 @@ export default function FreelancerAdminPage() {
   const allBookings = Object.values(bookingsByFreelancer).flat();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  // Pendência de pagamento só conta dias de hoje pra trás — um dia futuro
-  // ainda não aconteceu, então ainda não ter sido pago não é uma pendência.
+  // Pendência de pagamento só conta dias de hoje pra trás (um dia futuro
+  // ainda não aconteceu) e só confirmados — sobreaviso não necessariamente
+  // trabalhou, não gera cobrança.
   const totalUnpaid = allBookings.filter(
-    (b) => !b.isPayed && isBookingUpToToday(b.bookingDate),
+    (b) =>
+      !b.isPayed && b.status === "confirmed" && isBookingUpToToday(b.bookingDate),
   ).length;
   const totalUpcoming = allBookings.filter(
     (b) => bookingDateToDate(b.bookingDate) >= today,
@@ -144,7 +146,10 @@ export default function FreelancerAdminPage() {
         );
       case "unpaid":
         return bookings.some(
-          (b) => !b.isPayed && isBookingUpToToday(b.bookingDate),
+          (b) =>
+            !b.isPayed &&
+            b.status === "confirmed" &&
+            isBookingUpToToday(b.bookingDate),
         );
       default:
         return true;

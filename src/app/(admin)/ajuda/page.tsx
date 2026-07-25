@@ -102,13 +102,31 @@ const helpCards: HelpCard[] = [
     category: "reservas",
     title: "Como gerenciar os freelancers",
     description:
-      "Clique no ícone de pessoas (tooltip: 'Gerenciar freelancers') no cabeçalho, ou vá em Adicionar → 'Gerenciar Freelancers'. Isso abre a página /myreserves/freelancer, onde cada freelancer é cadastrado uma única vez e pode ser escalado em um ou vários dias de uma vez, sem precisar digitar o nome de novo a cada agendamento. Clique num freelancer da lista para expandir e ver os dias agendados dele, adicionar novos dias, mudar o status (confirmado ou sobreaviso) e o status de pagamento de cada dia, tudo na mesma tela — sem precisar navegar dia a dia no calendário. Por padrão só aparecem os agendamentos dos últimos 7 dias em diante; use 'Ver todos os agendamentos antigos' para revelar o histórico completo, e 'Excluir agendamentos antigos' para limpar tudo que passou desse período de uma vez.",
+      "Clique no ícone de pessoas (tooltip: 'Gerenciar freelancers') no cabeçalho de /myreserves, ou vá em Adicionar → 'Gerenciar Freelancers'. Isso abre a página /myreserves/freelancer, onde cada freelancer é cadastrado uma única vez — com nome, WhatsApp e observações opcionais, e uma foto opcional (enviada na hora ou escolhida do mural de fotos do Carcassonne) — e pode ser escalado em um ou vários dias sem precisar digitar o nome de novo a cada agendamento. Use a busca por nome e os filtros rápidos (Hoje, Próximos 7 dias, Pagamento pendente — cada um já mostra quantos resultados dá) pra achar rápido quem precisa de atenção; a lista vem ordenada com quem tem o próximo dia mais próximo no topo. Clique num freelancer pra expandir o card e ver os dias agendados dele, agendar novos dias, mudar status e pagamento de cada dia, editar os dados ou excluir o freelancer (isso remove também todos os agendamentos dele). Por padrão só aparecem os agendamentos de 7 dias atrás em diante; um agendamento mais antigo que isso só aparece clicando em 'Ver todos os agendamentos antigos', e pode ser limpo de uma vez com 'Excluir agendamentos antigos'.",
+  },
+  {
+    category: "reservas",
+    title: "Como agendar dias para um freelancer",
+    description:
+      "Dentro do card expandido de um freelancer, use o calendário em 'Agendar novo(s) dia(s)': cada clique num dia alterna ele na seleção (clique de novo pra tirar), sem precisar de um botão separado pra cada dia escolhido. Dias em que esse freelancer já está agendado aparecem riscados e não podem ser selecionados de novo, evitando duplicar. Depois de escolher os dias, clique em 'Salvar' pra criar todos os agendamentos de uma vez, já como confirmados e não pagos por padrão.",
+  },
+  {
+    category: "reservas",
+    title: "Como atribuir vários freelancers a um ou mais dias de uma vez",
+    description:
+      "No cabeçalho de /myreserves/freelancer, clique no ícone de calendário com intervalo (tooltip: 'Atribuir freelancers a um ou mais dias'). É o caminho inverso do agendamento dentro do card: em vez de escolher os dias de UM freelancer, você escolhe um ou mais dias primeiro e depois marca um ou mais freelancers numa lista com busca. Ao confirmar, é criado um agendamento pra cada combinação dia × freelancer — combinações que já existem são puladas automaticamente, e o resultado mostra quantos agendamentos foram criados e quantos já existiam.",
+  },
+  {
+    category: "reservas",
+    title: "Status de escala vs. status de pagamento dos freelancers",
+    description:
+      "Cada dia agendado tem dois status independentes. O status de escala alterna entre confirmado (vai trabalhar) e sobreaviso (só entra se precisar) — clique no ícone de status pra alternar. Pagamento (pago/não pago) só é cobrado de dias confirmados: sobreaviso não entra na contagem de 'pagamento pendente', nem no card do freelancer nem no resumo do topo da página, porque sobreaviso não significa que ele efetivamente trabalhou. A pendência também só considera dias de hoje pra trás — um dia confirmado no futuro ainda não é uma pendência, já que ainda não aconteceu.",
   },
   {
     category: "reservas",
     title: "Como os freelancers aparecem na página de Reservas",
     description:
-      "Os freelancers escalados para o dia selecionado continuam aparecendo no painel esquerdo de /myreserves, na seção 'Freelas', com os mesmos controles rápidos de status e pagamento.",
+      "Os freelancers escalados para o dia selecionado continuam aparecendo no painel esquerdo de /myreserves, na seção 'Freelas', com os mesmos controles rápidos de status e pagamento — seguindo a mesma regra de que só dias confirmados geram pendência de pagamento.",
   },
   {
     category: "reservas",
