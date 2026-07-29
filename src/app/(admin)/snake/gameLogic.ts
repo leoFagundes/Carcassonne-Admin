@@ -1,4 +1,7 @@
+import type { SnakeMode } from "@/types";
+
 export type Direction = "up" | "down" | "left" | "right";
+export type { SnakeMode };
 
 export interface Point {
   x: number;
@@ -9,9 +12,11 @@ export interface GameState {
   snake: Point[]; // cabeça no índice 0
   direction: Direction;
   food: Point;
+  obstacles: Point[];
   score: number;
   gameOver: boolean;
   gridSize: number;
+  mode: SnakeMode;
 }
 
 const OPPOSITE: Record<Direction, Direction> = {
@@ -28,25 +33,68 @@ const DELTA: Record<Direction, Point> = {
   right: { x: 1, y: 0 },
 };
 
+// A cada N comidas, o modo obstáculos adiciona uma nova pedra na grade.
+const OBSTACLE_EVERY_N_FOODS = 1;
+
+// Raio (em células, distância de Chebyshev) ao redor da cabeça onde um novo
+// obstáculo nunca pode nascer — sem isso, a pedra podia aparecer colada ou
+// até em cima da cabeça, sem tempo nenhum de reação pro jogador desviar.
+const OBSTACLE_SAFE_RADIUS = 3;
+
 export function isOpposite(a: Direction, b: Direction): boolean {
   return OPPOSITE[a] === b;
 }
 
-/** Escolhe uma célula livre para a comida — nunca sorteia em cima da cobra. */
-export function pickFoodCell(snake: Point[], gridSize: number): Point {
-  const occupied = new Set(snake.map((p) => `${p.x},${p.y}`));
+function keyOf(p: Point): string {
+  return `${p.x},${p.y}`;
+}
+
+function pickFreeCell(gridSize: number, occupiedPoints: Point[]): Point | null {
+  const occupied = new Set(occupiedPoints.map(keyOf));
   const free: Point[] = [];
   for (let x = 0; x < gridSize; x++) {
     for (let y = 0; y < gridSize; y++) {
       if (!occupied.has(`${x},${y}`)) free.push({ x, y });
     }
   }
-  // Grade cheia (vitória absoluta) — não deveria acontecer na prática.
-  if (free.length === 0) return snake[0];
+  if (free.length === 0) return null;
   return free[Math.floor(Math.random() * free.length)];
 }
 
-export function createInitialState(gridSize: number): GameState {
+/** Escolhe uma célula livre para a comida — nunca sorteia em cima da cobra ou de obstáculos. */
+export function pickFoodCell(
+  snake: Point[],
+  gridSize: number,
+  obstacles: Point[] = [],
+): Point {
+  // Grade cheia (vitória absoluta) — não deveria acontecer na prática.
+  return pickFreeCell(gridSize, [...snake, ...obstacles]) ?? snake[0];
+}
+
+/**
+ * Escolhe uma célula livre pra um novo obstáculo — nunca em cima da cobra,
+ * comida, outro obstáculo, ou perto demais da cabeça (ver OBSTACLE_SAFE_RADIUS).
+ * Se essa folga deixar a grade sem opção nenhuma (grade muito cheia), cai pro
+ * sorteio sem a folga em vez de simplesmente não colocar o obstáculo.
+ */
+export function pickObstacleCell(
+  snake: Point[],
+  gridSize: number,
+  obstacles: Point[],
+  food: Point,
+): Point | null {
+  const head = snake[0];
+  const nearHead: Point[] = [];
+  for (let dx = -OBSTACLE_SAFE_RADIUS; dx <= OBSTACLE_SAFE_RADIUS; dx++) {
+    for (let dy = -OBSTACLE_SAFE_RADIUS; dy <= OBSTACLE_SAFE_RADIUS; dy++) {
+      nearHead.push({ x: head.x + dx, y: head.y + dy });
+    }
+  }
+  const occupied = [...snake, ...obstacles, food, ...nearHead];
+  return pickFreeCell(gridSize, occupied) ?? pickFreeCell(gridSize, [...snake, ...obstacles, food]);
+}
+
+export function createInitialState(gridSize: number, mode: SnakeMode): GameState {
   const mid = Math.floor(gridSize / 2);
   const snake: Point[] = [
     { x: mid, y: mid },
@@ -57,9 +105,11 @@ export function createInitialState(gridSize: number): GameState {
     snake,
     direction: "right",
     food: pickFoodCell(snake, gridSize),
+    obstacles: [],
     score: 0,
     gameOver: false,
     gridSize,
+    mode,
   };
 }
 
@@ -106,30 +156,60 @@ export function step(
     return { ...state, direction, gameOver: true };
   }
 
+  const hitObstacle = state.obstacles.some(
+    (o) => o.x === newHead.x && o.y === newHead.y,
+  );
+
+  if (hitObstacle) {
+    return { ...state, direction, gameOver: true };
+  }
+
   const newSnake = eating
     ? [newHead, ...state.snake]
     : [newHead, ...state.snake.slice(0, -1)];
+  const newScore = eating ? state.score + 1 : state.score;
+
+  let obstacles = state.obstacles;
+  const food = eating
+    ? pickFoodCell(newSnake, state.gridSize, obstacles)
+    : state.food;
+
+  if (
+    eating &&
+    state.mode === "obstacles" &&
+    newScore % OBSTACLE_EVERY_N_FOODS === 0
+  ) {
+    const newObstacle = pickObstacleCell(newSnake, state.gridSize, obstacles, food);
+    if (newObstacle) obstacles = [...obstacles, newObstacle];
+  }
 
   return {
     ...state,
     snake: newSnake,
     direction,
-    score: eating ? state.score + 1 : state.score,
-    food: eating ? pickFoodCell(newSnake, state.gridSize) : state.food,
+    score: newScore,
+    food,
+    obstacles,
   };
 }
 
 export const TICK_DURATION_BASE_MS = 110;
 export const TICK_DURATION_FLOOR_MS = 50;
-const TICK_DURATION_STEP_MS = 3;
+// Passo por ponto, em ms — só o modo normal acelera com a pontuação; o
+// desafio do modo obstáculos já vem das pedras, então a velocidade fica
+// fixa lá (ver tickDurationForScore abaixo).
+const TICK_DURATION_STEP_MS = 2.5;
 
 /**
- * Velocidade progressiva: acelera com a pontuação, com piso de segurança.
+ * Velocidade progressiva: só o modo "normal" acelera com a pontuação (com
+ * piso de segurança); o modo "obstáculos" fica sempre na velocidade base,
+ * sem rampa — a dificuldade ali cresce com as pedras, não com a velocidade.
  * Intervalo mais curto que o original — a virada só é aplicada no próximo
  * passo do grid, então um intervalo menor também reduz o atraso entre
  * apertar a tecla e a cobra realmente virar.
  */
-export function tickDurationForScore(score: number): number {
+export function tickDurationForScore(score: number, mode: SnakeMode): number {
+  if (mode === "obstacles") return TICK_DURATION_BASE_MS;
   return Math.max(
     TICK_DURATION_FLOOR_MS,
     TICK_DURATION_BASE_MS - score * TICK_DURATION_STEP_MS,
@@ -137,13 +217,13 @@ export function tickDurationForScore(score: number): number {
 }
 
 /** Multiplicador de velocidade em relação ao início (1x), pra exibir na tela. */
-export function speedMultiplierForScore(score: number): number {
-  return TICK_DURATION_BASE_MS / tickDurationForScore(score);
+export function speedMultiplierForScore(score: number, mode: SnakeMode): number {
+  return TICK_DURATION_BASE_MS / tickDurationForScore(score, mode);
 }
 
 /** Quão perto a velocidade atual está do teto (0 a 100), pra exibir uma barra. */
-export function speedPercentForScore(score: number): number {
-  const current = tickDurationForScore(score);
+export function speedPercentForScore(score: number, mode: SnakeMode): number {
+  const current = tickDurationForScore(score, mode);
   return Math.round(
     ((TICK_DURATION_BASE_MS - current) /
       (TICK_DURATION_BASE_MS - TICK_DURATION_FLOOR_MS)) *

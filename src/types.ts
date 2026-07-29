@@ -92,10 +92,14 @@ export interface CarcaImageType {
   rotate: string;
 }
 
+export type SnakeMode = "normal" | "obstacles";
+
 export interface SnakeScoreType {
   id?: string;
   name: string;
   score: number;
+  /** Ausente em registros antigos, de antes dos modos existirem — tratado como "normal". */
+  mode?: SnakeMode;
   createdAt?: Date | Timestamp;
 }
 

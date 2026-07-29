@@ -8,9 +8,16 @@ import SnakeGame from "./SnakeGame";
 import { speedMultiplierForScore, speedPercentForScore } from "./gameLogic";
 import { useSnakeLeaderboard } from "./useSnakeLeaderboard";
 import { useAlert } from "@/contexts/alertProvider";
+import type { SnakeMode } from "@/types";
+
+const MODES: { key: SnakeMode; label: string }[] = [
+  { key: "normal", label: "Normal" },
+  { key: "obstacles", label: "Obstáculos" },
+];
 
 export default function SnakePage() {
   const { addAlert } = useAlert();
+  const [mode, setMode] = useState<SnakeMode>("normal");
   const [score, setScore] = useState(0);
   const [pendingRecordScore, setPendingRecordScore] = useState<number | null>(
     null,
@@ -19,11 +26,18 @@ export default function SnakePage() {
   const [submittingName, setSubmittingName] = useState(false);
 
   const { leaderboard, topScore, loading, isNewRecord, submitScore } =
-    useSnakeLeaderboard();
+    useSnakeLeaderboard(mode);
   const { width, height } = useWindowSize();
 
-  const speedMultiplier = speedMultiplierForScore(score);
-  const speedPercent = speedPercentForScore(score);
+  const speedMultiplier = speedMultiplierForScore(score, mode);
+  const speedPercent = speedPercentForScore(score, mode);
+
+  function handleSelectMode(next: SnakeMode) {
+    setMode(next);
+    setScore(0);
+    setPendingRecordScore(null);
+    setNameInput("");
+  }
 
   const handleGameOver = useCallback(
     (finalScore: number) => {
@@ -85,8 +99,29 @@ export default function SnakePage() {
         </p>
       </div>
 
+      <div className="flex rounded-xl overflow-hidden border border-primary-gold/20">
+        {MODES.map(({ key, label }, i) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => handleSelectMode(key)}
+            className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider cursor-pointer transition-all ${
+              i > 0 ? "border-l border-primary-gold/20" : ""
+            } ${
+              mode === key
+                ? "bg-primary-gold text-primary-black"
+                : "bg-transparent text-primary-gold/70"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-wrap items-start justify-center gap-5 sm:gap-8 w-full px-4">
         <SnakeGame
+          key={mode}
+          mode={mode}
           onScoreChange={setScore}
           onGameOver={handleGameOver}
           inputDisabled={pendingRecordScore != null}

@@ -17,6 +17,7 @@ import {
   type Direction,
   type GameState,
   type Point,
+  type SnakeMode,
 } from "./gameLogic";
 
 const MAX_QUEUED_DIRECTIONS = 2;
@@ -34,6 +35,8 @@ const SIZE = GRID_SIZE * CELL;
 const COLOR_BG = "#121111"; // primary-black
 const COLOR_GRID = "rgba(230,197,107,0.06)"; // primary-gold bem apagado
 const COLOR_FOOD = "#cc5826"; // invalid-color
+const COLOR_OBSTACLE = "#5a2e2e";
+const COLOR_OBSTACLE_BORDER = "rgba(255,120,120,0.5)";
 const COLOR_SNAKE_HEAD = "#e6c56b"; // primary-gold
 const COLOR_SNAKE_BODY = "#d4af37"; // secondary-gold
 
@@ -51,13 +54,17 @@ const KEY_TO_DIRECTION: Record<string, Direction> = {
 type Status = "idle" | "playing" | "paused" | "over";
 
 interface SnakeGameProps {
+  mode: SnakeMode;
   onScoreChange: (score: number) => void;
   onGameOver: (finalScore: number) => void;
   /** Congela toda entrada (teclado/clique/toque) — usado enquanto o prompt de novo recorde está aberto. */
   inputDisabled?: boolean;
 }
 
+// Monte com `key={mode}` no componente pai — troca de modo força remontagem
+// completa (reset limpo) em vez de o componente precisar reagir à mudança.
 export default function SnakeGame({
+  mode,
   onScoreChange,
   onGameOver,
   inputDisabled = false,
@@ -66,7 +73,7 @@ export default function SnakeGame({
   const [status, setStatusState] = useState<Status>("idle");
   const [displayScore, setDisplayScore] = useState(0);
 
-  const initialState = createInitialState(GRID_SIZE);
+  const initialState = createInitialState(GRID_SIZE, mode);
   const statusRef = useRef<Status>("idle");
   const stateRef = useRef<GameState>(initialState);
   const prevSnakeRef = useRef<Point[]>(initialState.snake);
@@ -117,7 +124,7 @@ export default function SnakeGame({
     const elapsedSinceTick = now - lastTickRef.current;
     if (elapsedSinceTick < MIN_IMMEDIATE_STEP_GAP_MS) return false;
 
-    const tickDuration = tickDurationForScore(s.score);
+    const tickDuration = tickDurationForScore(s.score, mode);
     const progress = Math.min(elapsedSinceTick / tickDuration, 1);
     const prevSnake = prevSnakeRef.current;
     const interpolatedSnake = s.snake.map((seg, i) => {
@@ -171,7 +178,7 @@ export default function SnakeGame({
   }
 
   function restartGame() {
-    stateRef.current = createInitialState(GRID_SIZE);
+    stateRef.current = createInitialState(GRID_SIZE, mode);
     prevSnakeRef.current = stateRef.current.snake;
     directionQueueRef.current = [];
     lastTickRef.current = null;
@@ -262,6 +269,28 @@ export default function SnakeGame({
         ctx.stroke();
       }
 
+      // Obstáculos — pedras foscas, uma por célula
+      s.obstacles.forEach((ob) => {
+        const x = ob.x * CELL + 2;
+        const y = ob.y * CELL + 2;
+        const w = CELL - 4;
+        ctx.save();
+        ctx.shadowColor = "rgba(255,90,90,0.35)";
+        ctx.shadowBlur = 5;
+        ctx.fillStyle = COLOR_OBSTACLE;
+        ctx.strokeStyle = COLOR_OBSTACLE_BORDER;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        if (typeof ctx.roundRect === "function") {
+          ctx.roundRect(x, y, w, w, 4);
+        } else {
+          ctx.rect(x, y, w, w);
+        }
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      });
+
       // Comida — com leve pulso
       const pulse =
         statusRef.current === "playing" ? Math.sin(timestamp / 260) : 0;
@@ -305,7 +334,7 @@ export default function SnakeGame({
       if (statusRef.current === "playing" && !inputDisabledRef.current) {
         if (lastTickRef.current === null) lastTickRef.current = timestamp;
         const elapsed = timestamp - lastTickRef.current;
-        const tickDuration = tickDurationForScore(stateRef.current.score);
+        const tickDuration = tickDurationForScore(stateRef.current.score, mode);
         progress = Math.min(elapsed / tickDuration, 1);
 
         if (elapsed >= tickDuration) {
@@ -336,7 +365,7 @@ export default function SnakeGame({
 
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);
-  }, []);
+  }, [mode]);
 
   // ── Teclado ──
   useEffect(() => {
