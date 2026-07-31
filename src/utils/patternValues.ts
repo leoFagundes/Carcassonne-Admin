@@ -127,6 +127,7 @@ export const patternGeneralConfigs: GeneralConfigsType = {
   maxMonthsInAdvance: 0,
   hoursToCloseReserve: 0,
   isMusicRecommendationEnable: false,
+  isPersonCheckEnabled: false,
   blockedDates: [],
   specialDates: [],
 };

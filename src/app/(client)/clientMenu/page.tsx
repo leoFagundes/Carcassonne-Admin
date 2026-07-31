@@ -312,13 +312,17 @@ export default function ClientMenuPage() {
           >
             <FaSearch size={"18px"} className="min-w-[18px]" />
             {searchCardExpanded ? (
-              <FaAngleLeft size={"13px"} className="min-w-[13px]" />
+              <>
+                <FaAngleLeft size={"13px"} className="min-w-[13px]" />
+              </>
             ) : (
-              <FaAngleRight size={"13px"} className="min-w-[13px]" />
+              <>
+                <FaAngleRight size={"13px"} className="min-w-[13px]" />{" "}
+              </>
             )}
           </div>
           <div
-            className={`w-0 ${searchCardExpanded && "w-[180px] sm:w-[200px]"} transition-all duration-300 overflow-hidden`}
+            className={`w-0 ${searchCardExpanded && "w-[180px] sm:w-[200px] pl-4"} transition-all duration-300 overflow-hidden `}
           >
             {searchCardExpanded && (
               <Input

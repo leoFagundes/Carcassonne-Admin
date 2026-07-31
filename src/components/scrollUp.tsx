@@ -25,7 +25,7 @@ function FloatingButton({
     <Tooltip direction="left" content={tooltip}>
       <button
         onClick={onClick}
-        className={`flex items-center justify-center w-10 h-10 rounded-xl bg-dark-black/85 backdrop-blur-[4px] border border-primary-gold/20 text-primary cursor-pointer transition-all duration-200 hover:border-primary-gold/50 hover:text-primary-gold active:scale-95 ${
+        className={`flex items-center justify-center w-12 h-12 rounded-xl bg-dark-black/85 backdrop-blur-[4px] border border-primary-gold/20 text-primary cursor-pointer transition-all duration-200 hover:border-primary-gold/50 hover:text-primary-gold active:scale-95 ${
           isHidden ? "opacity-0 pointer-events-none" : "opacity-100"
         }`}
       >
@@ -67,7 +67,7 @@ export default function ScrollUp() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-2 fixed bottom-3 right-3 z-10">
+    <div className="flex flex-col items-center gap-3 fixed bottom-3 right-3 z-10">
       <FloatingButton
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         tooltip="Voltar ao topo"

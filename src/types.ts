@@ -70,6 +70,7 @@ export interface GeneralConfigsType {
   maxMonthsInAdvance: number;
   hoursToCloseReserve: number;
   isMusicRecommendationEnable: boolean;
+  isPersonCheckEnabled: boolean;
   blockedDates: { date: string; reason?: string }[]; // date as "YYYY-MM-DD"
   specialDates: { date: string; description?: string }[]; // date as "YYYY-MM-DD"
 }
@@ -136,6 +137,15 @@ export interface ReserveType {
   canceledAt?: string;
   canceledReason?: string;
   canceledBy?: "user" | "admin";
+  isArrived?: boolean;
+  arrivedPeople?: boolean[];
+}
+
+export interface DayNoteType {
+  id?: string;
+  date: string; // "YYYY-MM-DD"
+  text: string;
+  updatedAt?: Timestamp;
 }
 
 export interface TableType {
@@ -227,11 +237,14 @@ export interface QuizParticipantType {
   participantId: string;
   name: string;
   mesa?: string;
-  answers: Record<string, {
-    answer: string | number;
-    isCorrect?: boolean;
-    pointsEarned?: number;
-  }>;
+  answers: Record<
+    string,
+    {
+      answer: string | number;
+      isCorrect?: boolean;
+      pointsEarned?: number;
+    }
+  >;
   totalScore: number;
   timeTakenSeconds?: number; // sum of per-correct-question times in seconds (float, ms precision)
   questionTimes?: Record<string, number>; // ms spent per question, keyed by questionId

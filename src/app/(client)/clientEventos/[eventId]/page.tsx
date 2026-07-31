@@ -77,8 +77,12 @@ function ScorePicker({
 
 function formatTimer(seconds: number): string {
   const totalMs = Math.round(seconds * 1000);
-  const m = Math.floor(totalMs / 60000).toString().padStart(2, "0");
-  const s = Math.floor((totalMs % 60000) / 1000).toString().padStart(2, "0");
+  const m = Math.floor(totalMs / 60000)
+    .toString()
+    .padStart(2, "0");
+  const s = Math.floor((totalMs % 60000) / 1000)
+    .toString()
+    .padStart(2, "0");
   const ms = (totalMs % 1000).toString().padStart(3, "0");
   return `${m}:${s}.${ms}`;
 }
@@ -208,7 +212,13 @@ function ChampionScreen({
         recycle={false}
         numberOfPieces={500}
         gravity={0.18}
-        style={{ position: "fixed", top: 0, left: 0, zIndex: 9999, pointerEvents: "none" }}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          zIndex: 9999,
+          pointerEvents: "none",
+        }}
       />
 
       {/* Crown + trophy */}
@@ -216,28 +226,42 @@ function ChampionScreen({
         <div className="w-24 h-24 rounded-full bg-gradient-to-b from-yellow-400/20 to-primary-gold/5 border-2 border-yellow-400/50 flex items-center justify-center shadow-[0_0_40px_rgba(250,200,0,0.25)]">
           <LuTrophy size={44} className="text-yellow-400" />
         </div>
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-3xl">👑</span>
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-3xl">
+          👑
+        </span>
       </div>
 
       <div className="flex flex-col gap-1">
-        <p className="text-2xl font-bold text-yellow-400 tracking-wide">Você é o Campeão!</p>
-        <p className="text-base text-primary-gold/70 font-medium">{participant.name}</p>
+        <p className="text-2xl font-bold text-yellow-400 tracking-wide">
+          Você é o Campeão!
+        </p>
+        <p className="text-base text-primary-gold/70 font-medium">
+          {participant.name}
+        </p>
         {participant.mesa && (
-          <p className="text-xs text-primary-gold/40">📍 mesa {participant.mesa}</p>
+          <p className="text-xs text-primary-gold/40">
+            📍 mesa {participant.mesa}
+          </p>
         )}
       </div>
 
       <div className="flex items-center gap-6">
         <div className="flex flex-col items-center gap-0.5">
-          <span className="text-4xl font-bold text-primary-gold">{participant.totalScore}</span>
-          <span className="text-[10px] text-primary-gold/40 uppercase tracking-wider">pontos</span>
+          <span className="text-4xl font-bold text-primary-gold">
+            {participant.totalScore}
+          </span>
+          <span className="text-[10px] text-primary-gold/40 uppercase tracking-wider">
+            pontos
+          </span>
         </div>
         {participant.timeTakenSeconds !== undefined && (
           <div className="flex flex-col items-center gap-0.5">
             <span className="text-xl font-mono font-semibold text-primary-gold/60">
               {formatTimer(participant.timeTakenSeconds)}
             </span>
-            <span className="text-[10px] text-primary-gold/30 uppercase tracking-wider">tempo</span>
+            <span className="text-[10px] text-primary-gold/30 uppercase tracking-wider">
+              tempo
+            </span>
           </div>
         )}
       </div>
@@ -248,7 +272,9 @@ function ChampionScreen({
         </div>
       )}
 
-      <p className="text-xs text-primary-gold/30 mt-2">Parabéns pela vitória! 🎉</p>
+      <p className="text-xs text-primary-gold/30 mt-2">
+        Parabéns pela vitória! 🎉
+      </p>
     </div>
   );
 }
@@ -270,17 +296,22 @@ function computeServerPhase(
   questions: (QuizQuestionType & { id: string })[],
   nowMs: number,
 ): ServerPhase {
-  if (!event.quizStartedAt || event.quizStatus !== "running") return { type: "waiting" };
+  if (!event.quizStartedAt || event.quizStatus !== "running")
+    return { type: "waiting" };
   const startMs = (event.quizStartedAt as Timestamp).toMillis();
   const countdownEndsMs = startMs + QUIZ_COUNTDOWN_SECONDS * 1000;
   if (nowMs < countdownEndsMs) {
-    return { type: "countdown", secondsLeft: Math.ceil((countdownEndsMs - nowMs) / 1000) };
+    return {
+      type: "countdown",
+      secondsLeft: Math.ceil((countdownEndsMs - nowMs) / 1000),
+    };
   }
   let qStartMs = countdownEndsMs;
   for (let i = 0; i < questions.length; i++) {
     const durationMs = (questions[i].timeSeconds ?? 30) * 1000;
     const qEndMs = qStartMs + durationMs;
-    if (nowMs < qEndMs) return { type: "question", index: i, timeLeftMs: qEndMs - nowMs };
+    if (nowMs < qEndMs)
+      return { type: "question", index: i, timeLeftMs: qEndMs - nowMs };
     qStartMs = qEndMs;
   }
   return { type: "done" };
@@ -295,14 +326,17 @@ function QuizSection({
   eventId: string;
   addAlert: (msg: string) => void;
 }) {
-  const [questions, setQuestions] = useState<(QuizQuestionType & { id: string })[]>([]);
+  const [questions, setQuestions] = useState<
+    (QuizQuestionType & { id: string })[]
+  >([]);
   const [questionsLoaded, setQuestionsLoaded] = useState(false);
   const [name, setName] = useState("");
   const [mesa, setMesa] = useState("");
   const [nameConfirmed, setNameConfirmed] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [existingParticipant, setExistingParticipant] = useState<QuizParticipantType | null>(null);
+  const [existingParticipant, setExistingParticipant] =
+    useState<QuizParticipantType | null>(null);
 
   // Per-question answer flow
   const [answeredThisQuestion, setAnsweredThisQuestion] = useState(false);
@@ -315,7 +349,9 @@ function QuizSection({
   const questionTimesRef = useRef<Record<string, number>>({});
   // Latest unsent text-question draft, kept in sync on every keystroke so it
   // can be auto-saved if time runs out before the participant clicks "Responder"
-  const pendingDraftRef = useRef<{ questionId: string; text: string } | null>(null);
+  const pendingDraftRef = useRef<{ questionId: string; text: string } | null>(
+    null,
+  );
   const participantIdRef = useRef<string>("");
   const submitCalledRef = useRef(false);
   const prevQuizStatusRef = useRef(event.quizStatus);
@@ -327,7 +363,9 @@ function QuizSection({
 
   useEffect(() => {
     tickRef.current = setInterval(() => setNow(Date.now()), 300);
-    return () => { if (tickRef.current) clearInterval(tickRef.current); };
+    return () => {
+      if (tickRef.current) clearInterval(tickRef.current);
+    };
   }, []);
 
   // One-time setup
@@ -339,16 +377,22 @@ function QuizSection({
   // Live-subscribe to quiz questions so late additions/edits by the admin
   // (e.g. joining the waiting room before setup is finished) are always reflected.
   useEffect(() => {
-    const unsub = QuizQuestionRepository.subscribeToEventQuestions(eventId, (fetched) => {
-      setQuestions(fetched);
-      setQuestionsLoaded(true);
-    });
+    const unsub = QuizQuestionRepository.subscribeToEventQuestions(
+      eventId,
+      (fetched) => {
+        setQuestions(fetched);
+        setQuestionsLoaded(true);
+      },
+    );
     return () => unsub();
   }, [eventId]);
 
   // Reset client state when admin resets the quiz (transition to "waiting")
   useEffect(() => {
-    if (prevQuizStatusRef.current !== "waiting" && event.quizStatus === "waiting") {
+    if (
+      prevQuizStatusRef.current !== "waiting" &&
+      event.quizStatus === "waiting"
+    ) {
       setSubmitted(false);
       setSubmitting(false);
       setExistingParticipant(null);
@@ -369,7 +413,8 @@ function QuizSection({
     ? computeServerPhase(event, questions, now)
     : ({ type: "waiting" } as ServerPhase);
 
-  const serverQuestionIndex = serverPhase.type === "question" ? serverPhase.index : -1;
+  const serverQuestionIndex =
+    serverPhase.type === "question" ? serverPhase.index : -1;
 
   // Reset per-question state when server advances to next question.
   // Before resetting, auto-save any text draft the participant typed but
@@ -386,7 +431,9 @@ function QuizSection({
         ...answersRef.current,
         [pending.questionId]: pending.text.trim(),
       };
-      const pendingQuestion = questions.find((q) => q.id === pending.questionId);
+      const pendingQuestion = questions.find(
+        (q) => q.id === pending.questionId,
+      );
       if (pendingQuestion) {
         questionTimesRef.current = {
           ...questionTimesRef.current,
@@ -402,14 +449,25 @@ function QuizSection({
 
   // Auto-submit when all question time expires (server-driven)
   useEffect(() => {
-    if (serverPhase.type === "done" && !submitCalledRef.current && questionsLoaded && name.trim()) {
+    if (
+      serverPhase.type === "done" &&
+      !submitCalledRef.current &&
+      questionsLoaded &&
+      name.trim()
+    ) {
       handleSubmitQuiz();
     }
   }, [serverPhase.type]);
 
   // Auto-submit when admin manually ends quiz early
   useEffect(() => {
-    if (event.quizStatus === "finished" && !submitCalledRef.current && questionsLoaded && !submitted && name.trim()) {
+    if (
+      event.quizStatus === "finished" &&
+      !submitCalledRef.current &&
+      questionsLoaded &&
+      !submitted &&
+      name.trim()
+    ) {
       handleSubmitQuiz();
     }
   }, [event.quizStatus]);
@@ -418,12 +476,17 @@ function QuizSection({
   useEffect(() => {
     if (!submitted || !participantIdRef.current) return;
     participantUnsubRef.current?.();
-    participantUnsubRef.current = QuizParticipantRepository.subscribeToParticipant(
-      eventId,
-      participantIdRef.current,
-      (fresh) => { if (fresh) setExistingParticipant(fresh); }
-    );
-    return () => { participantUnsubRef.current?.(); };
+    participantUnsubRef.current =
+      QuizParticipantRepository.subscribeToParticipant(
+        eventId,
+        participantIdRef.current,
+        (fresh) => {
+          if (fresh) setExistingParticipant(fresh);
+        },
+      );
+    return () => {
+      participantUnsubRef.current?.();
+    };
   }, [submitted]);
 
   const loadExistingParticipant = async () => {
@@ -444,7 +507,10 @@ function QuizSection({
   };
 
   // Called when user picks an answer for current question
-  const handleAnswerQuestion = (questionId: string, answer: string | number) => {
+  const handleAnswerQuestion = (
+    questionId: string,
+    answer: string | number,
+  ) => {
     if (answeredThisQuestion || submitCalledRef.current) return;
     // Record time spent on this specific question using the server timeline
     if (serverPhase.type === "question" && event.quizStartedAt) {
@@ -455,7 +521,10 @@ function QuizSection({
         qStartMs += (questions[i].timeSeconds ?? 30) * 1000;
       }
       const timeTakenMs = Math.max(0, Date.now() - qStartMs);
-      questionTimesRef.current = { ...questionTimesRef.current, [questionId]: timeTakenMs };
+      questionTimesRef.current = {
+        ...questionTimesRef.current,
+        [questionId]: timeTakenMs,
+      };
       setLastAnswerTimeMs(timeTakenMs);
     }
     answersRef.current = { ...answersRef.current, [questionId]: answer };
@@ -477,12 +546,20 @@ function QuizSection({
       const userAnswer = answersRef.current[q.id];
       if (userAnswer === undefined || userAnswer === "") return;
       if (q.type === "multiple_choice") {
-        const isCorrect = typeof userAnswer === "number" && userAnswer === q.correctOption;
+        const isCorrect =
+          typeof userAnswer === "number" && userAnswer === q.correctOption;
         const pointsEarned = isCorrect ? q.points : 0;
-        processedAnswers[q.id] = { answer: userAnswer, isCorrect, pointsEarned };
+        processedAnswers[q.id] = {
+          answer: userAnswer,
+          isCorrect,
+          pointsEarned,
+        };
         totalScore += pointsEarned;
       } else {
-        processedAnswers[q.id] = { answer: userAnswer as string, pointsEarned: 0 };
+        processedAnswers[q.id] = {
+          answer: userAnswer as string,
+          pointsEarned: 0,
+        };
       }
     });
 
@@ -524,7 +601,10 @@ function QuizSection({
         addAlert("Respostas enviadas! Boa sorte 🧠");
       }
     } catch {
-      const existing = await QuizParticipantRepository.getByParticipantId(eventId, participantIdRef.current);
+      const existing = await QuizParticipantRepository.getByParticipantId(
+        eventId,
+        participantIdRef.current,
+      );
       if (existing) {
         setExistingParticipant(existing);
         setSubmitted(true);
@@ -545,8 +625,12 @@ function QuizSection({
             <LuCheck size={22} className="text-green-400" />
           </div>
           <div className="flex flex-col gap-1">
-            <p className="text-base font-semibold text-green-400">Respostas enviadas, {existingParticipant.name}!</p>
-            <p className="text-sm text-primary-gold/40">Aguardando o quiz encerrar...</p>
+            <p className="text-base font-semibold text-green-400">
+              Respostas enviadas, {existingParticipant.name}!
+            </p>
+            <p className="text-sm text-primary-gold/40">
+              Aguardando o quiz encerrar...
+            </p>
           </div>
           <div className="flex gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/40 waiting-dot" />
@@ -563,8 +647,13 @@ function QuizSection({
             <LuClock size={22} className="text-primary-gold/50" />
           </div>
           <div className="flex flex-col gap-1">
-            <p className="text-base font-semibold text-primary-gold/70">Quiz encerrado!</p>
-            <p className="text-sm text-primary-gold/40">Aguardando a correção e liberação dos resultados pelo administrador...</p>
+            <p className="text-base font-semibold text-primary-gold/70">
+              Quiz encerrado!
+            </p>
+            <p className="text-sm text-primary-gold/40">
+              Aguardando a correção e liberação dos resultados pelo
+              administrador...
+            </p>
           </div>
           <div className="flex gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/30 waiting-dot" />
@@ -577,10 +666,14 @@ function QuizSection({
 
     // Results revealed — check if this participant is the crowned champion
     const isChampion =
-      !!event.quizChampionId && event.quizChampionId === existingParticipant.participantId;
-    const textPending = Object.values(existingParticipant.answers).some((a) => a.isCorrect === undefined);
+      !!event.quizChampionId &&
+      event.quizChampionId === existingParticipant.participantId;
+    const textPending = Object.values(existingParticipant.answers).some(
+      (a) => a.isCorrect === undefined,
+    );
 
-    if (isChampion) return <ChampionScreen participant={existingParticipant} event={event} />;
+    if (isChampion)
+      return <ChampionScreen participant={existingParticipant} event={event} />;
 
     return (
       <div className="flex flex-col gap-5">
@@ -589,64 +682,105 @@ function QuizSection({
             <LuTrophy size={22} className="text-primary-gold" />
           </div>
           <div>
-            <p className="text-base font-semibold text-primary-gold">Resultado de {existingParticipant.name}</p>
+            <p className="text-base font-semibold text-primary-gold">
+              Resultado de {existingParticipant.name}
+            </p>
             {existingParticipant.mesa && (
-              <p className="text-xs text-primary-gold/40 mt-0.5">📍 {existingParticipant.mesa}</p>
+              <p className="text-xs text-primary-gold/40 mt-0.5">
+                📍 {existingParticipant.mesa}
+              </p>
             )}
           </div>
           <div className="flex items-center gap-5 mt-1">
             <div className="flex flex-col items-center">
-              <span className="text-3xl font-bold text-primary-gold">{existingParticipant.totalScore}</span>
-              <span className="text-[10px] text-primary-gold/40 uppercase tracking-wider">pontos</span>
+              <span className="text-3xl font-bold text-primary-gold">
+                {existingParticipant.totalScore}
+              </span>
+              <span className="text-[10px] text-primary-gold/40 uppercase tracking-wider">
+                pontos
+              </span>
             </div>
             {existingParticipant.timeTakenSeconds !== undefined && (
               <div className="flex flex-col items-center">
                 <span className="text-lg font-mono font-semibold text-primary-gold/60">
                   {formatTimer(existingParticipant.timeTakenSeconds)}
                 </span>
-                <span className="text-[10px] text-primary-gold/30 uppercase tracking-wider">tempo</span>
+                <span className="text-[10px] text-primary-gold/30 uppercase tracking-wider">
+                  tempo
+                </span>
               </div>
             )}
             {textPending && (
               <div className="flex flex-col items-center">
                 <span className="text-sm text-yellow-400">⏳</span>
-                <span className="text-[10px] text-yellow-400/50 uppercase tracking-wider">pendente</span>
+                <span className="text-[10px] text-yellow-400/50 uppercase tracking-wider">
+                  pendente
+                </span>
               </div>
             )}
           </div>
         </div>
         <div className="flex flex-col gap-2">
-          <span className="text-[11px] uppercase tracking-widest text-primary-gold/40">Suas respostas</span>
+          <span className="text-[11px] uppercase tracking-widest text-primary-gold/40">
+            Suas respostas
+          </span>
           {questions.map((q, i) => {
             const ans = existingParticipant.answers[q.id];
             return (
-              <div key={q.id} className="flex flex-col gap-1.5 p-3 rounded-xl border border-primary-gold/10 bg-secondary-black/60">
+              <div
+                key={q.id}
+                className="flex flex-col gap-1.5 p-3 rounded-xl border border-primary-gold/10 bg-secondary-black/60"
+              >
                 <div className="flex items-start gap-2">
-                  <span className="text-xs text-primary-gold/30 font-mono shrink-0 mt-0.5">{i + 1}.</span>
-                  <span className="text-sm text-primary-gold/80 flex-1">{q.text}</span>
-                  <span className="text-[10px] text-primary-gold/30 shrink-0">{q.points}pts</span>
+                  <span className="text-xs text-primary-gold/30 font-mono shrink-0 mt-0.5">
+                    {i + 1}.
+                  </span>
+                  <span className="text-sm text-primary-gold/80 flex-1">
+                    {q.text}
+                  </span>
+                  <span className="text-[10px] text-primary-gold/30 shrink-0">
+                    {q.points}pts
+                  </span>
                 </div>
                 {ans ? (
                   <div className="pl-5">
                     {q.type === "multiple_choice" ? (
-                      <div className={`flex items-center gap-1.5 text-sm ${ans.isCorrect === true ? "text-green-400" : ans.isCorrect === false ? "text-red-400" : "text-primary-gold/70"}`}>
-                        {ans.isCorrect === true ? <LuCheck size={13} /> : ans.isCorrect === false ? <LuX size={13} /> : null}
+                      <div
+                        className={`flex items-center gap-1.5 text-sm ${ans.isCorrect === true ? "text-green-400" : ans.isCorrect === false ? "text-red-400" : "text-primary-gold/70"}`}
+                      >
+                        {ans.isCorrect === true ? (
+                          <LuCheck size={13} />
+                        ) : ans.isCorrect === false ? (
+                          <LuX size={13} />
+                        ) : null}
                         {q.options?.[ans.answer as number] ?? "?"}
                         <span className="text-xs text-primary-gold/30 ml-1">
-                          {ans.pointsEarned !== undefined ? `+${ans.pointsEarned}pts` : ""}
+                          {ans.pointsEarned !== undefined
+                            ? `+${ans.pointsEarned}pts`
+                            : ""}
                         </span>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-1">
-                        <span className="text-sm text-primary-gold/70 italic">&quot;{ans.answer}&quot;</span>
-                        <span className={`text-xs ${ans.isCorrect === true ? "text-green-400" : ans.isCorrect === false ? "text-red-400" : "text-yellow-400/70"}`}>
-                          {ans.isCorrect === true ? `✓ Correta (+${ans.pointsEarned}pts)` : ans.isCorrect === false ? "✗ Errada" : "⏳ Aguardando correção"}
+                        <span className="text-sm text-primary-gold/70 italic">
+                          &quot;{ans.answer}&quot;
+                        </span>
+                        <span
+                          className={`text-xs ${ans.isCorrect === true ? "text-green-400" : ans.isCorrect === false ? "text-red-400" : "text-yellow-400/70"}`}
+                        >
+                          {ans.isCorrect === true
+                            ? `✓ Correta (+${ans.pointsEarned}pts)`
+                            : ans.isCorrect === false
+                              ? "✗ Errada"
+                              : "⏳ Aguardando correção"}
                         </span>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <span className="pl-5 text-xs text-primary-gold/25 italic">Não respondida</span>
+                  <span className="pl-5 text-xs text-primary-gold/25 italic">
+                    Não respondida
+                  </span>
                 )}
               </div>
             );
@@ -675,7 +809,9 @@ function QuizSection({
         <div className="w-14 h-14 rounded-full bg-primary-gold/5 border border-primary-gold/15 flex items-center justify-center">
           <LuClock size={22} className="text-primary-gold/40" />
         </div>
-        <p className="text-base font-semibold text-primary-gold/60">O quiz foi encerrado</p>
+        <p className="text-base font-semibold text-primary-gold/60">
+          O quiz foi encerrado
+        </p>
         <p className="text-sm text-primary-gold/35 max-w-[280px]">
           Você não participou desta rodada. Aguarde o próximo quiz!
         </p>
@@ -690,7 +826,8 @@ function QuizSection({
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-4 p-5 rounded-2xl border border-primary-gold/15 bg-secondary-black/40">
             <p className="text-sm text-primary-gold/70 text-center leading-relaxed">
-              Insira seu nome para entrar na sala de espera. O quiz começará em breve!
+              Insira seu nome para entrar na sala de espera. O quiz começará em
+              breve!
             </p>
             <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/15 to-transparent" />
             <div className="flex flex-col gap-3">
@@ -703,14 +840,20 @@ function QuizSection({
                   placeholder="Como você quer ser chamado?"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && name.trim()) setNameConfirmed(true); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && name.trim())
+                      setNameConfirmed(true);
+                  }}
                   autoFocus
                   className="w-full bg-primary-black/50 border border-primary-gold/20 rounded-xl px-4 py-3 text-primary-gold placeholder-primary-gold/25 outline-none focus:border-primary-gold/50 transition-all text-sm"
                 />
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-xs text-primary-gold/50 uppercase tracking-wider">
-                  Número da mesa <span className="text-primary-gold/30 normal-case font-normal">(opcional)</span>
+                  Número da mesa{" "}
+                  <span className="text-primary-gold/30 normal-case font-normal">
+                    (opcional)
+                  </span>
                 </label>
                 <input
                   type="text"
@@ -722,7 +865,9 @@ function QuizSection({
               </div>
             </div>
             <button
-              onClick={() => { if (name.trim()) setNameConfirmed(true); }}
+              onClick={() => {
+                if (name.trim()) setNameConfirmed(true);
+              }}
               disabled={!name.trim()}
               className="w-full py-3.5 rounded-xl bg-primary-gold text-primary-black font-bold text-sm tracking-wider uppercase transition-all hover:bg-primary-gold/90 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             >
@@ -742,8 +887,12 @@ function QuizSection({
       <div className="flex flex-col items-center gap-6 text-center py-4">
         <div className="flex flex-col items-center gap-5 p-6 rounded-2xl border border-primary-gold/15 bg-secondary-black/40 w-full">
           <div className="flex flex-col items-center gap-1">
-            <p className="text-base font-semibold text-primary-gold">Olá, {name}! 👋</p>
-            <p className="text-sm text-primary-gold/50">Você está na sala de espera.</p>
+            <p className="text-base font-semibold text-primary-gold">
+              Olá, {name}! 👋
+            </p>
+            <p className="text-sm text-primary-gold/50">
+              Você está na sala de espera.
+            </p>
             {mesa && (
               <span className="mt-1 text-xs text-primary-gold/40 bg-primary-gold/5 border border-primary-gold/10 px-2.5 py-1 rounded-full">
                 📍 mesa {mesa}
@@ -757,7 +906,9 @@ function QuizSection({
               <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/50 waiting-dot" />
               <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/50 waiting-dot" />
             </div>
-            <p className="text-sm text-primary-gold/50">Aguardando o quiz ser iniciado...</p>
+            <p className="text-sm text-primary-gold/50">
+              Aguardando o quiz ser iniciado pelo administrador...
+            </p>
             {questions.length > 0 && (
               <p className="text-[11px] text-primary-gold/25">
                 {questions.length} pergunta{questions.length !== 1 ? "s" : ""}
@@ -790,9 +941,15 @@ function QuizSection({
       return (
         <div className="flex flex-col gap-5">
           <div className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-yellow-700/30 bg-yellow-900/10 text-center">
-            <p className="text-xs text-yellow-400 uppercase tracking-wider">Quiz começa em</p>
-            <span className="text-6xl font-bold font-mono text-yellow-400 leading-none">{secs}</span>
-            <p className="text-xs text-yellow-400/60">Corre! Insira seu nome antes que comece 👇</p>
+            <p className="text-xs text-yellow-400 uppercase tracking-wider">
+              Quiz começa em
+            </p>
+            <span className="text-6xl font-bold font-mono text-yellow-400 leading-none">
+              {secs}
+            </span>
+            <p className="text-xs text-yellow-400/60">
+              Corre! Insira seu nome antes que comece 👇
+            </p>
           </div>
           <div className="flex flex-col gap-3 p-4 rounded-2xl border border-primary-gold/15 bg-secondary-black/40">
             <input
@@ -800,7 +957,9 @@ function QuizSection({
               placeholder="Seu nome *"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && name.trim()) setNameConfirmed(true); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && name.trim()) setNameConfirmed(true);
+              }}
               autoFocus
               className="w-full bg-primary-black/50 border border-primary-gold/20 rounded-xl px-4 py-3 text-primary-gold placeholder-primary-gold/25 outline-none focus:border-primary-gold/50 transition-all text-sm"
             />
@@ -812,7 +971,9 @@ function QuizSection({
               className="w-full bg-primary-black/50 border border-primary-gold/20 rounded-xl px-4 py-3 text-primary-gold placeholder-primary-gold/25 outline-none focus:border-primary-gold/50 transition-all text-sm"
             />
             <button
-              onClick={() => { if (name.trim()) setNameConfirmed(true); }}
+              onClick={() => {
+                if (name.trim()) setNameConfirmed(true);
+              }}
               disabled={!name.trim()}
               className="w-full py-3 rounded-xl bg-primary-gold text-primary-black font-bold text-sm uppercase transition-all active:scale-[0.98] disabled:opacity-30 cursor-pointer"
             >
@@ -826,8 +987,12 @@ function QuizSection({
     return (
       <div className="flex flex-col items-center gap-6 text-center py-4">
         <div className="flex flex-col items-center gap-4 p-8 rounded-2xl border border-primary-gold/20 bg-secondary-black/40 w-full">
-          <p className="text-sm text-primary-gold/60 uppercase tracking-widest">Quiz começa em</p>
-          <span className={`text-8xl font-bold font-mono leading-none transition-all ${secs <= 5 ? "text-red-400" : "text-primary-gold"}`}>
+          <p className="text-sm text-primary-gold/60 uppercase tracking-widest">
+            Quiz começa em
+          </p>
+          <span
+            className={`text-8xl font-bold font-mono leading-none transition-all ${secs <= 5 ? "text-red-400" : "text-primary-gold"}`}
+          >
             {secs}
           </span>
           <p className="text-sm text-primary-gold/40">Prepara-se, {name}! 🧠</p>
@@ -852,34 +1017,96 @@ function QuizSection({
     if (!q) return null;
 
     const timeLeftSecs = Math.ceil(serverPhase.timeLeftMs / 1000);
-    const timePct = Math.min(100, (serverPhase.timeLeftMs / (q.timeSeconds * 1000)) * 100);
+    const timePct = Math.min(
+      100,
+      (serverPhase.timeLeftMs / (q.timeSeconds * 1000)) * 100,
+    );
     const isUrgent = timeLeftSecs <= 5;
+
+    // Joined mid-quiz — name must be confirmed before answering anything,
+    // otherwise the answers are recorded locally but never submitted (no name
+    // means the auto-submit effects skip them) and the person is silently
+    // lost — never appears in the final results. Block here instead of
+    // showing an easy-to-miss inline banner alongside the question.
+    if (!nameConfirmed) {
+      return (
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-yellow-700/30 bg-yellow-900/10 text-center">
+            <p className="text-xs text-yellow-400 uppercase tracking-wider">
+              O quiz já começou!
+            </p>
+            <p className="text-sm text-yellow-400/70">
+              Pergunta {serverPhase.index + 1} de {questions.length} —{" "}
+              {timeLeftSecs}s restantes
+            </p>
+            <p className="text-xs text-yellow-400/60">
+              Insira seu nome para participar 👇
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 p-4 rounded-2xl border border-primary-gold/15 bg-secondary-black/40">
+            <input
+              type="text"
+              placeholder="Seu nome *"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && name.trim()) setNameConfirmed(true);
+              }}
+              autoFocus
+              className="w-full bg-primary-black/50 border border-primary-gold/20 rounded-xl px-4 py-3 text-primary-gold placeholder-primary-gold/25 outline-none focus:border-primary-gold/50 transition-all text-sm"
+            />
+            <input
+              type="text"
+              placeholder="Mesa (opcional)"
+              value={mesa}
+              onChange={(e) => setMesa(e.target.value)}
+              className="w-full bg-primary-black/50 border border-primary-gold/20 rounded-xl px-4 py-3 text-primary-gold placeholder-primary-gold/25 outline-none focus:border-primary-gold/50 transition-all text-sm"
+            />
+            <button
+              onClick={() => {
+                if (name.trim()) setNameConfirmed(true);
+              }}
+              disabled={!name.trim()}
+              className="w-full py-3 rounded-xl bg-primary-gold text-primary-black font-bold text-sm uppercase transition-all active:scale-[0.98] disabled:opacity-30 cursor-pointer"
+            >
+              Entrar no quiz
+            </button>
+          </div>
+        </div>
+      );
+    }
 
     // Already answered — waiting for server to advance
     if (answeredThisQuestion) {
       const waitSecs = Math.ceil(serverPhase.timeLeftMs / 1000);
       const isLastQuestion = serverPhase.index === questions.length - 1;
       return (
-        <div className="flex flex-col items-center gap-5 p-6 rounded-2xl border border-green-700/20 bg-green-900/10 text-center">
-          <div className="w-12 h-12 rounded-full bg-green-900/30 border border-green-700/30 flex items-center justify-center">
-            <LuCheck size={22} className="text-green-400" />
+        <div className="flex flex-col items-center gap-5 p-6 rounded-2xl border border-primary-gold/15 bg-secondary-black/40 text-center">
+          <div className="w-12 h-12 rounded-full bg-primary-gold/10 border border-primary-gold/20 flex items-center justify-center">
+            <LuCheck size={22} className="text-primary-gold/70" />
           </div>
           <div className="flex flex-col gap-2">
-            <p className="text-base font-semibold text-green-400">Respondido!</p>
+            <p className="text-base font-semibold text-primary-gold">
+              Respondido!
+            </p>
             {lastAnswerTimeMs !== null && (
-              <p className="text-xl font-mono font-bold text-green-300">
+              <p className="text-xl font-mono font-bold text-primary-gold/80">
                 {(lastAnswerTimeMs / 1000).toFixed(3)}s
               </p>
             )}
             {isLastQuestion ? (
               <p className="text-sm text-primary-gold/40">
                 Última questão — aguardando encerramento...{" "}
-                <span className="font-mono text-primary-gold/30">{waitSecs}s</span>
+                <span className="font-mono text-primary-gold/30">
+                  {waitSecs}s
+                </span>
               </p>
             ) : (
               <p className="text-sm text-primary-gold/40">
                 Próxima questão em{" "}
-                <span className="font-mono font-semibold text-primary-gold/70">{waitSecs}s</span>
+                <span className="font-mono font-semibold text-primary-gold/70">
+                  {waitSecs}s
+                </span>
                 <span className="text-primary-gold/25 ml-1">
                   ({serverPhase.index + 1}/{questions.length})
                 </span>
@@ -897,34 +1124,14 @@ function QuizSection({
 
     return (
       <div className="flex flex-col gap-4">
-        {/* Name banner if not confirmed yet */}
-        {!nameConfirmed && (
-          <div className="flex gap-2 p-3 rounded-xl border border-yellow-700/30 bg-yellow-900/10">
-            <input
-              type="text"
-              placeholder="Seu nome *"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && name.trim()) setNameConfirmed(true); }}
-              autoFocus
-              className="flex-1 bg-transparent outline-none text-primary-gold placeholder-primary-gold/30 text-sm"
-            />
-            <button
-              onClick={() => { if (name.trim()) setNameConfirmed(true); }}
-              disabled={!name.trim()}
-              className="text-xs px-3 py-1 rounded-lg bg-primary-gold text-primary-black font-bold disabled:opacity-40 cursor-pointer"
-            >
-              OK
-            </button>
-          </div>
-        )}
-
         {/* Progress + timer */}
         <div className="flex items-center justify-between px-0.5">
           <span className="text-xs text-primary-gold/40 font-mono">
             {serverPhase.index + 1} / {questions.length}
           </span>
-          <span className={`flex items-center gap-1.5 font-mono font-bold text-base ${isUrgent ? "text-red-400" : "text-primary-gold"}`}>
+          <span
+            className={`flex items-center gap-1.5 font-mono font-bold text-base ${isUrgent ? "text-red-400" : "text-primary-gold"}`}
+          >
             <LuTimer size={15} />
             {timeLeftSecs}s
           </span>
@@ -945,7 +1152,9 @@ function QuizSection({
           </p>
 
           <div className="flex items-center justify-center gap-3 text-[11px] text-primary-gold/30">
-            <span>{q.points} pt{q.points !== 1 ? "s" : ""}</span>
+            <span>
+              {q.points} pt{q.points !== 1 ? "s" : ""}
+            </span>
           </div>
 
           {/* Multiple choice */}
@@ -975,13 +1184,17 @@ function QuizSection({
                 value={textDraft}
                 onChange={(e) => {
                   setTextDraft(e.target.value);
-                  pendingDraftRef.current = { questionId: q.id, text: e.target.value };
+                  pendingDraftRef.current = {
+                    questionId: q.id,
+                    text: e.target.value,
+                  };
                 }}
                 className="w-full bg-primary-black/50 border border-primary-gold/20 rounded-xl px-4 py-3 text-sm text-primary-gold placeholder-primary-gold/25 outline-none focus:border-primary-gold/50 resize-none transition-all"
               />
               <button
                 onClick={() => {
-                  if (textDraft.trim()) handleAnswerQuestion(q.id, textDraft.trim());
+                  if (textDraft.trim())
+                    handleAnswerQuestion(q.id, textDraft.trim());
                   else handleAnswerQuestion(q.id, ""); // skip
                 }}
                 className="w-full py-3 rounded-xl bg-primary-gold text-primary-black font-bold text-sm uppercase tracking-wider transition-all hover:bg-primary-gold/90 active:scale-[0.98] cursor-pointer"
@@ -991,6 +1204,28 @@ function QuizSection({
             </div>
           )}
         </div>
+      </div>
+    );
+  }
+
+  // ── TEMPO ESGOTADO ───────────────────────────────────────────────────────────
+  // Reached right when the local timeline finishes (before the auto-submit
+  // effect runs) or by someone who opens the page after every question's time
+  // has already run out but the admin hasn't clicked "encerrar" yet. Without
+  // this, both cases fell through every branch above and rendered nothing.
+  if (serverPhase.type === "done") {
+    return (
+      <div className="flex flex-col items-center gap-4 text-center py-10">
+        <div className="w-14 h-14 rounded-full bg-primary-gold/5 border border-primary-gold/15 flex items-center justify-center">
+          <LuClock size={22} className="text-primary-gold/40" />
+        </div>
+        <p className="text-base font-semibold text-primary-gold/60">
+          Tempo esgotado!
+        </p>
+        <p className="text-sm text-primary-gold/35 max-w-[280px]">
+          As perguntas já terminaram. Aguarde o administrador encerrar e liberar
+          os resultados.
+        </p>
       </div>
     );
   }

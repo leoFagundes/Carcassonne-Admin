@@ -75,6 +75,7 @@ export default function EventForms({
         isActive: localItem.isActive,
         ...(localItem.subtype === "quiz" && {
           quizStatus: "waiting",
+          quizPrize: localItem.quizPrize,
         }),
       });
       addAlert(`Evento "${localItem.name}" criado com sucesso!`);
@@ -99,6 +100,9 @@ export default function EventForms({
         icon: normalizeIconName(localItem.icon),
         subtype: localItem.subtype,
         isActive: localItem.isActive,
+        ...(localItem.subtype === "quiz" && {
+          quizPrize: localItem.quizPrize,
+        }),
       });
       setCurrentEvent(localItem);
       addAlert(`Evento "${localItem.name}" atualizado com sucesso!`);

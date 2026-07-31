@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { Calendar } from "@heroui/react";
 import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
-import { FreelancerBookingStatus, FreelancerBookingType, ReserveType } from "@/types";
+import {
+  FreelancerBookingStatus,
+  FreelancerBookingType,
+  FreelancerType,
+  ReserveType,
+} from "@/types";
 import {
   LuBookCheck,
   LuBookX,
@@ -16,18 +21,24 @@ import {
   LuCalendarPlus,
   LuCalendarSearch,
   LuCalendarX,
+  LuChevronDown,
+  LuChevronUp,
   LuDollarSign,
   LuLink,
+  LuNotebookText,
   LuPrinter,
   LuSearch,
+  LuSquare,
   LuSquareCheck,
   LuSquareCheckBig,
   LuTrash,
+  LuUser,
   LuUserRoundCheck,
   LuUsers,
   LuX,
 } from "react-icons/lu";
 import Tooltip from "@/components/Tooltip";
+import Checkbox from "@/components/checkbox";
 import { useAlert } from "@/contexts/alertProvider";
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import { openEmail, openWhatsApp } from "@/utils/utilFunctions";
@@ -39,6 +50,9 @@ import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import ReserveAdminForms from "@/components/reserveAdminForms";
 import interactionPlugin from "@fullcalendar/interaction";
 import FreelancerBookingRepository from "@/services/repositories/FreelancerBookingRepository";
+import FreelancerRepository from "@/services/repositories/FreelancerRepository";
+import DayNoteRepository from "@/services/repositories/DayNoteRepository";
+import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 import PrintModal from "./printModal";
 import { FiX } from "react-icons/fi";
 
@@ -87,9 +101,9 @@ export default function Rerserve() {
   const [reserves, setReserves] = useState<ReserveType[]>([]);
   const [freelancers, setFrelancers] = useState<FreelancerBookingType[]>([]);
   const [allReserves, setAllReserves] = useState<ReserveType[]>([]);
-  const [allFreelancers, setAllFreelancers] = useState<
-    FreelancerBookingType[]
-  >([]);
+  const [allFreelancers, setAllFreelancers] = useState<FreelancerBookingType[]>(
+    [],
+  );
 
   const [loading, setLoading] = useState(false);
   const [expandedCalendarModal, setExpandedCalendarModal] = useState(false);
@@ -122,6 +136,17 @@ export default function Rerserve() {
     printSeparateByAge: false,
   });
 
+  const [personCheckModeEnabled, setPersonCheckModeEnabled] = useState(false);
+  const [expandedPersonChecks, setExpandedPersonChecks] = useState<
+    Record<string, boolean>
+  >({});
+  const [freelancerProfiles, setFreelancerProfiles] = useState<
+    (FreelancerType & { id: string })[]
+  >([]);
+  const [dayNote, setDayNote] = useState("");
+  const skipNextNoteSave = useRef(false);
+  const noteSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const isLargeScreen = useIsLargeScreen();
   const { addAlert } = useAlert();
   const router = useRouter();
@@ -136,6 +161,26 @@ export default function Rerserve() {
       setCalendarFormsModal(true);
       setCurrentFormsType("add");
     }
+  }, []);
+
+  // O "check por pessoa" é uma preferência geral do admin (não por dia), salva
+  // no documento único de configurações gerais.
+  useEffect(() => {
+    async function getPersonCheckPreference() {
+      try {
+        const generalConfigs = await GeneralConfigsRepository.get();
+        setPersonCheckModeEnabled(
+          generalConfigs?.isPersonCheckEnabled ?? false,
+        );
+      } catch (error) {
+        console.error(
+          "Erro ao carregar preferência de check por pessoa:",
+          error,
+        );
+      }
+    }
+
+    getPersonCheckPreference();
   }, []);
 
   const events = transformToFullCalendarEvents(
@@ -272,9 +317,40 @@ export default function Rerserve() {
       }
     }
 
+    async function getDayNote() {
+      try {
+        const dataBusca = new Date(date.year, date.month - 1, date.day);
+        const note = await DayNoteRepository.getByDate(dataBusca);
+        skipNextNoteSave.current = true;
+        setDayNote(note?.text ?? "");
+      } catch (error) {
+        console.error("Erro ao carregar anotações do dia:", error);
+      }
+    }
+
     getReserves();
     getFrelancers();
+    getDayNote();
   }, [date, calendarFormsModal]);
+
+  // Salva as anotações do dia com debounce, evitando gravar a cada tecla e
+  // evitando gravar por engano logo após carregar o dia (getDayNote acima).
+  useEffect(() => {
+    if (skipNextNoteSave.current) {
+      skipNextNoteSave.current = false;
+      return;
+    }
+
+    if (noteSaveTimeout.current) clearTimeout(noteSaveTimeout.current);
+    noteSaveTimeout.current = setTimeout(() => {
+      const dataBusca = new Date(date.year, date.month - 1, date.day);
+      DayNoteRepository.save(dataBusca, dayNote);
+    }, 800);
+
+    return () => {
+      if (noteSaveTimeout.current) clearTimeout(noteSaveTimeout.current);
+    };
+  }, [dayNote]);
 
   useEffect(() => {
     async function getAllReserves() {
@@ -297,9 +373,18 @@ export default function Rerserve() {
       }
     }
 
-    getAllFreelancers();
+    async function getFreelancerProfiles() {
+      try {
+        const profiles = await FreelancerRepository.getAll();
+        setFreelancerProfiles(profiles);
+      } catch (error) {
+        console.error("Erro ao carregar os perfis de freelancers:", error);
+      }
+    }
 
+    getAllFreelancers();
     getAllReserves();
+    getFreelancerProfiles();
   }, [expandedCalendarModal]);
 
   async function changeReserveStatus(
@@ -336,7 +421,11 @@ export default function Rerserve() {
     }
   }
 
-  function openDeleteConfirm(title: string, description: string, onConfirm: () => void) {
+  function openDeleteConfirm(
+    title: string,
+    description: string,
+    onConfirm: () => void,
+  ) {
     setDeleteConfirmInput("");
     setDeleteConfirmModal({ title, description, onConfirm });
   }
@@ -366,7 +455,20 @@ export default function Rerserve() {
   }
 
   async function deleteThisMonthReserves(year: number, month: number) {
-    const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+    const monthNames = [
+      "Janeiro",
+      "Fevereiro",
+      "Março",
+      "Abril",
+      "Maio",
+      "Junho",
+      "Julho",
+      "Agosto",
+      "Setembro",
+      "Outubro",
+      "Novembro",
+      "Dezembro",
+    ];
     openDeleteConfirm(
       `Excluir todas as reservas de ${monthNames[month - 1]} ${year}`,
       `Isso irá remover permanentemente todas as reservas do mês inteiro. Esta ação não pode ser desfeita.`,
@@ -447,8 +549,16 @@ export default function Rerserve() {
           );
         })
         .sort((a, b) => {
-          const dA = new Date(Number(a.bookingDate.year), Number(a.bookingDate.month) - 1, Number(a.bookingDate.day));
-          const dB = new Date(Number(b.bookingDate.year), Number(b.bookingDate.month) - 1, Number(b.bookingDate.day));
+          const dA = new Date(
+            Number(a.bookingDate.year),
+            Number(a.bookingDate.month) - 1,
+            Number(a.bookingDate.day),
+          );
+          const dB = new Date(
+            Number(b.bookingDate.year),
+            Number(b.bookingDate.month) - 1,
+            Number(b.bookingDate.day),
+          );
           return dB.getTime() - dA.getTime();
         })
     : [];
@@ -532,9 +642,7 @@ export default function Rerserve() {
       message: `Tem certeza que deseja remover ${freela.freelancerName} desse dia?`,
       onConfirm: async () => {
         try {
-          const success = await FreelancerBookingRepository.delete(
-            freela.id!,
-          );
+          const success = await FreelancerBookingRepository.delete(freela.id!);
           if (success) {
             setFrelancers((prev) => prev.filter((f) => f.id !== freela.id));
             addAlert(`${freela.freelancerName} removido desse dia.`);
@@ -547,6 +655,61 @@ export default function Rerserve() {
         }
       },
     });
+  }
+
+  async function handleToggleArrived(reserve: ReserveType) {
+    if (!reserve.id) return;
+    const nextValue = !reserve.isArrived;
+    try {
+      await ReserveRepository.update(reserve.id, { isArrived: nextValue });
+      setReserves((prev) =>
+        prev.map((r) =>
+          r.id === reserve.id ? { ...r, isArrived: nextValue } : r,
+        ),
+      );
+    } catch (error) {
+      addAlert("Erro ao atualizar o check-in da reserva.");
+      console.error(error);
+    }
+  }
+
+  async function handleTogglePersonCheck(
+    reserve: ReserveType,
+    personIndex: number,
+  ) {
+    if (!reserve.id) return;
+    const totalPeople = reserve.adults + reserve.childs;
+    const base = reserve.arrivedPeople ?? [];
+    const nextArrivedPeople = Array.from(
+      { length: totalPeople },
+      (_, i) => base[i] ?? false,
+    );
+    nextArrivedPeople[personIndex] = !nextArrivedPeople[personIndex];
+
+    const allArrived = nextArrivedPeople.every(Boolean);
+    const updates: Partial<ReserveType> = { arrivedPeople: nextArrivedPeople };
+    if (allArrived && !reserve.isArrived) {
+      updates.isArrived = true;
+    }
+
+    try {
+      await ReserveRepository.update(reserve.id, updates);
+      setReserves((prev) =>
+        prev.map((r) => (r.id === reserve.id ? { ...r, ...updates } : r)),
+      );
+    } catch (error) {
+      addAlert("Erro ao atualizar o check-in por pessoa.");
+      console.error(error);
+    }
+  }
+
+  function togglePersonChecksExpanded(reserveId: string) {
+    setExpandedPersonChecks((prev) => ({
+      ...prev,
+      // Fica expandido por padrão assim que o modo é ligado; aqui só
+      // guardamos quando o admin fecha manualmente uma reserva específica.
+      [reserveId]: !(prev[reserveId] ?? true),
+    }));
   }
 
   return (
@@ -568,7 +731,7 @@ export default function Rerserve() {
               </span>
             </div>
           </div>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Tooltip direction="bottom" content="Criar uma nova reserva">
               <button
                 onClick={() => {
@@ -611,7 +774,10 @@ export default function Rerserve() {
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent" />
         {/* Search bar */}
         <div className="relative w-full max-w-sm mx-auto">
-          <LuSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-gold/35 pointer-events-none" />
+          <LuSearch
+            size={14}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-gold/35 pointer-events-none"
+          />
           <input
             type="text"
             value={searchQuery}
@@ -724,53 +890,115 @@ export default function Rerserve() {
                   {date.month < 10 ? `0${date.month}` : date.month}/{date.year}
                 </span>
               </div>
-              {freelancers.map((freela, index) => (
-                <div
-                  className="flex w-full items-center justify-between py-2 px-3 bg-primary-black/40 border border-primary-gold/10 rounded-lg"
-                  key={freela.id ?? index}
-                >
-                  <span className="text-sm text-primary-gold/80">
-                    {freela.freelancerName}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <Tooltip
-                      direction="top"
-                      content={FREELA_STATUS_META[freela.status].label}
-                    >
-                      <button
-                        onClick={() => handleFreelaStatusCycle(freela)}
-                        className={`p-1.5 rounded-lg border transition-all cursor-pointer bg-primary-black/60 ${FREELA_STATUS_META[freela.status].className}`}
+              {freelancers.map((freela, index) => {
+                const profile = freelancerProfiles.find(
+                  (f) => f.id === freela.freelancerId,
+                );
+                return (
+                  <div
+                    className="flex w-full items-center justify-between py-2 px-3 bg-primary-black/40 border border-primary-gold/10 rounded-lg gap-2"
+                    key={freela.id ?? index}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {profile?.photoUrl ? (
+                        <img
+                          src={profile.photoUrl}
+                          alt={freela.freelancerName}
+                          className="w-8 h-8 rounded-full object-cover border border-primary-gold/25 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-primary-black/60 border border-primary-gold/15 flex items-center justify-center shrink-0">
+                          <LuUser size={13} className="text-primary-gold/30" />
+                        </div>
+                      )}
+                      <span className="text-sm text-primary-gold/80 truncate">
+                        {freela.freelancerName}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Tooltip
+                        direction="top"
+                        content={FREELA_STATUS_META[freela.status].label}
                       >
-                        {FREELA_STATUS_META[freela.status].icon}
-                      </button>
-                    </Tooltip>
-                    <Tooltip
-                      direction="top"
-                      content={freela.isPayed ? "Pago" : "Não Pago"}
-                    >
-                      <button
-                        onClick={() => handleFreelaPaymentStatus(freela)}
-                        className={`p-1.5 rounded-lg border transition-all cursor-pointer ${freela.isPayed ? "border-green-700/50 text-green-700" : "border-invalid-color/50 text-invalid-color"} bg-primary-black/60`}
+                        <button
+                          onClick={() => handleFreelaStatusCycle(freela)}
+                          className={`p-1.5 rounded-lg border transition-all cursor-pointer bg-primary-black/60 ${FREELA_STATUS_META[freela.status].className}`}
+                        >
+                          {FREELA_STATUS_META[freela.status].icon}
+                        </button>
+                      </Tooltip>
+                      <Tooltip
+                        direction="top"
+                        content={freela.isPayed ? "Pago" : "Não Pago"}
                       >
-                        <LuDollarSign size={14} />
-                      </button>
-                    </Tooltip>
-                    <Tooltip
-                      direction="top"
-                      content={`Remover ${freela.freelancerName} desse dia`}
-                    >
-                      <button
-                        onClick={() => handleDeleteFreela(freela)}
-                        className="p-1.5 rounded-lg border border-primary-gold/15 hover:border-invalid-color/50 hover:text-invalid-color text-primary-gold/40 bg-primary-black/60 transition-all cursor-pointer"
+                        <button
+                          onClick={() => handleFreelaPaymentStatus(freela)}
+                          className={`p-1.5 rounded-lg border transition-all cursor-pointer ${freela.isPayed ? "border-green-700/50 text-green-700" : "border-invalid-color/50 text-invalid-color"} bg-primary-black/60`}
+                        >
+                          <LuDollarSign size={14} />
+                        </button>
+                      </Tooltip>
+                      <Tooltip
+                        direction="top"
+                        content={`Remover ${freela.freelancerName} desse dia`}
                       >
-                        <LuTrash size={14} />
-                      </button>
-                    </Tooltip>
+                        <button
+                          onClick={() => handleDeleteFreela(freela)}
+                          className="p-1.5 rounded-lg border border-primary-gold/15 hover:border-invalid-color/50 hover:text-invalid-color text-primary-gold/40 bg-primary-black/60 transition-all cursor-pointer"
+                        >
+                          <LuTrash size={14} />
+                        </button>
+                      </Tooltip>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
+
+          {/* Anotações do dia */}
+          <div className="flex flex-col gap-2 bg-secondary-black/40 border border-primary-gold/15 rounded-xl p-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-semibold text-primary-gold/70 flex items-center gap-1.5">
+                <LuNotebookText size={14} /> Anotações
+              </span>
+              <span className="text-xs text-primary-gold/35">
+                {date.day < 10 ? `0${date.day}` : date.day}/
+                {date.month < 10 ? `0${date.month}` : date.month}/{date.year}
+              </span>
+            </div>
+            <Input
+              placeholder="Anotações..."
+              value={dayNote}
+              setValue={(e) => setDayNote(e.target.value)}
+              multiline
+              rows={5}
+              width="w-full"
+            />
+          </div>
+
+          {/* Interruptor do check por pessoa */}
+          <div className="flex flex-col gap-2 bg-secondary-black/40 border border-primary-gold/15 rounded-xl p-3">
+            <Checkbox
+              label="Ativar checks por pessoa"
+              checked={personCheckModeEnabled}
+              setChecked={() => {
+                const next = !personCheckModeEnabled;
+                setPersonCheckModeEnabled(next);
+                if (!next) setExpandedPersonChecks({});
+                GeneralConfigsRepository.update({
+                  isPersonCheckEnabled: next,
+                }).then((ok) => {
+                  if (!ok) {
+                    addAlert(
+                      "Erro ao salvar a preferência de check por pessoa.",
+                    );
+                  }
+                });
+              }}
+              width="w-full pl-2"
+            />
+          </div>
 
           {/* Delete today */}
           {reserves.length > 0 && (
@@ -809,15 +1037,23 @@ export default function Rerserve() {
                         {dateStr} · {reserve.time}h
                       </span>
                       {reserve.status === "canceled" && (
-                        <span className="text-[10px] text-invalid-color/70">cancelada</span>
+                        <span className="text-[10px] text-invalid-color/70">
+                          cancelada
+                        </span>
                       )}
                     </div>
                     <div className="flex sm:flex-row flex-col gap-1 sm:gap-2 text-sm items-start sm:items-center">
                       <span className="font-semibold">#{reserve.code}</span>
-                      <span className="hidden sm:block text-primary-gold/30">—</span>
+                      <span className="hidden sm:block text-primary-gold/30">
+                        —
+                      </span>
                       <span className="font-semibold">{reserve.name}</span>
-                      <span className="hidden sm:block text-primary-gold/30">—</span>
-                      <span className="font-semibold">{reserve.adults + reserve.childs} pessoas</span>
+                      <span className="hidden sm:block text-primary-gold/30">
+                        —
+                      </span>
+                      <span className="font-semibold">
+                        {reserve.adults + reserve.childs} pessoas
+                      </span>
                     </div>
                     <div className="text-xs flex flex-col gap-0.5 text-primary-gold/80 mt-0.5">
                       <span
@@ -827,7 +1063,13 @@ export default function Rerserve() {
                         {reserve.phone}
                       </span>
                       <span
-                        onClick={() => openEmail(reserve.email, "Sobre a sua reserva no Carcassonne Pub 🍻", "")}
+                        onClick={() =>
+                          openEmail(
+                            reserve.email,
+                            "Sobre a sua reserva no Carcassonne Pub 🍻",
+                            "",
+                          )
+                        }
                         className="cursor-pointer hover:underline"
                       >
                         {reserve.email}
@@ -836,7 +1078,11 @@ export default function Rerserve() {
                   </div>
                   <button
                     onClick={() => {
-                      const cd = new CalendarDate(Number(d.year), Number(d.month), Number(d.day));
+                      const cd = new CalendarDate(
+                        Number(d.year),
+                        Number(d.month),
+                        Number(d.day),
+                      );
                       setDate(cd);
                       setSearchQuery("");
                     }}
@@ -884,84 +1130,99 @@ export default function Rerserve() {
                   </div>
 
                   <div className="flex flex-col gap-2 w-full pl-2">
-                    {reserves.map((reserve) => (
-                      <div
-                        className={`flex justify-between border rounded-xl p-3 w-full gap-2 flex-wrap transition-all duration-200 ${
-                          reserve.status === "canceled"
-                            ? "border-invalid-color/20 bg-invalid-color/5"
-                            : "border-primary-gold/15 bg-secondary-black/40"
-                        }`}
-                        key={reserve.id}
-                      >
-                        <div className="flex flex-col gap-1">
-                          <div className="flex sm:flex-row flex-col gap-1 sm:gap-2 text-sm items-start sm:items-center mb-2 sm:mb-0">
-                            <div className="flex items-center gap-1">
-                              <ReserveActionsMenu
-                                reserve={reserve}
-                                onConfirm={() =>
-                                  changeReserveStatus(
-                                    reserve.id,
-                                    "confirmed",
-                                    reserve,
-                                  )
-                                }
-                                onCancel={() =>
-                                  changeReserveStatus(
-                                    reserve.id,
-                                    "canceled",
-                                    reserve,
-                                  )
-                                }
-                                onDelete={() => {
-                                  if (reserve.id) deleteReserve(reserve.id);
-                                  else
-                                    addAlert(
-                                      "Recarregue a página e tente novamente",
-                                    );
-                                }}
-                                onEdit={() => {
-                                  setCalendarFormsModal(true);
-                                  setCurrentFormsType("edit");
-                                  setCurrentReserve(reserve);
-                                }}
-                              />
-                              <span className="font-semibold text-center">
-                                #{reserve.code}
-                              </span>{" "}
-                            </div>
-                            <span className="hidden sm:block">-</span>
-                            <span className="flex gap-1 font-semibold text-center">
-                              <span className="block sm:hidden">-</span>
-                              {reserve.name}
-                            </span>{" "}
-                            <span className="hidden sm:block">-</span>
-                            <span className="flex gap-1 font-semibold text-center">
-                              <span className="block sm:hidden">-</span>
-                              {reserve.adults + reserve.childs} pessoas
-                            </span>
-                          </div>
-                          <div className="text-xs flex flex-col gap-1 text-primary-gold/90">
-                            <div>
-                              <span className="font-semibold">telefone: </span>
-                              <span
-                                onClick={() => openWhatsApp(reserve.phone)}
-                                className="cursor-pointer hover:underline"
-                              >
-                                {reserve.phone}{" "}
-                              </span>
-                              <span className="font-semibold">email: </span>
-                              <span
-                                onClick={() =>
-                                  openEmail(
-                                    reserve.email,
-                                    "Sobre a sua reserva no Carcassonne Pub 🍻",
-                                    `Olá!
+                    {reserves.map((reserve) => {
+                      const totalPeople = reserve.adults + reserve.childs;
+                      const arrivedCount = (reserve.arrivedPeople ?? []).filter(
+                        Boolean,
+                      ).length;
+                      // Expandido por padrão assim que o check por pessoa é
+                      // ligado — só fica fechado se o admin recolher manualmente.
+                      const isExpanded = reserve.id
+                        ? (expandedPersonChecks[reserve.id] ?? true)
+                        : true;
+                      return (
+                        <div
+                          className={`flex flex-col border rounded-xl p-3 w-full gap-2 transition-all duration-200 ${
+                            reserve.status === "canceled"
+                              ? "border-invalid-color/20 bg-invalid-color/5"
+                              : reserve.isArrived
+                                ? "border-green-700/40 bg-green-700/5"
+                                : "border-primary-gold/15 bg-secondary-black/40"
+                          }`}
+                          key={reserve.id}
+                        >
+                          <div className="flex justify-between gap-2 flex-wrap">
+                            <div className="flex flex-col gap-1">
+                              <div className="flex sm:flex-row flex-col gap-1 sm:gap-2 text-sm items-start sm:items-center mb-2 sm:mb-0">
+                                <div className="flex items-center gap-1">
+                                  <ReserveActionsMenu
+                                    reserve={reserve}
+                                    onConfirm={() =>
+                                      changeReserveStatus(
+                                        reserve.id,
+                                        "confirmed",
+                                        reserve,
+                                      )
+                                    }
+                                    onCancel={() =>
+                                      changeReserveStatus(
+                                        reserve.id,
+                                        "canceled",
+                                        reserve,
+                                      )
+                                    }
+                                    onDelete={() => {
+                                      if (reserve.id) deleteReserve(reserve.id);
+                                      else
+                                        addAlert(
+                                          "Recarregue a página e tente novamente",
+                                        );
+                                    }}
+                                    onEdit={() => {
+                                      setCalendarFormsModal(true);
+                                      setCurrentFormsType("edit");
+                                      setCurrentReserve(reserve);
+                                    }}
+                                  />
+                                  <span className="font-semibold text-center">
+                                    #{reserve.code}
+                                  </span>{" "}
+                                </div>
+                                <span className="hidden sm:block">-</span>
+                                <span className="flex gap-1 font-semibold text-center">
+                                  <span className="block sm:hidden">-</span>
+                                  {reserve.name}
+                                </span>{" "}
+                                <span className="hidden sm:block">-</span>
+                                <span className="flex gap-1 font-semibold text-center">
+                                  <span className="block sm:hidden">-</span>
+                                  {reserve.adults + reserve.childs} pessoas
+                                </span>
+                              </div>
+                              <div className="text-xs flex flex-col gap-1 text-primary-gold/90">
+                                <div>
+                                  <span className="font-semibold">
+                                    telefone:{" "}
+                                  </span>
+                                  <span
+                                    onClick={() => openWhatsApp(reserve.phone)}
+                                    className="cursor-pointer hover:underline"
+                                  >
+                                    {reserve.phone}{" "}
+                                  </span>
+                                  <span className="font-semibold">email: </span>
+                                  <span
+                                    onClick={() =>
+                                      openEmail(
+                                        reserve.email,
+                                        "Sobre a sua reserva no Carcassonne Pub 🍻",
+                                        `Olá!
 
 Recebemos sua solicitação de reserva no Carcassonne Pub e estamos muito felizes por você querer passar esse momento conosco!
 
 🗓️ Data: ${reserve.bookingDate.day}/${reserve.bookingDate.month}/${
-                                      reserve.bookingDate.year
-                                    }
+                                          reserve.bookingDate.year
+                                        }
 ⏰ Horário: ${reserve.time}h
 👥 Quantidade de pessoas: ${reserve.childs + reserve.adults} pessoas
 
@@ -969,91 +1230,190 @@ Caso precise alterar ou cancelar sua reserva, por favor nos avise com antecedên
 
 Nos vemos em breve! 🍺
 Equipe Carcassonne Pub`,
-                                  )
-                                }
-                                className="cursor-pointer hover:underline"
-                              >
-                                {reserve.email}
-                              </span>
-                            </div>
-                            {reserve.observation && (
-                              <div>
-                                <span className="font-semibold">
-                                  observação:{" "}
-                                </span>
-                                <span>{reserve.observation}</span>
-                              </div>
-                            )}
-                            {reserve.createdAt && (
-                              <div>
-                                <span className="font-semibold">
-                                  Reserva criada em{" "}
-                                </span>
-                                {reserve.createdAt
-                                  .toDate()
-                                  .toLocaleString("pt-BR", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                              </div>
-                            )}
-                            {reserve.status === "canceled" && (
-                              <div className="mt-1 flex flex-col gap-0.5 border-t border-invalid-color/15 pt-1">
-                                {reserve.canceledBy && (
-                                  <span className="text-invalid-color/90 font-semibold">
-                                    {reserve.canceledBy === "user"
-                                      ? "Cancelada pelo usuário"
-                                      : "Cancelada pelo Administrador"}
+                                      )
+                                    }
+                                    className="cursor-pointer hover:underline"
+                                  >
+                                    {reserve.email}
                                   </span>
-                                )}
-                                {reserve.canceledAt && (
-                                  <span className="text-invalid-color/70">
-                                    <span className="font-semibold">Em: </span>
-                                    {new Date(
-                                      reserve.canceledAt,
-                                    ).toLocaleString("pt-BR", {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </span>
-                                )}
-                                {reserve.canceledReason && (
-                                  <span className="text-invalid-color/70">
+                                </div>
+                                {reserve.observation && (
+                                  <div>
                                     <span className="font-semibold">
-                                      Motivo:{" "}
+                                      observação:{" "}
                                     </span>
-                                    {reserve.canceledReason}
-                                  </span>
+                                    <span>{reserve.observation}</span>
+                                  </div>
                                 )}
+                                {reserve.createdAt && (
+                                  <div>
+                                    <span className="font-semibold">
+                                      Reserva criada em{" "}
+                                    </span>
+                                    {reserve.createdAt
+                                      .toDate()
+                                      .toLocaleString("pt-BR", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                  </div>
+                                )}
+                                {reserve.status === "canceled" && (
+                                  <div className="mt-1 flex flex-col gap-0.5 border-t border-invalid-color/15 pt-1">
+                                    {reserve.canceledBy && (
+                                      <span className="text-invalid-color/90 font-semibold">
+                                        {reserve.canceledBy === "user"
+                                          ? "Cancelada pelo usuário"
+                                          : "Cancelada pelo Administrador"}
+                                      </span>
+                                    )}
+                                    {reserve.canceledAt && (
+                                      <span className="text-invalid-color/70">
+                                        <span className="font-semibold">
+                                          Em:{" "}
+                                        </span>
+                                        {new Date(
+                                          reserve.canceledAt,
+                                        ).toLocaleString("pt-BR", {
+                                          day: "2-digit",
+                                          month: "2-digit",
+                                          year: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                      </span>
+                                    )}
+                                    {reserve.canceledReason && (
+                                      <span className="text-invalid-color/70">
+                                        <span className="font-semibold">
+                                          Motivo:{" "}
+                                        </span>
+                                        {reserve.canceledReason}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {reserve.status !== "canceled" && (
+                              <div className="flex items-stretch gap-2 shrink-0">
+                                <div className="flex flex-col items-center gap-2 px-3 py-2 rounded-lg border border-primary-gold/10 bg-primary-black/30">
+                                  <span className="text-[9px] font-semibold uppercase tracking-wider text-primary-gold/35 whitespace-nowrap">
+                                    Check-in
+                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      onClick={() =>
+                                        handleToggleArrived(reserve)
+                                      }
+                                      className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all cursor-pointer bg-primary-black/60 ${
+                                        reserve.isArrived
+                                          ? "border-green-700/50 text-green-700"
+                                          : "border-primary-gold/15 text-primary-gold/40 hover:border-primary-gold/40 hover:text-primary-gold"
+                                      }`}
+                                    >
+                                      {reserve.isArrived ? (
+                                        <LuSquareCheckBig size={15} />
+                                      ) : (
+                                        <LuSquare size={15} />
+                                      )}
+                                    </button>
+
+                                    {personCheckModeEnabled && (
+                                      <Tooltip
+                                        direction="top"
+                                        content="Check por pessoa"
+                                      >
+                                        <button
+                                          onClick={() =>
+                                            reserve.id &&
+                                            togglePersonChecksExpanded(
+                                              reserve.id,
+                                            )
+                                          }
+                                          className={`flex items-center gap-1 h-8 px-2 rounded-lg border transition-all cursor-pointer bg-primary-black/60 ${
+                                            arrivedCount === totalPeople &&
+                                            totalPeople > 0
+                                              ? "border-green-700/50 text-green-700"
+                                              : "border-primary-gold/15 text-primary-gold/40 hover:border-primary-gold/40 hover:text-primary-gold"
+                                          }`}
+                                        >
+                                          <span className="text-[10px] font-semibold tabular-nums">
+                                            {arrivedCount}/{totalPeople}
+                                          </span>
+                                          {isExpanded ? (
+                                            <LuChevronUp size={12} />
+                                          ) : (
+                                            <LuChevronDown size={12} />
+                                          )}
+                                        </button>
+                                      </Tooltip>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex flex-col items-center gap-2 px-3 py-2 rounded-lg border border-primary-gold/10 bg-primary-black/30">
+                                  <span className="text-[9px] font-semibold uppercase tracking-wider text-primary-gold/35">
+                                    Mesa
+                                  </span>
+                                  <Input
+                                    placeholder="-"
+                                    value={reserve.table ? reserve.table : ""}
+                                    setValue={(e) =>
+                                      handleTableChange(
+                                        reserve.id ? reserve.id : "",
+                                        e.target.value,
+                                      )
+                                    }
+                                    width="!w-[40px] !min-w-[80px] !py-1 !px-0"
+                                  />
+                                </div>
                               </div>
                             )}
                           </div>
-                        </div>
 
-                        {reserve.status !== "canceled" && (
-                          <div className="flex sm:flex-col items-center gap-1">
-                            <span>mesa</span>
-                            <Input
-                              placeholder="-"
-                              value={reserve.table ? reserve.table : ""}
-                              setValue={(e) =>
-                                handleTableChange(
-                                  reserve.id ? reserve.id : "",
-                                  e.target.value,
-                                )
-                              }
-                              width="!w-[40px] !min-w-[80px] !py-1 !px-0"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                          {personCheckModeEnabled &&
+                            reserve.status !== "canceled" &&
+                            isExpanded && (
+                              <div className="flex flex-wrap gap-1.5 pt-2 border-t border-primary-gold/10">
+                                {Array.from({ length: totalPeople }).map(
+                                  (_, personIndex) => {
+                                    const isChecked =
+                                      reserve.arrivedPeople?.[personIndex] ??
+                                      false;
+                                    return (
+                                      <button
+                                        key={personIndex}
+                                        onClick={() =>
+                                          handleTogglePersonCheck(
+                                            reserve,
+                                            personIndex,
+                                          )
+                                        }
+                                        title={`Pessoa ${personIndex + 1}`}
+                                        className={`flex items-center justify-center w-6 h-6 rounded-md border transition-all cursor-pointer bg-primary-black/60 ${
+                                          isChecked
+                                            ? "border-green-700/50 text-green-700"
+                                            : "border-primary-gold/15 text-primary-gold/30 hover:border-primary-gold/40 hover:text-primary-gold"
+                                        }`}
+                                      >
+                                        {isChecked ? (
+                                          <LuSquareCheckBig size={11} />
+                                        ) : (
+                                          <LuSquare size={11} />
+                                        )}
+                                      </button>
+                                    );
+                                  },
+                                )}
+                              </div>
+                            )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -1275,7 +1635,9 @@ Equipe Carcassonne Pub`,
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-5 py-4 flex flex-col gap-4">
-              <p className="text-sm text-primary-gold/80">{simpleConfirmModal.message}</p>
+              <p className="text-sm text-primary-gold/80">
+                {simpleConfirmModal.message}
+              </p>
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={() => setSimpleConfirmModal(null)}
@@ -1321,10 +1683,16 @@ Equipe Carcassonne Pub`,
               </button>
             </div>
             <div className="px-5 py-4 flex flex-col gap-4">
-              <p className="text-sm text-primary-gold/60">{deleteConfirmModal.description}</p>
+              <p className="text-sm text-primary-gold/60">
+                {deleteConfirmModal.description}
+              </p>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-primary-gold/40">
-                  Digite <span className="font-mono font-bold text-invalid-color/80">EXCLUIR</span> para confirmar
+                  Digite{" "}
+                  <span className="font-mono font-bold text-invalid-color/80">
+                    EXCLUIR
+                  </span>{" "}
+                  para confirmar
                 </label>
                 <input
                   type="text"
