@@ -30,6 +30,7 @@ import {
   LuPencil,
   LuPrinter,
   LuSearch,
+  LuSettings,
   LuSquare,
   LuSquareCheck,
   LuSquareCheckBig,
@@ -928,6 +929,98 @@ export default function Rerserve() {
             </span>
           </div>
 
+          {/* Anotações do dia */}
+          <div className="flex flex-col gap-2 bg-secondary-black/40 border border-primary-gold/15 rounded-xl p-3 max-w-[267.84px]">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-semibold text-primary-gold/70 flex items-center gap-1.5">
+                <LuNotebookText size={14} /> Anotações
+              </span>
+              <span className="text-xs text-primary-gold/35">
+                {date.day < 10 ? `0${date.day}` : date.day}/
+                {date.month < 10 ? `0${date.month}` : date.month}/{date.year}
+              </span>
+            </div>
+            {dayNotes.length > 0 && (
+              <div className="flex flex-col gap-2 pb-2 border-b border-primary-gold/10">
+                {dayNotes.map((note) => {
+                  const isEditing = editingNoteId === note.id;
+                  return (
+                    <div
+                      key={note.id}
+                      className={`flex flex-col gap-2 p-2.5 rounded-lg border bg-primary-black/40 ${
+                        isEditing
+                          ? "border-primary-gold/40"
+                          : "border-primary-gold/10"
+                      }`}
+                    >
+                      {isEditing ? (
+                        <>
+                          <Input
+                            placeholder="Escreva uma anotação..."
+                            value={noteDraft}
+                            setValue={(e) => setNoteDraft(e.target.value)}
+                            multiline
+                            rows={3}
+                            width="w-full"
+                          />
+                          <div className="flex items-center gap-2 justify-end">
+                            <button
+                              onClick={handleCancelEditNote}
+                              className="text-xs px-3 py-1.5 rounded-lg border border-primary-gold/15 text-primary-gold/40 hover:text-primary-gold hover:border-primary-gold/40 transition-all cursor-pointer"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              onClick={handleSaveNote}
+                              disabled={!noteDraft.trim() || savingNote}
+                              className="text-xs px-3 py-1.5 rounded-lg border border-primary-gold/40 text-primary-gold hover:bg-primary-gold/10 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              {savingNote ? "Salvando..." : "Salvar edição"}
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="relative pr-6">
+                          <p className="text-sm text-primary-gold/80 whitespace-pre-wrap break-words">
+                            {note.text}
+                          </p>
+                          <div className="absolute -top-1 -right-1">
+                            <NoteActionsMenu
+                              onEdit={() => handleEditNote(note)}
+                              onDelete={() => handleDeleteNote(note)}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {!editingNoteId && (
+              <>
+                <Input
+                  placeholder="Escreva uma anotação..."
+                  value={noteDraft}
+                  setValue={(e) => setNoteDraft(e.target.value)}
+                  multiline
+                  rows={4}
+                  width="w-full"
+                />
+                <div className="flex items-center gap-2 justify-end">
+                  <button
+                    onClick={handleSaveNote}
+                    disabled={!noteDraft.trim() || savingNote}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-primary-gold/40 text-primary-gold hover:bg-primary-gold/10 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    {savingNote ? "Salvando..." : "Salvar"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
           {/* Freelancers */}
           {freelancers.length > 0 && (
             <div className="flex flex-col gap-2 bg-secondary-black/40 border border-primary-gold/15 rounded-xl p-3">
@@ -1005,85 +1098,6 @@ export default function Rerserve() {
               })}
             </div>
           )}
-
-          {/* Anotações do dia */}
-          <div className="flex flex-col gap-2 bg-secondary-black/40 border border-primary-gold/15 rounded-xl p-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-semibold text-primary-gold/70 flex items-center gap-1.5">
-                <LuNotebookText size={14} /> Anotações
-              </span>
-              <span className="text-xs text-primary-gold/35">
-                {date.day < 10 ? `0${date.day}` : date.day}/
-                {date.month < 10 ? `0${date.month}` : date.month}/{date.year}
-              </span>
-            </div>
-            <Input
-              placeholder="Escreva uma anotação..."
-              value={noteDraft}
-              setValue={(e) => setNoteDraft(e.target.value)}
-              multiline
-              rows={4}
-              width="w-full"
-            />
-            <div className="flex items-center gap-2 justify-end">
-              {editingNoteId && (
-                <button
-                  onClick={handleCancelEditNote}
-                  className="text-xs px-3 py-1.5 rounded-lg border border-primary-gold/15 text-primary-gold/40 hover:text-primary-gold hover:border-primary-gold/40 transition-all cursor-pointer"
-                >
-                  Cancelar
-                </button>
-              )}
-              <button
-                onClick={handleSaveNote}
-                disabled={!noteDraft.trim() || savingNote}
-                className="text-xs px-3 py-1.5 rounded-lg border border-primary-gold/40 text-primary-gold hover:bg-primary-gold/10 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                {savingNote
-                  ? "Salvando..."
-                  : editingNoteId
-                    ? "Salvar edição"
-                    : "Salvar"}
-              </button>
-            </div>
-
-            {dayNotes.length > 0 && (
-              <div className="flex flex-col gap-2 mt-1 pt-2 border-t border-primary-gold/10">
-                {dayNotes.map((note) => (
-                  <div
-                    key={note.id}
-                    className={`flex items-start justify-between gap-2 p-2.5 rounded-lg border bg-primary-black/40 ${
-                      editingNoteId === note.id
-                        ? "border-primary-gold/40"
-                        : "border-primary-gold/10"
-                    }`}
-                  >
-                    <p className="text-sm text-primary-gold/80 whitespace-pre-wrap flex-1 min-w-0">
-                      {note.text}
-                    </p>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Tooltip direction="top" content="Editar">
-                        <button
-                          onClick={() => handleEditNote(note)}
-                          className="p-1.5 rounded-lg border border-primary-gold/15 hover:border-primary-gold/50 text-primary-gold/40 hover:text-primary-gold transition-all cursor-pointer"
-                        >
-                          <LuPencil size={13} />
-                        </button>
-                      </Tooltip>
-                      <Tooltip direction="top" content="Excluir">
-                        <button
-                          onClick={() => handleDeleteNote(note)}
-                          className="p-1.5 rounded-lg border border-primary-gold/15 hover:border-invalid-color/50 hover:text-invalid-color text-primary-gold/40 transition-all cursor-pointer"
-                        >
-                          <LuTrash size={13} />
-                        </button>
-                      </Tooltip>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* Interruptor do check por pessoa */}
           <div className="flex flex-col gap-2 bg-secondary-black/40 border border-primary-gold/15 rounded-xl p-3">
@@ -1939,6 +1953,62 @@ function ReserveActionsMenu({
           >
             <LuCalendarCog className="text-primary-gold/80 min-w-[16px]" />
             editar reserva
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NoteActionsMenu({
+  onEdit,
+  onDelete,
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((prev) => !prev)}
+        className="p-1.5 rounded-lg text-primary-gold/35 hover:text-primary-gold hover:bg-primary-gold/10 transition-all cursor-pointer"
+      >
+        <LuSettings size={13} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-7 z-50 bg-secondary-black border border-primary-gold/20 rounded-lg shadow-xl p-1 flex flex-col gap-0.5 min-w-[130px]">
+          <button
+            onClick={() => {
+              onEdit();
+              setOpen(false);
+            }}
+            className="flex items-center gap-2 text-sm px-2.5 py-2 rounded hover:bg-primary-gold/10 text-left cursor-pointer transition-colors text-primary-gold/80"
+          >
+            <LuPencil size={13} className="text-primary-gold/60 min-w-[13px]" />
+            editar
+          </button>
+          <button
+            onClick={() => {
+              onDelete();
+              setOpen(false);
+            }}
+            className="flex items-center gap-2 text-sm px-2.5 py-2 rounded hover:bg-primary-gold/10 text-left cursor-pointer transition-colors text-invalid-color"
+          >
+            <LuTrash size={13} className="min-w-[13px]" />
+            excluir
           </button>
         </div>
       )}
