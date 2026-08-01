@@ -6,6 +6,7 @@ import { Calendar } from "@heroui/react";
 import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
 import {
+  DayNoteType,
   FreelancerBookingStatus,
   FreelancerBookingType,
   FreelancerType,
@@ -26,6 +27,7 @@ import {
   LuDollarSign,
   LuLink,
   LuNotebookText,
+  LuPencil,
   LuPrinter,
   LuSearch,
   LuSquare,
@@ -143,9 +145,12 @@ export default function Rerserve() {
   const [freelancerProfiles, setFreelancerProfiles] = useState<
     (FreelancerType & { id: string })[]
   >([]);
-  const [dayNote, setDayNote] = useState("");
-  const skipNextNoteSave = useRef(false);
-  const noteSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [dayNotes, setDayNotes] = useState<(DayNoteType & { id: string })[]>(
+    [],
+  );
+  const [noteDraft, setNoteDraft] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [savingNote, setSavingNote] = useState(false);
 
   const isLargeScreen = useIsLargeScreen();
   const { addAlert } = useAlert();
@@ -317,40 +322,23 @@ export default function Rerserve() {
       }
     }
 
-    async function getDayNote() {
+    async function getDayNotes() {
       try {
         const dataBusca = new Date(date.year, date.month - 1, date.day);
-        const note = await DayNoteRepository.getByDate(dataBusca);
-        skipNextNoteSave.current = true;
-        setDayNote(note?.text ?? "");
+        const notes = await DayNoteRepository.getByDate(dataBusca);
+        setDayNotes(notes);
       } catch (error) {
         console.error("Erro ao carregar anotações do dia:", error);
       }
+      // Anotação sendo escrita/editada não deve vazar entre dias diferentes.
+      setNoteDraft("");
+      setEditingNoteId(null);
     }
 
     getReserves();
     getFrelancers();
-    getDayNote();
+    getDayNotes();
   }, [date, calendarFormsModal]);
-
-  // Salva as anotações do dia com debounce, evitando gravar a cada tecla e
-  // evitando gravar por engano logo após carregar o dia (getDayNote acima).
-  useEffect(() => {
-    if (skipNextNoteSave.current) {
-      skipNextNoteSave.current = false;
-      return;
-    }
-
-    if (noteSaveTimeout.current) clearTimeout(noteSaveTimeout.current);
-    noteSaveTimeout.current = setTimeout(() => {
-      const dataBusca = new Date(date.year, date.month - 1, date.day);
-      DayNoteRepository.save(dataBusca, dayNote);
-    }, 800);
-
-    return () => {
-      if (noteSaveTimeout.current) clearTimeout(noteSaveTimeout.current);
-    };
-  }, [dayNote]);
 
   useEffect(() => {
     async function getAllReserves() {
@@ -652,6 +640,68 @@ export default function Rerserve() {
         } catch (error) {
           console.error("Erro ao remover freelancer do dia:", error);
           addAlert("Erro ao remover freelancer do dia.");
+        }
+      },
+    });
+  }
+
+  async function handleSaveNote() {
+    if (!noteDraft.trim() || savingNote) return;
+    setSavingNote(true);
+    try {
+      const dataBusca = new Date(date.year, date.month - 1, date.day);
+      const ok = editingNoteId
+        ? await DayNoteRepository.update(editingNoteId, noteDraft.trim())
+        : await DayNoteRepository.create(dataBusca, noteDraft.trim());
+      if (!ok) {
+        addAlert(
+          editingNoteId
+            ? "Erro ao atualizar anotação."
+            : "Erro ao salvar anotação.",
+        );
+        return;
+      }
+      const notes = await DayNoteRepository.getByDate(dataBusca);
+      setDayNotes(notes);
+      setNoteDraft("");
+      setEditingNoteId(null);
+    } catch (error) {
+      addAlert("Erro ao salvar anotação.");
+      console.error(error);
+    } finally {
+      setSavingNote(false);
+    }
+  }
+
+  function handleEditNote(note: DayNoteType & { id: string }) {
+    setEditingNoteId(note.id);
+    setNoteDraft(note.text);
+  }
+
+  function handleCancelEditNote() {
+    setEditingNoteId(null);
+    setNoteDraft("");
+  }
+
+  function handleDeleteNote(note: DayNoteType & { id: string }) {
+    setSimpleConfirmModal({
+      message: "Tem certeza que deseja excluir essa anotação?",
+      onConfirm: async () => {
+        try {
+          const ok = await DayNoteRepository.delete(note.id);
+          if (!ok) {
+            addAlert("Erro ao excluir anotação.");
+            return;
+          }
+          setDayNotes((prev) => prev.filter((n) => n.id !== note.id));
+          if (editingNoteId === note.id) {
+            setEditingNoteId(null);
+            setNoteDraft("");
+          }
+          addAlert("Anotação excluída.");
+        } catch (error) {
+          addAlert("Erro ao excluir anotação.");
+          console.error(error);
         }
       },
     });
@@ -968,13 +1018,71 @@ export default function Rerserve() {
               </span>
             </div>
             <Input
-              placeholder="Anotações..."
-              value={dayNote}
-              setValue={(e) => setDayNote(e.target.value)}
+              placeholder="Escreva uma anotação..."
+              value={noteDraft}
+              setValue={(e) => setNoteDraft(e.target.value)}
               multiline
-              rows={5}
+              rows={4}
               width="w-full"
             />
+            <div className="flex items-center gap-2 justify-end">
+              {editingNoteId && (
+                <button
+                  onClick={handleCancelEditNote}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-primary-gold/15 text-primary-gold/40 hover:text-primary-gold hover:border-primary-gold/40 transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+              )}
+              <button
+                onClick={handleSaveNote}
+                disabled={!noteDraft.trim() || savingNote}
+                className="text-xs px-3 py-1.5 rounded-lg border border-primary-gold/40 text-primary-gold hover:bg-primary-gold/10 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                {savingNote
+                  ? "Salvando..."
+                  : editingNoteId
+                    ? "Salvar edição"
+                    : "Salvar"}
+              </button>
+            </div>
+
+            {dayNotes.length > 0 && (
+              <div className="flex flex-col gap-2 mt-1 pt-2 border-t border-primary-gold/10">
+                {dayNotes.map((note) => (
+                  <div
+                    key={note.id}
+                    className={`flex items-start justify-between gap-2 p-2.5 rounded-lg border bg-primary-black/40 ${
+                      editingNoteId === note.id
+                        ? "border-primary-gold/40"
+                        : "border-primary-gold/10"
+                    }`}
+                  >
+                    <p className="text-sm text-primary-gold/80 whitespace-pre-wrap flex-1 min-w-0">
+                      {note.text}
+                    </p>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Tooltip direction="top" content="Editar">
+                        <button
+                          onClick={() => handleEditNote(note)}
+                          className="p-1.5 rounded-lg border border-primary-gold/15 hover:border-primary-gold/50 text-primary-gold/40 hover:text-primary-gold transition-all cursor-pointer"
+                        >
+                          <LuPencil size={13} />
+                        </button>
+                      </Tooltip>
+                      <Tooltip direction="top" content="Excluir">
+                        <button
+                          onClick={() => handleDeleteNote(note)}
+                          className="p-1.5 rounded-lg border border-primary-gold/15 hover:border-invalid-color/50 hover:text-invalid-color text-primary-gold/40 transition-all cursor-pointer"
+                        >
+                          <LuTrash size={13} />
+                        </button>
+                      </Tooltip>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Interruptor do check por pessoa */}

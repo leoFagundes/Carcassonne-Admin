@@ -1238,7 +1238,6 @@ function QuizSection({
 // ══════════════════════════════════════════════════════════════════════════════
 
 function BolaoSection({
-  event,
   eventId,
   addAlert,
 }: {

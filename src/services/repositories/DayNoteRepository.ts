@@ -1,5 +1,16 @@
 import { db } from "@/services/firebaseConfig";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  serverTimestamp,
+  Timestamp,
+} from "firebase/firestore";
 import { DayNoteType } from "@/types";
 
 class DayNoteRepository {
@@ -12,30 +23,63 @@ class DayNoteRepository {
     return `${year}-${month}-${day}`;
   }
 
-  static async getByDate(date: Date): Promise<DayNoteType | null> {
+  static async getByDate(
+    date: Date,
+  ): Promise<(DayNoteType & { id: string })[]> {
     try {
-      const docRef = doc(db, this.collectionName, this.dateKey(date));
-      const snapshot = await getDoc(docRef);
-      if (!snapshot.exists()) return null;
-      return { id: snapshot.id, ...(snapshot.data() as DayNoteType) };
+      const key = this.dateKey(date);
+      const q = query(
+        collection(db, this.collectionName),
+        where("date", "==", key),
+      );
+      const snap = await getDocs(q);
+      return snap.docs
+        .map((d) => ({ id: d.id, ...(d.data() as DayNoteType) }))
+        .sort((a, b) => {
+          const aTime = (a.createdAt as Timestamp)?.toMillis?.() ?? 0;
+          const bTime = (b.createdAt as Timestamp)?.toMillis?.() ?? 0;
+          return bTime - aTime;
+        });
     } catch (error) {
       console.error("Erro ao buscar anotações do dia: ", error);
+      return [];
+    }
+  }
+
+  static async create(date: Date, text: string): Promise<string | null> {
+    try {
+      const ref = await addDoc(collection(db, this.collectionName), {
+        date: this.dateKey(date),
+        text,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      return ref.id;
+    } catch (error) {
+      console.error("Erro ao criar anotação: ", error);
       return null;
     }
   }
 
-  static async save(date: Date, text: string): Promise<boolean> {
+  static async update(id: string, text: string): Promise<boolean> {
     try {
-      const key = this.dateKey(date);
-      const docRef = doc(db, this.collectionName, key);
-      await setDoc(
-        docRef,
-        { date: key, text, updatedAt: serverTimestamp() },
-        { merge: true },
-      );
+      await updateDoc(doc(db, this.collectionName, id), {
+        text,
+        updatedAt: serverTimestamp(),
+      });
       return true;
     } catch (error) {
-      console.error("Erro ao salvar anotações do dia: ", error);
+      console.error("Erro ao atualizar anotação: ", error);
+      return false;
+    }
+  }
+
+  static async delete(id: string): Promise<boolean> {
+    try {
+      await deleteDoc(doc(db, this.collectionName, id));
+      return true;
+    } catch (error) {
+      console.error("Erro ao deletar anotação: ", error);
       return false;
     }
   }

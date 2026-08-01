@@ -145,6 +145,7 @@ export interface DayNoteType {
   id?: string;
   date: string; // "YYYY-MM-DD"
   text: string;
+  createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
 
