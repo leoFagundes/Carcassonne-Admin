@@ -109,6 +109,13 @@ export default function FreelancerCard({
     (b) =>
       !b.isPayed && b.status === "confirmed" && isBookingUpToToday(b.bookingDate),
   ).length;
+  // Badge de "dias" só conta hoje em diante — dias passados já pagos não
+  // agregam valor ali; se ficou sem pagar, o badge de pendência já cobre.
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcomingCount = bookings.filter(
+    (b) => bookingDateToDate(b.bookingDate) >= today,
+  ).length;
 
   const disabledCalendarDates = bookings.map(
     (b) =>
@@ -298,9 +305,11 @@ export default function FreelancerCard({
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary-gold/10 border border-primary-gold/20 text-primary-gold/60">
-            {bookings.length} dia{bookings.length !== 1 ? "s" : ""}
-          </span>
+          {upcomingCount > 0 && (
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary-gold/10 border border-primary-gold/20 text-primary-gold/60">
+              {upcomingCount} dia{upcomingCount !== 1 ? "s" : ""}
+            </span>
+          )}
           {pendingPaymentCount > 0 && (
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-invalid-color/10 border border-invalid-color/30 text-invalid-color">
               {pendingPaymentCount} não pago
