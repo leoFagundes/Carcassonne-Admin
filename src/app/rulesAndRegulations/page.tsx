@@ -1,15 +1,17 @@
 "use client";
 
-import Button from "@/components/button";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { FaWhatsapp } from "react-icons/fa";
+import { motion } from "framer-motion";
+import { FaWhatsapp, FaSmokingBan } from "react-icons/fa";
 import {
   FiClipboard,
   FiFacebook,
   FiInstagram,
   FiMapPin,
-  FiSkipBack,
+  FiArrowLeft,
+  FiAlertTriangle,
+  FiCreditCard,
 } from "react-icons/fi";
 
 const STAR = (
@@ -25,6 +27,22 @@ const STAR = (
     />
   </svg>
 );
+
+const containerVariants = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.09 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: "easeOut" as const },
+  },
+};
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -81,7 +99,12 @@ export default function RulesPage() {
         }
       `}</style>
 
-      <div className="relative min-h-screen text-primary-gold flex flex-col items-center px-4 sm:px-8 pb-24 pt-6 gap-10">
+      <motion.div
+        initial="hidden"
+        animate="show"
+        variants={containerVariants}
+        className="relative min-h-screen text-primary-gold flex flex-col items-center px-4 sm:px-8 pb-14 pt-6 gap-10"
+      >
         {/* Background */}
         <div className="hex-bg-rules fixed inset-0 pointer-events-none z-0" />
         <div
@@ -93,20 +116,30 @@ export default function RulesPage() {
         />
 
         {/* Back button */}
-        <button
+        <motion.button
+          variants={itemVariants}
+          whileHover={{ x: -3 }}
           onClick={() => router.back()}
-          className="self-start relative z-10 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/70 hover:text-primary-gold transition-all duration-200 backdrop-blur-sm bg-primary-black/30"
+          className="self-start relative z-10 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/70 hover:text-primary-gold transition-colors duration-200 backdrop-blur-sm bg-primary-black/30"
         >
-          <FiSkipBack size={15} />
+          <FiArrowLeft size={15} />
           <span className="text-sm font-medium">Voltar</span>
-        </button>
+        </motion.button>
 
         {/* Contact section */}
-        <div className="relative z-10 flex flex-col items-center gap-5 w-full max-w-md">
-          <SectionTitle>Contato</SectionTitle>
+        <motion.div
+          variants={containerVariants}
+          className="relative z-10 flex flex-col items-center gap-5 w-full max-w-md"
+        >
+          <motion.div variants={itemVariants} className="w-full">
+            <SectionTitle>Contato</SectionTitle>
+          </motion.div>
 
           <div className="flex flex-col gap-2.5 w-full">
-            <a
+            <motion.a
+              variants={itemVariants}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               href="https://wa.me/5561999684186"
               target="_blank"
               rel="noopener noreferrer"
@@ -114,8 +147,11 @@ export default function RulesPage() {
             >
               <FaWhatsapp size={16} className="text-primary-gold/70 shrink-0" />
               <span>(61) 99968-4186</span>
-            </a>
-            <button
+            </motion.a>
+            <motion.button
+              variants={itemVariants}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => router.push("/reserve")}
               className="contact-link w-full text-left"
             >
@@ -124,8 +160,11 @@ export default function RulesPage() {
                 className="text-primary-gold/70 shrink-0"
               />
               <span>Faça sua reserva</span>
-            </button>
-            <a
+            </motion.button>
+            <motion.a
+              variants={itemVariants}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               href="https://www.facebook.com/CARCASSONNEPUB"
               target="_blank"
               rel="noopener noreferrer"
@@ -133,8 +172,11 @@ export default function RulesPage() {
             >
               <FiFacebook size={16} className="text-primary-gold/70 shrink-0" />
               <span>/CARCASSONNEPUB</span>
-            </a>
-            <a
+            </motion.a>
+            <motion.a
+              variants={itemVariants}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               href="https://www.instagram.com/CARCASSONNEPUB"
               target="_blank"
               rel="noopener noreferrer"
@@ -145,8 +187,11 @@ export default function RulesPage() {
                 className="text-primary-gold/70 shrink-0"
               />
               <span>@CARCASSONNEPUB</span>
-            </a>
-            <a
+            </motion.a>
+            <motion.a
+              variants={itemVariants}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               href="https://www.google.com/maps/place/CLN+407+Bloco+E+-+Loja+37+-+Asa+Norte,+Brasília+-+DF"
               target="_blank"
               rel="noopener noreferrer"
@@ -154,19 +199,31 @@ export default function RulesPage() {
             >
               <FiMapPin size={16} className="text-primary-gold/70 shrink-0" />
               <span>CLN 407 BLOCO E LOJA 37 — ASA NORTE</span>
-            </a>
+            </motion.a>
           </div>
-        </div>
+        </motion.div>
 
         {/* Legal section */}
-        <div className="relative z-10 flex flex-col items-center gap-6 w-full max-w-2xl">
-          <SectionTitle>Avisos Legais & Políticas</SectionTitle>
+        <motion.div
+          variants={containerVariants}
+          className="relative z-10 flex flex-col items-center gap-6 w-full max-w-2xl"
+        >
+          <motion.div variants={itemVariants} className="w-full">
+            <SectionTitle>Avisos Legais & Políticas</SectionTitle>
+          </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-            <div className="bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3">
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">
-                Proibição
-              </span>
+            <motion.div
+              variants={itemVariants}
+              whileHover={{ y: -3 }}
+              className="bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3 transition-colors hover:border-primary-gold/35"
+            >
+              <div className="flex items-center gap-2">
+                <FaSmokingBan size={14} className="text-primary-gold/50 shrink-0" />
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">
+                  Proibição
+                </span>
+              </div>
               <p className="text-sm text-primary-gold/80 leading-relaxed">
                 É proibido o uso de cigarros, cigarrilhas, charutos, cachimbos
                 ou qualquer outro produto fumígeno, derivado ou não do tabaco,
@@ -175,12 +232,19 @@ export default function RulesPage() {
               <span className="text-xs text-primary-gold/40 mt-auto">
                 Lei 9.294/1996 Art. 2º
               </span>
-            </div>
+            </motion.div>
 
-            <div className="bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3">
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">
-                Menores de Idade
-              </span>
+            <motion.div
+              variants={itemVariants}
+              whileHover={{ y: -3 }}
+              className="bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3 transition-colors hover:border-primary-gold/35"
+            >
+              <div className="flex items-center gap-2">
+                <FiAlertTriangle size={14} className="text-primary-gold/50 shrink-0" />
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">
+                  Menores de Idade
+                </span>
+              </div>
               <p className="text-sm text-primary-gold/80 leading-relaxed">
                 É proibido vender, fornecer, servir, ministrar ou entregar,
                 ainda que gratuitamente, de qualquer forma, a criança ou o
@@ -190,12 +254,19 @@ export default function RulesPage() {
               <span className="text-xs text-primary-gold/40 mt-auto">
                 Lei 8.069/1990, Art. 243
               </span>
-            </div>
+            </motion.div>
 
-            <div className="bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3">
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">
-                Pagamento
-              </span>
+            <motion.div
+              variants={itemVariants}
+              whileHover={{ y: -3 }}
+              className="bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3 transition-colors hover:border-primary-gold/35"
+            >
+              <div className="flex items-center gap-2">
+                <FiCreditCard size={14} className="text-primary-gold/50 shrink-0" />
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">
+                  Pagamento
+                </span>
+              </div>
               <ul className="text-sm text-primary-gold/80 flex flex-col gap-1.5">
                 <li className="flex items-center gap-2">
                   <span className="w-1 h-1 rounded-full bg-primary-gold/50 shrink-0" />{" "}
@@ -213,11 +284,14 @@ export default function RulesPage() {
               <p className="text-xs text-primary-gold/50 mt-auto">
                 Não aceitamos cheque.
               </p>
-            </div>
+            </motion.div>
           </div>
 
           {/* Extra notes */}
-          <div className="w-full bg-primary-black/40 border border-primary-gold/10 rounded-xl p-4 flex flex-col gap-2">
+          <motion.div
+            variants={itemVariants}
+            className="w-full bg-primary-black/40 border border-primary-gold/10 rounded-xl p-4 flex flex-col gap-2"
+          >
             {[
               "Cobramos taxa de rolha. Contate um de nossos atendentes.",
               "Proibido o consumo de produtos alimentícios não fornecidos pela casa.",
@@ -232,18 +306,16 @@ export default function RulesPage() {
                 {text}
               </p>
             ))}
-          </div>
+          </motion.div>
 
-          <p className="text-xs text-primary-gold/35 tracking-widest uppercase">
+          <motion.p
+            variants={itemVariants}
+            className="text-xs text-primary-gold/35 tracking-widest uppercase"
+          >
             PROCON 151
-          </p>
-        </div>
-
-        {/* Footer sticky */}
-        <div className="flex justify-center fixed bottom-0 p-3 w-full backdrop-blur-[6px] bg-primary-black/70 border-t border-primary-gold/10 z-20">
-          <Button onClick={() => router.back()}>Voltar</Button>
-        </div>
-      </div>
+          </motion.p>
+        </motion.div>
+      </motion.div>
     </>
   );
 }

@@ -130,7 +130,9 @@ export default function MenuPage() {
           <div className="flex items-center gap-2">
             <Tooltip direction="bottom" content="Visão do cliente">
               <button
-                onClick={() => router.push("/clientMenu")}
+                onClick={() =>
+                  window.open("/clientMenu", "_blank", "noopener,noreferrer")
+                }
                 className="p-2 cursor-pointer rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all"
               >
                 <LuLink size={14} />
