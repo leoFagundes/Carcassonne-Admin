@@ -111,6 +111,11 @@ const PAGE_STYLES = `
   .waiting-dot { animation: pulse-dot 1.4s ease-in-out infinite; }
   .waiting-dot:nth-child(2) { animation-delay: 0.2s; }
   .waiting-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes podium-rise {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .podium-col { animation: podium-rise 0.55s ease-out both; }
 `;
 
 // ── Main page ──────────────────────────────────────────────────────────────────
@@ -280,6 +285,125 @@ function ChampionScreen({
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// PODIUM
+// ══════════════════════════════════════════════════════════════════════════════
+
+const PODIUM_META: Record<
+  number,
+  { medal: string; height: string; name: string; pedestal: string; delay: string }
+> = {
+  1: {
+    medal: "👑",
+    height: "h-24",
+    name: "text-yellow-400",
+    pedestal:
+      "from-yellow-400/15 to-yellow-400/[0.03] border-yellow-400/30 text-yellow-400",
+    delay: "0.05s",
+  },
+  2: {
+    medal: "🥈",
+    height: "h-16",
+    name: "text-zinc-300",
+    pedestal:
+      "from-zinc-400/15 to-zinc-400/[0.03] border-zinc-400/25 text-zinc-400",
+    delay: "0.3s",
+  },
+  3: {
+    medal: "🥉",
+    height: "h-12",
+    name: "text-amber-600",
+    pedestal:
+      "from-amber-600/15 to-amber-600/[0.03] border-amber-700/30 text-amber-600",
+    delay: "0.45s",
+  },
+};
+
+function QuizPodium({
+  participants,
+  championId,
+  selfParticipantId,
+}: {
+  participants: (QuizParticipantType & { id: string })[];
+  championId: string;
+  selfParticipantId?: string;
+}) {
+  // O campeão coroado pelo admin ocupa o 1º lugar; os demais seguem a
+  // ordenação padrão (pontos desc, tempo asc) que já vem do repositório.
+  const champion = participants.find((p) => p.participantId === championId);
+  const rest = participants.filter((p) => p.participantId !== championId);
+  const ranked = champion ? [champion, ...rest] : participants;
+  const top3 = ranked.slice(0, 3);
+  if (top3.length === 0) return null;
+
+  // Disposição clássica: 2º à esquerda, 1º no centro, 3º à direita
+  const slots = [
+    top3[1] && { participant: top3[1], rank: 2 },
+    { participant: top3[0], rank: 1 },
+    top3[2] && { participant: top3[2], rank: 3 },
+  ].filter(Boolean) as {
+    participant: QuizParticipantType & { id: string };
+    rank: number;
+  }[];
+
+  return (
+    <div className="flex flex-col gap-4 p-5 rounded-2xl border border-primary-gold/15 bg-secondary-black/40">
+      <span className="text-center text-[11px] uppercase tracking-widest text-primary-gold/40">
+        🏆 Pódio
+      </span>
+      <div className="flex items-end justify-center gap-2">
+        {slots.map(({ participant, rank }) => {
+          const meta = PODIUM_META[rank];
+          const isSelf = participant.participantId === selfParticipantId;
+          return (
+            <div
+              key={participant.id}
+              className="podium-col flex flex-col items-center gap-1 flex-1 min-w-0 max-w-[130px]"
+              style={{ animationDelay: meta.delay }}
+            >
+              <span className={rank === 1 ? "text-3xl" : "text-2xl"}>
+                {meta.medal}
+              </span>
+              <span
+                className={`text-sm font-semibold truncate max-w-full ${meta.name}`}
+              >
+                {participant.name}
+              </span>
+              {participant.mesa && (
+                <span className="text-[10px] text-primary-gold/35 truncate max-w-full">
+                  📍 {participant.mesa}
+                </span>
+              )}
+              <span className="text-base font-bold text-primary-gold leading-none">
+                {participant.totalScore}
+                <span className="text-[10px] font-normal text-primary-gold/40 ml-0.5">
+                  pts
+                </span>
+              </span>
+              {participant.timeTakenSeconds !== undefined && (
+                <span className="text-[10px] font-mono text-primary-gold/40">
+                  {formatTimer(participant.timeTakenSeconds)}
+                </span>
+              )}
+              {isSelf && (
+                <span className="text-[9px] uppercase tracking-wider bg-primary-gold text-primary-black font-bold px-1.5 py-0.5 rounded-full">
+                  você
+                </span>
+              )}
+              <div
+                className={`w-full ${meta.height} mt-1 rounded-t-lg border border-b-0 bg-gradient-to-t ${meta.pedestal} flex items-start justify-center pt-1.5`}
+              >
+                <span className="text-xl font-bold opacity-50">{rank}º</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/30 to-transparent -mt-4" />
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // QUIZ SECTION
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -337,6 +461,9 @@ function QuizSection({
   const [submitting, setSubmitting] = useState(false);
   const [existingParticipant, setExistingParticipant] =
     useState<QuizParticipantType | null>(null);
+  const [allParticipants, setAllParticipants] = useState<
+    (QuizParticipantType & { id: string })[]
+  >([]);
 
   // Per-question answer flow
   const [answeredThisQuestion, setAnsweredThisQuestion] = useState(false);
@@ -471,6 +598,29 @@ function QuizSection({
       handleSubmitQuiz();
     }
   }, [event.quizStatus]);
+
+  // Podium data: subscribe to the full participant list only after the quiz
+  // ended, results were released and a champion was crowned by the admin.
+  useEffect(() => {
+    if (
+      event.quizStatus !== "finished" ||
+      !event.quizResultsVisible ||
+      !event.quizChampionId
+    ) {
+      setAllParticipants([]);
+      return;
+    }
+    const unsub = QuizParticipantRepository.subscribeToEventParticipants(
+      eventId,
+      setAllParticipants,
+    );
+    return () => unsub();
+  }, [
+    event.quizStatus,
+    event.quizResultsVisible,
+    event.quizChampionId,
+    eventId,
+  ]);
 
   // Live-subscribe to own participant record once submitted so admin corrections reflect immediately
   useEffect(() => {
@@ -672,11 +822,25 @@ function QuizSection({
       (a) => a.isCorrect === undefined,
     );
 
+    const podium = event.quizChampionId && allParticipants.length > 0 && (
+      <QuizPodium
+        participants={allParticipants}
+        championId={event.quizChampionId}
+        selfParticipantId={existingParticipant.participantId}
+      />
+    );
+
     if (isChampion)
-      return <ChampionScreen participant={existingParticipant} event={event} />;
+      return (
+        <div className="flex flex-col gap-6">
+          <ChampionScreen participant={existingParticipant} event={event} />
+          {podium}
+        </div>
+      );
 
     return (
       <div className="flex flex-col gap-5">
+        {podium}
         <div className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-primary-gold/5 border border-primary-gold/20 text-center">
           <div className="w-12 h-12 rounded-full bg-primary-gold/10 border border-primary-gold/20 flex items-center justify-center">
             <LuTrophy size={22} className="text-primary-gold" />

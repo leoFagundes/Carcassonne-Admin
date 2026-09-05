@@ -5,8 +5,8 @@ import { useAlert } from "@/contexts/alertProvider";
 import LoaderFullscreen from "./loaderFullscreen";
 import { PopupType } from "@/types";
 import InputImage from "./inputImage";
-import Button from "./button";
 import Loader from "./loader";
+import FormCard from "./formCard";
 import {
   deleteImageFromFirebase,
   getPathFromFirebaseUrl,
@@ -15,7 +15,7 @@ import {
 import PopupRepository from "@/services/repositories/PopupRepositoire";
 import { patternPopup } from "@/utils/patternValues";
 import Input from "./input";
-import { LuX } from "react-icons/lu";
+import { LuImage, LuPlus, LuX } from "react-icons/lu";
 
 interface DescriptionTypeFormsProps {
   closeForms: VoidFunction;
@@ -181,16 +181,17 @@ export default function PopupForms({ closeForms }: DescriptionTypeFormsProps) {
   };
 
   return (
-    <div className="flex flex-col items-center overflow-y-auto px-2 w-full">
+    <FormCard
+      title="Popups"
+      subtitle="Imagem exibida ao abrir o site — apenas uma ativa por vez"
+      icon={<LuImage size={18} />}
+      onClose={closeForms}
+      maxWidth="sm:max-w-[560px]"
+      hideFooter
+    >
       {fetchLoading && <LoaderFullscreen />}
-      <div className="w-full text-center mb-4">
-        <span className="text-xl sm:text-2xl text-gradient-gold">
-          Adicionar um novo Popup
-        </span>
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
-      </div>
 
-      <div className="rounded-xl border border-primary-gold/15 bg-secondary-black/40 p-4 mb-4 gap-5 flex flex-col w-full">
+      <div className="rounded-xl border border-primary-gold/15 bg-primary-black/30 p-4 gap-5 flex flex-col w-full">
         <div className="flex flex-col items-center gap-6 text-primary-gold">
           <InputImage
             onChange={(file, previewUrl) => {
@@ -225,19 +226,26 @@ export default function PopupForms({ closeForms }: DescriptionTypeFormsProps) {
           />
         </div>
 
-        <div className="flex gap-2 m-auto">
-          <Button onClick={handleSavePopup} disabled={loading}>
-            {loading ? <Loader /> : "Adicionar"}
-          </Button>
-        </div>
+        <button
+          onClick={handleSavePopup}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-4 py-2 m-auto rounded-lg bg-primary-gold/15 border border-primary-gold/40 text-primary-gold text-xs font-semibold hover:bg-primary-gold/25 transition-all cursor-pointer disabled:opacity-40"
+        >
+          {loading ? (
+            <Loader />
+          ) : (
+            <>
+              <LuPlus size={13} /> Adicionar popup
+            </>
+          )}
+        </button>
       </div>
 
-      <div className="w-full text-center mb-3">
-        <h1 className="text-lg text-gradient-gold">Galeria de Popups</h1>
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/20 to-transparent mt-1" />
-      </div>
+      <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45 mt-2">
+        Galeria de popups
+      </span>
 
-      <div className="rounded-xl border border-primary-gold/15 bg-secondary-black/40 p-4 gap-5 flex flex-wrap justify-center w-full">
+      <div className="rounded-xl border border-primary-gold/15 bg-primary-black/30 p-4 gap-5 flex flex-wrap justify-center w-full">
         {popups.map((popup, index) => {
           return (
             <div className="flex flex-col items-center" key={index}>
@@ -288,6 +296,6 @@ export default function PopupForms({ closeForms }: DescriptionTypeFormsProps) {
           );
         })}
       </div>
-    </div>
+    </FormCard>
   );
 }

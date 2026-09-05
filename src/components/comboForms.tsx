@@ -2,12 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import { LuBookOpenText, LuDollarSign, LuBoxes } from "react-icons/lu";
-import Button from "./button";
 import Input from "./input";
 import { ComboType } from "@/types";
 import { useAlert } from "@/contexts/alertProvider";
-import Loader from "./loader";
-import Tooltip from "./Tooltip";
+import FormCard from "./formCard";
 import ComboRepository from "@/services/repositories/ComboRepository";
 
 interface ComboFormsType {
@@ -101,14 +99,17 @@ export default function ComboForms({
   };
 
   return (
-    <>
-      <div className="w-full text-center">
-        <span className="text-xl sm:text-2xl text-gradient-gold">
-          {localItem.name ? localItem.name : "Combo sem nome"}
-        </span>
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
-      </div>
-      <div className="flex flex-wrap justify-center py-4 text-primary-gold gap-6 overflow-y-auto px-2 flex-1 min-h-0 w-full">
+    <FormCard
+      title={localItem.name || "Novo Combo"}
+      subtitle={formType === "edit" ? "Editar combo" : "Criar novo combo"}
+      icon={<LuBoxes size={18} />}
+      onClose={closeForms}
+      onSubmit={formType === "edit" ? handleEditCombo : handleCreateCombo}
+      submitLabel={formType === "edit" ? "Salvar alterações" : "Criar combo"}
+      onDelete={formType === "edit" ? handleDeleteCombo : undefined}
+      loading={loading}
+    >
+      <div className="flex flex-wrap justify-center py-2 text-primary-gold gap-6 w-full">
         <div className="flex flex-col gap-6">
           <Input
             label="Nome"
@@ -152,20 +153,6 @@ export default function ComboForms({
           />
         </div>
       </div>
-      <div className="flex gap-2 pt-3 border-t border-primary-gold/10 w-full justify-center">
-        {formType === "edit" && (
-          <Tooltip content="Cuidado, essa ação é irreversível.">
-            <Button onClick={handleDeleteCombo} isHoverInvalid>
-              Excluir
-            </Button>
-          </Tooltip>
-        )}
-        <Button
-          onClick={formType === "edit" ? handleEditCombo : handleCreateCombo}
-        >
-          {loading ? <Loader /> : formType === "edit" ? "Salvar" : "Criar"}
-        </Button>
-      </div>
-    </>
+    </FormCard>
   );
 }

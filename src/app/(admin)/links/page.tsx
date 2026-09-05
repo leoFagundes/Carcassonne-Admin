@@ -258,7 +258,12 @@ export default function LinksPage() {
         )}
       </section>
 
-      <Modal isOpen={linkFormsModal} onClose={() => setlinkFormsModal(false)}>
+      <Modal
+        isOpen={linkFormsModal}
+        onClose={() => setlinkFormsModal(false)}
+        noPadding
+        patternCloseButton={false}
+      >
         <LinksForms
           currentLink={currentLink}
           setCurrentLink={setCurrentLink}

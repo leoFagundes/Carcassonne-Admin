@@ -261,7 +261,7 @@ export default function EventosPage() {
 
   useEffect(() => {
     if (selectedEvent?.quizStatus !== "running") return;
-    const interval = setInterval(() => setAdminTick((t) => t + 1), 2000);
+    const interval = setInterval(() => setAdminTick((t) => t + 1), 500);
     return () => clearInterval(interval);
   }, [selectedEvent?.quizStatus]);
 
@@ -284,8 +284,15 @@ export default function EventosPage() {
     const elapsed = nowMs - countdownEndsMs;
     let cumulative = 0;
     for (let i = 0; i < questions.length; i++) {
-      cumulative += (questions[i].timeSeconds ?? 30) * 1000;
-      if (elapsed < cumulative) return { phase: "question" as const, index: i };
+      const durationSeconds = questions[i].timeSeconds ?? 30;
+      cumulative += durationSeconds * 1000;
+      if (elapsed < cumulative)
+        return {
+          phase: "question" as const,
+          index: i,
+          secondsLeft: Math.ceil((cumulative - elapsed) / 1000),
+          durationSeconds,
+        };
     }
     return { phase: "done" as const };
   }, [
@@ -1090,7 +1097,12 @@ export default function EventosPage() {
       </section>
 
       {/* Event create/edit modal */}
-      <Modal isOpen={eventFormsModal} onClose={() => setEventFormsModal(false)}>
+      <Modal
+        isOpen={eventFormsModal}
+        onClose={() => setEventFormsModal(false)}
+        noPadding
+        patternCloseButton={false}
+      >
         <EventForms
           currentEvent={currentEvent}
           setCurrentEvent={setCurrentEvent}
@@ -1140,23 +1152,6 @@ export default function EventosPage() {
                       <LuUsers size={11} /> {quizParticipants.length}{" "}
                       participante{quizParticipants.length !== 1 ? "s" : ""}
                     </span>
-                    {adminCurrentQuestion && (
-                      <span
-                        className={`flex items-center gap-1 font-medium ${
-                          adminCurrentQuestion.phase === "countdown"
-                            ? "text-yellow-400"
-                            : adminCurrentQuestion.phase === "question"
-                              ? "text-green-400"
-                              : "text-primary-gold/40"
-                        }`}
-                      >
-                        {adminCurrentQuestion.phase === "countdown" &&
-                          `⏳ ${adminCurrentQuestion.secondsLeft}s`}
-                        {adminCurrentQuestion.phase === "question" &&
-                          `Q${adminCurrentQuestion.index + 1}/${questions.length}`}
-                        {adminCurrentQuestion.phase === "done" && "Concluído"}
-                      </span>
-                    )}
                   </div>
                 </div>
               ) : (
@@ -1205,7 +1200,7 @@ export default function EventosPage() {
             {/* Row 2: quiz control buttons (only when quiz) */}
             {selectedEvent?.subtype === "quiz" && (
               <div className="flex items-center gap-2 px-5 pb-3 flex-wrap">
-                {selectedEvent.quizStatus === "waiting" && (
+                {(selectedEvent.quizStatus ?? "waiting") === "waiting" && (
                   <button
                     onClick={handleStartQuiz}
                     disabled={quizActionLoading || questions.length === 0}
@@ -1265,6 +1260,72 @@ export default function EventosPage() {
                       </>
                     )}
                   </button>
+                )}
+              </div>
+            )}
+
+            {/* ── Live panel (quiz em andamento) ── */}
+            {selectedEvent?.subtype === "quiz" && adminCurrentQuestion && (
+              <div className="mx-5 mb-3 rounded-xl border border-green-700/25 bg-green-900/10 px-4 py-3 flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-green-400">
+                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                    Ao vivo
+                  </span>
+                  {adminCurrentQuestion.phase === "question" && (
+                    <span className="text-[11px] text-primary-gold/40 font-mono">
+                      Pergunta {adminCurrentQuestion.index + 1} de{" "}
+                      {questions.length}
+                    </span>
+                  )}
+                </div>
+
+                {adminCurrentQuestion.phase === "countdown" && (
+                  <p className="text-sm text-yellow-400">
+                    ⏳ Contagem regressiva — o quiz começa em{" "}
+                    <span className="font-mono font-bold">
+                      {adminCurrentQuestion.secondsLeft}s
+                    </span>
+                  </p>
+                )}
+
+                {adminCurrentQuestion.phase === "question" && (
+                  <>
+                    <p className="text-sm text-primary-gold/90 leading-snug">
+                      {questions[adminCurrentQuestion.index]?.text}
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-1.5 bg-primary-gold/10 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            adminCurrentQuestion.secondsLeft <= 5
+                              ? "bg-red-400"
+                              : "bg-green-400"
+                          }`}
+                          style={{
+                            width: `${Math.min(100, (adminCurrentQuestion.secondsLeft / adminCurrentQuestion.durationSeconds) * 100)}%`,
+                          }}
+                        />
+                      </div>
+                      <span
+                        className={`text-xs font-mono font-bold shrink-0 ${
+                          adminCurrentQuestion.secondsLeft <= 5
+                            ? "text-red-400"
+                            : "text-primary-gold/70"
+                        }`}
+                      >
+                        {adminCurrentQuestion.secondsLeft}s
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {adminCurrentQuestion.phase === "done" && (
+                  <p className="text-sm text-primary-gold/60">
+                    Tempo das perguntas esgotado — as respostas já foram
+                    coletadas. Clique em <strong>Encerrar</strong> para liberar
+                    a correção.
+                  </p>
                 )}
               </div>
             )}

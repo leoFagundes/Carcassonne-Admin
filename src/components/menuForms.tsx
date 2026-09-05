@@ -12,15 +12,13 @@ import {
   LuImage,
   LuSparkles,
 } from "react-icons/lu";
-import Button from "./button";
 import Checkbox from "./checkbox";
 import Input from "./input";
 import OptionsInput from "./optionsInput";
 import { MenuItemType } from "@/types";
 import InputImage from "./inputImage";
 import { useAlert } from "@/contexts/alertProvider";
-import Tooltip from "./Tooltip";
-import Loader from "./loader";
+import FormCard from "./formCard";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import { patternMenuItem } from "@/utils/patternValues";
 import LoaderFullscreen from "./loaderFullscreen";
@@ -183,15 +181,21 @@ export default function MenuForms({
   };
 
   return (
-    <>
+    <FormCard
+      title={localItem.name || "Novo Item"}
+      subtitle={
+        formType === "edit" ? "Editar item do cardápio" : "Adicionar item ao cardápio"
+      }
+      icon={<LuPizza size={18} />}
+      onClose={closeForms}
+      maxWidth="sm:max-w-[620px]"
+      onSubmit={handleSaveItem}
+      submitLabel={formType === "edit" ? "Salvar alterações" : "Criar item"}
+      onDelete={formType === "edit" ? handleDeleteItem : undefined}
+      loading={loading}
+    >
       {fullscreenLoading && <LoaderFullscreen />}
-      <div className="w-full text-center">
-        <span className="text-xl sm:text-2xl text-gradient-gold">
-          {localItem.name ? localItem.name : "Item sem nome"}
-        </span>
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
-      </div>
-      <div className="flex flex-wrap justify-center py-4 text-primary-gold gap-6 overflow-y-auto px-2 flex-1 min-h-0 w-full">
+      <div className="flex flex-wrap justify-center py-2 text-primary-gold gap-6 w-full">
         <div className="flex flex-col gap-6">
           <Input
             label="Nome"
@@ -384,18 +388,6 @@ export default function MenuForms({
           </div>
         </div>
       </div>
-      <div className="flex gap-2 pt-3 border-t border-primary-gold/10 w-full justify-center">
-        {formType === "edit" && (
-          <Tooltip content="Cuidado, essa ação é irreversível.">
-            <Button onClick={handleDeleteItem} isHoverInvalid>
-              Excluir
-            </Button>
-          </Tooltip>
-        )}
-        <Button onClick={handleSaveItem}>
-          {loading ? <Loader /> : formType === "edit" ? "Salvar" : "Criar"}
-        </Button>
-      </div>
-    </>
+    </FormCard>
   );
 }

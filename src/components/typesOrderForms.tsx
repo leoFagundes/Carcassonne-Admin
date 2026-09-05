@@ -1,26 +1,31 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Button from "./button";
 import LoaderFullscreen from "./loaderFullscreen";
 import { useAlert } from "@/contexts/alertProvider";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import Input from "./input";
 import { InfoType, TypeOrderType } from "@/types";
 import Loader from "./loader";
-import { LuListOrdered, LuPlus } from "react-icons/lu";
+import { LuListOrdered, LuPlus, LuSave } from "react-icons/lu";
 import TypesOrderRepository from "@/services/repositories/TypesOrderRepository";
 import RecorderTypesOrderList from "./recorderTypesOrderList";
 import { patternTypeOrder } from "@/utils/patternValues";
 import RecorderInfoList from "./recorderInfoList";
 import InfoRepository from "@/services/repositories/InfoRepository";
+import FormCard from "./formCard";
 
 interface TypesOrderFormsProps {
   currentTypeOrder: TypeOrderType;
+  closeForms: VoidFunction;
 }
+
+const compactButtonClass =
+  "flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary-gold/15 border border-primary-gold/40 text-primary-gold text-xs font-semibold hover:bg-primary-gold/25 transition-all cursor-pointer disabled:opacity-40";
 
 export default function TypesOrderForms({
   currentTypeOrder,
+  closeForms,
 }: TypesOrderFormsProps) {
   const [fetchLoading, setFetchLoading] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -157,16 +162,17 @@ export default function TypesOrderForms({
   }
 
   return (
-    <div className="flex flex-col items-center overflow-y-auto px-2 min-h-[250px] w-full">
+    <FormCard
+      title="Ordenação do cardápio"
+      subtitle="Adicione tipos e arraste para definir a ordem de exibição"
+      icon={<LuListOrdered size={18} />}
+      onClose={closeForms}
+      maxWidth="sm:max-w-[680px]"
+      hideFooter
+    >
       {fetchLoading && <LoaderFullscreen />}
-      <div className="w-full text-center mb-4">
-        <span className="text-xl sm:text-2xl text-gradient-gold">
-          Adicionar tipo
-        </span>
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
-      </div>
 
-      <div className="flex items-center flex-wrap justify-center gap-x-2 gap-y-4 my-6 text-primary-gold">
+      <div className="flex items-center flex-wrap justify-center gap-x-3 gap-y-4 py-2 text-primary-gold">
         <Input
           label="Tipo"
           placeholder="Ex: Pizza, Entrada..."
@@ -183,49 +189,69 @@ export default function TypesOrderForms({
           options={types}
           smallInput
         />
-        <div className="flex gap-2">
-          <Button onClick={handleCreateTypeOrder}>
-            <LuPlus size={14} />
-            {fetchLoading ? <Loader /> : "Adicionar"}
-          </Button>
-        </div>
+        <button
+          onClick={handleCreateTypeOrder}
+          disabled={fetchLoading}
+          className={compactButtonClass}
+        >
+          {fetchLoading ? (
+            <Loader />
+          ) : (
+            <>
+              <LuPlus size={13} /> Adicionar
+            </>
+          )}
+        </button>
       </div>
-      <div className="flex flex-wrap justify-center gap-2">
+      <div className="flex flex-wrap justify-center gap-4">
         {typesOrder.length > 0 && (
-          <div className="flex flex-col items-center border border-primary-gold/15 bg-secondary-black/40 my-2 mx-4 py-4 px-4 rounded-xl">
-            <h2 className="text-lg font-semibold text-gradient-gold mb-3">
+          <div className="flex flex-col items-center gap-3 border border-primary-gold/15 bg-primary-black/30 py-4 px-4 rounded-xl">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
               Ordenar Tipos e Subtipos
-            </h2>
+            </span>
             <RecorderTypesOrderList
               items={typesOrder}
               subItemOptions={subtypes}
               setItems={setTypesOrder}
             />
-
-            <div className="flex gap-2 pt-3 border-t border-primary-gold/10 w-full justify-center mt-2">
-              <Button onClick={handleUpdateOrder}>
-                {loading ? <Loader /> : "Salvar"}
-              </Button>
-            </div>
+            <button
+              onClick={handleUpdateOrder}
+              disabled={loading}
+              className={compactButtonClass}
+            >
+              {loading ? (
+                <Loader />
+              ) : (
+                <>
+                  <LuSave size={13} /> Salvar ordem
+                </>
+              )}
+            </button>
           </div>
         )}
 
         {infos.length > 0 && (
-          <div className="flex flex-col items-center border border-primary-gold/15 bg-secondary-black/40 my-2 mx-4 py-4 px-4 rounded-xl">
-            <h2 className="text-lg font-semibold text-gradient-gold mb-3">
+          <div className="flex flex-col items-center gap-3 border border-primary-gold/15 bg-primary-black/30 py-4 px-4 rounded-xl">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
               Ordenar Avisos
-            </h2>
-
+            </span>
             <RecorderInfoList items={infos} setItems={setInfos} />
-
-            <div>
-              <Button onClick={saveOrder} disabled={loading}>
-                {loading ? <Loader /> : "Salvar"}
-              </Button>
-            </div>
+            <button
+              onClick={saveOrder}
+              disabled={loading}
+              className={compactButtonClass}
+            >
+              {loading ? (
+                <Loader />
+              ) : (
+                <>
+                  <LuSave size={13} /> Salvar ordem
+                </>
+              )}
+            </button>
           </div>
         )}
       </div>
-    </div>
+    </FormCard>
   );
 }

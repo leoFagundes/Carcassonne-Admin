@@ -201,6 +201,8 @@ export default function CollectionPage() {
             setIsModalOpen(false);
             setCurrentItem(patternBoardgame);
           }}
+          noPadding
+          patternCloseButton={false}
         >
           <CollectionForms
             currentItem={currentItem}

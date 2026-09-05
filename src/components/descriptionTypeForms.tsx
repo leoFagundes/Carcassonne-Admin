@@ -3,8 +3,7 @@
 import { DescriptionTypeProps } from "@/types";
 import React, { useEffect, useState } from "react";
 import Input from "./input";
-import Button from "./button";
-import { LuSquareStack, LuText } from "react-icons/lu";
+import { LuSquareStack, LuText, LuTrash, LuPlus } from "react-icons/lu";
 import { FiArrowRight } from "react-icons/fi";
 import { useAlert } from "@/contexts/alertProvider";
 import DescriptionRepository from "@/services/repositories/DescriptionTypeRepository";
@@ -12,17 +11,20 @@ import { patternDescriptionType } from "@/utils/patternValues";
 import Loader from "./loader";
 import LoaderFullscreen from "./loaderFullscreen";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
+import FormCard from "./formCard";
 
 interface DescriptionTypeFormsProps {
   currentDescriptionType: DescriptionTypeProps;
   setcurrentDescriptionType: React.Dispatch<
     React.SetStateAction<DescriptionTypeProps>
   >;
+  closeForms: VoidFunction;
 }
 
 export default function DescriptionTypeForms({
   currentDescriptionType,
   setcurrentDescriptionType,
+  closeForms,
 }: DescriptionTypeFormsProps) {
   const [descriptions, setDescriptions] = useState<DescriptionTypeProps[]>([]);
   const [addLoading, setAddLoading] = useState(false);
@@ -127,16 +129,16 @@ export default function DescriptionTypeForms({
   };
 
   return (
-    <div className="flex flex-col items-center overflow-y-auto px-2 w-full">
+    <FormCard
+      title="Descrições de tipo"
+      subtitle="Textos exibidos no cardápio para cada tipo de item"
+      icon={<LuText size={18} />}
+      onClose={closeForms}
+      hideFooter
+    >
       {fetchLoading && <LoaderFullscreen />}
-      <div className="w-full text-center mb-4">
-        <span className="text-xl sm:text-2xl text-gradient-gold">
-          Adicionar uma nova descrição
-        </span>
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
-      </div>
 
-      <div className="flex flex-col gap-6 text-primary-gold">
+      <div className="flex flex-col items-center gap-6 text-primary-gold py-2">
         <Input
           label="Tipo"
           placeholder="Ex: Pizza, Entrada..."
@@ -167,30 +169,49 @@ export default function DescriptionTypeForms({
           icon={<LuText size={"20px"} />}
           width="!w-[250px]"
         />
+        <button
+          onClick={handleCreateDescription}
+          disabled={addLoading}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary-gold/15 border border-primary-gold/40 text-primary-gold text-xs font-semibold hover:bg-primary-gold/25 transition-all cursor-pointer disabled:opacity-40"
+        >
+          {addLoading ? (
+            <Loader />
+          ) : (
+            <>
+              <LuPlus size={13} /> Adicionar descrição
+            </>
+          )}
+        </button>
       </div>
-      <div className="flex gap-2 pt-3 border-t border-primary-gold/10 w-fit justify-center my-4">
-        <Button onClick={handleCreateDescription}>
-          {addLoading ? <Loader /> : "Adicionar"}
-        </Button>
-      </div>
+
       {descriptions.length > 0 && (
-        <section className="flex flex-col gap-2 w-full">
+        <section className="flex flex-col gap-2 w-full border-t border-primary-gold/10 pt-4">
           <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
-            Descrições atuais:
+            Descrições atuais
           </span>
           {descriptions.map((descriptionType, index) => (
             <div
               key={index}
-              onClick={() => handleDeleteDescription(descriptionType)}
-              className="flex items-center gap-2 px-3 py-2 border border-primary-gold/20 rounded-lg text-primary-gold cursor-pointer hover:text-invalid-color hover:border-invalid-color/40 transition-all"
+              className="flex items-center gap-2 px-3 py-2 border border-primary-gold/15 bg-primary-black/30 rounded-lg text-primary-gold"
             >
-              <span>{descriptionType.type}</span>
-              <FiArrowRight className="min-w-[16px]" size={"16px"} />{" "}
-              <span className="text-xs">{descriptionType.description}</span>
+              <span className="text-sm shrink-0">{descriptionType.type}</span>
+              <FiArrowRight
+                className="min-w-[14px] text-primary-gold/40"
+                size={"14px"}
+              />
+              <span className="text-xs text-primary-gold/70 flex-1 min-w-0">
+                {descriptionType.description}
+              </span>
+              <button
+                onClick={() => handleDeleteDescription(descriptionType)}
+                className="p-1.5 rounded-md hover:bg-invalid-color/10 text-primary-gold/30 hover:text-invalid-color transition-all cursor-pointer shrink-0"
+              >
+                <LuTrash size={13} />
+              </button>
             </div>
           ))}
         </section>
       )}
-    </div>
+    </FormCard>
   );
 }

@@ -258,6 +258,8 @@ export default function MenuPage() {
             setIsMenuModalOpen(false);
             setCurrentItem(patternMenuItem);
           }}
+          noPadding
+          patternCloseButton={false}
         >
           <MenuForms
             currentItem={currentItem}
@@ -277,6 +279,8 @@ export default function MenuPage() {
             setIsInfoModalOpen(false);
             setCurrentInfo(patternInfo);
           }}
+          noPadding
+          patternCloseButton={false}
         >
           <InfoForms
             currentInfo={currentInfo}
@@ -296,6 +300,8 @@ export default function MenuPage() {
             setIsComboModalOpen(false);
             setCurrentCombo(patternCombo);
           }}
+          noPadding
+          patternCloseButton={false}
         >
           <ComboForms
             currentCombo={currentCombo}

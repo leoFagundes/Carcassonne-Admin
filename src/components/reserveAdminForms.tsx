@@ -17,9 +17,9 @@ import {
 import Input from "./input";
 import { Calendar } from "@heroui/calendar";
 import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
-import Button from "./button";
 import { useAlert } from "@/contexts/alertProvider";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
+import FormCard from "./formCard";
 
 interface ReserveAdminFormsType {
   onClose: VoidFunction;
@@ -37,6 +37,7 @@ export default function ReserveAdminForms({
   const [date, setDate] = useState(() =>
     dateProps ? dateProps : today(getLocalTimeZone()),
   );
+  const [submitting, setSubmitting] = useState(false);
   const { addAlert } = useAlert();
 
   const [localReserve, setLocalReserve] = useState<ReserveType>(() =>
@@ -114,10 +115,10 @@ export default function ReserveAdminForms({
     return true;
   };
 
-  async function handleCreateReserve(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!isReserveFormValid()) return;
+  async function handleCreateReserve() {
+    if (!isReserveFormValid() || submitting) return;
 
+    setSubmitting(true);
     try {
       await ReserveRepository.create(localReserve);
       addAlert(`Reserva de ${localReserve.name} criada com sucesso!`);
@@ -180,12 +181,13 @@ export default function ReserveAdminForms({
     } catch (error) {
       addAlert("Erro ao criar uma nova reserva!");
       console.error(error);
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  async function handleEditReserve(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!isReserveFormValid()) return;
+  async function handleEditReserve() {
+    if (!isReserveFormValid() || submitting) return;
     if (!localReserve.id) {
       addAlert(
         "Reserv não encontrada para edição, recarregue a página e tente novamente.",
@@ -193,6 +195,7 @@ export default function ReserveAdminForms({
       return;
     }
 
+    setSubmitting(true);
     try {
       await ReserveRepository.update(localReserve.id, localReserve);
       addAlert(`Reserva de ${localReserve.name} editada com sucesso!`);
@@ -200,29 +203,29 @@ export default function ReserveAdminForms({
     } catch (error) {
       addAlert("Erro ao editar esta reserva!");
       console.error(error);
+    } finally {
+      setSubmitting(false);
     }
   }
 
   return (
-    <div className="flex justify-center w-full h-full text-primary-gold">
-      <form
-        onSubmit={(e) =>
-          type === "add" ? handleCreateReserve(e) : handleEditReserve(e)
-        }
-        className="flex flex-col items-center w-fit rounded px-3 py-6 sm:p-8 gap-8 overflow-y-auto max-h-[100%] max-w-[100%] sm:max-h-[90%] sm:max-w-[90%]"
-      >
-        <div className="w-full text-center">
-          <span className="text-xl sm:text-2xl text-gradient-gold flex items-center justify-center gap-2">
-            {type === "add" ? (
-              <LuCalendarPlus size={20} className="shrink-0" />
-            ) : (
-              <LuCalendarCog size={20} className="shrink-0" />
-            )}
-            {type === "add" ? "Criar uma nova Reserva" : "Editar Reserva"}
-          </span>
-          <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
-        </div>
-        <div className="flex gap-6 flex-wrap justify-center">
+    <FormCard
+      title={type === "add" ? "Nova Reserva" : "Editar Reserva"}
+      subtitle={
+        type === "add"
+          ? "Crie uma reserva em nome do cliente"
+          : `Reserva #${localReserve.code} de ${localReserve.name}`
+      }
+      icon={
+        type === "add" ? <LuCalendarPlus size={18} /> : <LuCalendarCog size={18} />
+      }
+      onClose={onClose}
+      maxWidth="sm:max-w-[920px]"
+      onSubmit={type === "add" ? handleCreateReserve : handleEditReserve}
+      submitLabel={type === "add" ? "Criar reserva" : "Salvar alterações"}
+      loading={submitting}
+    >
+      <div className="flex gap-6 flex-wrap justify-center text-primary-gold py-2">
           <section className="flex flex-col items-center gap-2">
             <Calendar
               aria-label="Date (Invalid on weekends)"
@@ -374,12 +377,7 @@ export default function ReserveAdminForms({
               />
             </div>
           </section>
-        </div>
-        <div className="flex gap-3">
-          <Button onClick={() => onClose()}>Cancelar</Button>
-          <Button type="submit">{type === "add" ? "Criar" : "Editar"}</Button>
-        </div>
-      </form>
-    </div>
+      </div>
+    </FormCard>
   );
 }

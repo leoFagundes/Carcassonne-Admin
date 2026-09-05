@@ -170,6 +170,8 @@ export default function AddPage() {
           setIsAddGameModalOpen(false);
           setNewBoardgame(patternBoardgame);
         }}
+        noPadding
+        patternCloseButton={false}
       >
         <CollectionForms
           currentItem={newBoardgame}
@@ -188,6 +190,8 @@ export default function AddPage() {
           setIsAddItemModalOpen(false);
           setNewMenuItem(patternMenuItem);
         }}
+        noPadding
+        patternCloseButton={false}
       >
         <MenuForms
           currentItem={newMenuItem}
@@ -206,6 +210,8 @@ export default function AddPage() {
           setIsAddComboModalOpen(false);
           setNewCombo(patternCombo);
         }}
+        noPadding
+        patternCloseButton={false}
       >
         <ComboForms
           currentCombo={newCombo}
@@ -224,6 +230,8 @@ export default function AddPage() {
           setIsAddInfoModalOpen(false);
           setNewInfo(patternInfo);
         }}
+        noPadding
+        patternCloseButton={false}
       >
         <InfoForms
           currentInfo={newInfo}
@@ -242,10 +250,16 @@ export default function AddPage() {
           setIsDescriptionTypeModalOpen(false);
           setNewDescriptionType(patternDescriptionType);
         }}
+        noPadding
+        patternCloseButton={false}
       >
         <DescriptionTypeForms
           currentDescriptionType={newDescriptionType}
           setcurrentDescriptionType={setNewDescriptionType}
+          closeForms={() => {
+            setIsDescriptionTypeModalOpen(false);
+            setNewDescriptionType(patternDescriptionType);
+          }}
         />
       </Modal>
 
@@ -255,8 +269,16 @@ export default function AddPage() {
           setIsAddTypesOrderModalOpen(false);
           setNewTypeOrder(patternTypeOrder);
         }}
+        noPadding
+        patternCloseButton={false}
       >
-        <TypesOrderForms currentTypeOrder={newTypeOrder} />
+        <TypesOrderForms
+          currentTypeOrder={newTypeOrder}
+          closeForms={() => {
+            setIsAddTypesOrderModalOpen(false);
+            setNewTypeOrder(patternTypeOrder);
+          }}
+        />
       </Modal>
 
       <Modal
@@ -264,6 +286,8 @@ export default function AddPage() {
         onClose={() => {
           setIsAddPopupModalOpen(false);
         }}
+        noPadding
+        patternCloseButton={false}
       >
         <PopupForms
           closeForms={() => {

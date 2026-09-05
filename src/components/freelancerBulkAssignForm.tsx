@@ -7,7 +7,7 @@ import { FreelancerBookingType, FreelancerType } from "@/types";
 import { useAlert } from "@/contexts/alertProvider";
 import FreelancerBookingRepository from "@/services/repositories/FreelancerBookingRepository";
 import MultiDatePicker from "./multiDatePicker";
-import Button from "./button";
+import FormCard from "./formCard";
 
 type FreelancerWithId = FreelancerType & { id: string };
 type BookingWithId = FreelancerBookingType & { id: string };
@@ -134,17 +134,18 @@ export default function FreelancerBulkAssignForm({
   }
 
   return (
-    <div className="flex justify-center w-full h-full text-primary-gold">
-      <div className="flex flex-col items-center w-fit rounded px-3 py-6 sm:p-8 gap-6 overflow-y-auto max-h-[100%] max-w-[100%] sm:max-h-[90%] sm:max-w-[90%]">
-        <div className="w-full text-center">
-          <span className="text-xl sm:text-2xl text-gradient-gold flex items-center justify-center gap-2">
-            <LuCalendarRange size={20} className="shrink-0" />
-            Atribuir freelancers a dia(s)
-          </span>
-          <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-2" />
-        </div>
-
-        <div className="flex gap-6 flex-wrap justify-center w-full">
+    <FormCard
+      title="Atribuir freelancers"
+      subtitle="Escale um ou mais freelancers em um ou mais dias de uma vez"
+      icon={<LuCalendarRange size={18} />}
+      onClose={onClose}
+      maxWidth="sm:max-w-[620px]"
+      onSubmit={handleSubmit}
+      submitLabel="Atribuir"
+      submitDisabled={selectedDates.length === 0 || selectedIds.size === 0}
+      loading={submitting}
+    >
+      <div className="flex gap-6 flex-wrap justify-center w-full text-primary-gold py-2">
           <MultiDatePicker
             dates={selectedDates}
             setDates={setSelectedDates}
@@ -204,17 +205,7 @@ export default function FreelancerBulkAssignForm({
               </span>
             )}
           </section>
-        </div>
-
-        <div className="flex gap-3">
-          <Button onClick={() => onClose()} type="button">
-            Cancelar
-          </Button>
-          <Button onClick={handleSubmit} type="button" disabled={submitting}>
-            Atribuir
-          </Button>
-        </div>
       </div>
-    </div>
+    </FormCard>
   );
 }

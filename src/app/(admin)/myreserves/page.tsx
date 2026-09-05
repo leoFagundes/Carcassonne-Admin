@@ -1633,6 +1633,8 @@ Equipe Carcassonne Pub`,
       <Modal
         isOpen={calendarFormsModal}
         onClose={() => setCalendarFormsModal(false)}
+        noPadding
+        patternCloseButton={false}
       >
         <ReserveAdminForms
           dateProps={date}

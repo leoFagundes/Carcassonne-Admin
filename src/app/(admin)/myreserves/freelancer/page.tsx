@@ -307,14 +307,24 @@ export default function FreelancerAdminPage() {
         )}
       </div>
 
-      <Modal isOpen={createModal} onClose={() => setCreateModal(false)}>
+      <Modal
+        isOpen={createModal}
+        onClose={() => setCreateModal(false)}
+        noPadding
+        patternCloseButton={false}
+      >
         <FreelancerAdminForms
           onClose={() => setCreateModal(false)}
           onCreated={loadAll}
         />
       </Modal>
 
-      <Modal isOpen={bulkAssignModal} onClose={() => setBulkAssignModal(false)}>
+      <Modal
+        isOpen={bulkAssignModal}
+        onClose={() => setBulkAssignModal(false)}
+        noPadding
+        patternCloseButton={false}
+      >
         <FreelancerBulkAssignForm
           freelancers={freelancers}
           bookingsByFreelancer={bookingsByFreelancer}
