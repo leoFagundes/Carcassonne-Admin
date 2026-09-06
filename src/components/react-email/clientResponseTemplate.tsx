@@ -194,8 +194,11 @@ export const StaffReservationEmail = ({
                 {`${bookingDate.day}/${bookingDate.month}/${bookingDate.year}`}
                 <br />⏰ <strong>Horário:</strong> {time}h
                 <br />
-                👥 <strong>Quantidade de pessoas:</strong> {adults + childs}{" "}
+                👥 <strong>Quantidade de pessoas:</strong> {adults + childs}
+                {/* Distinção adultos/crianças removida das reservas —
+                    detalhamento comentado, fica só o total de pessoas acima.
                 (Adultos: {adults} | Crianças: {childs})
+                */}
               </Text>
 
               {observation && (

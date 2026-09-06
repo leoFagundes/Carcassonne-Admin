@@ -9,7 +9,7 @@ import {
   LuMail,
   LuBookOpenText,
   LuUserRound,
-  LuBaby,
+  // LuBaby, // ícone usado só no campo "Crianças", removido junto com ele
   LuTable,
   LuCalendarPlus,
   LuCalendarCog,
@@ -107,8 +107,10 @@ export default function ReserveAdminForms({
       }
     }
 
+    // Checa os dois campos (não só "adults") para não travar a edição de
+    // reservas antigas que já tinham pessoas contadas em "childs".
     if (localReserve.adults <= 0 && localReserve.childs <= 0) {
-      addAlert("Informe pelo menos uma pessoa (adulto ou criança).");
+      addAlert("Informe pelo menos uma pessoa.");
       return false;
     }
 
@@ -330,9 +332,9 @@ export default function ReserveAdminForms({
             </div>
             <div className="flex flex-col gap-6">
               <Input
-                label="Adultos"
+                label="Pessoas"
                 type="number"
-                placeholder="Ex: 2"
+                placeholder="Ex: 4"
                 value={String(localReserve.adults)}
                 setValue={(e) =>
                   setLocalReserve({
@@ -344,6 +346,10 @@ export default function ReserveAdminForms({
                 icon={<LuUserRound size={"18px"} />}
                 width="!w-[250px]"
               />
+              {/* Distinção adultos/crianças removida — reserva agora conta só
+                  o total de pessoas (campo "adults" acima). O campo "childs"
+                  continua existindo no banco (não alterado) e não é mais
+                  editável por aqui.
               <Input
                 label="Crianças"
                 type="number"
@@ -359,6 +365,7 @@ export default function ReserveAdminForms({
                 icon={<LuBaby size={"18px"} />}
                 width="!w-[250px]"
               />
+              */}
               <Input
                 label="Observação"
                 placeholder="Observações"

@@ -103,6 +103,10 @@ export default function PrintModal({
               Incluir checks
             </label>
 
+            {/* Distinção adultos/crianças removida das reservas — opção de
+                separar na impressão comentada. O campo "printSeparateByAge"
+                continua existindo (sempre false agora) para não quebrar o
+                restante do código que ainda lê essa config.
             <label className="flex items-center gap-2 cursor-pointer text-black px-2 border rounded shadow-md text-sm">
               <input
                 type="checkbox"
@@ -117,6 +121,7 @@ export default function PrintModal({
               />
               Separar Adultos e Crianças
             </label>
+            */}
 
             <select
               value={printConfigs.printPosition}

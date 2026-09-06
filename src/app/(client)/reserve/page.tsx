@@ -51,8 +51,11 @@ const STAR = (
 export default function Reserve() {
   const [page, setPage] = useState(1);
   const [adults, setAdults] = useState(2);
-  const [childs, setChilds] = useState(0);
-  const [inLimit, setInLimit] = useState(false);
+  // Distinção adultos/crianças removida da reserva — agora é só "pessoas".
+  // Mantido comentado (em vez de removido) e substituído por uma constante
+  // porque o campo "childs" continua existindo no banco (não alterado).
+  // const [childs, setChilds] = useState(0);
+  const childs = 0;
   const [date, setDate] = useState<Value>();
   const [allReserves, setAllReserves] = useState<ReserveType[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
@@ -132,10 +135,6 @@ export default function Reserve() {
     }
     fetchReserves();
   }, []);
-
-  useEffect(() => {
-    setInLimit(adults + childs >= localGeneralConfigs.maxCapacityInReserve);
-  }, [adults, childs, localGeneralConfigs]);
 
   useEffect(() => {
     const fetchGeneralConfigs = async () => {
@@ -422,24 +421,27 @@ export default function Reserve() {
             </p>
 
             <div className="flex flex-col items-center gap-2 w-full">
-              <span className="text-sm text-primary-gold/70">Adultos</span>
+              <span className="text-sm text-primary-gold/70">Pessoas</span>
               <NumberPicker
                 currentNumber={adults}
                 setCurrentNumber={setAdults}
                 initialNumber={1}
-                inLimit={inLimit}
+                max={localGeneralConfigs.maxCapacityInReserve}
               />
             </div>
 
+            {/* Distinção adultos/crianças removida — reserva agora conta só
+                o total de pessoas.
             <div className="flex flex-col items-center gap-2 w-full">
               <span className="text-sm text-primary-gold/70">Crianças</span>
               <NumberPicker
                 currentNumber={childs}
                 setCurrentNumber={setChilds}
                 initialNumber={0}
-                inLimit={inLimit}
+                max={localGeneralConfigs.maxCapacityInReserve}
               />
             </div>
+            */}
 
             {childs + adults === 1 && (
               <p className="text-invalid-color text-center text-sm">

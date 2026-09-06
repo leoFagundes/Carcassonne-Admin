@@ -383,20 +383,27 @@ export default function Rerserve() {
   ) {
     try {
       if (id) {
-        const reserveWithNewStatus = {
-          ...reserve,
+        const statusChanges = {
           status: newStatus,
           ...(newStatus === "canceled" && {
             canceledAt: new Date().toISOString(),
             canceledBy: "admin" as const,
           }),
         };
-        await ReserveRepository.update(id, reserveWithNewStatus);
+        const ok = await ReserveRepository.update(id, statusChanges);
 
-        const reservesUpdated = reserves.map((reserve) =>
-          reserve.id === reserveWithNewStatus.id
-            ? reserveWithNewStatus
-            : reserve,
+        // ReserveRepository.update captura o erro internamente e retorna
+        // false em vez de lançar — sem checar isso aqui, uma escrita que
+        // falhou era exibida como sucesso e a tela ficava com o status
+        // "trocado" só localmente, sem refletir o banco de verdade.
+        if (!ok) {
+          addAlert("Erro ao alterar o status da reserva. Tente novamente.");
+          return;
+        }
+
+        const reserveWithNewStatus = { ...reserve, ...statusChanges };
+        const reservesUpdated = reserves.map((r) =>
+          r.id === id ? reserveWithNewStatus : r,
         );
         setReserves(reservesUpdated);
 

@@ -66,7 +66,7 @@ const helpCards: HelpCard[] = [
     category: "reservas",
     title: "Como criar uma nova reserva manualmente",
     description:
-      "Clique no ícone de calendário com + (tooltip: 'Criar uma nova reserva') no cabeçalho da página. Um formulário abrirá em modal com a data já preenchida com o dia selecionado. Preencha nome, telefone, e-mail, horário, adultos, crianças e observação. Outra forma de chegar no mesmo formulário é pela página Adicionar → 'Adicionar Reserva'.",
+      "Clique no ícone de calendário com + (tooltip: 'Criar uma nova reserva') no cabeçalho da página. Um formulário abrirá em modal com a data já preenchida com o dia selecionado. Preencha nome, telefone, e-mail, horário, quantidade de pessoas e observação. Outra forma de chegar no mesmo formulário é pela página Adicionar → 'Adicionar Reserva'.",
   },
   {
     category: "reservas",
@@ -96,7 +96,7 @@ const helpCards: HelpCard[] = [
     category: "reservas",
     title: "Como imprimir a lista de reservas do dia",
     description:
-      "Clique no ícone de impressora no cabeçalho (disponível em telas maiores). Abrirá um modal com visualização de impressão e opções de configuração: incluir horário, incluir checkboxes de presença, incluir observações, posição do layout, marca d'água, tamanho da fonte e separar adultos de crianças. Depois de configurar, use Ctrl+P do navegador para imprimir ou salvar como PDF.",
+      "Clique no ícone de impressora no cabeçalho (disponível em telas maiores). Abrirá um modal com visualização de impressão e opções de configuração: incluir horário, incluir checkboxes de presença, incluir observações, posição do layout, marca d'água e tamanho da fonte. Depois de configurar, use Ctrl+P do navegador para imprimir ou salvar como PDF.",
   },
   {
     category: "reservas",

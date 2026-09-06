@@ -50,6 +50,8 @@ export default function CancelReserve() {
   }, [code]);
 
   async function handleCancelReserve() {
+    if (componentLoading) return;
+
     const normalizedCode = code.trim().replace(/^#/, "").toLowerCase();
     const reserveFound = allReserves.find(
       (reserve) => reserve.code.toLowerCase() === normalizedCode
@@ -67,13 +69,27 @@ export default function CancelReserve() {
     setcomponentLoading(true);
     try {
       const canceledReason = cancelReason.trim();
-      await ReserveRepository.update(reserveFound.id!, {
-        ...reserveFound,
+      // Só os campos que realmente mudam — nunca espalhar o "reserveFound"
+      // inteiro aqui, que é uma cópia carregada quando a página abriu e pode
+      // já estar desatualizada em relação ao que está no banco agora.
+      const ok = await ReserveRepository.update(reserveFound.id!, {
         status: "canceled",
         canceledAt: new Date().toISOString(),
         canceledBy: "user",
         ...(canceledReason ? { canceledReason } : {}),
       });
+
+      // ReserveRepository.update nunca lança erro — ele captura a falha
+      // internamente e retorna false. Sem checar isso aqui, uma escrita que
+      // falhou (permissão, rede instável, etc.) era mostrada como sucesso
+      // pro cliente, enquanto a reserva continuava ativa no banco.
+      if (!ok) {
+        addAlert(
+          "Não foi possível cancelar a reserva agora. Tente novamente em instantes ou fale conosco pelo WhatsApp."
+        );
+        return;
+      }
+
       setAllReserves((prev) =>
         prev.map((r) =>
           r.id === reserveFound.id ? { ...r, status: "canceled" } : r
@@ -218,7 +234,7 @@ export default function CancelReserve() {
             ) : null}
 
             <div className="flex gap-2 justify-end">
-              <Button onClick={handleCancelReserve}>
+              <Button onClick={handleCancelReserve} disabled={componentLoading}>
                 {componentLoading ? <Loader /> : "Confirmar cancelamento"}
               </Button>
             </div>
