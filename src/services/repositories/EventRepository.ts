@@ -130,6 +130,25 @@ class EventRepository {
     return this.update(id, { quizResultsVisible: true });
   }
 
+  static async openVoting(id: string): Promise<boolean> {
+    return this.update(id, { votacaoStatus: "aberta" });
+  }
+
+  static async closeVoting(id: string): Promise<boolean> {
+    return this.update(id, { votacaoStatus: "encerrada" });
+  }
+
+  static async showVotingResults(id: string): Promise<boolean> {
+    return this.update(id, { votacaoResultsVisible: true });
+  }
+
+  static async resetVoting(id: string): Promise<boolean> {
+    return this.update(id, {
+      votacaoStatus: "cadastro",
+      votacaoResultsVisible: false,
+    });
+  }
+
   static async setQuizChampion(id: string, participantId: string): Promise<boolean> {
     return this.update(id, { quizChampionId: participantId });
   }

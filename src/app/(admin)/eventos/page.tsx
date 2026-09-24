@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { Reorder, useDragControls } from "framer-motion";
 import {
   LuAlignLeft,
   LuBrain,
@@ -13,13 +14,17 @@ import {
   LuCircleHelp,
   LuCircleSlash,
   LuCrown,
+  LuDrama,
+  LuGripVertical,
   LuImage,
+  LuImagePlus,
   LuInfo,
   LuPencil,
   LuEye,
   LuPlay,
   LuPlus,
   LuRefreshCw,
+  LuScissors,
   LuSettings2,
   LuTimer,
   LuShield,
@@ -30,6 +35,7 @@ import {
   LuTrash,
   LuTrophy,
   LuUsers,
+  LuVote,
   LuX,
 } from "react-icons/lu";
 import { Timestamp, deleteField, updateDoc, doc } from "firebase/firestore";
@@ -38,12 +44,20 @@ import { useAlert } from "@/contexts/alertProvider";
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import Modal from "@/components/modal";
 import EventForms from "@/components/eventForms";
+import ImageCropperModal from "@/components/imageCropperModal";
 import EventRepository from "@/services/repositories/EventRepository";
 import BolaoTeamRepository from "@/services/repositories/BolaoTeamRepository";
 import BolaoMatchRepository from "@/services/repositories/BolaoMatchRepository";
 import BolaoParticipantRepository from "@/services/repositories/BolaoParticipantRepository";
 import QuizQuestionRepository from "@/services/repositories/QuizQuestionRepository";
 import QuizParticipantRepository from "@/services/repositories/QuizParticipantRepository";
+import VotingEntryRepository from "@/services/repositories/VotingEntryRepository";
+import VotingVoteRepository from "@/services/repositories/VotingVoteRepository";
+import {
+  uploadImageToFirebase,
+  deleteImageFromFirebase,
+  getPathFromFirebaseUrl,
+} from "@/services/repositories/FirebaseImageUtils";
 import {
   EventItemType,
   BolaoTeamType,
@@ -51,6 +65,8 @@ import {
   BolaoParticipantType,
   QuizQuestionType,
   QuizParticipantType,
+  VotingEntryType,
+  VotingVoteType,
 } from "@/types";
 import { patternEvent } from "@/utils/patternValues";
 import { getLucideIcon } from "@/utils/utilFunctions";
@@ -73,6 +89,18 @@ type QuizQuestionFormState = {
   points: number;
   timeSeconds: number;
 };
+// Uma foto "em espera" (selecionada mas ainda não enviada ao Storage) —
+// usada tanto pra criar uma fantasia nova quanto pra adicionar mais ângulos
+// a uma fantasia já existente.
+type StagedPhoto = {
+  key: string;
+  originalFile: File;
+  croppedFile: File | null;
+  previewUrl: string;
+};
+type CropperContext =
+  | { mode: "newEntry"; key: string }
+  | { mode: "editEntry"; key: string };
 
 const patternTeamForm: TeamFormState = { name: "", imageUrl: "" };
 const patternMatchForm: MatchFormState = { teamAId: "", teamBId: "", date: "" };
@@ -146,6 +174,37 @@ function TabHint({ children }: { children: React.ReactNode }) {
       <LuInfo size={12} className="shrink-0 mt-0.5" />
       <span>{children}</span>
     </div>
+  );
+}
+
+// Envolve uma linha da lista de fantasias num item arrastável (framer-motion
+// Reorder), soltando o handle de arrastar pro conteúdo via render-prop pra
+// não duplicar o JSX de exibição/edição em dois lugares.
+function DraggableEntryItem({
+  entry,
+  children,
+}: {
+  entry: VotingEntryType & { id: string };
+  children: (dragHandle: React.ReactNode) => React.ReactNode;
+}) {
+  const dragControls = useDragControls();
+  const dragHandle = (
+    <button
+      type="button"
+      onPointerDown={(e) => dragControls.start(e)}
+      className="cursor-grab active:cursor-grabbing touch-none text-primary-gold/30 hover:text-primary-gold/60 transition-colors shrink-0 p-1 -ml-1"
+    >
+      <LuGripVertical size={15} />
+    </button>
+  );
+  return (
+    <Reorder.Item
+      value={entry}
+      dragListener={false}
+      dragControls={dragControls}
+    >
+      {children(dragHandle)}
+    </Reorder.Item>
   );
 }
 
@@ -238,6 +297,52 @@ export default function EventosPage() {
     string | null
   >(null);
   const [quizActionLoading, setQuizActionLoading] = useState(false);
+
+  // ── Votação state ────────────────────────────────────────────────────────────
+  const [entries, setEntries] = useState<(VotingEntryType & { id: string })[]>(
+    [],
+  );
+  const [entriesLoading, setEntriesLoading] = useState(false);
+  const [votes, setVotes] = useState<(VotingVoteType & { id: string })[]>([]);
+  const [votingActionLoading, setVotingActionLoading] = useState(false);
+  const [savingEntriesOrder, setSavingEntriesOrder] = useState(false);
+  const entriesUnsubRef = useRef<(() => void) | null>(null);
+  const votesUnsubRef = useRef<(() => void) | null>(null);
+
+  // Cadastro de uma nova fantasia: nome único + várias fotos (ângulos)
+  // ficam "em espera" até o admin confirmar o salvamento. Depois de salvar,
+  // o formulário volta a ficar vazio pra cadastrar a próxima fantasia.
+  const [newEntryName, setNewEntryName] = useState("");
+  const [newEntryPhotos, setNewEntryPhotos] = useState<StagedPhoto[]>([]);
+  const [entrySaving, setEntrySaving] = useState(false);
+
+  // Edição de uma fantasia já cadastrada (nome, fotos existentes que ficam
+  // ou são removidas, e novas fotos a adicionar)
+  const [editingEntry, setEditingEntry] = useState<
+    (VotingEntryType & { id: string }) | null
+  >(null);
+  const [editingEntryName, setEditingEntryName] = useState("");
+  const [editingEntryExistingImages, setEditingEntryExistingImages] = useState<
+    string[]
+  >([]);
+  const [editingEntryNewPhotos, setEditingEntryNewPhotos] = useState<
+    StagedPhoto[]
+  >([]);
+  const [editingEntrySaving, setEditingEntrySaving] = useState(false);
+
+  // Modal de recorte compartilhado entre o cadastro em lote e a edição
+  const [cropperContext, setCropperContext] = useState<CropperContext | null>(
+    null,
+  );
+  const [cropperFile, setCropperFile] = useState<File | null>(null);
+
+  const voteCountByEntry = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    votes.forEach((v) => {
+      counts[v.entryId] = (counts[v.entryId] ?? 0) + 1;
+    });
+    return counts;
+  }, [votes]);
 
   // Light tick for admin current-question indicator (only when quiz running)
   const [adminTick, setAdminTick] = useState(0);
@@ -377,6 +482,27 @@ export default function EventosPage() {
       fetchTeams(event.id);
       fetchMatches(event.id);
       fetchParticipants(event.id);
+    } else if (event.subtype === "votacao") {
+      setNewEntryName("");
+      setNewEntryPhotos([]);
+      setEditingEntry(null);
+      setCropperContext(null);
+      setCropperFile(null);
+      // real-time subscriptions for entries and votes
+      if (entriesUnsubRef.current) entriesUnsubRef.current();
+      setEntriesLoading(true);
+      entriesUnsubRef.current = VotingEntryRepository.subscribeToEventEntries(
+        event.id,
+        (updated) => {
+          setEntries(updated);
+          setEntriesLoading(false);
+        },
+      );
+      if (votesUnsubRef.current) votesUnsubRef.current();
+      votesUnsubRef.current = VotingVoteRepository.subscribeToEventVotes(
+        event.id,
+        (updated) => setVotes(updated),
+      );
     } else {
       setQuizTab("perguntas");
       setQuestionForm(patternQuestionForm);
@@ -577,6 +703,318 @@ export default function EventosPage() {
           addAlert("Todos os palpites foram excluídos.");
         } catch {
           addAlert("Erro ao excluir palpites.");
+        }
+      },
+    });
+  };
+
+  // ── Votação handlers ─────────────────────────────────────────────────────────
+
+  // Seleciona uma ou mais fotos de uma vez PRA UMA MESMA fantasia (ângulos
+  // diferentes) — ficam "em espera" até o admin salvar.
+  const handleNewEntryFilesSelected = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    const newStaged: StagedPhoto[] = files.map((file) => ({
+      key: crypto.randomUUID(),
+      originalFile: file,
+      croppedFile: null,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setNewEntryPhotos((prev) => [...prev, ...newStaged]);
+  };
+
+  const handleRemoveNewEntryPhoto = (key: string) => {
+    setNewEntryPhotos((prev) => prev.filter((p) => p.key !== key));
+  };
+
+  const handleCropNewEntryPhoto = (key: string) => {
+    const staged = newEntryPhotos.find((p) => p.key === key);
+    if (!staged) return;
+    setCropperContext({ mode: "newEntry", key });
+    setCropperFile(staged.croppedFile ?? staged.originalFile);
+  };
+
+  const handleCropConfirm = (croppedFile: File) => {
+    if (!cropperContext) return;
+    const previewUrl = URL.createObjectURL(croppedFile);
+    if (cropperContext.mode === "newEntry") {
+      setNewEntryPhotos((prev) =>
+        prev.map((p) =>
+          p.key === cropperContext.key ? { ...p, croppedFile, previewUrl } : p,
+        ),
+      );
+    } else {
+      setEditingEntryNewPhotos((prev) =>
+        prev.map((p) =>
+          p.key === cropperContext.key ? { ...p, croppedFile, previewUrl } : p,
+        ),
+      );
+    }
+    setCropperContext(null);
+    setCropperFile(null);
+  };
+
+  const handleSaveNewEntry = async () => {
+    if (!selectedEvent || !newEntryName.trim()) {
+      addAlert("Preencha o nome da fantasia.");
+      return;
+    }
+    if (newEntryPhotos.length === 0) {
+      addAlert("Selecione ao menos uma foto.");
+      return;
+    }
+    setEntrySaving(true);
+    try {
+      const images: string[] = [];
+      for (const staged of newEntryPhotos) {
+        const fileToUpload = staged.croppedFile ?? staged.originalFile;
+        const { url } = await uploadImageToFirebase(
+          fileToUpload,
+          "voting-entries",
+        );
+        images.push(url);
+      }
+      await VotingEntryRepository.create({
+        eventId: selectedEvent.id,
+        name: newEntryName.trim(),
+        images,
+        order: entries.length,
+      });
+      addAlert(`Fantasia "${newEntryName.trim()}" adicionada!`);
+      setNewEntryName("");
+      setNewEntryPhotos([]);
+    } catch (error) {
+      addAlert("Erro ao adicionar fantasia.");
+      console.error(error);
+    } finally {
+      setEntrySaving(false);
+    }
+  };
+
+  const handleStartEditEntry = (entry: VotingEntryType & { id: string }) => {
+    setEditingEntry(entry);
+    setEditingEntryName(entry.name);
+    setEditingEntryExistingImages(entry.images ?? []);
+    setEditingEntryNewPhotos([]);
+  };
+
+  const handleEditEntryFilesSelected = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    const newStaged: StagedPhoto[] = files.map((file) => ({
+      key: crypto.randomUUID(),
+      originalFile: file,
+      croppedFile: null,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setEditingEntryNewPhotos((prev) => [...prev, ...newStaged]);
+  };
+
+  const handleRemoveEditEntryNewPhoto = (key: string) => {
+    setEditingEntryNewPhotos((prev) => prev.filter((p) => p.key !== key));
+  };
+
+  const handleCropEditEntryPhoto = (key: string) => {
+    const staged = editingEntryNewPhotos.find((p) => p.key === key);
+    if (!staged) return;
+    setCropperContext({ mode: "editEntry", key });
+    setCropperFile(staged.croppedFile ?? staged.originalFile);
+  };
+
+  const handleRemoveEditEntryExistingImage = (url: string) => {
+    setEditingEntryExistingImages((prev) => prev.filter((u) => u !== url));
+  };
+
+  const handleSaveEditEntry = async () => {
+    if (!editingEntry || !editingEntryName.trim()) {
+      addAlert("Preencha o nome da fantasia.");
+      return;
+    }
+    if (
+      editingEntryExistingImages.length === 0 &&
+      editingEntryNewPhotos.length === 0
+    ) {
+      addAlert("A fantasia precisa ter ao menos uma foto.");
+      return;
+    }
+    setEditingEntrySaving(true);
+    try {
+      const newUrls: string[] = [];
+      for (const staged of editingEntryNewPhotos) {
+        const fileToUpload = staged.croppedFile ?? staged.originalFile;
+        const { url } = await uploadImageToFirebase(
+          fileToUpload,
+          "voting-entries",
+        );
+        newUrls.push(url);
+      }
+      const finalImages = [...editingEntryExistingImages, ...newUrls];
+
+      // Fotos que existiam antes e foram removidas na edição — apaga do
+      // Storage pra não ficar acumulando lixo.
+      const removedUrls = (editingEntry.images ?? []).filter(
+        (url) => !editingEntryExistingImages.includes(url),
+      );
+      await Promise.all(
+        removedUrls.map(async (url) => {
+          const path = getPathFromFirebaseUrl(url);
+          if (path) await deleteImageFromFirebase(path);
+        }),
+      );
+
+      await VotingEntryRepository.update(editingEntry.id, {
+        name: editingEntryName.trim(),
+        images: finalImages,
+      });
+      setEditingEntry(null);
+      addAlert("Fantasia atualizada!");
+    } catch {
+      addAlert("Erro ao atualizar fantasia.");
+    } finally {
+      setEditingEntrySaving(false);
+    }
+  };
+
+  const handleDeleteEntry = (entry: VotingEntryType & { id: string }) => {
+    setSimpleConfirmModal({
+      message: `Remover a fantasia "${entry.name}"? Os votos recebidos por ela também serão perdidos.`,
+      onConfirm: async () => {
+        try {
+          await Promise.all(
+            (entry.images ?? []).map(async (url) => {
+              const path = getPathFromFirebaseUrl(url);
+              if (path) await deleteImageFromFirebase(path);
+            }),
+          );
+          await VotingEntryRepository.delete(entry.id);
+          addAlert(`Fantasia "${entry.name}" removida.`);
+        } catch {
+          addAlert("Erro ao remover fantasia.");
+        }
+      },
+    });
+  };
+
+  // Arrastar reordena só localmente (visual, imediato) — a nova ordem só
+  // vale de verdade pro público depois de "Salvar ordem".
+  const handleReorderEntries = (
+    newOrder: (VotingEntryType & { id: string })[],
+  ) => {
+    setEntries(newOrder);
+  };
+
+  const handleSaveEntriesOrder = async () => {
+    setSavingEntriesOrder(true);
+    try {
+      await Promise.all(
+        entries.map((entry, index) =>
+          VotingEntryRepository.update(entry.id, { order: index }),
+        ),
+      );
+      addAlert("Ordem das fantasias salva!");
+    } catch {
+      addAlert("Erro ao salvar a ordem das fantasias.");
+    } finally {
+      setSavingEntriesOrder(false);
+    }
+  };
+
+  const handleOpenVoting = async () => {
+    if (!selectedEvent) return;
+    if (entries.length === 0) {
+      addAlert("Cadastre ao menos uma fantasia antes de abrir a votação.");
+      return;
+    }
+    setVotingActionLoading(true);
+    try {
+      await EventRepository.openVoting(selectedEvent.id);
+      const updated = { ...selectedEvent, votacaoStatus: "aberta" as const };
+      setSelectedEvent(updated);
+      setEvents((prev) =>
+        prev.map((e) => (e.id === selectedEvent.id ? updated : e)),
+      );
+      addAlert("Votação aberta! O público já pode votar.");
+    } catch {
+      addAlert("Erro ao abrir votação.");
+    } finally {
+      setVotingActionLoading(false);
+    }
+  };
+
+  const handleCloseVoting = async () => {
+    if (!selectedEvent) return;
+    setVotingActionLoading(true);
+    try {
+      await EventRepository.closeVoting(selectedEvent.id);
+      const updated = {
+        ...selectedEvent,
+        votacaoStatus: "encerrada" as const,
+      };
+      setSelectedEvent(updated);
+      setEvents((prev) =>
+        prev.map((e) => (e.id === selectedEvent.id ? updated : e)),
+      );
+      addAlert("Votação encerrada!");
+    } catch {
+      addAlert("Erro ao encerrar votação.");
+    } finally {
+      setVotingActionLoading(false);
+    }
+  };
+
+  const handleShowVotingResults = async () => {
+    if (!selectedEvent) return;
+    setVotingActionLoading(true);
+    try {
+      await EventRepository.showVotingResults(selectedEvent.id);
+      const updated = { ...selectedEvent, votacaoResultsVisible: true };
+      setSelectedEvent(updated);
+      setEvents((prev) =>
+        prev.map((e) => (e.id === selectedEvent.id ? updated : e)),
+      );
+      addAlert("Resultado liberado para o público!");
+    } catch {
+      addAlert("Erro ao liberar resultado.");
+    } finally {
+      setVotingActionLoading(false);
+    }
+  };
+
+  const handleResetVoting = () => {
+    if (!selectedEvent) return;
+    setDeleteTypedInput("");
+    setDeleteTypedModal({
+      title: `Reiniciar a votação`,
+      description:
+        "Isso vai apagar todos os votos registrados e reabrir a votação para cadastro. As fantasias cadastradas serão mantidas. Esta ação não pode ser desfeita.",
+      onConfirm: async () => {
+        setVotingActionLoading(true);
+        try {
+          await Promise.all([
+            EventRepository.resetVoting(selectedEvent.id),
+            VotingVoteRepository.deleteAllByEventId(selectedEvent.id),
+          ]);
+          const updated = {
+            ...selectedEvent,
+            votacaoStatus: "cadastro" as const,
+            votacaoResultsVisible: false,
+          };
+          setSelectedEvent(updated);
+          setEvents((prev) =>
+            prev.map((e) => (e.id === selectedEvent.id ? updated : e)),
+          );
+          addAlert("Votação reiniciada. Todos os votos foram removidos.");
+        } catch {
+          addAlert("Erro ao reiniciar votação.");
+        } finally {
+          setVotingActionLoading(false);
         }
       },
     });
@@ -942,6 +1380,20 @@ export default function EventosPage() {
     return "bg-yellow-900/20 border-yellow-700/20 text-yellow-500";
   };
 
+  const votacaoStatusLabel = (status?: string) => {
+    if (status === "aberta") return "Votação aberta";
+    if (status === "encerrada") return "Encerrada";
+    return "Cadastro";
+  };
+
+  const votacaoStatusClass = (status?: string) => {
+    if (status === "aberta")
+      return "bg-green-900/30 border-green-700/30 text-green-400";
+    if (status === "encerrada")
+      return "bg-primary-gold/5 border-primary-gold/10 text-primary-gold/40";
+    return "bg-yellow-900/20 border-yellow-700/20 text-yellow-500";
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
@@ -1019,13 +1471,24 @@ export default function EventosPage() {
                       {event.name}
                     </span>
                     <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-primary-gold/10 border border-primary-gold/20 text-primary-gold/60 uppercase tracking-wider">
-                      {event.subtype === "bolao" ? "Bolão" : "Quiz"}
+                      {event.subtype === "bolao"
+                        ? "Bolão"
+                        : event.subtype === "quiz"
+                          ? "Quiz"
+                          : "Votação"}
                     </span>
                     {event.subtype === "quiz" && (
                       <span
                         className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full border uppercase tracking-wider ${quizStatusClass(event.quizStatus)}`}
                       >
                         {quizStatusLabel(event.quizStatus)}
+                      </span>
+                    )}
+                    {event.subtype === "votacao" && (
+                      <span
+                        className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full border uppercase tracking-wider ${votacaoStatusClass(event.votacaoStatus)}`}
+                      >
+                        {votacaoStatusLabel(event.votacaoStatus)}
                       </span>
                     )}
                     <span
@@ -1068,7 +1531,9 @@ export default function EventosPage() {
                     content={
                       event.subtype === "bolao"
                         ? "Gerenciar times, partidas e palpites"
-                        : "Gerenciar perguntas e participantes"
+                        : event.subtype === "votacao"
+                          ? "Gerenciar fantasias e votos"
+                          : "Gerenciar perguntas e participantes"
                     }
                   >
                     <button
@@ -1154,6 +1619,33 @@ export default function EventosPage() {
                     </span>
                   </div>
                 </div>
+              ) : selectedEvent?.subtype === "votacao" ? (
+                <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <LuDrama
+                      size={14}
+                      className="text-primary-gold/60 shrink-0"
+                    />
+                    <span className="text-sm font-semibold text-primary-gold truncate">
+                      {selectedEvent.name}
+                    </span>
+                    <span
+                      className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full border ${votacaoStatusClass(selectedEvent.votacaoStatus)}`}
+                    >
+                      {votacaoStatusLabel(selectedEvent.votacaoStatus)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] text-primary-gold/40">
+                    <span className="flex items-center gap-1">
+                      <LuDrama size={11} /> {entries.length} fantasia
+                      {entries.length !== 1 ? "s" : ""}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <LuVote size={11} /> {votes.length} voto
+                      {votes.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                </div>
               ) : (
                 <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                   <span className="text-sm font-semibold text-primary-gold">
@@ -1182,6 +1674,11 @@ export default function EventosPage() {
                   setEditingTeam(null);
                   setTeamForm(patternTeamForm);
                   setEditingQuestion(null);
+                  setNewEntryName("");
+                  setNewEntryPhotos([]);
+                  setEditingEntry(null);
+                  setCropperContext(null);
+                  setCropperFile(null);
                   if (quizParticipantsUnsubRef.current) {
                     quizParticipantsUnsubRef.current();
                     quizParticipantsUnsubRef.current = null;
@@ -1189,6 +1686,14 @@ export default function EventosPage() {
                   if (selectedEventUnsubRef.current) {
                     selectedEventUnsubRef.current();
                     selectedEventUnsubRef.current = null;
+                  }
+                  if (entriesUnsubRef.current) {
+                    entriesUnsubRef.current();
+                    entriesUnsubRef.current = null;
+                  }
+                  if (votesUnsubRef.current) {
+                    votesUnsubRef.current();
+                    votesUnsubRef.current = null;
                   }
                 }}
                 className="p-2 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/60 hover:text-primary-gold transition-all cursor-pointer shrink-0"
@@ -1253,6 +1758,73 @@ export default function EventosPage() {
                     className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary-gold/10 border border-primary-gold/20 text-primary-gold/60 text-xs font-medium hover:bg-primary-gold/20 transition-all cursor-pointer disabled:opacity-40"
                   >
                     {quizActionLoading ? (
+                      <Loader />
+                    ) : (
+                      <>
+                        <LuRefreshCw size={13} /> Reiniciar
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Row 2: votação control buttons (only when votação) */}
+            {selectedEvent?.subtype === "votacao" && (
+              <div className="flex items-center gap-2 px-5 pb-3 flex-wrap">
+                {(selectedEvent.votacaoStatus ?? "cadastro") === "cadastro" && (
+                  <button
+                    onClick={handleOpenVoting}
+                    disabled={votingActionLoading || entries.length === 0}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-green-700/20 border border-green-700/30 text-green-400 text-xs font-medium hover:bg-green-700/30 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {votingActionLoading ? (
+                      <Loader />
+                    ) : (
+                      <>
+                        <LuPlay size={13} /> Abrir Votação
+                      </>
+                    )}
+                  </button>
+                )}
+                {selectedEvent.votacaoStatus === "aberta" && (
+                  <button
+                    onClick={handleCloseVoting}
+                    disabled={votingActionLoading}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-red-900/20 border border-red-700/30 text-red-400 text-xs font-medium hover:bg-red-900/30 transition-all cursor-pointer disabled:opacity-40"
+                  >
+                    {votingActionLoading ? (
+                      <Loader />
+                    ) : (
+                      <>
+                        <LuSquare size={13} /> Encerrar Votação
+                      </>
+                    )}
+                  </button>
+                )}
+                {selectedEvent.votacaoStatus === "encerrada" &&
+                  !selectedEvent.votacaoResultsVisible && (
+                    <button
+                      onClick={handleShowVotingResults}
+                      disabled={votingActionLoading}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary-gold/15 border border-primary-gold/40 text-primary-gold text-xs font-semibold hover:bg-primary-gold/25 transition-all cursor-pointer disabled:opacity-40"
+                    >
+                      {votingActionLoading ? (
+                        <Loader />
+                      ) : (
+                        <>
+                          <LuEye size={13} /> Liberar Resultado
+                        </>
+                      )}
+                    </button>
+                  )}
+                {selectedEvent.votacaoStatus === "encerrada" && (
+                  <button
+                    onClick={handleResetVoting}
+                    disabled={votingActionLoading}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary-gold/10 border border-primary-gold/20 text-primary-gold/60 text-xs font-medium hover:bg-primary-gold/20 transition-all cursor-pointer disabled:opacity-40"
+                  >
+                    {votingActionLoading ? (
                       <Loader />
                     ) : (
                       <>
@@ -1332,57 +1904,62 @@ export default function EventosPage() {
           </div>
 
           {/* ── Tabs ── */}
-          <div className="flex border-b border-primary-gold/10 shrink-0">
-            {selectedEvent?.subtype === "quiz"
-              ? (["perguntas", "participantes"] as QuizTab[]).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setQuizTab(tab)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium transition-all cursor-pointer ${
-                      quizTab === tab
-                        ? "text-primary-gold border-b-2 border-primary-gold"
-                        : "text-primary-gold/40 hover:text-primary-gold/70"
-                    }`}
-                  >
-                    {tab === "perguntas" ? (
-                      <LuCircleHelp size={14} />
-                    ) : (
-                      <LuUsers size={14} />
-                    )}
-                    {tab === "perguntas" ? "Perguntas" : "Participantes"}
-                    {tab === "participantes" && quizParticipants.length > 0 && (
-                      <span className="ml-1 text-[10px] bg-primary-gold/20 text-primary-gold px-1.5 py-0.5 rounded-full">
-                        {quizParticipants.length}
-                      </span>
-                    )}
-                  </button>
-                ))
-              : (["times", "partidas", "palpites"] as BolaoTab[]).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setBolaoTab(tab)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium transition-all cursor-pointer ${
-                      bolaoTab === tab
-                        ? "text-primary-gold border-b-2 border-primary-gold"
-                        : "text-primary-gold/40 hover:text-primary-gold/70"
-                    }`}
-                  >
-                    {tab === "times" && <LuShield size={14} />}
-                    {tab === "partidas" && <LuSwords size={14} />}
-                    {tab === "palpites" && <LuTrophy size={14} />}
-                    {tab === "times"
-                      ? "Times"
-                      : tab === "partidas"
-                        ? "Partidas"
-                        : "Palpites"}
-                    {tab === "palpites" && participants.length > 0 && (
-                      <span className="ml-1 text-[10px] bg-primary-gold/20 text-primary-gold px-1.5 py-0.5 rounded-full">
-                        {participants.length}
-                      </span>
-                    )}
-                  </button>
-                ))}
-          </div>
+          {selectedEvent?.subtype !== "votacao" && (
+            <div className="flex border-b border-primary-gold/10 shrink-0">
+              {selectedEvent?.subtype === "quiz"
+                ? (["perguntas", "participantes"] as QuizTab[]).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setQuizTab(tab)}
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium transition-all cursor-pointer ${
+                        quizTab === tab
+                          ? "text-primary-gold border-b-2 border-primary-gold"
+                          : "text-primary-gold/40 hover:text-primary-gold/70"
+                      }`}
+                    >
+                      {tab === "perguntas" ? (
+                        <LuCircleHelp size={14} />
+                      ) : (
+                        <LuUsers size={14} />
+                      )}
+                      {tab === "perguntas" ? "Perguntas" : "Participantes"}
+                      {tab === "participantes" &&
+                        quizParticipants.length > 0 && (
+                          <span className="ml-1 text-[10px] bg-primary-gold/20 text-primary-gold px-1.5 py-0.5 rounded-full">
+                            {quizParticipants.length}
+                          </span>
+                        )}
+                    </button>
+                  ))
+                : (["times", "partidas", "palpites"] as BolaoTab[]).map(
+                    (tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setBolaoTab(tab)}
+                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium transition-all cursor-pointer ${
+                          bolaoTab === tab
+                            ? "text-primary-gold border-b-2 border-primary-gold"
+                            : "text-primary-gold/40 hover:text-primary-gold/70"
+                        }`}
+                      >
+                        {tab === "times" && <LuShield size={14} />}
+                        {tab === "partidas" && <LuSwords size={14} />}
+                        {tab === "palpites" && <LuTrophy size={14} />}
+                        {tab === "times"
+                          ? "Times"
+                          : tab === "partidas"
+                            ? "Partidas"
+                            : "Palpites"}
+                        {tab === "palpites" && participants.length > 0 && (
+                          <span className="ml-1 text-[10px] bg-primary-gold/20 text-primary-gold px-1.5 py-0.5 rounded-full">
+                            {participants.length}
+                          </span>
+                        )}
+                      </button>
+                    ),
+                  )}
+            </div>
+          )}
 
           {/* ── Tab content ── */}
           <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-4">
@@ -2177,10 +2754,299 @@ export default function EventosPage() {
             )}
 
             {/* ═══════════════════════════════════════════════════
+                VOTAÇÃO TAB
+            ═══════════════════════════════════════════════════ */}
+
+            {selectedEvent?.subtype === "votacao" && (
+              <>
+                <TabHint>
+                  Cadastre cada fantasia com nome + uma ou mais fotos (dá pra
+                  fotografar vários ângulos e selecionar tudo de uma vez, além
+                  de recortar cada foto do seu jeito). Depois de salvar, o
+                  formulário fica pronto pra cadastrar a próxima. Quando
+                  terminar, use o botão <strong>Abrir Votação</strong> no topo.
+                  A contagem de votos só aparece pro público depois que você
+                  encerrar e liberar o resultado.
+                </TabHint>
+
+                {entriesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader />
+                  </div>
+                ) : entries.length === 0 ? (
+                  <div className="flex flex-col items-center gap-2 py-6 text-primary-gold/40">
+                    <LuDrama size={28} />
+                    <span className="text-sm">
+                      Nenhuma fantasia cadastrada ainda
+                    </span>
+                    <span className="text-xs text-center max-w-[240px]">
+                      Use o formulário abaixo para cadastrar as fantasias
+                      participantes.
+                    </span>
+                  </div>
+                ) : (
+                  <Reorder.Group
+                    axis="y"
+                    values={entries}
+                    onReorder={handleReorderEntries}
+                    className="flex flex-col gap-2"
+                  >
+                    {entries.map((entry, index) => (
+                      <DraggableEntryItem key={entry.id} entry={entry}>
+                        {(dragHandle) =>
+                          editingEntry?.id === entry.id ? (
+                            <div className="flex flex-col gap-3 p-3 rounded-xl border border-primary-gold/30 bg-primary-black/30">
+                              <Input
+                                placeholder="Nome da fantasia"
+                                value={editingEntryName}
+                                setValue={(e) =>
+                                  setEditingEntryName(e.target.value)
+                                }
+                                width="!w-full"
+                              />
+
+                              {/* Fotos já existentes — clique no X pra remover */}
+                              {editingEntryExistingImages.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {editingEntryExistingImages.map((url) => (
+                                    <div
+                                      key={url}
+                                      className="relative shrink-0"
+                                    >
+                                      <div className="w-14 h-14 rounded-lg overflow-hidden border border-primary-gold/10 bg-primary-black/50">
+                                        <img
+                                          src={url}
+                                          alt="Foto"
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleRemoveEditEntryExistingImage(
+                                            url,
+                                          )
+                                        }
+                                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-invalid-color text-white flex items-center justify-center cursor-pointer"
+                                      >
+                                        <LuX size={11} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Novas fotos adicionadas nesta edição */}
+                              {editingEntryNewPhotos.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {editingEntryNewPhotos.map((staged) => (
+                                    <div
+                                      key={staged.key}
+                                      className="relative shrink-0"
+                                    >
+                                      <div className="w-14 h-14 rounded-lg overflow-hidden border border-primary-gold/30 bg-primary-black/50">
+                                        <img
+                                          src={staged.previewUrl}
+                                          alt="Prévia"
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleCropEditEntryPhoto(staged.key)
+                                        }
+                                        className="absolute -bottom-1.5 -left-1.5 w-5 h-5 rounded-full bg-primary-gold text-primary-black flex items-center justify-center cursor-pointer"
+                                      >
+                                        <LuScissors size={10} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleRemoveEditEntryNewPhoto(
+                                            staged.key,
+                                          )
+                                        }
+                                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-invalid-color text-white flex items-center justify-center cursor-pointer"
+                                      >
+                                        <LuX size={11} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              <label className="flex items-center justify-center gap-2 py-2 rounded-lg border border-dashed border-primary-gold/30 hover:border-primary-gold/60 text-xs text-primary-gold/60 hover:text-primary-gold cursor-pointer transition-all">
+                                <LuImagePlus size={14} />
+                                Adicionar mais fotos
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  multiple
+                                  className="hidden"
+                                  onChange={handleEditEntryFilesSelected}
+                                />
+                              </label>
+
+                              <div className="flex gap-1">
+                                <Button onClick={handleSaveEditEntry}>
+                                  {editingEntrySaving ? <Loader /> : "Salvar"}
+                                </Button>
+                                <Button
+                                  onClick={() => setEditingEntry(null)}
+                                  isHoverInvalid
+                                >
+                                  Cancelar
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-3 p-3 rounded-xl border border-primary-gold/10 bg-primary-black/30">
+                              {dragHandle}
+                              <span className="text-xs text-primary-gold/30 font-mono w-4 text-right shrink-0">
+                                {index + 1}.
+                              </span>
+                              <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-primary-gold/10 bg-primary-black/50 shrink-0 flex items-center justify-center">
+                                {entry.images?.[0] ? (
+                                  <img
+                                    src={entry.images[0]}
+                                    alt={entry.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <LuDrama
+                                    size={16}
+                                    className="text-primary-gold/20"
+                                  />
+                                )}
+                                {entry.images?.length > 1 && (
+                                  <span className="absolute bottom-0 right-0 text-[9px] font-bold bg-primary-black/80 text-primary-gold px-1 rounded-tl-md">
+                                    +{entry.images.length - 1}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-sm font-medium text-primary-gold/90 flex-1 truncate">
+                                {entry.name}
+                              </span>
+                              <span className="shrink-0 flex items-center gap-1 text-xs text-primary-gold/50 bg-primary-gold/5 border border-primary-gold/10 px-2 py-1 rounded-full">
+                                <LuVote size={11} />
+                                {voteCountByEntry[entry.id] ?? 0}
+                              </span>
+                              <Tooltip
+                                content="Editar fantasia"
+                                direction="left"
+                              >
+                                <button
+                                  onClick={() => handleStartEditEntry(entry)}
+                                  className="p-1.5 rounded-md hover:bg-primary-gold/10 text-primary-gold/40 hover:text-primary-gold transition-all cursor-pointer shrink-0"
+                                >
+                                  <LuPencil size={13} />
+                                </button>
+                              </Tooltip>
+                              <Tooltip
+                                content="Remover fantasia"
+                                direction="left"
+                              >
+                                <button
+                                  onClick={() => handleDeleteEntry(entry)}
+                                  className="p-1.5 rounded-md hover:bg-invalid-color/10 text-primary-gold/40 hover:text-invalid-color transition-all cursor-pointer shrink-0"
+                                >
+                                  <LuTrash size={13} />
+                                </button>
+                              </Tooltip>
+                            </div>
+                          )
+                        }
+                      </DraggableEntryItem>
+                    ))}
+                  </Reorder.Group>
+                )}
+
+                {entries.length > 1 && (
+                  <div className="flex items-center justify-between gap-2 -mt-1 px-1">
+                    <span className="text-[11px] text-primary-gold/30">
+                      Arraste pelo{" "}
+                      <LuGripVertical size={10} className="inline -mt-0.5" />{" "}
+                      pra reordenar
+                    </span>
+                    <button
+                      onClick={handleSaveEntriesOrder}
+                      disabled={savingEntriesOrder}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-gold/10 border border-primary-gold/30 text-primary-gold text-xs font-medium hover:bg-primary-gold/20 transition-all cursor-pointer disabled:opacity-40"
+                    >
+                      {savingEntriesOrder ? <Loader /> : "Salvar ordem"}
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-3 p-4 rounded-xl border border-primary-gold/10 bg-primary-black/20">
+                  <span className="text-xs font-semibold text-primary-gold/50 uppercase tracking-wider flex items-center gap-1.5">
+                    <LuPlus size={12} /> Nova fantasia
+                  </span>
+
+                  <Input
+                    placeholder="Nome da fantasia"
+                    value={newEntryName}
+                    setValue={(e) => setNewEntryName(e.target.value)}
+                    width="!w-full"
+                  />
+
+                  <label className="flex items-center justify-center gap-2 py-3 rounded-lg border border-dashed border-primary-gold/30 hover:border-primary-gold/60 text-sm text-primary-gold/60 hover:text-primary-gold cursor-pointer transition-all">
+                    <LuImagePlus size={16} />
+                    Selecionar fotos (pode escolher vários ângulos de uma vez)
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={handleNewEntryFilesSelected}
+                    />
+                  </label>
+
+                  {newEntryPhotos.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {newEntryPhotos.map((staged) => (
+                        <div key={staged.key} className="relative shrink-0">
+                          <div className="w-16 h-16 rounded-lg overflow-hidden border border-primary-gold/10 bg-primary-black/50">
+                            <img
+                              src={staged.previewUrl}
+                              alt="Prévia"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCropNewEntryPhoto(staged.key)}
+                            className="absolute -bottom-1.5 -left-1.5 w-5 h-5 rounded-full bg-primary-gold text-primary-black flex items-center justify-center cursor-pointer"
+                          >
+                            <LuScissors size={10} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleRemoveNewEntryPhoto(staged.key)
+                            }
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-invalid-color text-white flex items-center justify-center cursor-pointer"
+                          >
+                            <LuX size={11} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <Button onClick={handleSaveNewEntry}>
+                    {entrySaving ? <Loader /> : "Salvar fantasia"}
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {/* ═══════════════════════════════════════════════════
                 BOLÃO TABS
             ═══════════════════════════════════════════════════ */}
 
-            {selectedEvent?.subtype !== "quiz" && (
+            {selectedEvent?.subtype === "bolao" && (
               <>
                 {/* ── TIMES TAB ── */}
                 {bolaoTab === "times" && (
@@ -2727,6 +3593,17 @@ export default function EventosPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Modal de recorte de imagem (cadastro em lote + edição de fantasia) */}
+      <ImageCropperModal
+        isOpen={!!cropperContext}
+        file={cropperFile}
+        onCancel={() => {
+          setCropperContext(null);
+          setCropperFile(null);
+        }}
+        onConfirm={handleCropConfirm}
+      />
 
       {/* Modal de confirmação simples */}
       {simpleConfirmModal && (

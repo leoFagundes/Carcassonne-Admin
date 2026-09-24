@@ -208,7 +208,7 @@ export interface EventItemType {
   name: string;
   description: string;
   icon: string;
-  subtype: "bolao" | "quiz";
+  subtype: "bolao" | "quiz" | "votacao";
   isActive: boolean;
   createdAt?: Timestamp;
   // Quiz-specific
@@ -218,6 +218,9 @@ export interface EventItemType {
   quizPrize?: string;
   quizResultsVisible?: boolean;
   quizChampionId?: string; // participantId of the crowned champion
+  // Votação-specific
+  votacaoStatus?: "cadastro" | "aberta" | "encerrada";
+  votacaoResultsVisible?: boolean;
 }
 
 export interface QuizQuestionType {
@@ -274,5 +277,22 @@ export interface BolaoParticipantType {
   participantId: string;
   name: string;
   predictions: Record<string, { scoreA: number; scoreB: number }>;
+  createdAt?: Timestamp;
+}
+
+export interface VotingEntryType {
+  id?: string;
+  eventId: string;
+  name: string; // nome da fantasia / opção de voto
+  images: string[]; // URLs do Firebase Storage — vários ângulos da mesma fantasia
+  order?: number;
+  createdAt?: Timestamp;
+}
+
+export interface VotingVoteType {
+  id?: string;
+  eventId: string;
+  participantId: string; // um documento por participante por evento
+  entryId: string;
   createdAt?: Timestamp;
 }

@@ -7,6 +7,8 @@ import BolaoTeamRepository from "@/services/repositories/BolaoTeamRepository";
 import EventRepository from "@/services/repositories/EventRepository";
 import QuizQuestionRepository from "@/services/repositories/QuizQuestionRepository";
 import QuizParticipantRepository from "@/services/repositories/QuizParticipantRepository";
+import VotingEntryRepository from "@/services/repositories/VotingEntryRepository";
+import VotingVoteRepository from "@/services/repositories/VotingVoteRepository";
 import {
   BolaoMatchType,
   BolaoParticipantType,
@@ -14,6 +16,8 @@ import {
   EventItemType,
   QuizQuestionType,
   QuizParticipantType,
+  VotingEntryType,
+  VotingVoteType,
 } from "@/types";
 import { getLucideIcon } from "@/utils/utilFunctions";
 import { useParams, useRouter } from "next/navigation";
@@ -21,11 +25,17 @@ import { useEffect, useRef, useState } from "react";
 import { FiSkipBack } from "react-icons/fi";
 import {
   LuCheck,
+  LuChevronLeft,
+  LuChevronRight,
   LuClock,
+  LuDrama,
+  LuExpand,
+  LuImages,
   LuShield,
   LuSwords,
   LuTimer,
   LuTrophy,
+  LuVote,
   LuX,
 } from "react-icons/lu";
 import LoaderFullscreen from "@/components/loaderFullscreen";
@@ -188,6 +198,12 @@ export default function ClientEventoPage() {
         <div className="w-full max-w-[480px]">
           {event.subtype === "quiz" || event.quizStatus !== undefined ? (
             <QuizSection event={event} eventId={eventId} addAlert={addAlert} />
+          ) : event.subtype === "votacao" ? (
+            <VotingSection
+              event={event}
+              eventId={eventId}
+              addAlert={addAlert}
+            />
           ) : (
             <BolaoSection event={event} eventId={eventId} addAlert={addAlert} />
           )}
@@ -290,7 +306,13 @@ function ChampionScreen({
 
 const PODIUM_META: Record<
   number,
-  { medal: string; height: string; name: string; pedestal: string; delay: string }
+  {
+    medal: string;
+    height: string;
+    name: string;
+    pedestal: string;
+    delay: string;
+  }
 > = {
   1: {
     medal: "👑",
@@ -1694,5 +1716,741 @@ function BolaoSection({
         </div>
       )}
     </>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// VOTAÇÃO — medalhas
+// ══════════════════════════════════════════════════════════════════════════════
+
+const VOTING_MEDAL_SRC: Record<number, string> = {
+  1: "/svg/medalha-ouro.svg",
+  2: "/svg/medalha-prata.svg",
+  3: "/svg/medalha-bronze.svg",
+};
+const VOTING_PODIUM_META: Record<
+  number,
+  { height: string; name: string; pedestal: string; delay: string }
+> = {
+  1: {
+    height: "h-24",
+    name: "text-yellow-400",
+    pedestal:
+      "from-yellow-400/15 to-yellow-400/[0.03] border-yellow-400/30 text-yellow-400",
+    delay: "0.05s",
+  },
+  2: {
+    height: "h-16",
+    name: "text-zinc-300",
+    pedestal:
+      "from-zinc-400/15 to-zinc-400/[0.03] border-zinc-400/25 text-zinc-400",
+    delay: "0.3s",
+  },
+  3: {
+    height: "h-12",
+    name: "text-amber-600",
+    pedestal:
+      "from-amber-600/15 to-amber-600/[0.03] border-amber-700/30 text-amber-600",
+    delay: "0.45s",
+  },
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+// VOTAÇÃO PODIUM
+// ══════════════════════════════════════════════════════════════════════════════
+
+function VotingPodium({
+  entries,
+  voteCountByEntry,
+  onExpand,
+}: {
+  entries: (VotingEntryType & { id: string })[];
+  voteCountByEntry: Record<string, number>;
+  onExpand: (entry: VotingEntryType & { id: string }) => void;
+}) {
+  const top3 = entries.slice(0, 3);
+  if (top3.length === 0) return null;
+
+  // Disposição clássica: 2º à esquerda, 1º no centro, 3º à direita
+  const slots = [
+    top3[1] && { entry: top3[1], rank: 2 },
+    { entry: top3[0], rank: 1 },
+    top3[2] && { entry: top3[2], rank: 3 },
+  ].filter(Boolean) as {
+    entry: VotingEntryType & { id: string };
+    rank: number;
+  }[];
+
+  return (
+    <div className="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl border border-primary-gold/15 bg-secondary-black/40">
+      <span className="text-center text-[11px] uppercase tracking-widest text-primary-gold/40">
+        Pódio
+      </span>
+      <div className="flex items-end justify-center gap-2 sm:gap-3">
+        {slots.map(({ entry, rank }) => {
+          const meta = VOTING_PODIUM_META[rank];
+          return (
+            <div
+              key={entry.id}
+              className="podium-col flex flex-col items-center gap-1.5 flex-1 min-w-0 max-w-[150px]"
+              style={{ animationDelay: meta.delay }}
+            >
+              <img
+                src={VOTING_MEDAL_SRC[rank]}
+                alt={`${rank}º lugar`}
+                className={rank === 1 ? "w-10 h-10" : "w-8 h-8"}
+              />
+              <button
+                type="button"
+                onClick={() => onExpand(entry)}
+                className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-primary-gold/25 bg-primary-black/50 shrink-0 cursor-zoom-in active:brightness-75 transition-[filter]"
+              >
+                {entry.images?.[0] && (
+                  <img
+                    src={entry.images[0]}
+                    alt={entry.name}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                <span className="absolute bottom-0 left-0 w-5 h-5 rounded-full bg-primary-black/70 text-primary-gold flex items-center justify-center">
+                  <LuExpand size={9} />
+                </span>
+                {entry.images?.length > 1 && (
+                  <span className="absolute bottom-0 right-0 flex items-center gap-0.5 text-[8px] font-bold bg-primary-black/80 text-primary-gold px-1 rounded-tl-md">
+                    <LuImages size={8} /> {entry.images.length}
+                  </span>
+                )}
+              </button>
+              <span
+                className={`text-sm font-semibold truncate max-w-full ${meta.name}`}
+              >
+                {entry.name}
+              </span>
+              <span className="text-[11px] font-mono text-primary-gold/40 flex items-center gap-1">
+                <LuVote size={10} /> {voteCountByEntry[entry.id] ?? 0}
+              </span>
+              <div
+                className={`w-full ${meta.height} mt-1 rounded-t-lg border border-b-0 bg-gradient-to-t ${meta.pedestal} flex items-start justify-center pt-1.5`}
+              >
+                <span className="text-xl font-bold opacity-50">{rank}º</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/30 to-transparent -mt-4" />
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// VOTAÇÃO SECTION
+// ══════════════════════════════════════════════════════════════════════════════
+
+function VotingSection({
+  event,
+  eventId,
+  addAlert,
+}: {
+  event: EventItemType & { id: string };
+  eventId: string;
+  addAlert: (msg: string) => void;
+}) {
+  const [entries, setEntries] = useState<(VotingEntryType & { id: string })[]>(
+    [],
+  );
+  const [entriesLoaded, setEntriesLoaded] = useState(false);
+  const [myVote, setMyVote] = useState<
+    (VotingVoteType & { id: string }) | null
+  >(null);
+  const [voteLoaded, setVoteLoaded] = useState(false);
+  const [voting, setVoting] = useState(false);
+  const [allVotes, setAllVotes] = useState<(VotingVoteType & { id: string })[]>(
+    [],
+  );
+  const [lightbox, setLightbox] = useState<{
+    images: string[];
+    name: string;
+    startIndex: number;
+  } | null>(null);
+  const participantIdRef = useRef<string>("");
+
+  useEffect(() => {
+    participantIdRef.current = getOrCreateParticipantId();
+  }, []);
+
+  // Live-subscribe to entries so newly cadastradas fantasias appear without refresh
+  useEffect(() => {
+    const unsub = VotingEntryRepository.subscribeToEventEntries(
+      eventId,
+      (fetched) => {
+        setEntries(fetched);
+        setEntriesLoaded(true);
+      },
+    );
+    return () => unsub();
+  }, [eventId]);
+
+  // Know whether (and in what) this device already voted
+  useEffect(() => {
+    const unsub = VotingVoteRepository.subscribeToParticipantVote(
+      eventId,
+      getOrCreateParticipantId(),
+      (vote) => {
+        setMyVote(vote);
+        setVoteLoaded(true);
+      },
+    );
+    return () => unsub();
+  }, [eventId]);
+
+  // Full vote tally — só é necessário depois que o admin libera o resultado
+  useEffect(() => {
+    if (event.votacaoStatus !== "encerrada" || !event.votacaoResultsVisible) {
+      setAllVotes([]);
+      return;
+    }
+    const unsub = VotingVoteRepository.subscribeToEventVotes(
+      eventId,
+      setAllVotes,
+    );
+    return () => unsub();
+  }, [eventId, event.votacaoStatus, event.votacaoResultsVisible]);
+
+  // Vota pela primeira vez OU troca o voto pra outra fantasia — permitido
+  // livremente enquanto a votação estiver aberta.
+  const handleVote = async (entry: VotingEntryType & { id: string }) => {
+    if (voting || myVote?.entryId === entry.id) return;
+    setVoting(true);
+    try {
+      const participantId =
+        participantIdRef.current || getOrCreateParticipantId();
+
+      if (myVote) {
+        const ok = await VotingVoteRepository.update(myVote.id, {
+          entryId: entry.id,
+        });
+        if (ok) {
+          setMyVote({ ...myVote, entryId: entry.id });
+          addAlert(`Voto alterado para "${entry.name}"! 🎭`);
+        } else {
+          addAlert("Erro ao trocar o voto.");
+        }
+        return;
+      }
+
+      // Guarda contra corrida: confere se já existe voto antes de criar
+      const existing = await VotingVoteRepository.getByParticipantId(
+        eventId,
+        participantId,
+      );
+      if (existing) {
+        setMyVote(existing);
+        return;
+      }
+      const id = await VotingVoteRepository.create({
+        eventId,
+        participantId,
+        entryId: entry.id,
+      });
+      if (id) {
+        setMyVote({ id, eventId, participantId, entryId: entry.id });
+        addAlert(`Voto registrado em "${entry.name}"! 🎭`);
+      } else {
+        addAlert("Erro ao registrar voto.");
+      }
+    } catch {
+      addAlert("Erro ao registrar voto.");
+    } finally {
+      setVoting(false);
+    }
+  };
+
+  const openLightbox = (
+    entry: VotingEntryType & { id: string },
+    startIndex = 0,
+  ) => {
+    if (!entry.images || entry.images.length === 0) return;
+    setLightbox({ images: entry.images, name: entry.name, startIndex });
+  };
+
+  if (!entriesLoaded || !voteLoaded) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="flex gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/40 waiting-dot" />
+          <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/40 waiting-dot" />
+          <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/40 waiting-dot" />
+        </div>
+      </div>
+    );
+  }
+
+  let body: React.ReactNode;
+
+  if ((event.votacaoStatus ?? "cadastro") === "cadastro") {
+    // ── Cadastro ainda em andamento ──
+    body = (
+      <div className="flex flex-col items-center gap-5 p-6 rounded-2xl border border-primary-gold/15 bg-secondary-black/40 text-center">
+        <div className="w-12 h-12 rounded-full bg-primary-gold/10 border border-primary-gold/20 flex items-center justify-center">
+          <LuDrama size={22} className="text-primary-gold/60" />
+        </div>
+        <div className="flex flex-col gap-1">
+          <p className="text-base font-semibold text-primary-gold/80">
+            As fantasias ainda estão sendo cadastradas
+          </p>
+          <p className="text-sm text-primary-gold/40">
+            Volte em instantes — a votação abre em breve!
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/40 waiting-dot" />
+          <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/40 waiting-dot" />
+          <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/40 waiting-dot" />
+        </div>
+      </div>
+    );
+  } else if (
+    event.votacaoStatus === "encerrada" &&
+    !event.votacaoResultsVisible
+  ) {
+    // ── Votação encerrada, aguardando liberação do resultado ──
+    body = (
+      <div className="flex flex-col items-center gap-5 p-6 rounded-2xl border border-primary-gold/15 bg-secondary-black/40 text-center">
+        <div className="w-12 h-12 rounded-full bg-primary-gold/10 border border-primary-gold/20 flex items-center justify-center">
+          <LuVote size={22} className="text-primary-gold/60" />
+        </div>
+        <div className="flex flex-col gap-1">
+          <p className="text-base font-semibold text-primary-gold/80">
+            Votação encerrada!
+          </p>
+          <p className="text-sm text-primary-gold/40">
+            Aguardando a liberação do resultado pelo administrador...
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/30 waiting-dot" />
+          <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/30 waiting-dot" />
+          <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/30 waiting-dot" />
+        </div>
+      </div>
+    );
+  } else if (event.votacaoStatus === "encerrada") {
+    // ── Resultado liberado ──
+    const voteCountByEntry: Record<string, number> = {};
+    allVotes.forEach((v) => {
+      voteCountByEntry[v.entryId] = (voteCountByEntry[v.entryId] ?? 0) + 1;
+    });
+    const ranked = [...entries].sort(
+      (a, b) => (voteCountByEntry[b.id] ?? 0) - (voteCountByEntry[a.id] ?? 0),
+    );
+
+    body = (
+      <div className="flex flex-col gap-5">
+        <VotingPodium
+          entries={ranked}
+          voteCountByEntry={voteCountByEntry}
+          onExpand={(entry) => openLightbox(entry)}
+        />
+        <div className="flex flex-col gap-2">
+          {ranked.map((entry, index) => (
+            <div
+              key={entry.id}
+              className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                index === 0
+                  ? "border-yellow-500/40 bg-yellow-500/[0.06]"
+                  : "border-primary-gold/10 bg-secondary-black/30"
+              }`}
+            >
+              {index < 3 ? (
+                <img
+                  src={VOTING_MEDAL_SRC[index + 1]}
+                  alt={`${index + 1}º lugar`}
+                  className="w-6 h-6 shrink-0"
+                />
+              ) : (
+                <span className="text-xs text-primary-gold/30 font-mono w-6 text-center shrink-0">
+                  {index + 1}.
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => openLightbox(entry)}
+                className="relative w-12 h-12 rounded-lg overflow-hidden border border-primary-gold/10 bg-primary-black/50 shrink-0 cursor-zoom-in active:brightness-75 transition-[filter]"
+              >
+                {entry.images?.[0] && (
+                  <img
+                    src={entry.images[0]}
+                    alt={entry.name}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                {entry.images?.length > 1 && (
+                  <span className="absolute bottom-0 right-0 flex items-center gap-0.5 text-[8px] font-bold bg-primary-black/80 text-primary-gold px-1 rounded-tl-md">
+                    <LuImages size={8} /> {entry.images.length}
+                  </span>
+                )}
+              </button>
+              <span className="text-sm font-medium text-primary-gold/90 flex-1 truncate">
+                {entry.name}
+              </span>
+              <span className="shrink-0 flex items-center gap-1 text-xs font-semibold text-primary-gold bg-primary-gold/10 border border-primary-gold/20 px-2 py-1 rounded-full">
+                <LuVote size={11} />
+                {voteCountByEntry[entry.id] ?? 0}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  } else {
+    // ── Votação aberta ──
+    body = (
+      <div className="flex flex-col gap-4">
+        {myVote ? (
+          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-900/20 border border-green-700/30 text-sm text-green-400">
+            <LuCheck size={15} className="shrink-0" />
+            <span>
+              Você votou! Pode trocar tocando em outra fantasia até a votação
+              encerrar.
+            </span>
+          </div>
+        ) : (
+          <p className="text-center text-sm text-primary-gold/50">
+            Escolha sua fantasia favorita — dá pra trocar o voto quando quiser
+            até a votação encerrar.
+          </p>
+        )}
+
+        {entries.length === 0 ? (
+          <p className="text-center text-sm text-primary-gold/30 py-8">
+            Nenhuma fantasia cadastrada ainda.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {entries.map((entry) => {
+              const isMine = myVote?.entryId === entry.id;
+              return (
+                <div
+                  key={entry.id}
+                  className={`relative flex flex-col gap-3 p-3 rounded-2xl border transition-all ${
+                    isMine
+                      ? "border-primary-gold bg-primary-gold/10"
+                      : "border-primary-gold/15 bg-secondary-black/40"
+                  }`}
+                >
+                  <EntryPhotoCarousel
+                    images={entry.images ?? []}
+                    name={entry.name}
+                    onExpand={(startIndex) => openLightbox(entry, startIndex)}
+                  />
+                  <span className="text-base font-semibold text-primary-gold/90 truncate">
+                    {entry.name}
+                  </span>
+                  {isMine && (
+                    <span className="absolute top-4 right-4 w-7 h-7 rounded-full bg-primary-gold text-primary-black flex items-center justify-center shadow-lg pointer-events-none">
+                      <LuCheck size={14} />
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleVote(entry)}
+                    disabled={voting}
+                    className={`w-full py-3 rounded-xl text-sm font-bold uppercase tracking-wider transition-all disabled:opacity-50 ${
+                      isMine
+                        ? "bg-primary-gold text-primary-black cursor-default"
+                        : "bg-primary-gold/10 border border-primary-gold/40 text-primary-gold hover:bg-primary-gold/20 cursor-pointer disabled:cursor-not-allowed"
+                    }`}
+                  >
+                    {isMine ? "Votado ✓" : "Votar"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {body}
+      {lightbox && (
+        <PhotoLightbox
+          images={lightbox.images}
+          name={lightbox.name}
+          startIndex={lightbox.startIndex}
+          onClose={() => setLightbox(null)}
+        />
+      )}
+    </>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CARROSSEL DE FOTOS DA FANTASIA
+// ══════════════════════════════════════════════════════════════════════════════
+
+function EntryPhotoCarousel({
+  images,
+  name,
+  onExpand,
+}: {
+  images: string[];
+  name: string;
+  onExpand: (index: number) => void;
+}) {
+  const [index, setIndex] = useState(0);
+  const [loaded, setLoaded] = useState<Set<string>>(new Set());
+  const hasMultiple = images.length > 1;
+  const dragStartX = useRef<number | null>(null);
+
+  // Pré-carrega todos os ângulos assim que o card aparece — sem isso, cada
+  // troca de foto dispara um novo download e o slide trava por um instante.
+  useEffect(() => {
+    images.forEach((src) => {
+      const img = new window.Image();
+      img.onload = () => setLoaded((prev) => new Set(prev).add(src));
+      img.src = src;
+    });
+  }, [images]);
+
+  const go = (delta: number) => {
+    setIndex((i) => (i + delta + images.length) % images.length);
+  };
+
+  const handleDragStart = (clientX: number) => {
+    dragStartX.current = clientX;
+  };
+  const handleDragEnd = (clientX: number) => {
+    if (dragStartX.current === null) return;
+    const delta = clientX - dragStartX.current;
+    if (Math.abs(delta) > 40) go(delta > 0 ? -1 : 1);
+    dragStartX.current = null;
+  };
+
+  const current = images[index];
+  const currentLoaded = current ? loaded.has(current) : false;
+
+  return (
+    <div
+      className="relative aspect-[3/4] w-full rounded-xl overflow-hidden border border-primary-gold/10 bg-primary-black/50 flex items-center justify-center select-none touch-pan-y"
+      onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
+      onTouchEnd={(e) => handleDragEnd(e.changedTouches[0].clientX)}
+      onMouseDown={(e) => handleDragStart(e.clientX)}
+      onMouseUp={(e) => handleDragEnd(e.clientX)}
+      onMouseLeave={() => {
+        dragStartX.current = null;
+      }}
+    >
+      {images.length > 0 ? (
+        <>
+          {!currentLoaded && (
+            <div className="absolute inset-0 bg-primary-gold/[0.06] animate-pulse" />
+          )}
+          <img
+            src={current}
+            alt={`${name} — foto ${index + 1} de ${images.length}`}
+            onLoad={() => setLoaded((prev) => new Set(prev).add(current))}
+            className={`w-full h-full object-cover cursor-zoom-in transition-opacity duration-200 ${
+              currentLoaded ? "opacity-100" : "opacity-0"
+            }`}
+            onClick={() => onExpand(index)}
+          />
+        </>
+      ) : (
+        <LuDrama size={32} className="text-primary-gold/20" />
+      )}
+
+      {images.length > 0 && (
+        <span className="absolute top-2.5 left-2.5 w-8 h-8 rounded-full bg-primary-black/60 backdrop-blur-sm text-primary-gold flex items-center justify-center pointer-events-none">
+          <LuExpand size={14} />
+        </span>
+      )}
+
+      {hasMultiple && (
+        <>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              go(-1);
+            }}
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-primary-black/60 backdrop-blur-sm text-primary-gold flex items-center justify-center cursor-pointer active:scale-90 transition-transform"
+          >
+            <LuChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              go(1);
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-primary-black/60 backdrop-blur-sm text-primary-gold flex items-center justify-center cursor-pointer active:scale-90 transition-transform"
+          >
+            <LuChevronRight size={18} />
+          </button>
+          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {images.map((_, i) => (
+              <span
+                key={i}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === index
+                    ? "w-4 bg-primary-gold"
+                    : "w-1.5 bg-primary-gold/30"
+                }`}
+              />
+            ))}
+          </div>
+          <span className="absolute top-2.5 right-2.5 flex items-center gap-0.5 text-[10px] font-bold bg-primary-black/70 text-primary-gold px-1.5 py-0.5 rounded-full">
+            <LuImages size={10} /> {index + 1}/{images.length}
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LIGHTBOX — foto em tela cheia
+// ══════════════════════════════════════════════════════════════════════════════
+
+function PhotoLightbox({
+  images,
+  name,
+  startIndex,
+  onClose,
+}: {
+  images: string[];
+  name: string;
+  startIndex: number;
+  onClose: VoidFunction;
+}) {
+  const [index, setIndex] = useState(startIndex);
+  const [loaded, setLoaded] = useState<Set<string>>(new Set());
+  const dragStartX = useRef<number | null>(null);
+
+  useEffect(() => {
+    const original = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, []);
+
+  // Mesma lógica do carrossel: pré-carrega os outros ângulos pra não travar
+  // ao navegar dentro do lightbox.
+  useEffect(() => {
+    images.forEach((src) => {
+      const img = new window.Image();
+      img.onload = () => setLoaded((prev) => new Set(prev).add(src));
+      img.src = src;
+    });
+  }, [images]);
+
+  const go = (delta: number) => {
+    setIndex((i) => (i + delta + images.length) % images.length);
+  };
+
+  const handleDragStart = (clientX: number) => {
+    dragStartX.current = clientX;
+  };
+  const handleDragEnd = (clientX: number) => {
+    if (dragStartX.current === null) return;
+    const delta = clientX - dragStartX.current;
+    if (Math.abs(delta) > 40) go(delta > 0 ? -1 : 1);
+    dragStartX.current = null;
+  };
+
+  const current = images[index];
+  const currentLoaded = current ? loaded.has(current) : false;
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] bg-black/92 backdrop-blur-sm flex flex-col items-center justify-center px-2"
+      onClick={onClose}
+      onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
+      onTouchEnd={(e) => handleDragEnd(e.changedTouches[0].clientX)}
+      onMouseDown={(e) => handleDragStart(e.clientX)}
+      onMouseUp={(e) => handleDragEnd(e.clientX)}
+      onMouseLeave={() => {
+        dragStartX.current = null;
+      }}
+    >
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-primary-black/70 border border-primary-gold/20 text-primary-gold flex items-center justify-center cursor-pointer z-10"
+      >
+        <LuX size={18} />
+      </button>
+
+      <span className="absolute top-4 left-4 right-16 text-sm font-medium text-primary-gold/80 truncate">
+        {name}
+      </span>
+
+      <div className="relative flex items-center justify-center max-w-[94vw] max-h-[76vh]">
+        {!currentLoaded && (
+          <div className="w-[70vw] max-w-[420px] aspect-[3/4] rounded-lg bg-primary-gold/[0.06] animate-pulse" />
+        )}
+        <img
+          src={current}
+          alt={`${name} — foto ${index + 1} de ${images.length}`}
+          onLoad={() => setLoaded((prev) => new Set(prev).add(current))}
+          className={`max-w-[94vw] max-h-[76vh] object-contain rounded-lg transition-opacity duration-200 ${
+            currentLoaded ? "opacity-100" : "hidden"
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+
+      {images.length > 1 && (
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 sm:gap-6">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              go(-1);
+            }}
+            className="w-11 h-11 rounded-full bg-primary-black/60 border border-primary-gold/20 text-primary-gold flex items-center justify-center cursor-pointer active:scale-90 transition-transform shrink-0"
+          >
+            <LuChevronLeft size={20} />
+          </button>
+
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex gap-1.5">
+              {images.map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === index
+                      ? "w-5 bg-primary-gold"
+                      : "w-1.5 bg-primary-gold/30"
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-xs font-mono text-primary-gold/50">
+              {index + 1} / {images.length}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              go(1);
+            }}
+            className="w-11 h-11 rounded-full bg-primary-black/60 border border-primary-gold/20 text-primary-gold flex items-center justify-center cursor-pointer active:scale-90 transition-transform shrink-0"
+          >
+            <LuChevronRight size={20} />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

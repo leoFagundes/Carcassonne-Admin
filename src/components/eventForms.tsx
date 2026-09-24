@@ -14,6 +14,12 @@ import { EventItemType } from "@/types";
 import { useAlert } from "@/contexts/alertProvider";
 import Loader from "./loader";
 import EventRepository from "@/services/repositories/EventRepository";
+import VotingEntryRepository from "@/services/repositories/VotingEntryRepository";
+import VotingVoteRepository from "@/services/repositories/VotingVoteRepository";
+import {
+  deleteImageFromFirebase,
+  getPathFromFirebaseUrl,
+} from "@/services/repositories/FirebaseImageUtils";
 import { getLucideIcon, normalizeIconName } from "@/utils/utilFunctions";
 
 interface EventFormsProps {
@@ -95,6 +101,9 @@ export default function EventForms({
           quizStatus: "waiting",
           quizPrize: localItem.quizPrize,
         }),
+        ...(localItem.subtype === "votacao" && {
+          votacaoStatus: "cadastro",
+        }),
       });
       addAlert(`Evento "${localItem.name}" criado com sucesso!`);
       closeForms();
@@ -126,6 +135,10 @@ export default function EventForms({
             quizStatus: "waiting" as const,
           }),
         }),
+        ...(localItem.subtype === "votacao" &&
+          localItem.votacaoStatus === undefined && {
+            votacaoStatus: "cadastro" as const,
+          }),
       });
       setCurrentEvent(localItem);
       addAlert(`Evento "${localItem.name}" atualizado com sucesso!`);
@@ -144,6 +157,25 @@ export default function EventForms({
     }
     setLoading(true);
     try {
+      if (currentEvent.subtype === "votacao") {
+        // Evita acumular fotos órfãs no Storage: apaga as imagens das
+        // fantasias (e os votos) antes de apagar o evento em si.
+        const entries = await VotingEntryRepository.getByEventId(
+          currentEvent.id
+        );
+        await Promise.all(
+          entries.map(async (entry) => {
+            await Promise.all(
+              (entry.images ?? []).map(async (url) => {
+                const path = getPathFromFirebaseUrl(url);
+                if (path) await deleteImageFromFirebase(path);
+              })
+            );
+            await VotingEntryRepository.delete(entry.id);
+          })
+        );
+        await VotingVoteRepository.deleteAllByEventId(currentEvent.id);
+      }
       await EventRepository.delete(currentEvent.id);
       addAlert(`Evento "${currentEvent.name}" deletado com sucesso!`);
       closeForms();
@@ -220,8 +252,8 @@ export default function EventForms({
         {/* Tipo do evento */}
         <div className="flex flex-col gap-1.5">
           <label className={labelClass}>Tipo do evento</label>
-          <div className="grid grid-cols-2 gap-2">
-            {(["bolao", "quiz"] as const).map((opt) => (
+          <div className="grid grid-cols-3 gap-2">
+            {(["bolao", "quiz", "votacao"] as const).map((opt) => (
               <button
                 key={opt}
                 type="button"
@@ -232,8 +264,10 @@ export default function EventForms({
                     : "border-primary-gold/15 text-primary-gold/40 hover:border-primary-gold/30 hover:text-primary-gold/70"
                 }`}
               >
-                <span>{opt === "bolao" ? "⚽" : "🧠"}</span>
-                <span>{opt === "bolao" ? "Bolão" : "Quiz"}</span>
+                <span>{opt === "bolao" ? "⚽" : opt === "quiz" ? "🧠" : "🎭"}</span>
+                <span>
+                  {opt === "bolao" ? "Bolão" : opt === "quiz" ? "Quiz" : "Votação"}
+                </span>
               </button>
             ))}
           </div>
