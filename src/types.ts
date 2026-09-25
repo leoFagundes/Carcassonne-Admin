@@ -75,11 +75,26 @@ export interface GeneralConfigsType {
   specialDates: { date: string; description?: string }[]; // date as "YYYY-MM-DD"
 }
 
+export interface PopupScheduleType {
+  id: string;
+  days: number[]; // 0 = domingo ... 6 = sábado
+  startTime: string; // "HH:mm"
+  endTime: string; // "HH:mm" — se <= startTime, entende-se que atravessa a meia-noite
+}
+
 export interface PopupType {
   id?: string;
   src: string;
-  label: string;
+  /** Nome interno — só aparece aqui no admin, pra identificar o popup na galeria. Opcional. */
+  label?: string;
+  /** Título exibido ao cliente, abaixo da imagem. Opcional. */
+  title?: string;
+  /** Descrição exibida ao cliente, abaixo do título. Opcional. */
+  description?: string;
   isActive: boolean;
+  /** Vazio = sempre ativo (respeitando isActive), sem restrição de dia/horário. */
+  schedules: PopupScheduleType[];
+  createdAt?: Timestamp;
 }
 
 export interface CarcaImageType {

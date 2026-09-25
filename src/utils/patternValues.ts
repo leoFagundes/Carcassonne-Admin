@@ -135,7 +135,10 @@ export const patternGeneralConfigs: GeneralConfigsType = {
 export const patternPopup: PopupType = {
   src: "",
   label: "",
+  title: "",
+  description: "",
   isActive: false,
+  schedules: [],
 };
 
 export const patternCarcaImage: CarcaImageType = {

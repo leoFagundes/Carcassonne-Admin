@@ -450,9 +450,9 @@ const helpCards: HelpCard[] = [
   },
   {
     category: "configuracoes",
-    title: "Como adicionar um popup no site",
+    title: "Como adicionar e agendar um popup no site",
     description:
-      "Vá em Adicionar → 'Adicionar Popup'. Um popup é um banner que aparece automaticamente para os clientes ao entrar no site. Você define a imagem, o label e se está ativo. Apenas popups com 'ativo' habilitado são exibidos.",
+      "Vá em Adicionar → 'Adicionar Popup'. Um popup é um banner que aparece automaticamente para os clientes ao entrar no cardápio. Você define a imagem e, opcionalmente, um nome interno (só aparece aqui no admin, pra te ajudar a identificar o popup), um título e uma descrição (esses dois aparecem pro cliente, abaixo da imagem). Cada popup pode ter um ou mais horários — dias da semana + hora de início e fim — em que fica visível; sem nenhum horário definido, ele fica ativo o dia inteiro, todos os dias, enquanto o toggle 'ativo' estiver ligado. Se dois popups ativos tiverem horários que se sobrepõem, o sistema mostra um aviso de conflito (na lista e ao editar) — nesse caso, só um deles é exibido por vez.",
   },
 
   // ── EASTER EGG ────────────────────────────────────────────────

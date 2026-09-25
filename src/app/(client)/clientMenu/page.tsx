@@ -24,7 +24,8 @@ import InfoRepository from "@/services/repositories/InfoRepository";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import Popup from "@/components/popup";
 import TypesOrderRepository from "@/services/repositories/TypesOrderRepository";
-import PopupRepository from "@/services/repositories/PopupRepositoire";
+import PopupRepository from "@/services/repositories/PopupRepository";
+import { pickActivePopup } from "@/utils/popupSchedule";
 import { FaAngleLeft, FaAngleRight, FaSearch } from "react-icons/fa";
 import { FiX } from "react-icons/fi";
 import Input from "@/components/input";
@@ -76,7 +77,7 @@ export default function ClientMenuPage() {
         setInfos(fetchedInfos);
         setDescriptions(fetchedDescriptions);
 
-        const currentPopup = fetchedPopups.find((popup) => popup.isActive);
+        const currentPopup = pickActivePopup(fetchedPopups);
         if (currentPopup) {
           setPopup(currentPopup);
           setIsPopupOpen(true);
@@ -215,6 +216,8 @@ export default function ClientMenuPage() {
         {popup && isPopupOpen && (
           <Popup
             url={popup.src}
+            title={popup.title}
+            description={popup.description}
             isOpen={isPopupOpen}
             onClose={() => setIsPopupOpen(false)}
           />

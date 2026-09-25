@@ -9,11 +9,19 @@ interface PopupProps {
   isOpen: boolean;
   onClose: VoidFunction;
   url: string;
+  title?: string;
+  description?: string;
 }
 
 const STORAGE_KEY = "popupHiddenUntil";
 
-export default function Popup({ isOpen, onClose, url }: PopupProps) {
+export default function Popup({
+  isOpen,
+  onClose,
+  url,
+  title,
+  description,
+}: PopupProps) {
   const [isChecked, setIsChecked] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
   const [initialized, setInitialized] = useState(false);
@@ -90,6 +98,23 @@ export default function Popup({ isOpen, onClose, url }: PopupProps) {
             onLoad={() => setImageLoaded(true)}
           />
         </div>
+
+        {/* Título e descrição (opcionais) */}
+        {imageLoaded && (title || description) && (
+          <div className="relative flex flex-col items-center gap-2 px-5 pt-4 pb-3 shrink-0 max-h-[24vh] overflow-y-auto text-center bg-gradient-to-b from-primary-gold/[0.05] to-transparent border-t border-primary-gold/10">
+            <div className="w-10 h-px bg-gradient-to-r from-transparent via-primary-gold/50 to-transparent" />
+            {title && (
+              <span className="text-lg font-semibold text-primary-gold tracking-wide leading-snug">
+                {title}
+              </span>
+            )}
+            {description && (
+              <p className="text-sm text-primary-gold/55 leading-relaxed whitespace-pre-line max-w-[320px]">
+                {description}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Footer */}
         {imageLoaded && (
