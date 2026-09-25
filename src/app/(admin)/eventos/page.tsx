@@ -26,6 +26,7 @@ import {
   LuRefreshCw,
   LuScissors,
   LuSettings2,
+  LuSmartphone,
   LuTimer,
   LuShield,
   LuSquare,
@@ -70,6 +71,7 @@ import {
 } from "@/types";
 import { patternEvent } from "@/utils/patternValues";
 import { getLucideIcon } from "@/utils/utilFunctions";
+import { getTopTiedEntryIds } from "@/utils/votingResults";
 import Input from "@/components/input";
 import Button from "@/components/button";
 import Loader from "@/components/loader";
@@ -343,6 +345,11 @@ export default function EventosPage() {
     });
     return counts;
   }, [votes]);
+
+  const topTiedEntryIds = React.useMemo(
+    () => getTopTiedEntryIds(entries, voteCountByEntry),
+    [entries, voteCountByEntry],
+  );
 
   // Light tick for admin current-question indicator (only when quiz running)
   const [adminTick, setAdminTick] = useState(0);
@@ -926,10 +933,54 @@ export default function EventosPage() {
     }
   };
 
+  const handleToggleAllowClientSubmissions = async () => {
+    if (!selectedEvent) return;
+    const next = !selectedEvent.votacaoAllowClientSubmissions;
+    try {
+      await EventRepository.update(selectedEvent.id, {
+        votacaoAllowClientSubmissions: next,
+        // Desligar o principal também desliga o "várias por cliente", pra
+        // não ficar um sub-toggle ativo escondido sem efeito nenhum.
+        ...(!next && { votacaoAllowMultipleClientSubmissions: false }),
+      });
+      const updated = {
+        ...selectedEvent,
+        votacaoAllowClientSubmissions: next,
+        ...(!next && { votacaoAllowMultipleClientSubmissions: false }),
+      };
+      setSelectedEvent(updated);
+      setEvents((prev) =>
+        prev.map((e) => (e.id === selectedEvent.id ? updated : e)),
+      );
+    } catch {
+      addAlert("Erro ao atualizar essa configuração.");
+    }
+  };
+
+  const handleToggleAllowMultipleClientSubmissions = async () => {
+    if (!selectedEvent) return;
+    const next = !selectedEvent.votacaoAllowMultipleClientSubmissions;
+    try {
+      await EventRepository.update(selectedEvent.id, {
+        votacaoAllowMultipleClientSubmissions: next,
+      });
+      const updated = {
+        ...selectedEvent,
+        votacaoAllowMultipleClientSubmissions: next,
+      };
+      setSelectedEvent(updated);
+      setEvents((prev) =>
+        prev.map((e) => (e.id === selectedEvent.id ? updated : e)),
+      );
+    } catch {
+      addAlert("Erro ao atualizar essa configuração.");
+    }
+  };
+
   const handleOpenVoting = async () => {
     if (!selectedEvent) return;
-    if (entries.length === 0) {
-      addAlert("Cadastre ao menos uma fantasia antes de abrir a votação.");
+    if (entries.length < 2) {
+      addAlert("Cadastre ao menos 2 fantasias antes de abrir a votação.");
       return;
     }
     setVotingActionLoading(true);
@@ -987,6 +1038,31 @@ export default function EventosPage() {
     }
   };
 
+  // Desempate do 1º lugar: sem isso, quem empatar no topo divide a vitória.
+  const handleSetVotacaoChampion = async (
+    entry: VotingEntryType & { id: string },
+  ) => {
+    if (!selectedEvent) return;
+    const isChampion = selectedEvent.votacaoChampionId === entry.id;
+    setVotingActionLoading(true);
+    try {
+      if (isChampion) {
+        await EventRepository.update(selectedEvent.id, {
+          votacaoChampionId: "",
+        });
+        setSelectedEvent({ ...selectedEvent, votacaoChampionId: "" });
+      } else {
+        await EventRepository.setVotacaoChampion(selectedEvent.id, entry.id);
+        setSelectedEvent({ ...selectedEvent, votacaoChampionId: entry.id });
+        addAlert(`🏆 "${entry.name}" definida como vencedora!`);
+      }
+    } catch {
+      addAlert("Erro ao definir a vencedora.");
+    } finally {
+      setVotingActionLoading(false);
+    }
+  };
+
   const handleResetVoting = () => {
     if (!selectedEvent) return;
     setDeleteTypedInput("");
@@ -1005,6 +1081,7 @@ export default function EventosPage() {
             ...selectedEvent,
             votacaoStatus: "cadastro" as const,
             votacaoResultsVisible: false,
+            votacaoChampionId: undefined,
           };
           setSelectedEvent(updated);
           setEvents((prev) =>
@@ -1775,7 +1852,7 @@ export default function EventosPage() {
                 {(selectedEvent.votacaoStatus ?? "cadastro") === "cadastro" && (
                   <button
                     onClick={handleOpenVoting}
-                    disabled={votingActionLoading || entries.length === 0}
+                    disabled={votingActionLoading || entries.length < 2}
                     className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-green-700/20 border border-green-700/30 text-green-400 text-xs font-medium hover:bg-green-700/30 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {votingActionLoading ? (
@@ -2769,6 +2846,124 @@ export default function EventosPage() {
                   encerrar e liberar o resultado.
                 </TabHint>
 
+                <div className="rounded-lg border border-primary-gold/15 bg-primary-black/30 divide-y divide-primary-gold/10">
+                  <div className="flex items-center justify-between gap-3 px-3.5 py-3">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm text-primary-gold/80">
+                        Clientes podem enviar fotos
+                      </span>
+                      <span className="text-[11px] text-primary-gold/35">
+                        {selectedEvent?.votacaoAllowClientSubmissions
+                          ? "Ativado — o público pode cadastrar a própria fantasia durante o cadastro"
+                          : "Desativado (padrão) — só você cadastra as fantasias"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleToggleAllowClientSubmissions}
+                      className="cursor-pointer transition-colors shrink-0"
+                    >
+                      {selectedEvent?.votacaoAllowClientSubmissions ? (
+                        <LuToggleRight size={28} className="text-green-500" />
+                      ) : (
+                        <LuToggleLeft
+                          size={28}
+                          className="text-primary-gold/30"
+                        />
+                      )}
+                    </button>
+                  </div>
+
+                  {selectedEvent?.votacaoAllowClientSubmissions && (
+                    <div className="flex items-center justify-between gap-3 px-3.5 py-3">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm text-primary-gold/70">
+                          Permitir várias fantasias por cliente
+                        </span>
+                        <span className="text-[11px] text-primary-gold/35">
+                          {selectedEvent?.votacaoAllowMultipleClientSubmissions
+                            ? "Ativado — cada dispositivo pode enviar quantas quiser"
+                            : "Desativado (padrão) — 1 fantasia por dispositivo"}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleToggleAllowMultipleClientSubmissions}
+                        className="cursor-pointer transition-colors shrink-0"
+                      >
+                        {selectedEvent?.votacaoAllowMultipleClientSubmissions ? (
+                          <LuToggleRight
+                            size={26}
+                            className="text-green-500"
+                          />
+                        ) : (
+                          <LuToggleLeft
+                            size={26}
+                            className="text-primary-gold/30"
+                          />
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {selectedEvent?.votacaoStatus === "encerrada" &&
+                  topTiedEntryIds.length > 0 && (
+                    <div className="flex flex-col gap-2.5 p-3.5 rounded-lg border border-yellow-700/30 bg-yellow-900/10">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-yellow-400">
+                        <LuCrown size={13} />
+                        Empate no 1º lugar
+                      </div>
+                      <p className="text-[11px] text-yellow-400/70">
+                        {selectedEvent.votacaoChampionId
+                          ? "Você escolheu a vencedora abaixo — clique nela de novo pra desfazer e voltar a dividir a vitória."
+                          : "Escolha uma vencedora entre as empatadas, ou deixe assim pra dividirem o 1º lugar (isso fica visível pro público)."}
+                      </p>
+                      <div className="flex flex-col gap-1.5">
+                        {topTiedEntryIds.map((entryId) => {
+                          const entry = entries.find((e) => e.id === entryId);
+                          if (!entry) return null;
+                          const isChampion =
+                            selectedEvent.votacaoChampionId === entry.id;
+                          return (
+                            <button
+                              key={entry.id}
+                              type="button"
+                              onClick={() => handleSetVotacaoChampion(entry)}
+                              disabled={votingActionLoading}
+                              className={`flex items-center gap-2.5 p-2 rounded-lg border transition-all cursor-pointer disabled:opacity-50 ${
+                                isChampion
+                                  ? "border-yellow-500/50 bg-yellow-500/10"
+                                  : "border-primary-gold/10 bg-primary-black/20 hover:border-primary-gold/25"
+                              }`}
+                            >
+                              <div className="w-9 h-9 rounded-md overflow-hidden border border-primary-gold/10 bg-primary-black/50 shrink-0">
+                                {entry.images?.[0] && (
+                                  <img
+                                    src={entry.images[0]}
+                                    alt={entry.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                )}
+                              </div>
+                              <span className="text-sm text-primary-gold/90 flex-1 text-left truncate">
+                                {entry.name}
+                              </span>
+                              <LuCrown
+                                size={15}
+                                className={
+                                  isChampion
+                                    ? "text-yellow-400"
+                                    : "text-primary-gold/20"
+                                }
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                 {entriesLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader />
@@ -2925,9 +3120,17 @@ export default function EventosPage() {
                                   </span>
                                 )}
                               </div>
-                              <span className="text-sm font-medium text-primary-gold/90 flex-1 truncate">
-                                {entry.name}
-                              </span>
+                              <div className="flex flex-col flex-1 min-w-0 gap-0.5">
+                                <span className="text-sm font-medium text-primary-gold/90 truncate">
+                                  {entry.name}
+                                </span>
+                                {entry.submittedByClient && (
+                                  <span className="flex items-center gap-1 text-[10px] text-primary-gold/35 w-fit">
+                                    <LuSmartphone size={10} /> Enviado pelo
+                                    cliente
+                                  </span>
+                                )}
+                              </div>
                               <span className="shrink-0 flex items-center gap-1 text-xs text-primary-gold/50 bg-primary-gold/5 border border-primary-gold/10 px-2 py-1 rounded-full">
                                 <LuVote size={11} />
                                 {voteCountByEntry[entry.id] ?? 0}

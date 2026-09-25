@@ -236,6 +236,12 @@ export interface EventItemType {
   // Votação-specific
   votacaoStatus?: "cadastro" | "aberta" | "encerrada";
   votacaoResultsVisible?: boolean;
+  /** Se o cliente pode cadastrar a própria fantasia (foto + nome) durante o cadastro. Padrão: false. */
+  votacaoAllowClientSubmissions?: boolean;
+  /** Só tem efeito com votacaoAllowClientSubmissions ligado. Padrão (false): 1 fantasia por dispositivo. */
+  votacaoAllowMultipleClientSubmissions?: boolean;
+  /** entryId escolhido pelo admin pra desempatar o 1º lugar. Sem isso, empate no topo é dividido. */
+  votacaoChampionId?: string;
 }
 
 export interface QuizQuestionType {
@@ -301,13 +307,15 @@ export interface VotingEntryType {
   name: string; // nome da fantasia / opção de voto
   images: string[]; // URLs do Firebase Storage — vários ângulos da mesma fantasia
   order?: number;
+  /** true quando a própria fantasia foi cadastrada pelo cliente (não pelo admin). */
+  submittedByClient?: boolean;
   createdAt?: Timestamp;
 }
 
 export interface VotingVoteType {
   id?: string;
   eventId: string;
-  participantId: string; // um documento por participante por evento
+  participantId: string; // cada participante tem até 2 documentos (2 votos) por evento
   entryId: string;
   createdAt?: Timestamp;
 }

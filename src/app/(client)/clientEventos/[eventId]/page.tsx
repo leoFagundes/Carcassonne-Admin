@@ -21,7 +21,7 @@ import {
 } from "@/types";
 import { getLucideIcon } from "@/utils/utilFunctions";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { FiSkipBack } from "react-icons/fi";
 import {
   LuCheck,
@@ -30,7 +30,10 @@ import {
   LuClock,
   LuDrama,
   LuExpand,
+  LuImagePlus,
   LuImages,
+  LuPencil,
+  LuScissors,
   LuShield,
   LuSwords,
   LuTimer,
@@ -39,6 +42,16 @@ import {
   LuX,
 } from "react-icons/lu";
 import LoaderFullscreen from "@/components/loaderFullscreen";
+import ImageCropperModal from "@/components/imageCropperModal";
+import {
+  computeRankedGroups,
+  RankedGroup,
+} from "@/utils/votingResults";
+import {
+  deleteImageFromFirebase,
+  getPathFromFirebaseUrl,
+  uploadImageToFirebase,
+} from "@/services/repositories/FirebaseImageUtils";
 import { Timestamp } from "firebase/firestore";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
@@ -1760,26 +1773,23 @@ const VOTING_PODIUM_META: Record<
 // ══════════════════════════════════════════════════════════════════════════════
 
 function VotingPodium({
+  groups,
   entries,
-  voteCountByEntry,
   onExpand,
 }: {
+  groups: RankedGroup[];
   entries: (VotingEntryType & { id: string })[];
-  voteCountByEntry: Record<string, number>;
   onExpand: (entry: VotingEntryType & { id: string }) => void;
 }) {
-  const top3 = entries.slice(0, 3);
-  if (top3.length === 0) return null;
+  const top3Groups = groups.slice(0, 3);
+  if (top3Groups.length === 0) return null;
 
   // Disposição clássica: 2º à esquerda, 1º no centro, 3º à direita
   const slots = [
-    top3[1] && { entry: top3[1], rank: 2 },
-    { entry: top3[0], rank: 1 },
-    top3[2] && { entry: top3[2], rank: 3 },
-  ].filter(Boolean) as {
-    entry: VotingEntryType & { id: string };
-    rank: number;
-  }[];
+    top3Groups[1] && { group: top3Groups[1], rank: 2 },
+    { group: top3Groups[0], rank: 1 },
+    top3Groups[2] && { group: top3Groups[2], rank: 3 },
+  ].filter(Boolean) as { group: RankedGroup; rank: number }[];
 
   return (
     <div className="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl border border-primary-gold/15 bg-secondary-black/40">
@@ -1787,11 +1797,15 @@ function VotingPodium({
         Pódio
       </span>
       <div className="flex items-end justify-center gap-2 sm:gap-3">
-        {slots.map(({ entry, rank }) => {
+        {slots.map(({ group, rank }) => {
           const meta = VOTING_PODIUM_META[rank];
+          const groupEntries = group.entryIds
+            .map((id) => entries.find((e) => e.id === id))
+            .filter((e): e is VotingEntryType & { id: string } => !!e);
+          const isTied = groupEntries.length > 1;
           return (
             <div
-              key={entry.id}
+              key={group.entryIds.join("-")}
               className="podium-col flex flex-col items-center gap-1.5 flex-1 min-w-0 max-w-[150px]"
               style={{ animationDelay: meta.delay }}
             >
@@ -1800,34 +1814,51 @@ function VotingPodium({
                 alt={`${rank}º lugar`}
                 className={rank === 1 ? "w-10 h-10" : "w-8 h-8"}
               />
-              <button
-                type="button"
-                onClick={() => onExpand(entry)}
-                className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-primary-gold/25 bg-primary-black/50 shrink-0 cursor-zoom-in active:brightness-75 transition-[filter]"
-              >
-                {entry.images?.[0] && (
-                  <img
-                    src={entry.images[0]}
-                    alt={entry.name}
-                    className="w-full h-full object-cover"
-                  />
-                )}
-                <span className="absolute bottom-0 left-0 w-5 h-5 rounded-full bg-primary-black/70 text-primary-gold flex items-center justify-center">
-                  <LuExpand size={9} />
-                </span>
-                {entry.images?.length > 1 && (
-                  <span className="absolute bottom-0 right-0 flex items-center gap-0.5 text-[8px] font-bold bg-primary-black/80 text-primary-gold px-1 rounded-tl-md">
-                    <LuImages size={8} /> {entry.images.length}
-                  </span>
-                )}
-              </button>
+              <div className="flex items-end justify-center">
+                {groupEntries.map((entry, i) => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    onClick={() => onExpand(entry)}
+                    className={`relative rounded-full overflow-hidden border-2 bg-primary-black/50 shrink-0 cursor-zoom-in active:brightness-75 transition-[filter] ${
+                      isTied
+                        ? "w-12 h-12 border-secondary-black"
+                        : "w-16 h-16 border-primary-gold/25"
+                    } ${isTied && i > 0 ? "-ml-3" : ""}`}
+                    style={isTied ? { zIndex: groupEntries.length - i } : undefined}
+                  >
+                    {entry.images?.[0] && (
+                      <img
+                        src={entry.images[0]}
+                        alt={entry.name}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    {!isTied && (
+                      <span className="absolute bottom-0 left-0 w-5 h-5 rounded-full bg-primary-black/70 text-primary-gold flex items-center justify-center">
+                        <LuExpand size={9} />
+                      </span>
+                    )}
+                    {!isTied && entry.images?.length > 1 && (
+                      <span className="absolute bottom-0 right-0 flex items-center gap-0.5 text-[8px] font-bold bg-primary-black/80 text-primary-gold px-1 rounded-tl-md">
+                        <LuImages size={8} /> {entry.images.length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
               <span
                 className={`text-sm font-semibold truncate max-w-full ${meta.name}`}
               >
-                {entry.name}
+                {groupEntries.map((e) => e.name).join(" & ")}
               </span>
+              {isTied && (
+                <span className="text-[10px] text-primary-gold/40 flex items-center gap-1">
+                  🤝 Empate
+                </span>
+              )}
               <span className="text-[11px] font-mono text-primary-gold/40 flex items-center gap-1">
-                <LuVote size={10} /> {voteCountByEntry[entry.id] ?? 0}
+                <LuVote size={10} /> {group.votes}
               </span>
               <div
                 className={`w-full ${meta.height} mt-1 rounded-t-lg border border-b-0 bg-gradient-to-t ${meta.pedestal} flex items-start justify-center pt-1.5`}
@@ -1860,11 +1891,12 @@ function VotingSection({
     [],
   );
   const [entriesLoaded, setEntriesLoaded] = useState(false);
-  const [myVote, setMyVote] = useState<
-    (VotingVoteType & { id: string }) | null
-  >(null);
-  const [voteLoaded, setVoteLoaded] = useState(false);
-  const [voting, setVoting] = useState(false);
+  const [myVotes, setMyVotes] = useState<(VotingVoteType & { id: string })[]>(
+    [],
+  );
+  const [votesLoaded, setVotesLoaded] = useState(false);
+  const [selectedEntryIds, setSelectedEntryIds] = useState<string[]>([]);
+  const [submittingVotes, setSubmittingVotes] = useState(false);
   const [allVotes, setAllVotes] = useState<(VotingVoteType & { id: string })[]>(
     [],
   );
@@ -1891,14 +1923,16 @@ function VotingSection({
     return () => unsub();
   }, [eventId]);
 
-  // Know whether (and in what) this device already voted
+  // Sabe se (e em quê) esse dispositivo já votou — depois de votar, o voto
+  // fica travado (não dá mais pra trocar), então isso decide se mostra a
+  // grade de seleção ou a tela de "você já votou".
   useEffect(() => {
-    const unsub = VotingVoteRepository.subscribeToParticipantVote(
+    const unsub = VotingVoteRepository.subscribeToParticipantVotes(
       eventId,
       getOrCreateParticipantId(),
-      (vote) => {
-        setMyVote(vote);
-        setVoteLoaded(true);
+      (votes) => {
+        setMyVotes(votes);
+        setVotesLoaded(true);
       },
     );
     return () => unsub();
@@ -1917,52 +1951,47 @@ function VotingSection({
     return () => unsub();
   }, [eventId, event.votacaoStatus, event.votacaoResultsVisible]);
 
-  // Vota pela primeira vez OU troca o voto pra outra fantasia — permitido
-  // livremente enquanto a votação estiver aberta.
-  const handleVote = async (entry: VotingEntryType & { id: string }) => {
-    if (voting || myVote?.entryId === entry.id) return;
-    setVoting(true);
+  // Toca num card pra selecionar/desmarcar — no máximo 2 escolhidos por vez.
+  const toggleSelectEntry = (entryId: string) => {
+    setSelectedEntryIds((prev) => {
+      if (prev.includes(entryId)) return prev.filter((id) => id !== entryId);
+      if (prev.length >= 2) {
+        addAlert(
+          "Você já escolheu 2 fantasias — toque em uma delas pra trocar.",
+        );
+        return prev;
+      }
+      return [...prev, entryId];
+    });
+  };
+
+  // Confirma as 2 escolhas — depois disso o voto fica travado, sem volta.
+  const handleSubmitVotes = async () => {
+    if (selectedEntryIds.length !== 2 || submittingVotes || myVotes.length === 2)
+      return;
+    setSubmittingVotes(true);
     try {
       const participantId =
         participantIdRef.current || getOrCreateParticipantId();
-
-      if (myVote) {
-        const ok = await VotingVoteRepository.update(myVote.id, {
-          entryId: entry.id,
-        });
-        if (ok) {
-          setMyVote({ ...myVote, entryId: entry.id });
-          addAlert(`Voto alterado para "${entry.name}"! 🎭`);
-        } else {
-          addAlert("Erro ao trocar o voto.");
-        }
-        return;
-      }
-
-      // Guarda contra corrida: confere se já existe voto antes de criar
-      const existing = await VotingVoteRepository.getByParticipantId(
+      // Guarda contra corrida: confere se já não votou antes de criar
+      const existing = await VotingVoteRepository.getAllByParticipantId(
         eventId,
         participantId,
       );
-      if (existing) {
-        setMyVote(existing);
+      if (existing.length > 0) {
+        addAlert("Você já votou!");
         return;
       }
-      const id = await VotingVoteRepository.create({
-        eventId,
-        participantId,
-        entryId: entry.id,
-      });
-      if (id) {
-        setMyVote({ id, eventId, participantId, entryId: entry.id });
-        addAlert(`Voto registrado em "${entry.name}"! 🎭`);
-      } else {
-        addAlert("Erro ao registrar voto.");
-      }
+      await Promise.all(
+        selectedEntryIds.map((entryId) =>
+          VotingVoteRepository.create({ eventId, participantId, entryId }),
+        ),
+      );
+      addAlert("Voto registrado! Obrigado por participar 🎭");
     } catch {
-      addAlert("Erro ao registrar voto.");
+      addAlert("Erro ao registrar seu voto.");
     } finally {
-      setVoting(false);
+      setSubmittingVotes(false);
     }
   };
 
@@ -1974,7 +2003,7 @@ function VotingSection({
     setLightbox({ images: entry.images, name: entry.name, startIndex });
   };
 
-  if (!entriesLoaded || !voteLoaded) {
+  if (!entriesLoaded || !votesLoaded) {
     return (
       <div className="flex items-center justify-center py-16">
         <div className="flex gap-2">
@@ -1991,23 +2020,33 @@ function VotingSection({
   if ((event.votacaoStatus ?? "cadastro") === "cadastro") {
     // ── Cadastro ainda em andamento ──
     body = (
-      <div className="flex flex-col items-center gap-5 p-6 rounded-2xl border border-primary-gold/15 bg-secondary-black/40 text-center">
-        <div className="w-12 h-12 rounded-full bg-primary-gold/10 border border-primary-gold/20 flex items-center justify-center">
-          <LuDrama size={22} className="text-primary-gold/60" />
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col items-center gap-5 p-6 rounded-2xl border border-primary-gold/15 bg-secondary-black/40 text-center">
+          <div className="w-12 h-12 rounded-full bg-primary-gold/10 border border-primary-gold/20 flex items-center justify-center">
+            <LuDrama size={22} className="text-primary-gold/60" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <p className="text-base font-semibold text-primary-gold/80">
+              As fantasias ainda estão sendo cadastradas
+            </p>
+            <p className="text-sm text-primary-gold/40">
+              Volte em instantes — a votação abre em breve!
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/40 waiting-dot" />
+            <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/40 waiting-dot" />
+            <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/40 waiting-dot" />
+          </div>
         </div>
-        <div className="flex flex-col gap-1">
-          <p className="text-base font-semibold text-primary-gold/80">
-            As fantasias ainda estão sendo cadastradas
-          </p>
-          <p className="text-sm text-primary-gold/40">
-            Volte em instantes — a votação abre em breve!
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/40 waiting-dot" />
-          <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/40 waiting-dot" />
-          <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/40 waiting-dot" />
-        </div>
+        {event.votacaoAllowClientSubmissions && (
+          <ClientEntryManager
+            eventId={eventId}
+            entries={entries}
+            allowMultiple={!!event.votacaoAllowMultipleClientSubmissions}
+            addAlert={addAlert}
+          />
+        )}
       </div>
     );
   } else if (
@@ -2041,141 +2080,232 @@ function VotingSection({
     allVotes.forEach((v) => {
       voteCountByEntry[v.entryId] = (voteCountByEntry[v.entryId] ?? 0) + 1;
     });
-    const ranked = [...entries].sort(
-      (a, b) => (voteCountByEntry[b.id] ?? 0) - (voteCountByEntry[a.id] ?? 0),
+    const groups = computeRankedGroups(
+      entries,
+      voteCountByEntry,
+      event.votacaoChampionId,
     );
 
     body = (
       <div className="flex flex-col gap-5">
         <VotingPodium
-          entries={ranked}
-          voteCountByEntry={voteCountByEntry}
+          groups={groups}
+          entries={entries}
           onExpand={(entry) => openLightbox(entry)}
         />
         <div className="flex flex-col gap-2">
-          {ranked.map((entry, index) => (
-            <div
-              key={entry.id}
-              className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                index === 0
-                  ? "border-yellow-500/40 bg-yellow-500/[0.06]"
-                  : "border-primary-gold/10 bg-secondary-black/30"
-              }`}
-            >
-              {index < 3 ? (
-                <img
-                  src={VOTING_MEDAL_SRC[index + 1]}
-                  alt={`${index + 1}º lugar`}
-                  className="w-6 h-6 shrink-0"
-                />
-              ) : (
-                <span className="text-xs text-primary-gold/30 font-mono w-6 text-center shrink-0">
-                  {index + 1}.
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => openLightbox(entry)}
-                className="relative w-12 h-12 rounded-lg overflow-hidden border border-primary-gold/10 bg-primary-black/50 shrink-0 cursor-zoom-in active:brightness-75 transition-[filter]"
+          {groups.map((group) => {
+            const groupEntries = group.entryIds
+              .map((id) => entries.find((e) => e.id === id))
+              .filter((e): e is VotingEntryType & { id: string } => !!e);
+            const isTied = groupEntries.length > 1;
+            return (
+              <div
+                key={group.entryIds.join("-")}
+                className={`flex flex-col gap-2 p-3 rounded-xl border transition-all ${
+                  group.rank === 1
+                    ? "border-yellow-500/40 bg-yellow-500/[0.06]"
+                    : "border-primary-gold/10 bg-secondary-black/30"
+                }`}
               >
-                {entry.images?.[0] && (
-                  <img
-                    src={entry.images[0]}
-                    alt={entry.name}
-                    className="w-full h-full object-cover"
-                  />
-                )}
-                {entry.images?.length > 1 && (
-                  <span className="absolute bottom-0 right-0 flex items-center gap-0.5 text-[8px] font-bold bg-primary-black/80 text-primary-gold px-1 rounded-tl-md">
-                    <LuImages size={8} /> {entry.images.length}
+                <div className="flex items-center gap-2">
+                  {group.rank <= 3 ? (
+                    <img
+                      src={VOTING_MEDAL_SRC[group.rank]}
+                      alt={`${group.rank}º lugar`}
+                      className="w-5 h-5 shrink-0"
+                    />
+                  ) : (
+                    <span className="text-xs text-primary-gold/30 font-mono shrink-0">
+                      {group.rank}º
+                    </span>
+                  )}
+                  {isTied && (
+                    <span className="text-[10px] text-primary-gold/50 bg-primary-gold/5 border border-primary-gold/10 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                      🤝 Empate
+                    </span>
+                  )}
+                  <span className="shrink-0 flex items-center gap-1 text-xs font-semibold text-primary-gold bg-primary-gold/10 border border-primary-gold/20 px-2 py-1 rounded-full ml-auto">
+                    <LuVote size={11} />
+                    {group.votes}
                   </span>
-                )}
-              </button>
-              <span className="text-sm font-medium text-primary-gold/90 flex-1 truncate">
-                {entry.name}
-              </span>
-              <span className="shrink-0 flex items-center gap-1 text-xs font-semibold text-primary-gold bg-primary-gold/10 border border-primary-gold/20 px-2 py-1 rounded-full">
-                <LuVote size={11} />
-                {voteCountByEntry[entry.id] ?? 0}
-              </span>
-            </div>
-          ))}
+                </div>
+                <div className="flex flex-col gap-2">
+                  {groupEntries.map((entry) => (
+                    <div key={entry.id} className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => openLightbox(entry)}
+                        className="relative w-12 h-12 rounded-lg overflow-hidden border border-primary-gold/10 bg-primary-black/50 shrink-0 cursor-zoom-in active:brightness-75 transition-[filter]"
+                      >
+                        {entry.images?.[0] && (
+                          <img
+                            src={entry.images[0]}
+                            alt={entry.name}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        {entry.images?.length > 1 && (
+                          <span className="absolute bottom-0 right-0 flex items-center gap-0.5 text-[8px] font-bold bg-primary-black/80 text-primary-gold px-1 rounded-tl-md">
+                            <LuImages size={8} /> {entry.images.length}
+                          </span>
+                        )}
+                      </button>
+                      <span className="text-sm font-medium text-primary-gold/90 flex-1 truncate">
+                        {entry.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
   } else {
     // ── Votação aberta ──
-    body = (
-      <div className="flex flex-col gap-4">
-        {myVote ? (
-          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-900/20 border border-green-700/30 text-sm text-green-400">
-            <LuCheck size={15} className="shrink-0" />
-            <span>
-              Você votou! Pode trocar tocando em outra fantasia até a votação
-              encerrar.
-            </span>
+    if (myVotes.length === 2) {
+      // Já votou — o voto fica travado, sem volta. Mostra o que escolheu.
+      const votedEntries = entries.filter((e) =>
+        myVotes.some((v) => v.entryId === e.id),
+      );
+      body = (
+        <div className="flex flex-col items-center gap-5 p-6 rounded-2xl border border-primary-gold/15 bg-secondary-black/40 text-center">
+          <div className="w-12 h-12 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center">
+            <LuCheck size={22} className="text-green-400" />
           </div>
-        ) : (
-          <p className="text-center text-sm text-primary-gold/50">
-            Escolha sua fantasia favorita — dá pra trocar o voto quando quiser
-            até a votação encerrar.
-          </p>
-        )}
-
-        {entries.length === 0 ? (
-          <p className="text-center text-sm text-primary-gold/30 py-8">
-            Nenhuma fantasia cadastrada ainda.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {entries.map((entry) => {
-              const isMine = myVote?.entryId === entry.id;
-              return (
-                <div
+          <div className="flex flex-col gap-1">
+            <p className="text-base font-semibold text-primary-gold/90">
+              Voto registrado!
+            </p>
+            <p className="text-sm text-primary-gold/40">
+              Aguarde a votação encerrar e o resultado ser liberado.
+            </p>
+          </div>
+          {votedEntries.length > 0 && (
+            <div className="flex gap-3 w-full justify-center">
+              {votedEntries.map((entry) => (
+                <button
                   key={entry.id}
-                  className={`relative flex flex-col gap-3 p-3 rounded-2xl border transition-all ${
-                    isMine
-                      ? "border-primary-gold bg-primary-gold/10"
-                      : "border-primary-gold/15 bg-secondary-black/40"
-                  }`}
+                  type="button"
+                  onClick={() => openLightbox(entry)}
+                  className="flex flex-col items-center gap-2 flex-1 max-w-[140px]"
                 >
-                  <EntryPhotoCarousel
-                    images={entry.images ?? []}
-                    name={entry.name}
-                    onExpand={(startIndex) => openLightbox(entry, startIndex)}
-                  />
-                  <span className="text-base font-semibold text-primary-gold/90 truncate">
+                  <div className="w-full aspect-square rounded-xl overflow-hidden border border-primary-gold/20 bg-primary-black/50 cursor-zoom-in">
+                    {entry.images?.[0] && (
+                      <img
+                        src={entry.images[0]}
+                        alt={entry.name}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
+                  <span className="text-sm font-medium text-primary-gold/80 truncate w-full">
                     {entry.name}
                   </span>
-                  {isMine && (
-                    <span className="absolute top-4 right-4 w-7 h-7 rounded-full bg-primary-gold text-primary-black flex items-center justify-center shadow-lg pointer-events-none">
-                      <LuCheck size={14} />
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleVote(entry)}
-                    disabled={voting}
-                    className={`w-full py-3 rounded-xl text-sm font-bold uppercase tracking-wider transition-all disabled:opacity-50 ${
-                      isMine
-                        ? "bg-primary-gold text-primary-black cursor-default"
-                        : "bg-primary-gold/10 border border-primary-gold/40 text-primary-gold hover:bg-primary-gold/20 cursor-pointer disabled:cursor-not-allowed"
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/30 waiting-dot" />
+            <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/30 waiting-dot" />
+            <span className="w-2.5 h-2.5 rounded-full bg-primary-gold/30 waiting-dot" />
+          </div>
+        </div>
+      );
+    } else {
+      body = (
+        <div className="flex flex-col gap-4 pb-24">
+          <p className="text-center text-sm text-primary-gold/50">
+            Escolha exatamente <strong>2 fantasias</strong> favoritas e toque
+            em Votar. Depois de confirmar, não dá pra trocar.
+          </p>
+
+          {entries.length === 0 ? (
+            <p className="text-center text-sm text-primary-gold/30 py-8">
+              Nenhuma fantasia cadastrada ainda.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {entries.map((entry) => {
+                const isSelected = selectedEntryIds.includes(entry.id);
+                const selectionFull =
+                  selectedEntryIds.length >= 2 && !isSelected;
+                return (
+                  <div
+                    key={entry.id}
+                    className={`relative flex flex-col gap-3 p-3 rounded-2xl border transition-all ${
+                      isSelected
+                        ? "border-primary-gold bg-primary-gold/10"
+                        : selectionFull
+                          ? "border-primary-gold/10 bg-secondary-black/40 opacity-50"
+                          : "border-primary-gold/15 bg-secondary-black/40"
                     }`}
                   >
-                    {isMine ? "Votado ✓" : "Votar"}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
+                    <EntryPhotoCarousel
+                      images={entry.images ?? []}
+                      name={entry.name}
+                      onExpand={(startIndex) =>
+                        openLightbox(entry, startIndex)
+                      }
+                    />
+                    <span className="text-base font-semibold text-primary-gold/90 truncate">
+                      {entry.name}
+                    </span>
+                    {isSelected && (
+                      <span className="absolute top-4 right-4 w-7 h-7 rounded-full bg-primary-gold text-primary-black flex items-center justify-center shadow-lg pointer-events-none">
+                        <LuCheck size={14} />
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => toggleSelectEntry(entry.id)}
+                      disabled={selectionFull}
+                      className={`w-full py-3 rounded-xl text-sm font-bold uppercase tracking-wider transition-all disabled:opacity-50 ${
+                        isSelected
+                          ? "bg-primary-gold text-primary-black cursor-pointer"
+                          : "bg-primary-gold/10 border border-primary-gold/40 text-primary-gold hover:bg-primary-gold/20 cursor-pointer disabled:cursor-not-allowed"
+                      }`}
+                    >
+                      {isSelected ? "Selecionada ✓" : "Selecionar"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
   }
+
+  const showVoteBar =
+    event.votacaoStatus === "aberta" &&
+    entries.length > 0 &&
+    myVotes.length !== 2;
 
   return (
     <>
       {body}
+      {showVoteBar && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-primary-black/95 backdrop-blur-sm border-t border-primary-gold/15 px-4 py-3">
+          <div className="max-w-[480px] mx-auto flex items-center gap-3">
+            <span className="text-xs text-primary-gold/50 shrink-0">
+              {selectedEntryIds.length}/2 selecionadas
+            </span>
+            <button
+              type="button"
+              onClick={handleSubmitVotes}
+              disabled={selectedEntryIds.length !== 2 || submittingVotes}
+              className="flex-1 py-3 rounded-xl bg-primary-gold text-primary-black font-bold text-sm tracking-wider uppercase transition-all hover:bg-primary-gold/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {submittingVotes ? "Enviando..." : "Votar"}
+            </button>
+          </div>
+        </div>
+      )}
       {lightbox && (
         <PhotoLightbox
           images={lightbox.images}
@@ -2185,6 +2315,529 @@ function VotingSection({
         />
       )}
     </>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CADASTRO DE FANTASIA PELO PRÓPRIO CLIENTE (opcional, controlado pelo admin)
+// ══════════════════════════════════════════════════════════════════════════════
+
+type ClientStagedPhoto = {
+  key: string;
+  originalFile: File;
+  croppedFile: File | null;
+  previewUrl: string;
+};
+
+// IDs das fantasias que ESSE dispositivo enviou, por evento — guardado no
+// localStorage porque não existe login: é a única forma de saber "essa é a
+// minha fantasia, deixa eu editar" quando a pessoa volta à página.
+function mySubmittedEntriesKey(eventId: string): string {
+  return `votacao_my_entries_${eventId}`;
+}
+
+function getMySubmittedEntryIds(eventId: string): string[] {
+  try {
+    const raw = localStorage.getItem(mySubmittedEntriesKey(eventId));
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function addMySubmittedEntryId(eventId: string, entryId: string) {
+  try {
+    const current = getMySubmittedEntryIds(eventId);
+    if (!current.includes(entryId)) {
+      localStorage.setItem(
+        mySubmittedEntriesKey(eventId),
+        JSON.stringify([...current, entryId]),
+      );
+    }
+  } catch {
+    // localStorage indisponível (modo privado etc.) — só significa que a
+    // pessoa não vai conseguir editar depois, sem quebrar o envio.
+  }
+}
+
+function ClientEntryManager({
+  eventId,
+  entries,
+  allowMultiple,
+  addAlert,
+}: {
+  eventId: string;
+  entries: (VotingEntryType & { id: string })[];
+  allowMultiple: boolean;
+  addAlert: (msg: string) => void;
+}) {
+  const [myEntryIds, setMyEntryIds] = useState<string[]>(() =>
+    getMySubmittedEntryIds(eventId),
+  );
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+
+  // Só considera fantasias que ainda existem (o admin pode ter excluído).
+  const myEntries = entries.filter((e) => myEntryIds.includes(e.id));
+  const canAddNew = allowMultiple || myEntries.length === 0;
+
+  const handleSubmitted = (entryId: string) => {
+    addMySubmittedEntryId(eventId, entryId);
+    setMyEntryIds((prev) => (prev.includes(entryId) ? prev : [...prev, entryId]));
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      {myEntries.map((entry) =>
+        editingEntryId === entry.id ? (
+          <ClientEntryEditForm
+            key={entry.id}
+            entry={entry}
+            addAlert={addAlert}
+            onCancel={() => setEditingEntryId(null)}
+            onSaved={() => setEditingEntryId(null)}
+          />
+        ) : (
+          <div
+            key={entry.id}
+            className="flex items-center gap-3 p-3 rounded-2xl border border-primary-gold/30 bg-primary-gold/5"
+          >
+            <div className="w-14 h-14 rounded-lg overflow-hidden border border-primary-gold/10 bg-primary-black/50 shrink-0">
+              {entry.images?.[0] && (
+                <img
+                  src={entry.images[0]}
+                  alt={entry.name}
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
+            <div className="flex flex-col flex-1 min-w-0 gap-0.5">
+              <span className="text-sm font-semibold text-primary-gold/90 truncate">
+                {entry.name}
+              </span>
+              <span className="text-[11px] text-primary-gold/40">
+                Sua fantasia enviada
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEditingEntryId(entry.id)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary-gold/20 text-primary-gold/60 hover:text-primary-gold hover:border-primary-gold/40 text-xs font-medium transition-all cursor-pointer shrink-0"
+            >
+              <LuPencil size={12} /> Editar
+            </button>
+          </div>
+        ),
+      )}
+
+      {canAddNew && (
+        <ClientEntrySubmissionForm
+          eventId={eventId}
+          addAlert={addAlert}
+          onSubmitted={handleSubmitted}
+        />
+      )}
+
+      {!canAddNew && (
+        <p className="text-xs text-primary-gold/35 text-center">
+          Você já enviou sua fantasia — pode editar ela acima até a votação
+          abrir.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ClientEntrySubmissionForm({
+  eventId,
+  addAlert,
+  onSubmitted,
+}: {
+  eventId: string;
+  addAlert: (msg: string) => void;
+  onSubmitted: (entryId: string) => void;
+}) {
+  const [name, setName] = useState("");
+  const [photos, setPhotos] = useState<ClientStagedPhoto[]>([]);
+  const [cropperKey, setCropperKey] = useState<string | null>(null);
+  const [cropperFile, setCropperFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleFilesSelected = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    setPhotos((prev) => [
+      ...prev,
+      ...files.map((file) => ({
+        key: crypto.randomUUID(),
+        originalFile: file,
+        croppedFile: null,
+        previewUrl: URL.createObjectURL(file),
+      })),
+    ]);
+  };
+
+  const removePhoto = (key: string) => {
+    setPhotos((prev) => prev.filter((p) => p.key !== key));
+  };
+
+  const openCropper = (key: string) => {
+    const staged = photos.find((p) => p.key === key);
+    if (!staged) return;
+    setCropperKey(key);
+    setCropperFile(staged.croppedFile ?? staged.originalFile);
+  };
+
+  const handleCropConfirm = (croppedFile: File) => {
+    if (!cropperKey) return;
+    const previewUrl = URL.createObjectURL(croppedFile);
+    setPhotos((prev) =>
+      prev.map((p) =>
+        p.key === cropperKey ? { ...p, croppedFile, previewUrl } : p,
+      ),
+    );
+    setCropperKey(null);
+    setCropperFile(null);
+  };
+
+  const handleSubmit = async () => {
+    if (!name.trim()) {
+      addAlert("Digite o nome da fantasia.");
+      return;
+    }
+    if (photos.length === 0) {
+      addAlert("Selecione ao menos uma foto.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const images: string[] = [];
+      for (const staged of photos) {
+        const fileToUpload = staged.croppedFile ?? staged.originalFile;
+        const { url } = await uploadImageToFirebase(
+          fileToUpload,
+          "voting-entries",
+        );
+        images.push(url);
+      }
+      const id = await VotingEntryRepository.create({
+        eventId,
+        name: name.trim(),
+        images,
+        submittedByClient: true,
+      });
+      if (id) {
+        addAlert("Fantasia enviada! 🎭");
+        setName("");
+        setPhotos([]);
+        onSubmitted(id);
+      } else {
+        addAlert("Erro ao enviar sua fantasia.");
+      }
+    } catch {
+      addAlert("Erro ao enviar sua fantasia.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3 p-4 rounded-2xl border border-primary-gold/15 bg-secondary-black/40">
+      <div className="flex flex-col gap-0.5">
+        <span className="text-sm font-semibold text-primary-gold/90">
+          Quer participar?
+        </span>
+        <span className="text-xs text-primary-gold/40">
+          Cadastre sua fantasia — foto(s) + nome.
+        </span>
+      </div>
+
+      <input
+        type="text"
+        placeholder="Nome da fantasia"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="w-full bg-primary-black/50 border border-primary-gold/20 rounded-lg px-3 py-2.5 text-sm text-primary-gold placeholder-primary-gold/25 outline-none focus:border-primary-gold/50 transition-all"
+      />
+
+      <label className="flex items-center justify-center gap-2 py-3 rounded-lg border border-dashed border-primary-gold/30 hover:border-primary-gold/60 text-sm text-primary-gold/60 hover:text-primary-gold cursor-pointer transition-all">
+        <LuImagePlus size={16} />
+        Selecionar fotos
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleFilesSelected}
+        />
+      </label>
+
+      {photos.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {photos.map((staged) => (
+            <div key={staged.key} className="relative shrink-0">
+              <div className="w-16 h-16 rounded-lg overflow-hidden border border-primary-gold/10 bg-primary-black/50">
+                <img
+                  src={staged.previewUrl}
+                  alt="Prévia"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => openCropper(staged.key)}
+                className="absolute -bottom-1.5 -left-1.5 w-5 h-5 rounded-full bg-primary-gold text-primary-black flex items-center justify-center cursor-pointer"
+              >
+                <LuScissors size={10} />
+              </button>
+              <button
+                type="button"
+                onClick={() => removePhoto(staged.key)}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-invalid-color text-white flex items-center justify-center cursor-pointer"
+              >
+                <LuX size={11} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={submitting}
+        className="w-full py-3 rounded-xl bg-primary-gold text-primary-black font-bold text-sm tracking-wider uppercase transition-all hover:bg-primary-gold/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+      >
+        {submitting ? "Enviando..." : "Enviar fantasia"}
+      </button>
+
+      <ImageCropperModal
+        isOpen={!!cropperKey}
+        file={cropperFile}
+        onCancel={() => {
+          setCropperKey(null);
+          setCropperFile(null);
+        }}
+        onConfirm={handleCropConfirm}
+      />
+    </div>
+  );
+}
+
+function ClientEntryEditForm({
+  entry,
+  addAlert,
+  onCancel,
+  onSaved,
+}: {
+  entry: VotingEntryType & { id: string };
+  addAlert: (msg: string) => void;
+  onCancel: VoidFunction;
+  onSaved: VoidFunction;
+}) {
+  const [name, setName] = useState(entry.name);
+  const [existingImages, setExistingImages] = useState<string[]>(
+    entry.images ?? [],
+  );
+  const [newPhotos, setNewPhotos] = useState<ClientStagedPhoto[]>([]);
+  const [cropperKey, setCropperKey] = useState<string | null>(null);
+  const [cropperFile, setCropperFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const handleFilesSelected = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    setNewPhotos((prev) => [
+      ...prev,
+      ...files.map((file) => ({
+        key: crypto.randomUUID(),
+        originalFile: file,
+        croppedFile: null,
+        previewUrl: URL.createObjectURL(file),
+      })),
+    ]);
+  };
+
+  const removeExistingImage = (url: string) => {
+    setExistingImages((prev) => prev.filter((u) => u !== url));
+  };
+
+  const removeNewPhoto = (key: string) => {
+    setNewPhotos((prev) => prev.filter((p) => p.key !== key));
+  };
+
+  const openCropper = (key: string) => {
+    const staged = newPhotos.find((p) => p.key === key);
+    if (!staged) return;
+    setCropperKey(key);
+    setCropperFile(staged.croppedFile ?? staged.originalFile);
+  };
+
+  const handleCropConfirm = (croppedFile: File) => {
+    if (!cropperKey) return;
+    const previewUrl = URL.createObjectURL(croppedFile);
+    setNewPhotos((prev) =>
+      prev.map((p) =>
+        p.key === cropperKey ? { ...p, croppedFile, previewUrl } : p,
+      ),
+    );
+    setCropperKey(null);
+    setCropperFile(null);
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      addAlert("Digite o nome da fantasia.");
+      return;
+    }
+    if (existingImages.length === 0 && newPhotos.length === 0) {
+      addAlert("A fantasia precisa ter ao menos uma foto.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const newUrls: string[] = [];
+      for (const staged of newPhotos) {
+        const fileToUpload = staged.croppedFile ?? staged.originalFile;
+        const { url } = await uploadImageToFirebase(
+          fileToUpload,
+          "voting-entries",
+        );
+        newUrls.push(url);
+      }
+      const finalImages = [...existingImages, ...newUrls];
+
+      // Fotos que existiam antes e foram removidas nessa edição — apaga do
+      // Storage pra não ficar acumulando lixo.
+      const removedUrls = (entry.images ?? []).filter(
+        (url) => !existingImages.includes(url),
+      );
+      await Promise.all(
+        removedUrls.map(async (url) => {
+          const path = getPathFromFirebaseUrl(url);
+          if (path) await deleteImageFromFirebase(path);
+        }),
+      );
+
+      await VotingEntryRepository.update(entry.id, {
+        name: name.trim(),
+        images: finalImages,
+      });
+      addAlert("Fantasia atualizada!");
+      onSaved();
+    } catch {
+      addAlert("Erro ao atualizar sua fantasia.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3 p-4 rounded-2xl border border-primary-gold/40 bg-primary-black/30">
+      <input
+        type="text"
+        placeholder="Nome da fantasia"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="w-full bg-primary-black/50 border border-primary-gold/20 rounded-lg px-3 py-2.5 text-sm text-primary-gold placeholder-primary-gold/25 outline-none focus:border-primary-gold/50 transition-all"
+      />
+
+      {existingImages.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {existingImages.map((url) => (
+            <div key={url} className="relative shrink-0">
+              <div className="w-16 h-16 rounded-lg overflow-hidden border border-primary-gold/10 bg-primary-black/50">
+                <img
+                  src={url}
+                  alt="Foto"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => removeExistingImage(url)}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-invalid-color text-white flex items-center justify-center cursor-pointer"
+              >
+                <LuX size={11} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {newPhotos.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {newPhotos.map((staged) => (
+            <div key={staged.key} className="relative shrink-0">
+              <div className="w-16 h-16 rounded-lg overflow-hidden border border-primary-gold/30 bg-primary-black/50">
+                <img
+                  src={staged.previewUrl}
+                  alt="Prévia"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => openCropper(staged.key)}
+                className="absolute -bottom-1.5 -left-1.5 w-5 h-5 rounded-full bg-primary-gold text-primary-black flex items-center justify-center cursor-pointer"
+              >
+                <LuScissors size={10} />
+              </button>
+              <button
+                type="button"
+                onClick={() => removeNewPhoto(staged.key)}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-invalid-color text-white flex items-center justify-center cursor-pointer"
+              >
+                <LuX size={11} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <label className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed border-primary-gold/30 hover:border-primary-gold/60 text-xs text-primary-gold/60 hover:text-primary-gold cursor-pointer transition-all">
+        <LuImagePlus size={14} />
+        Adicionar mais fotos
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleFilesSelected}
+        />
+      </label>
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="flex-1 py-2.5 rounded-xl bg-primary-gold text-primary-black font-bold text-sm tracking-wider uppercase transition-all hover:bg-primary-gold/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          {saving ? "Salvando..." : "Salvar"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={saving}
+          className="px-4 py-2.5 rounded-xl border border-primary-gold/20 text-primary-gold/50 hover:text-primary-gold hover:border-primary-gold/40 text-sm font-medium transition-all cursor-pointer disabled:opacity-40"
+        >
+          Cancelar
+        </button>
+      </div>
+
+      <ImageCropperModal
+        isOpen={!!cropperKey}
+        file={cropperFile}
+        onCancel={() => {
+          setCropperKey(null);
+          setCropperFile(null);
+        }}
+        onConfirm={handleCropConfirm}
+      />
+    </div>
   );
 }
 

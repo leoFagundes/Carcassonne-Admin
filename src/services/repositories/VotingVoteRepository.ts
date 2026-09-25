@@ -5,7 +5,6 @@ import {
   getDocs,
   doc,
   deleteDoc,
-  updateDoc,
   query,
   where,
   serverTimestamp,
@@ -52,10 +51,11 @@ class VotingVoteRepository {
     );
   }
 
-  static async getByParticipantId(
+  // Cada participante pode ter até 2 votos (2 documentos) por evento.
+  static async getAllByParticipantId(
     eventId: string,
     participantId: string
-  ): Promise<(VotingVoteType & { id: string }) | null> {
+  ): Promise<(VotingVoteType & { id: string })[]> {
     try {
       const q = query(
         collection(db, this.collectionName),
@@ -63,19 +63,17 @@ class VotingVoteRepository {
         where("participantId", "==", participantId)
       );
       const snap = await getDocs(q);
-      if (snap.empty) return null;
-      const d = snap.docs[0];
-      return { id: d.id, ...(d.data() as VotingVoteType) };
+      return snap.docs.map((d) => ({ id: d.id, ...(d.data() as VotingVoteType) }));
     } catch (error) {
-      console.error("Erro ao buscar voto do participante:", error);
-      return null;
+      console.error("Erro ao buscar votos do participante:", error);
+      return [];
     }
   }
 
-  static subscribeToParticipantVote(
+  static subscribeToParticipantVotes(
     eventId: string,
     participantId: string,
-    callback: (vote: (VotingVoteType & { id: string }) | null) => void
+    callback: (votes: (VotingVoteType & { id: string })[]) => void
   ): () => void {
     const q = query(
       collection(db, this.collectionName),
@@ -85,10 +83,9 @@ class VotingVoteRepository {
     return onSnapshot(
       q,
       (snap) => {
-        if (snap.empty) callback(null);
-        else callback({ id: snap.docs[0].id, ...(snap.docs[0].data() as VotingVoteType) });
+        callback(snap.docs.map((d) => ({ id: d.id, ...(d.data() as VotingVoteType) })));
       },
-      () => callback(null)
+      () => callback([])
     );
   }
 
@@ -105,15 +102,12 @@ class VotingVoteRepository {
     }
   }
 
-  static async update(
-    id: string,
-    data: Partial<Omit<VotingVoteType, "id">>
-  ): Promise<boolean> {
+  static async delete(id: string): Promise<boolean> {
     try {
-      await updateDoc(doc(db, this.collectionName, id), data);
+      await deleteDoc(doc(db, this.collectionName, id));
       return true;
     } catch (error) {
-      console.error("Erro ao atualizar voto:", error);
+      console.error("Erro ao deletar voto:", error);
       return false;
     }
   }

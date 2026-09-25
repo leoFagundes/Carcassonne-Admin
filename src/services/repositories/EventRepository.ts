@@ -143,14 +143,25 @@ class EventRepository {
   }
 
   static async resetVoting(id: string): Promise<boolean> {
-    return this.update(id, {
-      votacaoStatus: "cadastro",
-      votacaoResultsVisible: false,
-    });
+    try {
+      await updateDoc(doc(db, this.collectionName, id), {
+        votacaoStatus: "cadastro",
+        votacaoResultsVisible: false,
+        votacaoChampionId: deleteField(),
+      });
+      return true;
+    } catch (error) {
+      console.error("Erro ao reiniciar votação:", error);
+      return false;
+    }
   }
 
   static async setQuizChampion(id: string, participantId: string): Promise<boolean> {
     return this.update(id, { quizChampionId: participantId });
+  }
+
+  static async setVotacaoChampion(id: string, entryId: string): Promise<boolean> {
+    return this.update(id, { votacaoChampionId: entryId });
   }
 
   static async delete(id: string): Promise<boolean> {
