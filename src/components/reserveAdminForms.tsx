@@ -64,9 +64,10 @@ export default function ReserveAdminForms({
 
   useEffect(() => {
     if (type !== "edit") {
-      ReserveRepository.generateUniqueCode().then((code) =>
-        setLocalReserve((prev) => ({ ...prev, code })),
-      );
+      ReserveRepository.generateUniqueCode()
+        .then((code) => setLocalReserve((prev) => ({ ...prev, code })))
+        // Se falhar (rede), o código é gerado de novo na hora de criar.
+        .catch((error) => console.error(error));
     }
   }, [type]);
 
@@ -122,22 +123,45 @@ export default function ReserveAdminForms({
 
     setSubmitting(true);
     try {
-      await ReserveRepository.create(localReserve);
-      addAlert(`Reserva de ${localReserve.name} criada com sucesso!`);
+      // Nunca criar reserva sem código — sem ele o cliente não consegue
+      // cancelar depois.
+      let code = localReserve.code;
+      if (!code) {
+        try {
+          code = await ReserveRepository.generateUniqueCode();
+          setLocalReserve((prev) => ({ ...prev, code }));
+        } catch (error) {
+          console.error(error);
+          addAlert(
+            "Não foi possível gerar o código da reserva. Confira a conexão e tente novamente.",
+          );
+          return;
+        }
+      }
+      const reserveToSave = { ...localReserve, code };
+
+      const created = await ReserveRepository.create(reserveToSave);
+      if (!created) {
+        addAlert(
+          "Não foi possível criar a reserva. Confira a conexão e tente novamente.",
+        );
+        return;
+      }
+      addAlert(`Reserva de ${reserveToSave.name} criada com sucesso!`);
 
       const res = await fetch("/api/send-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          to: localReserve.email,
-          subject: `🍻 Sobre a sua reserva no Carcassonne Pub`,
+          to: reserveToSave.email,
+          subject: `🍻 Reserva confirmada — ${reserveToSave.bookingDate.day}/${reserveToSave.bookingDate.month} às ${reserveToSave.time}h · Carcassonne Pub`,
           props: {
-            name: localReserve.name,
-            code: localReserve.code,
-            bookingDate: localReserve.bookingDate,
-            time: localReserve.time,
-            adults: localReserve.adults,
-            childs: localReserve.childs,
+            name: reserveToSave.name,
+            code: reserveToSave.code,
+            bookingDate: reserveToSave.bookingDate,
+            time: reserveToSave.time,
+            adults: reserveToSave.adults,
+            childs: reserveToSave.childs,
           },
           template: "client",
         }),
@@ -150,15 +174,15 @@ export default function ReserveAdminForms({
           to: "carcassonnepub@gmail.com",
           subject: `Nova reserva recebida - Carcassonne Pub`,
           props: {
-            name: localReserve.name,
-            code: localReserve.code,
-            bookingDate: localReserve.bookingDate,
-            time: localReserve.time,
-            adults: localReserve.adults,
-            childs: localReserve.childs,
-            email: localReserve.email,
-            phone: localReserve.phone,
-            observation: localReserve.observation,
+            name: reserveToSave.name,
+            code: reserveToSave.code,
+            bookingDate: reserveToSave.bookingDate,
+            time: reserveToSave.time,
+            adults: reserveToSave.adults,
+            childs: reserveToSave.childs,
+            email: reserveToSave.email,
+            phone: reserveToSave.phone,
+            observation: reserveToSave.observation,
           },
           template: "staff",
         }),

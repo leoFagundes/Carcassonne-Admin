@@ -35,14 +35,27 @@ export function highlightMatch(text: string, search: string = "") {
   }
 }
 
-export function randomCodeGenerator(tamanho: number = 6) {
-  const caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let codigo = "";
-  for (let i = 0; i < tamanho; i++) {
-    const indice = Math.floor(Math.random() * caracteres.length);
-    codigo += caracteres[indice];
+// Sem os caracteres que se confundem na leitura (0/o, 1/l/i) — muitos
+// clientes digitam o código olhando o e-mail em vez de copiar.
+const RESERVE_CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
+const RESERVE_CODE_LENGTH = 8;
+
+export function generateReserveCode(): string {
+  const values = new Uint32Array(RESERVE_CODE_LENGTH);
+  crypto.getRandomValues(values);
+  let code = "";
+  for (const value of values) {
+    code += RESERVE_CODE_ALPHABET[value % RESERVE_CODE_ALPHABET.length];
   }
-  return codigo;
+  return code;
+}
+
+/**
+ * Deixa o código no formato canônico, do jeito que o cliente digitar ou
+ * colar: minúsculas, sem espaços, sem "#" nem qualquer outro símbolo.
+ */
+export function normalizeReserveCode(raw: string): string {
+  return raw.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 export const openWhatsApp = (rawPhone: string) => {

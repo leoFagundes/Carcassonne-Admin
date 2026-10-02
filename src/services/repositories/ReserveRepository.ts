@@ -14,7 +14,10 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { ReserveType } from "@/types";
-import { randomCodeGenerator } from "@/utils/utilFunctions";
+import {
+  generateReserveCode,
+  normalizeReserveCode,
+} from "@/utils/utilFunctions";
 
 class ReserveRepository {
   static collectionName = "reserves";
@@ -117,20 +120,52 @@ class ReserveRepository {
     }
   }
 
+  // Lança erro se a consulta falhar (rede etc.) — quem chama decide o que
+  // fazer, em vez de seguir com um código vazio.
   static async generateUniqueCode(): Promise<string> {
+    const colRef = collection(db, this.collectionName);
     let code: string;
     let exists: boolean;
     do {
-      code = randomCodeGenerator();
-      // Busca tanto o cÃ³digo exato quanto a versÃ£o em minÃºsculas para cobrir registros antigos
-      const colRef = collection(db, this.collectionName);
-      const [snapshotExact, snapshotLower] = await Promise.all([
-        getDocs(query(colRef, where("code", "==", code))),
-        getDocs(query(colRef, where("code", "==", code.toLowerCase()))),
-      ]);
-      exists = !snapshotExact.empty || !snapshotLower.empty;
+      code = generateReserveCode();
+      // Códigos novos têm 8 caracteres e os antigos 6, então só é preciso
+      // conferir colisão com outros códigos novos (sempre em minúsculas).
+      const snapshot = await getDocs(query(colRef, where("code", "==", code)));
+      exists = !snapshot.empty;
     } while (exists);
     return code;
+  }
+
+  /**
+   * Busca uma reserva pelo código, ignorando maiúsculas/minúsculas, espaços e
+   * "#". Retorna null se não existir e LANÇA erro se a consulta falhar — a
+   * tela precisa diferenciar "código errado" de "não deu pra consultar".
+   */
+  static async findByCode(
+    rawCode: string
+  ): Promise<(ReserveType & { id: string }) | null> {
+    const normalized = normalizeReserveCode(rawCode);
+    if (!normalized) return null;
+
+    // Códigos novos são salvos em minúsculas; os antigos foram salvos em
+    // maiúsculas (e alguns registros bem antigos com "#" na frente).
+    const variants = Array.from(
+      new Set([
+        normalized,
+        normalized.toUpperCase(),
+        `#${normalized}`,
+        `#${normalized.toUpperCase()}`,
+      ])
+    );
+    const snapshot = await getDocs(
+      query(
+        collection(db, this.collectionName),
+        where("code", "in", variants)
+      )
+    );
+    if (snapshot.empty) return null;
+    const docSnap = snapshot.docs[0];
+    return { id: docSnap.id, ...(docSnap.data() as ReserveType) };
   }
 
   static async getAll(): Promise<(ReserveType & { id: string })[]> {

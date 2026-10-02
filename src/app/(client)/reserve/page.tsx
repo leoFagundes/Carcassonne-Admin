@@ -77,9 +77,10 @@ export default function Reserve() {
   });
 
   useEffect(() => {
-    ReserveRepository.generateUniqueCode().then((code) =>
-      setReserve((prev) => ({ ...prev, code })),
-    );
+    ReserveRepository.generateUniqueCode()
+      .then((code) => setReserve((prev) => ({ ...prev, code })))
+      // Se falhar (rede), o código é gerado de novo na hora de confirmar.
+      .catch((error) => console.error(error));
   }, []);
 
   const { width, height } = useWindowSize();
@@ -260,8 +261,28 @@ export default function Reserve() {
       setcomponentLoading(false);
       return;
     }
+
+    // O código é gerado quando a página abre; se aquilo falhou (rede) ou
+    // ainda não terminou, tenta de novo aqui. Nunca salvar reserva sem
+    // código — sem ele o cliente não tem como cancelar depois.
+    let code = reserve.code;
+    if (!code) {
+      try {
+        code = await ReserveRepository.generateUniqueCode();
+        setReserve((prev) => ({ ...prev, code }));
+      } catch (error) {
+        console.error(error);
+        addAlert(
+          "Não foi possível gerar o código da sua reserva. Confira sua conexão e tente novamente.",
+        );
+        setcomponentLoading(false);
+        return;
+      }
+    }
+    const reserveToSave = { ...reserve, code };
+
     try {
-      const createdReserve = await ReserveRepository.create(reserve);
+      const createdReserve = await ReserveRepository.create(reserveToSave);
       if (!createdReserve || !createdReserve._id)
         throw new Error("Falha ao salvar reserva");
 
@@ -269,15 +290,15 @@ export default function Reserve() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          to: reserve.email,
-          subject: `🍻 Sobre a sua reserva no Carcassonne Pub`,
+          to: reserveToSave.email,
+          subject: `🍻 Reserva confirmada — ${reserveToSave.bookingDate.day}/${reserveToSave.bookingDate.month} às ${reserveToSave.time}h · Carcassonne Pub`,
           props: {
-            name: reserve.name,
-            code: reserve.code,
-            bookingDate: reserve.bookingDate,
-            time: reserve.time,
-            adults: reserve.adults,
-            childs: reserve.childs,
+            name: reserveToSave.name,
+            code: reserveToSave.code,
+            bookingDate: reserveToSave.bookingDate,
+            time: reserveToSave.time,
+            adults: reserveToSave.adults,
+            childs: reserveToSave.childs,
           },
           template: "client",
         }),
@@ -290,15 +311,15 @@ export default function Reserve() {
           to: "carcassonnepub@gmail.com",
           subject: `Nova reserva recebida - Carcassonne Pub`,
           props: {
-            name: reserve.name,
-            code: reserve.code,
-            bookingDate: reserve.bookingDate,
-            time: reserve.time,
-            adults: reserve.adults,
-            childs: reserve.childs,
-            email: reserve.email,
-            phone: reserve.phone,
-            observation: reserve.observation,
+            name: reserveToSave.name,
+            code: reserveToSave.code,
+            bookingDate: reserveToSave.bookingDate,
+            time: reserveToSave.time,
+            adults: reserveToSave.adults,
+            childs: reserveToSave.childs,
+            email: reserveToSave.email,
+            phone: reserveToSave.phone,
+            observation: reserveToSave.observation,
           },
           template: "staff",
         }),
@@ -770,9 +791,9 @@ export default function Reserve() {
                     navigator.clipboard.writeText(reserve.code);
                     addAlert("Código copiado!");
                   }}
-                  className="font-cinzel font-bold text-xl flex items-center gap-2 cursor-pointer hover:text-primary-gold/80 transition-colors"
+                  className="font-mono font-bold text-xl tracking-[0.2em] flex items-center gap-2 cursor-pointer hover:text-primary-gold/80 transition-colors"
                 >
-                  #{reserve.code}
+                  {reserve.code}
                   <LuCopy size={16} />
                 </span>
                 <p className="text-xs text-primary-gold/45 mt-1">

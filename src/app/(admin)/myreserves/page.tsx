@@ -44,7 +44,11 @@ import Tooltip from "@/components/Tooltip";
 import Checkbox from "@/components/checkbox";
 import { useAlert } from "@/contexts/alertProvider";
 import LoaderFullscreen from "@/components/loaderFullscreen";
-import { openEmail, openWhatsApp } from "@/utils/utilFunctions";
+import {
+  normalizeReserveCode,
+  openEmail,
+  openWhatsApp,
+} from "@/utils/utilFunctions";
 import Input from "@/components/input";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -537,11 +541,13 @@ export default function Rerserve() {
     ? [...allReserves]
         .filter((r) => {
           const q = searchQuery.toLowerCase();
+          const qCode = normalizeReserveCode(searchQuery);
           return (
             r.name?.toLowerCase().includes(q) ||
             r.phone?.includes(q) ||
             r.email?.toLowerCase().includes(q) ||
-            r.code?.toLowerCase().includes(q)
+            (qCode !== "" &&
+              normalizeReserveCode(r.code ?? "").includes(qCode))
           );
         })
         .sort((a, b) => {
