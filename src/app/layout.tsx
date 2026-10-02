@@ -1,19 +1,32 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Saira } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { AlertProvider } from "@/contexts/alertProvider";
 import { Analytics } from "@vercel/analytics/next";
 
-const cormorantGaramond = Cormorant_Garamond({
-  weight: ["300", "400", "500", "600", "700"],
+// Fontes hospedadas no projeto (antes vinham de next/font/google): o build
+// do Turbopack quebrava ao baixar a Saira do Google Fonts ("next/font/google
+// queries have exactly one entry"), sem nenhuma mudança no código.
+const cormorantGaramond = localFont({
+  src: [
+    { path: "./fonts/cormorant-garamond-latin-300-normal.woff2", weight: "300" },
+    { path: "./fonts/cormorant-garamond-latin-400-normal.woff2", weight: "400" },
+    { path: "./fonts/cormorant-garamond-latin-500-normal.woff2", weight: "500" },
+    { path: "./fonts/cormorant-garamond-latin-600-normal.woff2", weight: "600" },
+    { path: "./fonts/cormorant-garamond-latin-700-normal.woff2", weight: "700" },
+  ],
   variable: "--font-pirata-one",
-  subsets: ["latin"],
+  adjustFontFallback: "Times New Roman",
 });
 
-const saira = Saira({
-  weight: ["400", "500", "600", "700"],
+const saira = localFont({
+  src: [
+    { path: "./fonts/saira-latin-400-normal.woff2", weight: "400" },
+    { path: "./fonts/saira-latin-500-normal.woff2", weight: "500" },
+    { path: "./fonts/saira-latin-600-normal.woff2", weight: "600" },
+    { path: "./fonts/saira-latin-700-normal.woff2", weight: "700" },
+  ],
   variable: "--font-saira",
-  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
