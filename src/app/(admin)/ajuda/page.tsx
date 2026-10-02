@@ -384,7 +384,13 @@ const helpCards: HelpCard[] = [
     category: "adicionar",
     title: "O que cada card faz na página Adicionar",
     description:
-      "Adicionar Jogo → abre formulário de novo jogo (modal). Adicionar Item → abre formulário de item do cardápio (modal). Adicionar Descrição → descrição de tipo de item existente (modal). Adicionar Combo → formulário de combo (modal). Adicionar Aviso → texto de aviso para o cardápio (modal). Adicionar Popup → popup do site (modal). Ordenar Tipos → gerencia tipos e subtipos do cardápio (modal). Adicionar Reserva → vai para Reservas com formulário aberto. Gerenciar Freelancers → vai para a página de gestão de freelancers (/myreserves/freelancer). Adicionar uma Música → vai para a página de recomendação de música do cliente. Adicionar um Link → vai para Links com formulário aberto. Adicionar Evento → vai para Eventos com formulário aberto.",
+      "Adicionar Jogo → abre formulário de novo jogo (modal). Adicionar Item → abre formulário de item do cardápio (modal). Adicionar Descrição → descrição de tipo de item existente (modal). Adicionar Combo → formulário de combo (modal). Adicionar Aviso → texto de aviso para o cardápio (modal). Adicionar Popup → popup do site (modal). Ordenar Tipos → gerencia tipos e subtipos do cardápio (modal). Adicionar Reserva → vai para Reservas com formulário aberto. E-mail de Reserva → edita o e-mail que o cliente recebe ao reservar (modal). Gerenciar Freelancers → vai para a página de gestão de freelancers (/myreserves/freelancer). Adicionar uma Música → vai para a página de recomendação de música do cliente. Adicionar um Link → vai para Links com formulário aberto. Adicionar Evento → vai para Eventos com formulário aberto.",
+  },
+  {
+    category: "adicionar",
+    title: "Como personalizar o e-mail de reserva",
+    description:
+      "Em Adicionar → 'E-mail de Reserva' você edita o e-mail de confirmação que o cliente recebe: assunto, texto de prévia, imagens do topo e do rodapé, título, mensagens, aviso, endereço, bloco de cancelamento e assinatura. As variáveis ({nome}, {codigo}, {data}, {data_curta}, {dia_semana}, {horario}, {pessoas}) são trocadas pelos dados de cada reserva — clique em um campo e depois na variável para inseri-la. Use **texto** para negrito. A pré-visualização ao lado atualiza enquanto você digita (com visão de computador e de celular). O código da reserva e o link de cancelamento sempre aparecem e não podem ser removidos. As mudanças só valem depois de 'Salvar alterações' (ou Ctrl + S); depois de salvar, use 'Enviar um teste' para receber o e-mail de verdade. 'Restaurar padrão' volta ao conteúdo original (também precisa salvar).",
   },
 
   // ── CONFIGURAÇÕES ─────────────────────────────────────────────

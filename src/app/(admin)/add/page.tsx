@@ -9,6 +9,7 @@ import {
   LuExternalLink,
   LuGroup,
   LuListOrdered,
+  LuMailCheck,
   LuMusic,
   LuPizza,
   LuPlus,
@@ -41,6 +42,7 @@ import {
 } from "@/utils/patternValues";
 import PopupForms from "@/components/popupForms";
 import TypesOrderForms from "@/components/typesOrderForms";
+import ReservationEmailForms from "@/components/reservationEmailForms";
 import { useRouter } from "next/navigation";
 
 export default function AddPage() {
@@ -52,6 +54,8 @@ export default function AddPage() {
   const [isAddTypesOrderModalOpen, setIsAddTypesOrderModalOpen] =
     useState(false);
   const [isDescriptionTypeModalOpen, setIsDescriptionTypeModalOpen] =
+    useState(false);
+  const [isReservationEmailModalOpen, setIsReservationEmailModalOpen] =
     useState(false);
 
   const [newBoardgame, setNewBoardgame] =
@@ -131,6 +135,12 @@ export default function AddPage() {
           description="Adicione uma nova reserva!"
           icon={<LuCalendarPlus size={"32px"} className="min-w-[32px]" />}
           onClick={() => router.push(`/myreserves?createreserve=true`)}
+        />
+        <Card
+          title="E-mail de Reserva"
+          description="Personalize o e-mail que o cliente recebe ao fazer uma reserva!"
+          icon={<LuMailCheck size={"32px"} className="min-w-[32px]" />}
+          onClick={() => setIsReservationEmailModalOpen(true)}
         />
         <Card
           title="Gerenciar Freelancers"
@@ -293,6 +303,17 @@ export default function AddPage() {
           closeForms={() => {
             setIsAddPopupModalOpen(false);
           }}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={isReservationEmailModalOpen}
+        onClose={() => setIsReservationEmailModalOpen(false)}
+        noPadding
+        patternCloseButton={false}
+      >
+        <ReservationEmailForms
+          closeForms={() => setIsReservationEmailModalOpen(false)}
         />
       </Modal>
     </section>

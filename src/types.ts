@@ -156,6 +156,26 @@ export interface ReserveType {
   arrivedPeople?: boolean[];
 }
 
+/** Conteúdo editável do e-mail que o cliente recebe ao reservar (aba Adicionar). */
+export interface ReservationEmailConfigType {
+  subject: string;
+  previewText: string;
+  bannerUrl: string; // "" = sem imagem
+  heading: string;
+  intro: string;
+  codeLabel: string;
+  codeHint: string;
+  showWarning: boolean;
+  warningText: string;
+  showAddress: boolean;
+  addressText: string;
+  cancelTitle: string;
+  cancelText: string;
+  cancelButtonLabel: string;
+  signOff: string;
+  footerImageUrl: string; // "" = sem imagem
+}
+
 export interface DayNoteType {
   id?: string;
   date: string; // "YYYY-MM-DD"

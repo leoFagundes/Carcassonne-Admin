@@ -14,7 +14,14 @@ import {
   Section,
   Text,
 } from "@react-email/components";
-import type { CSSProperties } from "react";
+import { Fragment, type CSSProperties, type ReactNode } from "react";
+import { ReservationEmailConfigType } from "@/types";
+import {
+  DEFAULT_RESERVATION_EMAIL,
+  fillEmailTokens,
+  formatWeekday,
+  mergeReservationEmailConfig,
+} from "@/utils/reservationEmail";
 
 interface ReservationProps {
   name: string;
@@ -26,6 +33,8 @@ interface ReservationProps {
   email?: string;
   phone?: string;
   observation?: string;
+  /** Conteúdo editado no admin; sem isso usa o conteúdo padrão. */
+  config?: Partial<ReservationEmailConfigType> | null;
 }
 
 const main = {
@@ -52,10 +61,8 @@ const containerImageFooter = {
 
 // ── E-mail do cliente ────────────────────────────────────────────────────────
 
-const BANNER_URL =
-  "https://firebasestorage.googleapis.com/v0/b/carcassonne-admin.firebasestorage.app/o/reserve%2Freservas.png?alt=media&token=c36a300d-dc25-4079-b71b-55e5014e9311";
-const CITY_URL =
-  "https://firebasestorage.googleapis.com/v0/b/carcassonne-admin.firebasestorage.app/o/reserve%2Freservas-rodape.png?alt=media&token=5abc2303-2e5f-4e6c-933d-b0b9f5924e79";
+// Fixo de propósito (não editável no admin): mudar esse link quebraria o
+// cancelamento.
 const CANCEL_URL = "https://www.carcassonnepub.com.br/cancelreserve";
 
 // Layout claro de propósito: fundo escuro é invertido de forma imprevisível
@@ -82,6 +89,11 @@ const clientCard: CSSProperties = {
   borderRadius: "14px",
   overflow: "hidden",
 };
+// Banner e rodapé ficam dentro do card, formando o topo e a base dele. O
+// arredondamento vai na própria imagem (13px = 14px do card menos 1px de
+// borda) porque nem todo cliente de e-mail respeita o overflow do card.
+const bannerImage: CSSProperties = { ...image, borderRadius: "13px 13px 0 0" };
+const footerImage: CSSProperties = { ...image, borderRadius: "0 0 13px 13px" };
 const clientContent: CSSProperties = { padding: "28px 32px 32px" };
 const clientHeading: CSSProperties = {
   margin: "0 0 10px",
@@ -214,14 +226,23 @@ const signOff: CSSProperties = {
   color: color.body,
 };
 
-function formatBookingDate(bookingDate: ReservationProps["bookingDate"]) {
-  const date = new Date(
-    Number(bookingDate.year),
-    Number(bookingDate.month) - 1,
-    Number(bookingDate.day),
-  );
-  const weekday = date.toLocaleDateString("pt-BR", { weekday: "long" });
-  return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}, ${bookingDate.day}/${bookingDate.month}/${bookingDate.year}`;
+// Formatação mínima permitida nos textos editados no admin: "**texto**" vira
+// negrito e cada quebra de linha vira <br />. Todo o resto é texto puro (o
+// React escapa), então não há como injetar HTML pelo editor.
+function richText(text: string): ReactNode[] {
+  return text.split("\n").flatMap((line, lineIndex) => {
+    const parts = line
+      .split(/(\*\*[^*]+\*\*)/g)
+      .filter((part) => part !== "")
+      .map((part, i) =>
+        /^\*\*[^*]+\*\*$/.test(part) ? (
+          <strong key={`${lineIndex}-${i}`}>{part.slice(2, -2)}</strong>
+        ) : (
+          <Fragment key={`${lineIndex}-${i}`}>{part}</Fragment>
+        ),
+      );
+    return lineIndex === 0 ? parts : [<br key={`br-${lineIndex}`} />, ...parts];
+  });
 }
 
 export const ClientReservationEmail = ({
@@ -231,45 +252,53 @@ export const ClientReservationEmail = ({
   time,
   adults,
   childs,
+  config,
 }: ReservationProps) => {
+  const c = mergeReservationEmailConfig(config);
+  const data = { name, code, bookingDate, time, adults, childs };
+  const fill = (text: string) => fillEmailTokens(text, data);
   const people = adults + childs;
 
   return (
     <Html lang="pt-BR">
       <Head />
-      <Preview>{`Reserva confirmada para ${bookingDate.day}/${bookingDate.month} às ${time}h · código ${code}`}</Preview>
+      {c.previewText.trim() && <Preview>{fill(c.previewText)}</Preview>}
       <Body style={clientMain}>
         <Container>
           <Section style={clientCard}>
-            <Img
-              style={image}
-              width={620}
-              src={BANNER_URL}
-              alt="Carcassonne Pub"
-            />
+            {c.bannerUrl && (
+              <Img
+                style={bannerImage}
+                width={620}
+                src={c.bannerUrl}
+                alt="Carcassonne Pub"
+              />
+            )}
 
             <Section style={clientContent}>
-              <Heading style={clientHeading}>Reserva confirmada! 🍻</Heading>
-              <Text style={lead}>
-                Olá, <strong>{name}</strong>! Sua reserva no{" "}
-                <strong>Carcassonne Pub</strong> está confirmada — estamos muito
-                felizes por você querer passar esse momento com a gente.
-              </Text>
+              {c.heading.trim() && (
+                <Heading style={clientHeading}>{fill(c.heading)}</Heading>
+              )}
+              {c.intro.trim() && (
+                <Text style={lead}>{richText(fill(c.intro))}</Text>
+              )}
 
               <Section style={codeBox}>
-                <Text style={codeLabel}>Código da reserva</Text>
+                {c.codeLabel.trim() && (
+                  <Text style={codeLabel}>{fill(c.codeLabel)}</Text>
+                )}
                 <Text style={codeValue}>{code}</Text>
-                <Text style={codeHint}>
-                  Toque e segure o código para copiar. Guarde-o: você vai
-                  precisar dele se quiser cancelar.
-                </Text>
+                {c.codeHint.trim() && (
+                  <Text style={codeHint}>{richText(fill(c.codeHint))}</Text>
+                )}
               </Section>
 
               <Section style={detailsBox}>
                 <Row style={detailRow}>
                   <Column style={detailLabel}>🗓️ Data</Column>
                   <Column style={detailValue}>
-                    {formatBookingDate(bookingDate)}
+                    {formatWeekday(bookingDate)}, {bookingDate.day}/
+                    {bookingDate.month}/{bookingDate.year}
                   </Column>
                 </Row>
                 <Row style={detailRow}>
@@ -284,28 +313,30 @@ export const ClientReservationEmail = ({
                 </Row>
               </Section>
 
-              <Section style={warningBox}>
-                <Text style={warningText}>
-                  ⚠️ As reservas são válidas até <strong>19:30</strong>. Depois
-                  desse horário, não conseguimos garantir a disponibilidade da
-                  mesa.
-                </Text>
-              </Section>
+              {c.showWarning && c.warningText.trim() && (
+                <Section style={warningBox}>
+                  <Text style={warningText}>
+                    {richText(fill(c.warningText))}
+                  </Text>
+                </Section>
+              )}
 
-              <Text style={addressText}>
-                📍 CLN 407 Bloco E Loja 37 — Asa Norte, Brasília/DF
-              </Text>
+              {c.showAddress && c.addressText.trim() && (
+                <Text style={addressText}>{richText(fill(c.addressText))}</Text>
+              )}
 
               <Hr style={divider} />
 
-              <Text style={cancelTitle}>Precisa cancelar?</Text>
-              <Text style={cancelText}>
-                Sem problemas — é só abrir a página de cancelamento e informar o
-                código acima.
-              </Text>
+              {c.cancelTitle.trim() && (
+                <Text style={cancelTitle}>{fill(c.cancelTitle)}</Text>
+              )}
+              {c.cancelText.trim() && (
+                <Text style={cancelText}>{richText(fill(c.cancelText))}</Text>
+              )}
               <Section style={{ textAlign: "center" }}>
                 <Button href={CANCEL_URL} style={cancelButton}>
-                  Cancelar reserva
+                  {fill(c.cancelButtonLabel).trim() ||
+                    DEFAULT_RESERVATION_EMAIL.cancelButtonLabel}
                 </Button>
               </Section>
               <Text style={fallbackLink}>
@@ -315,16 +346,19 @@ export const ClientReservationEmail = ({
                 </Link>
               </Text>
 
-              <Text style={signOff}>
-                Nos vemos em breve! 🍺
-                <br />
-                <strong>Equipe Carcassonne Pub</strong>
-              </Text>
+              {c.signOff.trim() && (
+                <Text style={signOff}>{richText(fill(c.signOff))}</Text>
+              )}
             </Section>
-          </Section>
 
-          <Section style={containerImageFooter}>
-            <Img style={image} width={620} src={CITY_URL} alt="" />
+            {c.footerImageUrl && (
+              <Img
+                style={footerImage}
+                width={620}
+                src={c.footerImageUrl}
+                alt=""
+              />
+            )}
           </Section>
         </Container>
       </Body>

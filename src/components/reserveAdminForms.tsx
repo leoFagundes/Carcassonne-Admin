@@ -154,7 +154,7 @@ export default function ReserveAdminForms({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to: reserveToSave.email,
-          subject: `🍻 Reserva confirmada — ${reserveToSave.bookingDate.day}/${reserveToSave.bookingDate.month} às ${reserveToSave.time}h · Carcassonne Pub`,
+          // Assunto e conteúdo vêm do editor de e-mail (montados na rota)
           props: {
             name: reserveToSave.name,
             code: reserveToSave.code,
