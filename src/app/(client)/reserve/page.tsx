@@ -299,6 +299,7 @@ export default function Reserve() {
             time: reserveToSave.time,
             adults: reserveToSave.adults,
             childs: reserveToSave.childs,
+            observation: reserveToSave.observation,
           },
           template: "client",
         }),

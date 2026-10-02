@@ -15,6 +15,7 @@ export type ReservationEmailData = {
   time: string;
   adults: number;
   childs: number;
+  observation?: string;
 };
 
 export const DEFAULT_RESERVATION_EMAIL: ReservationEmailConfigType = {
@@ -111,5 +112,6 @@ export function buildSampleReservationData(): ReservationEmailData {
     time: "19:00",
     adults: 4,
     childs: 0,
+    observation: "Comemoração de aniversário 🎂",
   };
 }

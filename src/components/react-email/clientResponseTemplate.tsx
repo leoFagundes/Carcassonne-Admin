@@ -163,6 +163,22 @@ const detailValue: CSSProperties = {
   color: color.text,
   textAlign: "right",
 };
+// Observação é texto livre (pode ser longo), então fica em linha inteira,
+// com o rótulo em cima, em vez de rótulo/valor lado a lado.
+const observationCell: CSSProperties = { padding: "12px 0" };
+const observationLabel: CSSProperties = {
+  margin: "0 0 4px",
+  fontSize: "14px",
+  lineHeight: "1.5",
+  color: color.muted,
+};
+const observationValue: CSSProperties = {
+  margin: "0",
+  fontSize: "15px",
+  lineHeight: "1.5",
+  color: color.text,
+  wordBreak: "break-word",
+};
 const warningBox: CSSProperties = {
   marginTop: "20px",
   backgroundColor: "#fdf2f1",
@@ -245,6 +261,14 @@ function richText(text: string): ReactNode[] {
   });
 }
 
+// Texto digitado pelo cliente: só as quebras de linha são respeitadas, sem
+// nenhuma formatação.
+function plainText(text: string): ReactNode[] {
+  return text
+    .split("\n")
+    .flatMap((line, i) => (i === 0 ? [line] : [<br key={i} />, line]));
+}
+
 export const ClientReservationEmail = ({
   name,
   code,
@@ -252,12 +276,14 @@ export const ClientReservationEmail = ({
   time,
   adults,
   childs,
+  observation,
   config,
 }: ReservationProps) => {
   const c = mergeReservationEmailConfig(config);
   const data = { name, code, bookingDate, time, adults, childs };
   const fill = (text: string) => fillEmailTokens(text, data);
   const people = adults + childs;
+  const note = observation?.trim();
 
   return (
     <Html lang="pt-BR">
@@ -305,12 +331,20 @@ export const ClientReservationEmail = ({
                   <Column style={detailLabel}>⏰ Horário</Column>
                   <Column style={detailValue}>{time}h</Column>
                 </Row>
-                <Row>
+                <Row style={note ? detailRow : undefined}>
                   <Column style={detailLabel}>👥 Pessoas</Column>
                   <Column style={detailValue}>
                     {people} {people === 1 ? "pessoa" : "pessoas"}
                   </Column>
                 </Row>
+                {note && (
+                  <Row>
+                    <Column style={observationCell}>
+                      <Text style={observationLabel}>📝 Observação</Text>
+                      <Text style={observationValue}>{plainText(note)}</Text>
+                    </Column>
+                  </Row>
+                )}
               </Section>
 
               {c.showWarning && c.warningText.trim() && (
