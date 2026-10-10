@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import { FaArrowUp, FaInfoCircle, FaMusic, FaStar } from "react-icons/fa";
+import { FaArrowUp, FaInfoCircle, FaMusic, FaSearch, FaStar } from "react-icons/fa";
 import Tooltip from "./Tooltip";
 import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 import EventRepository from "@/services/repositories/EventRepository";
@@ -15,19 +15,25 @@ function FloatingButton({
   tooltip,
   children,
   isHidden,
+  accent,
 }: {
   onClick: () => void;
   tooltip: string;
   children: React.ReactNode;
   isHidden?: boolean;
+  /** Ação principal da página (ex: busca do cardápio), em dourado. */
+  accent?: boolean;
 }) {
   return (
     <Tooltip direction="left" content={tooltip}>
       <button
         onClick={onClick}
-        className={`flex items-center justify-center w-12 h-12 rounded-xl bg-dark-black/85 backdrop-blur-[4px] border border-primary-gold/20 text-primary cursor-pointer transition-all duration-200 hover:border-primary-gold/50 hover:text-primary-gold active:scale-95 ${
-          isHidden ? "opacity-0 pointer-events-none" : "opacity-100"
-        }`}
+        aria-label={tooltip}
+        className={`flex items-center justify-center w-12 h-12 rounded-xl bg-dark-black/85 backdrop-blur-[4px] border cursor-pointer transition-all duration-200 hover:border-primary-gold/50 hover:text-primary-gold active:scale-95 ${
+          accent
+            ? "border-primary-gold/45 text-primary-gold shadow-[0_0_14px_rgba(230,197,107,0.18)]"
+            : "border-primary-gold/20 text-primary"
+        } ${isHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}
       >
         {children}
       </button>
@@ -35,7 +41,7 @@ function FloatingButton({
   );
 }
 
-export default function ScrollUp() {
+export default function ScrollUp({ onSearch }: { onSearch?: () => void }) {
   const [isVisible, setIsVisible] = useState(false);
   const [isMusicRecommendationEnable, setIsMusicRecommendationEnable] = useState(false);
   const [activeEvents, setActiveEvents] = useState<(EventItemType & { id: string })[]>([]);
@@ -67,7 +73,8 @@ export default function ScrollUp() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-3 fixed bottom-3 right-3 z-10">
+    // floating-bottom (globals.css): sobe um pouco quando há um tema ativo
+    <div className="flex flex-col items-center gap-3 fixed right-3 z-10 floating-bottom">
       <FloatingButton
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         tooltip="Voltar ao topo"
@@ -111,6 +118,13 @@ export default function ScrollUp() {
       >
         <FaInfoCircle size={16} />
       </FloatingButton>
+
+      {/* Busca (só no cardápio): por último, mais perto do polegar */}
+      {onSearch && (
+        <FloatingButton onClick={onSearch} tooltip="Procurar no cardápio" accent>
+          <FaSearch size={16} />
+        </FloatingButton>
+      )}
     </div>
   );
 }

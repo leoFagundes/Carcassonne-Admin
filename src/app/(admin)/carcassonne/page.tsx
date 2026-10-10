@@ -13,7 +13,8 @@ import {
 } from "@/utils/patternValues";
 import { auth } from "@/services/firebaseConfig";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   LuSettings,
   LuCalendar,
@@ -51,6 +52,20 @@ import {
   Cell,
 } from "recharts";
 import { DragCards } from "./drag-cards";
+import SiteThemeSettings from "./site-theme-settings";
+import { useSiteThemeReminders } from "@/components/siteTheme/siteThemeContext";
+
+/**
+ * Vindo do aviso do menu lateral (?tab=temas), abre a aba Temas — inclusive
+ * quando a página já está aberta em outra aba.
+ */
+function TabFromQuery({ onTemas }: { onTemas: () => void }) {
+  const tab = useSearchParams().get("tab");
+  useEffect(() => {
+    if (tab === "temas") onTemas();
+  }, [tab, onTemas]);
+  return null;
+}
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = React.useState(value);
@@ -204,9 +219,11 @@ export default function SettingsPage() {
   const [localGeneralConfigs, setLocalGeneralConfigs] =
     useState<GeneralConfigsType>(patternGeneralConfigs);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"stats" | "settings" | "mural">(
-    "stats",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "stats" | "settings" | "temas" | "mural"
+  >("stats");
+  const { pending: pendingThemeReminders } = useSiteThemeReminders();
+  const openTemas = React.useCallback(() => setActiveTab("temas"), []);
   const [newBlockedDate, setNewBlockedDate] = useState("");
   const [newBlockedReason, setNewBlockedReason] = useState("");
   const [newSpecialDate, setNewSpecialDate] = useState("");
@@ -526,7 +543,13 @@ export default function SettingsPage() {
     }
     setSavingSection(section);
     try {
-      await GeneralConfigsRepository.update({ ...localGeneralConfigs });
+      // O tema e os avisos de tema têm a aba própria e podem mudar em tempo
+      // real (outro aparelho): não regrava aqui para não desfazer uma troca
+      // feita depois que a página carregou.
+      const configsToSave = { ...localGeneralConfigs };
+      delete configsToSave.siteTheme;
+      delete configsToSave.siteThemeReminders;
+      await GeneralConfigsRepository.update(configsToSave);
       // O documento inteiro é salvo a cada clique em "Salvar", então o snapshot
       // de referência para detectar alterações pendentes vale para as duas seções.
       setSavedConfigsSnapshot(localGeneralConfigs);
@@ -767,6 +790,9 @@ export default function SettingsPage() {
   return (
     <section className="flex flex-col gap-5 w-full h-full pb-8 overflow-y-auto outline-none px-1">
       {loading && <LoaderFullscreen />}
+      <Suspense fallback={null}>
+        <TabFromQuery onTemas={openTemas} />
+      </Suspense>
       {/* Header */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-center gap-2 w-full">
@@ -784,19 +810,28 @@ export default function SettingsPage() {
           [
             { key: "stats", label: "Estatísticas" },
             { key: "settings", label: "Configurações" },
+            { key: "temas", label: "Temas" },
             { key: "mural", label: "Mural de fotos" },
           ] as const
         ).map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`text-xs px-4 py-1.5 rounded-full border transition-all cursor-pointer ${
+            className={`relative text-xs px-4 py-1.5 rounded-full border transition-all cursor-pointer ${
               activeTab === tab.key
                 ? "bg-primary-gold text-primary-black border-primary-gold font-semibold"
                 : "border-primary-gold/20 text-primary-gold/50 hover:border-primary-gold/50 hover:text-primary-gold"
             }`}
           >
             {tab.label}
+            {tab.key === "temas" && pendingThemeReminders.length > 0 && (
+              <span
+                title="Temas com aviso para ativar"
+                className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-[#ff9a3c] text-primary-black text-[9px] font-bold animate-pulse"
+              >
+                {pendingThemeReminders.length}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -1696,6 +1731,8 @@ export default function SettingsPage() {
         </div>
       </div>
       )}
+
+      {activeTab === "temas" && <SiteThemeSettings />}
 
       {activeTab === "mural" && (
         <>

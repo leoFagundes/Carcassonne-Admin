@@ -6,11 +6,56 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  onSnapshot,
+  Unsubscribe,
+  deleteField,
 } from "firebase/firestore";
-import { GeneralConfigsType } from "@/types";
+import { GeneralConfigsType, SiteThemeId, SiteThemeReminder } from "@/types";
 
 class GeneralConfigsRepository {
   static collectionName = "general-configs";
+
+  /**
+   * Grava (ou remove, com `null`) o aviso de um tema, sem mexer nos avisos
+   * dos outros temas.
+   */
+  static async setSiteThemeReminder(
+    theme: SiteThemeId,
+    reminder: SiteThemeReminder | null,
+  ): Promise<boolean> {
+    try {
+      const snapshot = await getDocs(collection(db, this.collectionName));
+      if (snapshot.empty) return false;
+      await updateDoc(doc(db, this.collectionName, snapshot.docs[0].id), {
+        [`siteThemeReminders.${theme}`]: reminder ?? deleteField(),
+      });
+      return true;
+    } catch (error) {
+      console.error("Erro ao salvar o aviso do tema: ", error);
+      return false;
+    }
+  }
+
+  /** Acompanha a configuração em tempo real (ex: troca de tema do site). */
+  static subscribe(
+    onChange: (configs: GeneralConfigsType | null) => void,
+  ): Unsubscribe {
+    return onSnapshot(
+      collection(db, this.collectionName),
+      (snapshot) => {
+        const configDoc = snapshot.docs[0];
+        onChange(
+          configDoc
+            ? {
+                _id: configDoc.id,
+                ...(configDoc.data() as Omit<GeneralConfigsType, "_id">),
+              }
+            : null,
+        );
+      },
+      (error) => console.error("Erro ao acompanhar a configuração geral: ", error),
+    );
+  }
 
   static async get(): Promise<GeneralConfigsType | null> {
     try {

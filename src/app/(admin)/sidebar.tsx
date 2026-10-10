@@ -24,6 +24,10 @@ import MusicRecommendationRepository from "@/services/repositories/MusicRecommen
 import EventRepository from "@/services/repositories/EventRepository";
 import { useAlert } from "@/contexts/alertProvider";
 import { useLogoEasterEgg } from "@/hooks/useLogoEasterEgg";
+import ThemeLogoAccessory from "@/components/siteTheme/ThemeLogoAccessory";
+import ThemeBand from "@/components/siteTheme/ThemeBand";
+import { useSiteThemeReminders } from "@/components/siteTheme/siteThemeContext";
+import { SITE_THEMES } from "@/utils/siteThemes";
 
 interface ItemProps {
   message: string;
@@ -35,6 +39,8 @@ interface ItemProps {
     React.SetStateAction<(MusicRecommendationType & { id: string })[]>
   >;
   activeCount?: number;
+  /** Nomes dos temas com aviso para ativar (Configurações → Temas). */
+  themeReminders?: string[];
 }
 
 function Item({
@@ -45,6 +51,7 @@ function Item({
   notify,
   setSongsToNotify,
   activeCount,
+  themeReminders,
 }: ItemProps) {
   const pathname = usePathname();
   const isActive = pathname === path;
@@ -81,9 +88,21 @@ function Item({
         <Tooltip
           content={`${activeCount} evento${activeCount !== 1 ? "s" : ""} ativado${activeCount !== 1 ? "s" : ""}`}
           direction="right"
+          portal
         >
           <div className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-green-500 text-primary-black text-[10px] font-bold">
             {activeCount}
+          </div>
+        </Tooltip>
+      )}
+      {path === "/carcassonne" && themeReminders && themeReminders.length > 0 && (
+        <Tooltip
+          content={`Tema para ativar: ${themeReminders.join(", ")}`}
+          direction="right"
+          portal
+        >
+          <div className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#ff9a3c] text-primary-black text-[10px] font-bold animate-pulse">
+            {themeReminders.length}
           </div>
         </Tooltip>
       )}
@@ -104,6 +123,11 @@ export default function Sidebar() {
   const pathnameRef = useRef(pathname);
   const toggleSidebar = () => setIsOpen(!isOpen);
   const onLogoClick = useLogoEasterEgg();
+  // Avisos de tema (período configurado em Configurações → Temas)
+  const { pending: pendingThemeReminders } = useSiteThemeReminders();
+  const themeReminderNames = pendingThemeReminders.map(
+    ({ theme }) => SITE_THEMES[theme].name,
+  );
 
   useEffect(() => {
     pathnameRef.current = pathname;
@@ -225,6 +249,10 @@ export default function Sidebar() {
         }`}
       >
         {isOpen ? <LuX size={17} /> : <LuMenu size={17} />}
+        {/* Menu fechado no celular: o aviso de tema aparece no próprio botão */}
+        {!isOpen && themeReminderNames.length > 0 && (
+          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#ff9a3c] border border-secondary-black animate-pulse" />
+        )}
       </button>
 
       {/* Overlay for mobile */}
@@ -241,10 +269,12 @@ export default function Sidebar() {
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
         md:relative md:translate-x-0 md:flex md:flex-shrink-0`}
       >
+        {/* Decoração do tema ativo (Configurações → Temas), atrás dos itens */}
+        <ThemeBand variant="sidebar" />
         <div className="flex flex-col h-full w-full overflow-y-auto">
           {/* Logo section */}
           <div className="flex flex-col items-center gap-3 px-4 pt-6 pb-4 border-b border-primary-gold/10">
-            <div className="relative">
+            <div className="relative isolate">
               <img
                 className="w-[120px] contrast-[1.1] brightness-90 cursor-pointer"
                 src="images/[oficial]-logo.png"
@@ -252,10 +282,12 @@ export default function Sidebar() {
                 onClick={onLogoClick}
               />
               <div className="absolute top-2 left-2">
-                <Tooltip content="Eu sou o Duque e pego 3" direction="right">
+                <Tooltip content="Eu sou o Duque e pego 3" direction="right" portal>
                   <div className="bg-primary-black p-[1px] h-1 w-1 rounded-full" />
                 </Tooltip>
               </div>
+              {/* Enfeite do tema ativo (Configurações → Temas) */}
+              <ThemeLogoAccessory placement="corner" />
             </div>
             <div className="flex flex-col items-center gap-0.5">
               <span className="font-cinzel text-sm font-semibold text-primary-gold/80 tracking-[0.2em] uppercase">
@@ -273,7 +305,12 @@ export default function Sidebar() {
               <Item
                 key={item.path}
                 onClick={() => {
-                  router.push(item.path);
+                  // Com aviso de tema, Configurações abre direto na aba Temas
+                  router.push(
+                    item.path === "/carcassonne" && themeReminderNames.length > 0
+                      ? "/carcassonne?tab=temas"
+                      : item.path,
+                  );
                   setIsOpen(false);
                 }}
                 message={item.message}
@@ -284,6 +321,7 @@ export default function Sidebar() {
                 activeCount={
                   item.path === "/eventos" ? activeEventsCount : undefined
                 }
+                themeReminders={themeReminderNames}
               />
             ))}
           </nav>

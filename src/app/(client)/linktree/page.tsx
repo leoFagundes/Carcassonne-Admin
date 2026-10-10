@@ -1,6 +1,8 @@
 "use client";
 
 import Loader from "@/components/loader";
+import ThemeLogoAccessory from "@/components/siteTheme/ThemeLogoAccessory";
+import { useSiteTheme } from "@/components/siteTheme/siteThemeContext";
 import LinksRepository from "@/services/repositories/LinksRepository";
 import { LinkType } from "@/types";
 import { getLucideIcon } from "@/utils/utilFunctions";
@@ -223,6 +225,7 @@ function LinkCard({ link, index }: { link: LinkType & { id: string }; index: num
 export default function LinktreePage() {
   const [mounted, setMounted] = useState(false);
   const [links, setLinks] = useState<(LinkType & { id: string })[]>([]);
+  const siteTheme = useSiteTheme();
 
   const fetchLinks = async () => {
     try {
@@ -297,7 +300,12 @@ export default function LinktreePage() {
         }
       `}</style>
 
-      <main className="relative min-h-screen bg-primary-black font-raleway overflow-hidden flex items-center justify-center py-16 px-4">
+      {/* Com um tema ativo o fundo fica transparente para as decorações aparecerem */}
+      <main
+        className={`relative min-h-screen font-raleway overflow-hidden flex items-center justify-center py-16 px-4 ${
+          siteTheme === "default" ? "bg-primary-black" : ""
+        }`}
+      >
         {/* Hex texture overlay */}
         <div className="hex-bg absolute inset-0 pointer-events-none" />
 
@@ -310,14 +318,16 @@ export default function LinktreePage() {
           }}
         />
 
-        {/* Bottom vignette */}
-        <div
-          className="absolute bottom-0 inset-x-0 h-40 pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(to top, rgba(10,10,10,0.9), transparent)",
-          }}
-        />
+        {/* Bottom vignette (some com tema, para não apagar as decorações do rodapé) */}
+        {siteTheme === "default" && (
+          <div
+            className="absolute bottom-0 inset-x-0 h-40 pointer-events-none"
+            style={{
+              background:
+                "linear-gradient(to top, rgba(10,10,10,0.9), transparent)",
+            }}
+          />
+        )}
 
         <div className="relative z-10 w-full max-w-sm flex flex-col items-center gap-8">
           {/* Logo / Avatar */}
@@ -325,7 +335,7 @@ export default function LinktreePage() {
             className="animate-fade-in flex flex-col items-center gap-4"
             style={{ animationDelay: "0ms" }}
           >
-            <div className="animate-float relative">
+            <div className="animate-float relative isolate">
               {/* Outer ring */}
               <div
                 className="w-24 h-24 rounded-full flex items-center justify-center"
@@ -348,6 +358,9 @@ export default function LinktreePage() {
                   boxShadow: "0 0 32px rgba(230, 197, 107, 0.2)",
                 }}
               />
+
+              {/* Chapéu ou orelhas do tema ativo */}
+              <ThemeLogoAccessory />
             </div>
 
             {/* Name */}

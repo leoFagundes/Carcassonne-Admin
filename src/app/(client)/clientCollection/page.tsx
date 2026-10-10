@@ -507,7 +507,7 @@ export default function ClientCollectionPage() {
                 updateMyBoardGamesList();
                 toggleScrollLock(true);
               }}
-              className="cursor-pointer fixed bottom-3 left-3 py-2 px-3 z-20 rounded-xl bg-dark-black/85 backdrop-blur-[4px] border border-primary-gold/20 hover:border-primary-gold/40 transition-all shadow-card"
+              className="cursor-pointer fixed floating-bottom left-3 py-2 px-3 z-20 rounded-xl bg-dark-black/85 backdrop-blur-[4px] border border-primary-gold/20 hover:border-primary-gold/40 transition-all shadow-card"
             >
               <span className="text-xs sm:text-sm">Ver minha lista</span>
               <div className="flex items-center justify-center absolute -top-2 -right-2 w-5 h-5 rounded-full bg-primary-gold text-primary-black border border-primary-black">

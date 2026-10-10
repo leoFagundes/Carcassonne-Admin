@@ -102,10 +102,14 @@ export default function SignUpPage() {
         .card-in { animation: card-in 0.5s ease both; }
       `}</style>
 
-      <div
-        className="flex flex-col justify-center items-center gap-3 bg-cover bg-center min-h-screen w-full px-2"
-        style={{ backgroundImage: `url(${carcassonneBackground.src})` }}
-      >
+      <div className="flex flex-col justify-center items-center gap-3 min-h-screen w-full px-2">
+        {/* Foto de fundo numa camada fixa: assim as decorações do tema do
+            site (Configurações → Temas) aparecem por cima dela */}
+        <div
+          className="fixed inset-0 z-[-1] bg-cover bg-center pointer-events-none"
+          style={{ backgroundImage: `url(${carcassonneBackground.src})` }}
+        />
+
         <section className="card-in flex flex-col items-center bg-dark-black/65 border border-primary-gold/25 rounded-2xl backdrop-blur-[4px] p-8 shadow-[0_0_60px_rgba(0,0,0,0.6)] gap-5 w-full max-w-[360px] mx-4 text-primary-gold">
           {/* Title */}
           <div className="flex flex-col items-center gap-2 w-full">

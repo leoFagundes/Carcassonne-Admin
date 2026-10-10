@@ -432,6 +432,24 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(0.85) brightness(1.4);
 }
 
+/* Botões flutuantes do canto de baixo (cardápio, ludoteca). Com um tema
+   ativo eles sobem um pouco, para não cobrir a muralha e as decorações do
+   rodapé — e deslizam junto quando o tema muda em tempo real. */
+.floating-bottom {
+  bottom: 0.75rem;
+  transition: bottom 0.6s ease;
+}
+
+html[data-site-theme]:not([data-site-theme="default"]) .floating-bottom {
+  bottom: calc(0.75rem + clamp(52px, 14vmin, 120px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-bottom {
+    transition: none;
+  }
+}
+
 .my-blocked-day {
   border-color: var(--color-invalid-color) !important;
   background-color: color-mix(

@@ -30,6 +30,7 @@ import { useRouter } from "next/navigation";
 import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import Loader from "@/components/loader";
+import ThemeLogoAccessory from "@/components/siteTheme/ThemeLogoAccessory";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
@@ -389,11 +390,14 @@ export default function Reserve() {
         {/* Header */}
         <div className="relative z-10 flex flex-col items-center gap-3 w-full max-w-[420px] mt-2">
           <div className="flex items-center gap-4">
-            <img
-              className="rounded-lg w-[60px] sm:w-[72px] shadow-card"
-              src="images/real-logo.png"
-              alt="logo"
-            />
+            <span className="relative isolate shrink-0">
+              <img
+                className="block rounded-lg w-[60px] sm:w-[72px] shadow-card"
+                src="images/real-logo.png"
+                alt="logo"
+              />
+              <ThemeLogoAccessory />
+            </span>
             <div className="flex flex-col gap-0.5">
               <span className="font-cinzel text-base sm:text-lg font-semibold text-shimmer-gold tracking-wide">
                 Carcassonne Pub

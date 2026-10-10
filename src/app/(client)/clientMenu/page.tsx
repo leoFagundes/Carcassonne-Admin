@@ -8,10 +8,11 @@ import {
   TypeOrderType,
   PopupType,
 } from "@/types";
-import React, { Fragment, useEffect, useRef, useState } from "react";
+import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import InfoCard from "./infoCard";
 import ComboCard from "./comboCard";
 import MenuCard from "./menuCard";
+import MenuSearch from "./menuSearch";
 import Modal from "@/components/modal";
 import Button from "@/components/button";
 import { LuVegan } from "react-icons/lu";
@@ -26,9 +27,32 @@ import Popup from "@/components/popup";
 import TypesOrderRepository from "@/services/repositories/TypesOrderRepository";
 import PopupRepository from "@/services/repositories/PopupRepository";
 import { pickActivePopup } from "@/utils/popupSchedule";
-import { FaAngleLeft, FaAngleRight, FaSearch } from "react-icons/fa";
 import { FiX } from "react-icons/fi";
-import Input from "@/components/input";
+import ThemeBand from "@/components/siteTheme/ThemeBand";
+
+/** Âncora do card de cada item (a busca rola a página até ele). */
+const menuItemAnchor = (item: MenuItemType) => `menu-item-${item.id ?? item.name}`;
+
+// Brilho dourado no card encontrado pela busca: pisca duas vezes e some
+const FOUND_KEYFRAMES: Keyframe[] = [
+  { boxShadow: "0 0 0 0 rgba(230,197,107,0)", backgroundColor: "rgba(230,197,107,0)" },
+  {
+    boxShadow: "0 0 0 2px rgba(230,197,107,0.8), 0 0 24px rgba(230,197,107,0.3)",
+    backgroundColor: "rgba(230,197,107,0.1)",
+    offset: 0.15,
+  },
+  {
+    boxShadow: "0 0 0 1px rgba(230,197,107,0.3), 0 0 10px rgba(230,197,107,0.1)",
+    backgroundColor: "rgba(230,197,107,0.03)",
+    offset: 0.4,
+  },
+  {
+    boxShadow: "0 0 0 2px rgba(230,197,107,0.7), 0 0 20px rgba(230,197,107,0.25)",
+    backgroundColor: "rgba(230,197,107,0.08)",
+    offset: 0.6,
+  },
+  { boxShadow: "0 0 0 0 rgba(230,197,107,0)", backgroundColor: "rgba(230,197,107,0)" },
+];
 
 export default function ClientMenuPage() {
   const [types, setTypes] = useState(["Avisos", "Combos"]);
@@ -43,11 +67,11 @@ export default function ClientMenuPage() {
   const [currentMenuItem, setCurrentMenuItem] = useState("");
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
-  const [searchCardExpanded, setSearchCardExpanded] = useState(false);
-  const [searchItem, setSearchItem] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const menuRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   const { addAlert } = useAlert();
 
@@ -148,6 +172,56 @@ export default function ClientMenuPage() {
     setCurrentMenuItem(type);
   };
 
+  // Itens que aparecem na página (Avisos e Combos têm seções próprias)
+  const searchableItems = useMemo(
+    () =>
+      menuItems.filter(
+        (item) => item.isVisible && item.type !== "Avisos" && item.type !== "Combos",
+      ),
+    [menuItems],
+  );
+
+  const openSearch = () => {
+    setIsSearchOpen(true);
+    toggleScrollLock(true);
+  };
+
+  const closeSearch = () => {
+    setIsSearchOpen(false);
+    toggleScrollLock(false);
+  };
+
+  /** Fecha a busca e rola a página até o item escolhido, destacando o card. */
+  const goToItem = (item: MenuItemType) => {
+    closeSearch();
+    // Fecha o teclado do celular antes de rolar
+    (document.activeElement as HTMLElement | null)?.blur();
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const card = document.getElementById(menuItemAnchor(item));
+        if (!card) return;
+        const headerHeight = headerRef.current?.offsetHeight ?? 130;
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        setIsAutoScrolling(true);
+        window.scrollTo({
+          top: card.getBoundingClientRect().top + window.scrollY - headerHeight - 16,
+          behavior: reduceMotion ? "auto" : "smooth",
+        });
+        setTimeout(() => setIsAutoScrolling(false), 800);
+        const typeIndex = types.indexOf(item.type);
+        if (typeIndex !== -1) {
+          setCurrentMenuItem(item.type);
+          centralizeMenuItem(`${item.type}-${typeIndex}`);
+        }
+        card.animate(FOUND_KEYFRAMES, {
+          duration: 2200,
+          delay: reduceMotion ? 0 : 450,
+          easing: "ease-out",
+        });
+      }),
+    );
+  };
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -224,7 +298,12 @@ export default function ClientMenuPage() {
         )}
 
         {/* Header sempre fixo */}
-        <div className="fixed top-0 left-0 w-full z-50 flex flex-col bg-primary-black/95 backdrop-blur-[10px] pt-4 pb-1 border-b border-primary-gold/10">
+        <div
+          ref={headerRef}
+          className="fixed top-0 left-0 w-full z-50 flex flex-col bg-primary-black/95 backdrop-blur-[10px] pt-4 pb-1 border-b border-primary-gold/10"
+        >
+          {/* Decoração do tema ativo (Configurações → Temas) */}
+          <ThemeBand variant="header" />
           <section className="flex flex-col items-center gap-1.5 px-4 mb-3">
             <h1 className="font-cinzel text-xl sm:text-3xl text-center text-shimmer-gold tracking-widest uppercase leading-tight">
               Cardápio Digital
@@ -267,16 +346,7 @@ export default function ClientMenuPage() {
           >
             {types.map((type, index) => {
               const hasItems = menuItems.some(
-                (item) =>
-                  item.type === type &&
-                  item.isVisible &&
-                  (!searchItem.trim() ||
-                    item.name
-                      .toLowerCase()
-                      .includes(searchItem.toLowerCase()) ||
-                    item.description
-                      ?.toLowerCase()
-                      .includes(searchItem.toLowerCase())),
+                (item) => item.type === type && item.isVisible,
               );
 
               if (!hasItems) return null;
@@ -305,41 +375,16 @@ export default function ClientMenuPage() {
         {/* Espaço reservado para o header fixo */}
         <div className="h-[130px] sm:h-[140px] w-full shrink-0" />
 
-        {/* Search floating button */}
-        <div
-          className={`backdrop-blur-[4px] p-2 rounded-xl ${searchCardExpanded ? "gap-2" : "gap-0"} flex items-center justify-center fixed bottom-3 left-3 z-40 bg-dark-black/85 border border-primary-gold/20 shadow-card`}
-        >
-          <div
-            onClick={() => setSearchCardExpanded(!searchCardExpanded)}
-            className="flex items-center text-primary-gold/70 hover:text-primary-gold duration-300 ease-in-out cursor-pointer p-1"
-          >
-            <FaSearch size={"18px"} className="min-w-[18px]" />
-            {searchCardExpanded ? (
-              <>
-                <FaAngleLeft size={"13px"} className="min-w-[13px]" />
-              </>
-            ) : (
-              <>
-                <FaAngleRight size={"13px"} className="min-w-[13px]" />{" "}
-              </>
-            )}
-          </div>
-          <div
-            className={`w-0 ${searchCardExpanded && "w-[180px] sm:w-[200px] pl-4"} transition-all duration-300 overflow-hidden `}
-          >
-            {searchCardExpanded && (
-              <Input
-                autoFocus
-                placeholder="procurar item..."
-                setValue={(e) => setSearchItem(e.target.value)}
-                value={searchItem}
-              />
-            )}
-          </div>
-        </div>
+        {/* Busca: botão junto dos outros flutuantes (ScrollUp), abre um modal */}
+        <MenuSearch
+          isOpen={isSearchOpen}
+          onClose={closeSearch}
+          items={searchableItems}
+          onPick={goToItem}
+        />
 
         {/* Avisos */}
-        {infos.length > 0 && !searchItem.trim() && (
+        {infos.length > 0 && (
           <section
             id="Avisos"
             className="flex flex-col items-center w-full mt-4 bg-secondary-black/60 p-3 sm:p-4 rounded-xl shadow-card border border-primary-gold/20"
@@ -355,7 +400,7 @@ export default function ClientMenuPage() {
         )}
 
         {/* Combos */}
-        {combos.length > 0 && !searchItem.trim() && (
+        {combos.length > 0 && (
           <section
             id="Combos"
             className="flex flex-col items-center w-full mt-4 bg-secondary-black/60 p-3 sm:p-4 rounded-xl shadow-card border border-primary-gold/20"
@@ -374,14 +419,6 @@ export default function ClientMenuPage() {
           .map((type, index) => {
             const filteredItems = menuItems
               .filter((item) => item.type === type && item.isVisible)
-              .filter((item) => {
-                if (!searchItem.trim()) return true;
-                const term = searchItem.toLowerCase();
-                return (
-                  item.name.toLowerCase().includes(term) ||
-                  item.description?.toLowerCase().includes(term)
-                );
-              })
               .sort((a, b) => {
                 if (a.isFocus !== b.isFocus) return b.isFocus ? 1 : -1;
                 return a.name.localeCompare(b.name);
@@ -449,6 +486,7 @@ export default function ClientMenuPage() {
                 {itemsWithoutSubtype.map((item, index, array) => (
                   <Fragment key={`no-subtype-${index}`}>
                     <MenuCard
+                      id={menuItemAnchor(item)}
                       index={index}
                       item={item}
                       onClick={() => {
@@ -475,6 +513,7 @@ export default function ClientMenuPage() {
                     {items.map((item, index, array) => (
                       <div className="mt-3" key={`${subtype}-${index}`}>
                         <MenuCard
+                          id={menuItemAnchor(item)}
                           index={index}
                           item={item}
                           onClick={() => {
@@ -630,7 +669,7 @@ export default function ClientMenuPage() {
             </div>
           </Modal>
         )}
-        <ScrollUp />
+        <ScrollUp onSearch={openSearch} />
       </div>
     </>
   );

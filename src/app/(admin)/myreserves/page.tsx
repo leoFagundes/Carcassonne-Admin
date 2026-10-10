@@ -62,6 +62,7 @@ import DayNoteRepository from "@/services/repositories/DayNoteRepository";
 import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 import PrintModal from "./printModal";
 import { FiX } from "react-icons/fi";
+import { useSiteTheme } from "@/components/siteTheme/siteThemeContext";
 
 type EventFullCalendar = {
   title: string;
@@ -87,6 +88,28 @@ const FREELA_STATUS_META: Record<
   },
 };
 
+// Borda e fundo dos cards de reserva. Com um tema ativo (Configurações →
+// Temas) o fundo fica mais opaco, para as decorações animadas por trás não
+// atrapalharem a leitura.
+function reserveCardTone(
+  reserve: { status: ReserveType["status"]; isArrived?: boolean },
+  themed: boolean,
+) {
+  if (reserve.status === "canceled") {
+    return themed
+      ? "border-invalid-color/25 bg-[color-mix(in_srgb,var(--color-invalid-color)_8%,var(--color-secondary-black)_74%)]"
+      : "border-invalid-color/20 bg-invalid-color/5";
+  }
+  if (reserve.isArrived) {
+    return themed
+      ? "border-green-700/40 bg-[color-mix(in_srgb,var(--color-green-700)_8%,var(--color-secondary-black)_74%)]"
+      : "border-green-700/40 bg-green-700/5";
+  }
+  return themed
+    ? "border-primary-gold/15 bg-secondary-black/80"
+    : "border-primary-gold/15 bg-secondary-black/40";
+}
+
 export type PrintProps = {
   printTime: boolean;
   printIncludeChecks: boolean;
@@ -101,6 +124,7 @@ export type PrintProps = {
 const TODAY = today(getLocalTimeZone());
 
 export default function Rerserve() {
+  const themed = useSiteTheme() !== "default";
   const [date, setDate] = useState(TODAY);
   const [fullCalendarDate, setFullCalendarDate] = useState(
     today(getLocalTimeZone()),
@@ -1160,11 +1184,10 @@ export default function Rerserve() {
               return (
                 <div
                   key={reserve.id}
-                  className={`flex justify-between border rounded-xl p-3 w-full gap-2 flex-wrap transition-all duration-200 ${
-                    reserve.status === "canceled"
-                      ? "border-invalid-color/20 bg-invalid-color/5"
-                      : "border-primary-gold/15 bg-secondary-black/40"
-                  }`}
+                  className={`flex justify-between border rounded-xl p-3 w-full gap-2 flex-wrap transition-all duration-200 ${reserveCardTone(
+                    { status: reserve.status },
+                    themed,
+                  )}`}
                 >
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -1277,13 +1300,10 @@ export default function Rerserve() {
                         : true;
                       return (
                         <div
-                          className={`flex flex-col border rounded-xl p-3 w-full gap-2 transition-all duration-200 ${
-                            reserve.status === "canceled"
-                              ? "border-invalid-color/20 bg-invalid-color/5"
-                              : reserve.isArrived
-                                ? "border-green-700/40 bg-green-700/5"
-                                : "border-primary-gold/15 bg-secondary-black/40"
-                          }`}
+                          className={`flex flex-col border rounded-xl p-3 w-full gap-2 transition-all duration-200 ${reserveCardTone(
+                            reserve,
+                            themed,
+                          )}`}
                           key={reserve.id}
                         >
                           <div className="flex justify-between gap-2 flex-wrap">

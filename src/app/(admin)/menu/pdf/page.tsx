@@ -155,7 +155,9 @@ export default function PDFPage() {
   const itemCount = menuItems.filter((i) => i.isVisible).length;
 
   return (
-    <div className="flex flex-col items-center bg-primary-black text-primary-gold min-h-screen">
+    // Sem fundo próprio (o body já é preto) para o tema do site aparecer; o
+    // PDF usa a cor de fundo do próprio #cardapio-pdf
+    <div className="flex flex-col items-center text-primary-gold min-h-screen">
       {loading && <LoaderFullscreen />}
 
       {/* ── Telas pequenas: pede pra acessar por um computador ── */}

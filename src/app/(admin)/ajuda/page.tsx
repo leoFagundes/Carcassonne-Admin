@@ -398,7 +398,7 @@ const helpCards: HelpCard[] = [
     category: "configuracoes",
     title: "Visão geral da página Configurações",
     description:
-      "Centraliza estatísticas do sistema e as configurações globais do site. Está dividida em seções: estatísticas de reservas do mês atual, gráficos de distribuição de reservas por dia da semana, ranking de cliques nos links, informações do banco de dados, configurações gerais de reservas, efeitos visuais do site, e o editor do painel decorativo (mural).",
+      "Centraliza estatísticas do sistema e as configurações globais do site. Está dividida em seções: estatísticas de reservas do mês atual, gráficos de distribuição de reservas por dia da semana, ranking de cliques nos links, informações do banco de dados, configurações gerais de reservas, efeitos visuais do site, temas sazonais do site (aba 'Temas') e o editor do painel decorativo (mural).",
   },
   {
     category: "configuracoes",
@@ -441,6 +441,18 @@ const helpCards: HelpCard[] = [
     title: "Como controlar os efeitos visuais do site",
     description:
       "Na seção de efeitos visuais há três toggles: 'Efeito de clique' (faíscas ao clicar), 'Seguir cursor' (elemento que acompanha o mouse) e 'Canvas cursor' (efeito canvas no cursor). As mudanças entram em vigor para todos os visitantes após salvar.",
+  },
+  {
+    category: "configuracoes",
+    title: "Como trocar o tema do site (Halloween, Natal, Carnaval e outros)",
+    description:
+      "Em Configurações → aba 'Temas', escolha um dos 12 temas: Padrão, Carnaval, St. Patrick's Day, Páscoa, Aniversário do Carcassonne, Dia dos Namorados, Festa Junina, Oktoberfest, Halloween, Natal, Réveillon e Noite de Torneio (para dias de campeonato). O tema muda o visual de todas as páginas, sem exceção — o site dos clientes (links, cardápio, reservas, ludoteca, eventos, músicas, regras) e também o admin, o login e o cadastro. O preto e o dourado do Carcassonne continuam, e o tema soma decorações animadas em estilo de gravura medieval (traço com hachura): a silhueta da Cité de Carcassonne no rodapé e os elementos de cada data — por exemplo, bandeirinhas, fogueira e balões na Festa Junina; canecas brindando e lúpulo na Oktoberfest; fogos atrás da Cité e taças no Réveillon; estandartes, troféu e holofotes na Noite de Torneio — além de um enfeite nos logos, um brilho na cor do tema nos títulos e decoração no cabeçalho do cardápio e no menu lateral do admin. Ao clicar num card, a lista 'O que aparece no site' mostra tudo o que aquele tema traz e o celular ao lado mostra a prévia ao vivo; o site só muda depois de 'Aplicar no site'. A troca é em tempo real: quem estiver com qualquer página aberta vê o tema mudar na hora, sem recarregar. O selo 'No ar' indica o tema que está valendo. Para voltar ao normal, escolha 'Padrão' e aplique. Quem usa 'reduzir movimento' no celular vê o tema sem animação.",
+  },
+  {
+    category: "configuracoes",
+    title: "Como criar um aviso para lembrar de ativar um tema",
+    description:
+      "Cada tema pode ter um aviso com período. Em Configurações → aba 'Temas', clique no card do tema e, no quadro 'Aviso para ativar', escolha as datas 'De' e 'Até' e clique em 'Criar aviso'. Por padrão o aviso se repete todo ano ('Repetir todo ano' ligado), então você escolhe só o dia e o mês — o período pode até atravessar a virada do ano, como 26/12 a 02/01. Desligando 'Repetir todo ano', as datas passam a ter ano e o aviso vale só para aquele período (bom para datas que mudam de um ano para outro, como Carnaval e Páscoa). Durante esse período, se o tema não estiver no ar, aparece um selo laranja piscando no item 'Configurações' do menu lateral (passando o mouse, ele mostra quais temas estão esperando; no celular, um pontinho laranja aparece no botão do menu) e um contador na aba 'Temas'. Enquanto houver aviso, clicar em Configurações no menu já abre direto a aba Temas, onde o topo lista os temas para ativar com os botões 'Ver prévia', 'Aplicar agora' e 'Silenciar'. O aviso some sozinho quando o tema é aplicado ou quando o período termina. O botão 'Notificações ligadas/desligadas' liga e desliga os avisos daquele tema sem perder o período salvo; 'Salvar período' troca as datas e 'Remover' apaga o aviso. Nos cards, um sininho com as datas mostra quais temas têm aviso (com o símbolo de repetição quando é todo ano): laranja = avisando agora, verde = no período e já no ar, dourado = agendado, apagado = silenciado ou encerrado. Os avisos valem para todos os admins e atualizam em tempo real.",
   },
   {
     category: "configuracoes",

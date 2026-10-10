@@ -73,6 +73,36 @@ export interface GeneralConfigsType {
   isPersonCheckEnabled: boolean;
   blockedDates: { date: string; reason?: string }[]; // date as "YYYY-MM-DD"
   specialDates: { date: string; description?: string }[]; // date as "YYYY-MM-DD"
+  /** Tema visual do site (todas as páginas). Ausente = "default". */
+  siteTheme?: SiteThemeId;
+  /** Avisos por tema: lembram de ativar o tema dentro de um período. */
+  siteThemeReminders?: Partial<Record<SiteThemeId, SiteThemeReminder>>;
+}
+
+export type SiteThemeId =
+  | "default"
+  | "carnaval"
+  | "stpatricks"
+  | "pascoa"
+  | "aniversario"
+  | "namorados"
+  | "junina"
+  | "oktoberfest"
+  | "halloween"
+  | "natal"
+  | "reveillon"
+  | "torneio";
+
+/**
+ * Aviso de um tema: entre `start` e `end` (inclusive), se o tema não estiver no
+ * ar, aparece uma notificação no admin. Datas "MM-DD" repetem todo ano (o
+ * padrão); "YYYY-MM-DD" valem só para aquele período.
+ */
+export interface SiteThemeReminder {
+  start: string;
+  end: string;
+  /** Notificações ligadas — dá para silenciar sem apagar o período. */
+  enabled: boolean;
 }
 
 export interface PopupScheduleType {

@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { AlertProvider } from "@/contexts/alertProvider";
 import { Analytics } from "@vercel/analytics/next";
+import SiteThemeProvider from "@/components/siteTheme/SiteThemeProvider";
 
 // Fontes hospedadas no projeto (antes vinham de next/font/google): o build
 // do Turbopack quebrava ao baixar a Saira do Google Fonts ("next/font/google
@@ -46,7 +47,10 @@ export default function RootLayout({
       >
         <Analytics />
         <div className="background-fixed" />
-        <AlertProvider>{children}</AlertProvider>
+        <AlertProvider>
+          {/* Tema sazonal (Configurações → Temas) em todas as páginas */}
+          <SiteThemeProvider>{children}</SiteThemeProvider>
+        </AlertProvider>
       </body>
     </html>
   );
