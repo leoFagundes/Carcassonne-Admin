@@ -1,7 +1,9 @@
 import { MenuItemType } from "@/types";
 import { truncateText } from "@/utils/utilFunctions";
 import React, { ComponentProps } from "react";
+import { FaStar } from "react-icons/fa";
 import { LuVegan } from "react-icons/lu";
+import MenuImage from "./menuImage";
 
 interface MenuCardProps extends ComponentProps<"div"> {
   item: MenuItemType;
@@ -12,17 +14,14 @@ export default function MenuCard({ item, index, ...props }: MenuCardProps) {
   return (
     <div
       {...props}
-      className={`group flex gap-3 my-3 w-full cursor-pointer md:transition-all p-2 rounded sm:hover:bg-secondary-black sm:hover:shadow-lg transition-all ease-in duration-200 ${
-        item.isFocus && "relative border border-primary-gold/40 pt-4"
-      } ${!item.isVisible && "hidden"} ${index === 0 && "mt-0"}`}
+      className={`cm-card group relative flex gap-3 my-3 w-full cursor-pointer p-2 rounded-lg ${
+        item.isFocus ? "cm-card-focus pt-5" : ""
+      } ${!item.isVisible ? "hidden" : ""} ${index === 0 ? "mt-0" : ""}`}
     >
-      <div className="relative h-fit w-fit">
-        <img
-          className="w-[100px] h-[100px] object-cover rounded shadow-card sm:group-hover:shadow-none transition-all ease-in duration-200"
-          src={
-            item.image ? item.image : "images/[oficial]-pattern-menu-image.png"
-          }
-          alt="menu item"
+      <div className="relative h-fit w-fit shrink-0">
+        <MenuImage
+          src={item.image}
+          className="w-[100px] h-[100px] rounded-md shadow-card transition-shadow duration-200 sm:group-hover:shadow-none"
         />
         {item.isVegan && (
           <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black rounded-full z-10">
@@ -38,9 +37,16 @@ export default function MenuCard({ item, index, ...props }: MenuCardProps) {
         <p className="text-xs">{truncateText(item.description, 65)}</p>
       </div>
       {item.isFocus && (
-        <div className="absolute -top-3 left-3 px-1 bg-primary-black/40 backdrop-blur-2xl">
-          <span className="text-sm font-semibold">Destaque</span>
-        </div>
+        <>
+          {/* Reflexo de luz que passa pelo card de tempos em tempos */}
+          <span aria-hidden="true" className="cm-sheen">
+            <span style={{ animationDelay: `${(index % 4) * 1.7}s` }} />
+          </span>
+          <span className="cm-ribbon">
+            <FaStar size={9} aria-hidden="true" />
+            Destaque
+          </span>
+        </>
       )}
     </div>
   );

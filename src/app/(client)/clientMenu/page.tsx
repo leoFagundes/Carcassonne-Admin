@@ -1,5 +1,6 @@
 "use client";
 
+import "./clientMenu.css";
 import {
   MenuItemType,
   InfoType,
@@ -8,18 +9,26 @@ import {
   TypeOrderType,
   PopupType,
 } from "@/types";
-import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  Fragment,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import InfoCard from "./infoCard";
 import ComboCard from "./comboCard";
 import MenuCard from "./menuCard";
 import MenuSearch from "./menuSearch";
-import Modal from "@/components/modal";
-import Button from "@/components/button";
-import { LuVegan } from "react-icons/lu";
+import ItemSheet from "./itemSheet";
+import SectionTitle from "./sectionTitle";
+import MenuSkeleton, { NavSkeleton } from "./menuSkeleton";
+import { afterScrollSettles, flashCard, flashSection, prefersReducedMotion } from "./motion";
+import { useScrollReveal } from "./useScrollReveal";
 import { useAlert } from "@/contexts/alertProvider";
 import ScrollUp from "@/components/scrollUp";
 import DescriptionRepository from "@/services/repositories/DescriptionTypeRepository";
-import LoaderFullscreen from "@/components/loaderFullscreen";
 import ComboRepository from "@/services/repositories/ComboRepository";
 import InfoRepository from "@/services/repositories/InfoRepository";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
@@ -27,37 +36,24 @@ import Popup from "@/components/popup";
 import TypesOrderRepository from "@/services/repositories/TypesOrderRepository";
 import PopupRepository from "@/services/repositories/PopupRepository";
 import { pickActivePopup } from "@/utils/popupSchedule";
-import { FiX } from "react-icons/fi";
 import ThemeBand from "@/components/siteTheme/ThemeBand";
 
 /** Âncora do card de cada item (a busca rola a página até ele). */
 const menuItemAnchor = (item: MenuItemType) => `menu-item-${item.id ?? item.name}`;
 
-// Brilho dourado no card encontrado pela busca: pisca duas vezes e some
-const FOUND_KEYFRAMES: Keyframe[] = [
-  { boxShadow: "0 0 0 0 rgba(230,197,107,0)", backgroundColor: "rgba(230,197,107,0)" },
-  {
-    boxShadow: "0 0 0 2px rgba(230,197,107,0.8), 0 0 24px rgba(230,197,107,0.3)",
-    backgroundColor: "rgba(230,197,107,0.1)",
-    offset: 0.15,
-  },
-  {
-    boxShadow: "0 0 0 1px rgba(230,197,107,0.3), 0 0 10px rgba(230,197,107,0.1)",
-    backgroundColor: "rgba(230,197,107,0.03)",
-    offset: 0.4,
-  },
-  {
-    boxShadow: "0 0 0 2px rgba(230,197,107,0.7), 0 0 20px rgba(230,197,107,0.25)",
-    backgroundColor: "rgba(230,197,107,0.08)",
-    offset: 0.6,
-  },
-  { boxShadow: "0 0 0 0 rgba(230,197,107,0)", backgroundColor: "rgba(230,197,107,0)" },
-];
+// O cabeçalho encolhe depois de COMPACT_ENTER px de rolagem e só volta a
+// abrir perto do topo — a folga evita que ele fique abrindo e fechando
+const COMPACT_ENTER = 72;
+const COMPACT_EXIT = 24;
+// Respiro entre o cabeçalho e o que a página rola para mostrar
+const SCROLL_GAP = 12;
 
 export default function ClientMenuPage() {
   const [types, setTypes] = useState(["Avisos", "Combos"]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentItem, setCurrentItem] = useState<MenuItemType | undefined>();
+  const [sheet, setSheet] = useState<{
+    item: MenuItemType;
+    origin: HTMLElement | null;
+  } | null>(null);
   const [descriptions, setDescriptions] = useState<DescriptionTypeProps[]>([]);
   const [infos, setInfos] = useState<InfoType[]>([]);
   const [combos, setCombos] = useState<ComboType[]>([]);
@@ -68,12 +64,21 @@ export default function ClientMenuPage() {
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [compact, setCompact] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLSpanElement>(null);
+  const chipRefs = useRef(new Map<string, HTMLSpanElement>());
+  // Altura do cabeçalho aberto e compacto (para rolar até o ponto certo)
+  const headerHeights = useRef({ expanded: 130, compact: 96 });
 
   const { addAlert } = useAlert();
+
+  // Cards, avisos e títulos surgem ao entrar na tela
+  useScrollReveal();
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -134,17 +139,106 @@ export default function ClientMenuPage() {
     fetchAll();
   }, []);
 
-  const handleScrollToSection = (sectionId: string) => {
-    setIsAutoScrolling(true);
-    const section = document.getElementById(sectionId);
-    if (section) {
-      window.scrollTo({
-        top: section.offsetTop - 130,
-        behavior: "smooth",
-      });
-    }
-    setTimeout(() => setIsAutoScrolling(false), 800);
-  };
+  // Mede o cabeçalho aberto e compacto — sem transição e antes de pintar
+  useLayoutEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    const measure = () => {
+      const current = header.dataset.compact ?? "false";
+      header.classList.add("cm-no-transition");
+      header.dataset.compact = "false";
+      const expanded = header.offsetHeight;
+      header.dataset.compact = "true";
+      const compactHeight = header.offsetHeight;
+      header.dataset.compact = current;
+      header.getBoundingClientRect();
+      header.classList.remove("cm-no-transition");
+      headerHeights.current = { expanded, compact: compactHeight };
+    };
+    measure();
+    let frame = 0;
+    const onResize = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    };
+    window.addEventListener("resize", onResize);
+    // A fonte do título chega depois e muda a altura
+    document.fonts?.ready.then(measure);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [loading]);
+
+  // Rolagem: linha de progresso (direto no estilo, sem re-render) e
+  // cabeçalho compacto
+  useEffect(() => {
+    let frame = 0;
+    let isCompact = window.scrollY > COMPACT_ENTER;
+    setCompact(isCompact);
+    const update = () => {
+      frame = 0;
+      const y = window.scrollY;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      if (progressRef.current) {
+        const progress = max > 0 ? Math.min(1, Math.max(0, y / max)) : 0;
+        progressRef.current.style.transform = `scaleX(${progress})`;
+      }
+      const next = isCompact ? y > COMPACT_EXIT : y > COMPACT_ENTER;
+      if (next !== isCompact) {
+        isCompact = next;
+        setCompact(next);
+      }
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, [loading]);
+
+  // Pílula dourada da categoria atual: desliza de uma categoria para a outra
+  useLayoutEffect(() => {
+    const pill = pillRef.current;
+    const nav = menuRef.current;
+    if (!pill || !nav) return;
+    const place = (slide: boolean) => {
+      const chip = chipRefs.current.get(currentMenuItem);
+      if (!chip) {
+        pill.style.opacity = "0";
+        return;
+      }
+      // Aparecendo agora ou tela mudou de tamanho: vai direto, sem deslizar
+      const jump = !slide || pill.style.opacity !== "1";
+      if (jump) pill.style.transition = "none";
+      pill.style.width = `${chip.offsetWidth}px`;
+      pill.style.transform = `translate3d(${chip.offsetLeft}px, -2px, 0)`;
+      if (jump) {
+        pill.getBoundingClientRect();
+        pill.style.transition = "";
+      }
+      pill.style.opacity = "1";
+    };
+    place(true);
+    // Fonte carregando ou tela girando mudam a largura das categorias
+    let initial = true;
+    const observer = new ResizeObserver(() => {
+      if (initial) {
+        initial = false;
+        return;
+      }
+      place(false);
+    });
+    observer.observe(nav);
+    chipRefs.current.forEach((chip) => observer.observe(chip));
+    return () => observer.disconnect();
+  }, [currentMenuItem, types, menuItems, loading]);
 
   const centralizeMenuItem = (itemId: string) => {
     if (menuRef.current) {
@@ -166,8 +260,31 @@ export default function ClientMenuPage() {
     document.body.style.overflow = lock ? "hidden" : "auto";
   }
 
+  /**
+   * Rola até o elemento descontando o cabeçalho fixo — no tamanho que ele vai
+   * ter quando a rolagem terminar — e avisa quando chegar.
+   */
+  const scrollToElement = (element: HTMLElement, onArrive?: () => void) => {
+    const { expanded, compact: compactHeight } = headerHeights.current;
+    const top = element.getBoundingClientRect().top + window.scrollY;
+    const compactTarget = top - compactHeight - SCROLL_GAP;
+    const willBeCompact = compactTarget > (compact ? COMPACT_EXIT : COMPACT_ENTER);
+    const target = willBeCompact ? compactTarget : top - expanded - SCROLL_GAP;
+    setIsAutoScrolling(true);
+    window.scrollTo({
+      top: Math.max(0, target),
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+    afterScrollSettles(() => {
+      setIsAutoScrolling(false);
+      onArrive?.();
+    });
+  };
+
   const handleTypeClick = (type: string, id: string) => {
-    handleScrollToSection(type);
+    const section = document.getElementById(type);
+    // Ao chegar, o título da categoria brilha (como o item da busca)
+    if (section) scrollToElement(section, () => flashSection(section));
     centralizeMenuItem(id);
     setCurrentMenuItem(type);
   };
@@ -191,7 +308,7 @@ export default function ClientMenuPage() {
     toggleScrollLock(false);
   };
 
-  /** Fecha a busca e rola a página até o item escolhido, destacando o card. */
+  /** Fecha a busca e rola a página até o item escolhido, que pisca ao chegar. */
   const goToItem = (item: MenuItemType) => {
     closeSearch();
     // Fecha o teclado do celular antes de rolar
@@ -200,26 +317,25 @@ export default function ClientMenuPage() {
       requestAnimationFrame(() => {
         const card = document.getElementById(menuItemAnchor(item));
         if (!card) return;
-        const headerHeight = headerRef.current?.offsetHeight ?? 130;
-        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        setIsAutoScrolling(true);
-        window.scrollTo({
-          top: card.getBoundingClientRect().top + window.scrollY - headerHeight - 16,
-          behavior: reduceMotion ? "auto" : "smooth",
-        });
-        setTimeout(() => setIsAutoScrolling(false), 800);
+        scrollToElement(card, () => flashCard(card));
         const typeIndex = types.indexOf(item.type);
         if (typeIndex !== -1) {
           setCurrentMenuItem(item.type);
           centralizeMenuItem(`${item.type}-${typeIndex}`);
         }
-        card.animate(FOUND_KEYFRAMES, {
-          duration: 2200,
-          delay: reduceMotion ? 0 : 450,
-          easing: "ease-out",
-        });
       }),
     );
+  };
+
+  /** Abre o detalhe do item; a foto sai voando do card tocado. */
+  const openItem = (item: MenuItemType, origin: HTMLElement | null) => {
+    setSheet({ item, origin });
+    toggleScrollLock(true);
+  };
+
+  const closeItem = () => {
+    setSheet(null);
+    toggleScrollLock(false);
   };
 
   useEffect(() => {
@@ -251,6 +367,18 @@ export default function ClientMenuPage() {
       });
     };
   });
+
+  const renderMenuCard = (item: MenuItemType, index: number) => (
+    <MenuCard
+      id={menuItemAnchor(item)}
+      data-reveal
+      index={index}
+      item={item}
+      onClick={(event) =>
+        openItem(item, event.currentTarget.querySelector<HTMLElement>(".cm-img"))
+      }
+    />
+  );
 
   return (
     <>
@@ -286,7 +414,6 @@ export default function ClientMenuPage() {
           }}
         />
 
-        {loading && <LoaderFullscreen />}
         {popup && isPopupOpen && (
           <Popup
             url={popup.src}
@@ -297,79 +424,99 @@ export default function ClientMenuPage() {
           />
         )}
 
-        {/* Header sempre fixo */}
+        {/* Header sempre fixo — encolhe ao rolar */}
         <div
           ref={headerRef}
-          className="fixed top-0 left-0 w-full z-50 flex flex-col bg-primary-black/95 backdrop-blur-[10px] pt-4 pb-1 border-b border-primary-gold/10"
+          data-compact={compact}
+          className="cm-header fixed top-0 left-0 w-full z-50 flex flex-col bg-primary-black/95 backdrop-blur-[10px] pb-1 border-b border-primary-gold/10"
         >
           {/* Decoração do tema ativo (Configurações → Temas) */}
           <ThemeBand variant="header" />
-          <section className="flex flex-col items-center gap-1.5 px-4 mb-3">
-            <h1 className="font-cinzel text-xl sm:text-3xl text-center text-shimmer-gold tracking-widest uppercase leading-tight">
+          <section className="cm-heading flex flex-col items-center px-4">
+            <h1 className="cm-title font-cinzel text-xl sm:text-3xl text-center text-shimmer-gold tracking-widest uppercase leading-tight">
               Cardápio Digital
             </h1>
-            <div className="flex items-center gap-2 w-full max-w-xs">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent to-primary-gold/40" />
-              <svg
-                width="7"
-                height="7"
-                viewBox="0 0 10 10"
-                className="text-primary-gold/50 shrink-0"
-              >
-                <polygon
-                  points="5,0 6.5,3.5 10,3.5 7.5,5.5 8.5,9 5,7 1.5,9 2.5,5.5 0,3.5 3.5,3.5"
-                  fill="currentColor"
-                />
-              </svg>
-              <span className="font-cinzel text-[9px] tracking-[0.3em] uppercase text-primary-gold/50 whitespace-nowrap">
-                Carcassonne Pub
-              </span>
-              <svg
-                width="7"
-                height="7"
-                viewBox="0 0 10 10"
-                className="text-primary-gold/50 shrink-0"
-              >
-                <polygon
-                  points="5,0 6.5,3.5 10,3.5 7.5,5.5 8.5,9 5,7 1.5,9 2.5,5.5 0,3.5 3.5,3.5"
-                  fill="currentColor"
-                />
-              </svg>
-              <div className="flex-1 h-px bg-gradient-to-l from-transparent to-primary-gold/40" />
+            <div className="cm-brand w-full max-w-xs">
+              <div>
+                <div className="flex items-center gap-2 w-full pt-1.5">
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent to-primary-gold/40" />
+                  <svg
+                    width="7"
+                    height="7"
+                    viewBox="0 0 10 10"
+                    className="text-primary-gold/50 shrink-0"
+                  >
+                    <polygon
+                      points="5,0 6.5,3.5 10,3.5 7.5,5.5 8.5,9 5,7 1.5,9 2.5,5.5 0,3.5 3.5,3.5"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <span className="font-cinzel text-[9px] tracking-[0.3em] uppercase text-primary-gold/50 whitespace-nowrap">
+                    Carcassonne Pub
+                  </span>
+                  <svg
+                    width="7"
+                    height="7"
+                    viewBox="0 0 10 10"
+                    className="text-primary-gold/50 shrink-0"
+                  >
+                    <polygon
+                      points="5,0 6.5,3.5 10,3.5 7.5,5.5 8.5,9 5,7 1.5,9 2.5,5.5 0,3.5 3.5,3.5"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <div className="flex-1 h-px bg-gradient-to-l from-transparent to-primary-gold/40" />
+                </div>
+              </div>
             </div>
           </section>
 
-          {/* Nav de categorias */}
+          {/* Nav de categorias: a pílula dourada acompanha a categoria atual */}
           <div
             ref={menuRef}
-            className="flex gap-2 overflow-x-auto scrollbar-none py-2 px-4"
+            className="relative flex gap-2 overflow-x-auto scrollbar-none py-2 px-4"
           >
-            {types.map((type, index) => {
-              const hasItems = menuItems.some(
-                (item) => item.type === type && item.isVisible,
-              );
+            <span ref={pillRef} aria-hidden="true" className="cm-nav-pill" />
+            {loading ? (
+              <NavSkeleton />
+            ) : (
+              types.map((type, index) => {
+                const hasItems = menuItems.some(
+                  (item) => item.type === type && item.isVisible,
+                );
 
-              if (!hasItems) return null;
-              if (type === "???") return null;
+                if (!hasItems) return null;
+                if (type === "???") return null;
 
-              return (
-                <span
-                  id={`${type}-${index}`}
-                  key={index}
-                  onClick={() => handleTypeClick(type, `${type}-${index}`)}
-                  className={`flex items-center justify-center whitespace-nowrap rounded-lg py-1.5 px-3 sm:px-4 cursor-pointer transition-all duration-300 border text-xs sm:text-sm font-medium shrink-0 ${
-                    currentMenuItem === type
-                      ? "border-primary-gold/70 bg-secondary-black text-primary-gold shadow-[0_0_12px_rgba(230,197,107,0.15)] -translate-y-0.5"
-                      : "border-primary-gold/15 bg-secondary-black/40 text-primary-gold/65 hover:border-primary-gold/40 hover:bg-secondary-black/70 hover:text-primary-gold"
-                  }`}
-                >
-                  {type}
-                </span>
-              );
-            })}
+                const isActive = currentMenuItem === type;
+
+                return (
+                  <span
+                    id={`${type}-${index}`}
+                    key={index}
+                    ref={(element) => {
+                      if (element) chipRefs.current.set(type, element);
+                      else chipRefs.current.delete(type);
+                    }}
+                    onClick={() => handleTypeClick(type, `${type}-${index}`)}
+                    className={`relative z-[1] flex items-center justify-center whitespace-nowrap rounded-lg py-1.5 px-3 sm:px-4 cursor-pointer transition-all duration-300 border text-xs sm:text-sm font-medium shrink-0 ${
+                      isActive
+                        ? "border-transparent bg-transparent text-primary-gold -translate-y-0.5"
+                        : "border-primary-gold/15 bg-secondary-black/40 text-primary-gold/65 hover:border-primary-gold/40 hover:bg-secondary-black/70 hover:text-primary-gold"
+                    }`}
+                  >
+                    {type}
+                  </span>
+                );
+              })
+            )}
           </div>
 
-          <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent mt-1" />
+          {/* Linha dourada que enche conforme a pessoa rola o cardápio */}
+          <div className="relative h-px w-full mt-1">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent" />
+            <div ref={progressRef} className="cm-progress" />
+          </div>
         </div>
 
         {/* Espaço reservado para o header fixo */}
@@ -383,293 +530,149 @@ export default function ClientMenuPage() {
           onPick={goToItem}
         />
 
-        {/* Avisos */}
-        {infos.length > 0 && (
-          <section
-            id="Avisos"
-            className="flex flex-col items-center w-full mt-4 bg-secondary-black/60 p-3 sm:p-4 rounded-xl shadow-card border border-primary-gold/20"
-          >
-            <h2 className="text-3xl sm:text-4xl w-full text-center">Avisos</h2>
-            <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/50 to-transparent mb-4 mt-2" />
-            {[...infos]
-              .sort((a, b) => (a.orderPriority ?? 0) - (b.orderPriority ?? 0))
-              .map((info, index) => (
-                <InfoCard key={index} info={info} />
-              ))}
-          </section>
-        )}
-
-        {/* Combos */}
-        {combos.length > 0 && (
-          <section
-            id="Combos"
-            className="flex flex-col items-center w-full mt-4 bg-secondary-black/60 p-3 sm:p-4 rounded-xl shadow-card border border-primary-gold/20"
-          >
-            <h2 className="text-3xl sm:text-4xl w-full text-center">Combos</h2>
-            <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/50 to-transparent mb-4 mt-2" />
-            {combos.map((combo, index) => (
-              <ComboCard key={index} combo={combo} />
-            ))}
-          </section>
-        )}
-
-        {/* Type sections */}
-        {types
-          .filter((type) => type !== "Avisos" && type !== "Combos")
-          .map((type, index) => {
-            const filteredItems = menuItems
-              .filter((item) => item.type === type && item.isVisible)
-              .sort((a, b) => {
-                if (a.isFocus !== b.isFocus) return b.isFocus ? 1 : -1;
-                return a.name.localeCompare(b.name);
-              });
-
-            if (filteredItems.length === 0) return null;
-
-            const itemsWithoutSubtype = filteredItems.filter(
-              (item) => !item.subtype,
-            );
-            const itemsWithSubtype = filteredItems.filter(
-              (item) => item.subtype,
-            );
-
-            const groupedBySubtype = itemsWithSubtype.reduce(
-              (acc, item) => {
-                const key = item.subtype as string;
-                if (!acc[key]) acc[key] = [];
-                acc[key].push(item);
-                return acc;
-              },
-              {} as Record<string, typeof menuItems>,
-            );
-
-            const typeOrder = typesOrder.find((t) => t.type.name === type);
-
-            const orderedSubtypeEntries = Object.entries(groupedBySubtype).sort(
-              ([a], [b]) => {
-                const aOrder = typeOrder?.type.subtypes.find(
-                  (s) => s.name === a,
-                )?.order;
-                const bOrder = typeOrder?.type.subtypes.find(
-                  (s) => s.name === b,
-                )?.order;
-
-                const aHasOrder = aOrder !== undefined;
-                const bHasOrder = bOrder !== undefined;
-
-                if (aHasOrder && !bHasOrder) return -1;
-                if (!aHasOrder && bHasOrder) return 1;
-                if (aHasOrder && bHasOrder) return aOrder! - bOrder!;
-
-                return a.localeCompare(b);
-              },
-            );
-
-            return (
+        {loading ? (
+          <MenuSkeleton />
+        ) : (
+          <>
+            {/* Avisos */}
+            {infos.length > 0 && (
               <section
-                key={index}
-                id={type}
-                className="flex flex-col items-center w-full mt-4 bg-secondary-black/60 p-3 sm:p-4 rounded-xl border border-primary-gold/20 shadow-card"
+                id="Avisos"
+                className="flex flex-col items-center w-full mt-4 bg-secondary-black/60 p-3 sm:p-4 rounded-xl shadow-card border border-primary-gold/20"
               >
-                <h2 className="text-3xl sm:text-4xl w-full text-center">
-                  {type}
-                </h2>
-                <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/50 to-transparent my-2" />
-                <span className="text-xs mb-4 text-center w-full italic text-primary-gold/65">
-                  {
-                    descriptions.find(
-                      (descriptionType) => descriptionType.type === type,
-                    )?.description
-                  }
-                </span>
+                <SectionTitle title="Avisos" />
+                {[...infos]
+                  .sort((a, b) => (a.orderPriority ?? 0) - (b.orderPriority ?? 0))
+                  .map((info, index) => (
+                    <InfoCard key={index} info={info} data-reveal />
+                  ))}
+              </section>
+            )}
 
-                {itemsWithoutSubtype.map((item, index, array) => (
-                  <Fragment key={`no-subtype-${index}`}>
-                    <MenuCard
-                      id={menuItemAnchor(item)}
-                      index={index}
-                      item={item}
-                      onClick={() => {
-                        setIsModalOpen(true);
-                        setCurrentItem(item);
-                        toggleScrollLock(true);
-                      }}
-                    />
-                    {array.length !== 1 && index !== array.length - 1 && (
-                      <div className="h-px w-full bg-primary-gold/10" />
-                    )}
-                  </Fragment>
+            {/* Combos */}
+            {combos.length > 0 && (
+              <section
+                id="Combos"
+                className="flex flex-col items-center w-full mt-4 bg-secondary-black/60 p-3 sm:p-4 rounded-xl shadow-card border border-primary-gold/20"
+              >
+                <SectionTitle title="Combos" />
+                {combos.map((combo, index) => (
+                  <ComboCard key={index} combo={combo} data-reveal />
                 ))}
+              </section>
+            )}
 
-                {orderedSubtypeEntries.map(([subtype, items]) => (
-                  <div key={subtype} className="w-full mt-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-px flex-1 bg-primary-gold/20" />
-                      <span className="text-base font-semibold text-primary-gold/80">
-                        {subtype}
-                      </span>
-                      <div className="h-px flex-1 bg-primary-gold/20" />
-                    </div>
-                    {items.map((item, index, array) => (
-                      <div className="mt-3" key={`${subtype}-${index}`}>
-                        <MenuCard
-                          id={menuItemAnchor(item)}
-                          index={index}
-                          item={item}
-                          onClick={() => {
-                            setIsModalOpen(true);
-                            setCurrentItem(item);
-                            toggleScrollLock(true);
-                          }}
-                        />
+            {/* Type sections */}
+            {types
+              .filter((type) => type !== "Avisos" && type !== "Combos")
+              .map((type, index) => {
+                const filteredItems = menuItems
+                  .filter((item) => item.type === type && item.isVisible)
+                  .sort((a, b) => {
+                    if (a.isFocus !== b.isFocus) return b.isFocus ? 1 : -1;
+                    return a.name.localeCompare(b.name);
+                  });
+
+                if (filteredItems.length === 0) return null;
+
+                const itemsWithoutSubtype = filteredItems.filter(
+                  (item) => !item.subtype,
+                );
+                const itemsWithSubtype = filteredItems.filter(
+                  (item) => item.subtype,
+                );
+
+                const groupedBySubtype = itemsWithSubtype.reduce(
+                  (acc, item) => {
+                    const key = item.subtype as string;
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(item);
+                    return acc;
+                  },
+                  {} as Record<string, typeof menuItems>,
+                );
+
+                const typeOrder = typesOrder.find((t) => t.type.name === type);
+
+                const orderedSubtypeEntries = Object.entries(groupedBySubtype).sort(
+                  ([a], [b]) => {
+                    const aOrder = typeOrder?.type.subtypes.find(
+                      (s) => s.name === a,
+                    )?.order;
+                    const bOrder = typeOrder?.type.subtypes.find(
+                      (s) => s.name === b,
+                    )?.order;
+
+                    const aHasOrder = aOrder !== undefined;
+                    const bHasOrder = bOrder !== undefined;
+
+                    if (aHasOrder && !bHasOrder) return -1;
+                    if (!aHasOrder && bHasOrder) return 1;
+                    if (aHasOrder && bHasOrder) return aOrder! - bOrder!;
+
+                    return a.localeCompare(b);
+                  },
+                );
+
+                return (
+                  <section
+                    key={index}
+                    id={type}
+                    className="flex flex-col items-center w-full mt-4 bg-secondary-black/60 p-3 sm:p-4 rounded-xl border border-primary-gold/20 shadow-card"
+                  >
+                    <SectionTitle
+                      title={type}
+                      description={
+                        descriptions.find(
+                          (descriptionType) => descriptionType.type === type,
+                        )?.description
+                      }
+                    />
+
+                    {itemsWithoutSubtype.map((item, index, array) => (
+                      <Fragment key={`no-subtype-${index}`}>
+                        {renderMenuCard(item, index)}
                         {array.length !== 1 && index !== array.length - 1 && (
                           <div className="h-px w-full bg-primary-gold/10" />
                         )}
+                      </Fragment>
+                    ))}
+
+                    {orderedSubtypeEntries.map(([subtype, items]) => (
+                      <div key={subtype} className="w-full mt-4">
+                        <div data-reveal className="flex items-center gap-2 mb-3">
+                          <div className="h-px flex-1 bg-primary-gold/20" />
+                          <span className="text-base font-semibold text-primary-gold/80">
+                            {subtype}
+                          </span>
+                          <div className="h-px flex-1 bg-primary-gold/20" />
+                        </div>
+                        {items.map((item, index, array) => (
+                          <div className="mt-3" key={`${subtype}-${index}`}>
+                            {renderMenuCard(item, index)}
+                            {array.length !== 1 && index !== array.length - 1 && (
+                              <div className="h-px w-full bg-primary-gold/10" />
+                            )}
+                          </div>
+                        ))}
                       </div>
                     ))}
-                  </div>
-                ))}
-              </section>
-            );
-          })}
-
-        {/* Modal */}
-        {currentItem && (
-          <Modal
-            isOpen={isModalOpen}
-            onClose={() => {
-              setIsModalOpen(false);
-              setCurrentItem(undefined);
-              toggleScrollLock(false);
-            }}
-            isFixed
-            noPadding
-            patternCloseButton={false}
-          >
-            <div className="w-full h-full flex flex-col overflow-hidden bg-primary-black sm:w-[420px] sm:h-auto sm:max-h-[88vh] sm:rounded-2xl sm:border sm:border-primary-gold/20 sm:bg-secondary-black/90">
-              {/* Hero image */}
-              <div className="relative w-full h-[240px] shrink-0">
-                <img
-                  className="w-full h-full object-cover"
-                  src={
-                    currentItem.image
-                      ? currentItem.image
-                      : "images/[oficial]-pattern-menu-image.png"
-                  }
-                  alt="menu item"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-primary-black via-primary-black/20 to-transparent" />
-
-                {/* Close button */}
-                <button
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    setCurrentItem(undefined);
-                    toggleScrollLock(false);
-                  }}
-                  className="absolute top-4 right-4 p-2 bg-primary-black/60 backdrop-blur-sm rounded-full border border-primary-gold/20 text-primary-gold/80 hover:text-primary-gold hover:border-primary-gold/50 transition-all"
-                >
-                  <FiX size={18} />
-                </button>
-
-                {/* Badges */}
-                <div className="absolute top-4 left-4 flex flex-col gap-2">
-                  {currentItem.isFocus && (
-                    <span className="px-2 py-0.5 bg-primary-gold text-primary-black text-xs font-bold rounded-full">
-                      Destaque
-                    </span>
-                  )}
-                  {currentItem.isVegan && (
-                    <div className="p-1.5 bg-primary-black/70 backdrop-blur-sm rounded-full border border-primary-gold/30 w-fit">
-                      <LuVegan size={18} className="text-primary-gold" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Name + price overlaid */}
-                <div className="absolute bottom-0 left-0 right-0 px-5 pb-4">
-                  <p className="text-2xl font-bold text-primary drop-shadow-lg leading-tight">
-                    {currentItem.name}
-                  </p>
-                  {currentItem.value && (
-                    <span className="text-primary-gold font-semibold text-base">
-                      {currentItem.value}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Scrollable content */}
-              <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 flex flex-col gap-4 sm:overflow-visible sm:flex-none">
-                {currentItem.description && (
-                  <p className="text-sm text-primary-gold/85 whitespace-pre-line leading-relaxed">
-                    {currentItem.description}
-                  </p>
-                )}
-
-                {currentItem.sideDish && currentItem.sideDish.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
-                      Acompanhamentos
-                    </span>
-                    <ul className="flex flex-col gap-1.5">
-                      {currentItem.sideDish.map((dish, i) => (
-                        <li
-                          key={i}
-                          className="flex items-start gap-2 text-sm text-primary-gold/80"
-                        >
-                          <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary-gold/40 shrink-0" />
-                          {dish}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {currentItem.observation &&
-                  (currentItem.observation.length > 0 ||
-                    currentItem.isVegan) && (
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
-                        Observações
-                      </span>
-                      <ul className="flex flex-col gap-1.5">
-                        {currentItem.observation.map((obs, i) => (
-                          <li
-                            key={i}
-                            className="flex items-start gap-2 text-sm text-primary-gold/80"
-                          >
-                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary-gold/40 shrink-0" />
-                            {obs}
-                          </li>
-                        ))}
-                        {currentItem.isVegan && (
-                          <li className="flex items-start gap-2 text-sm text-primary-gold/80">
-                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary-gold/40 shrink-0" />
-                            Item vegano
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  )}
-              </div>
-
-              {/* Footer */}
-              <div className="shrink-0 px-5 py-4 border-t border-primary-gold/10">
-                <Button
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    setCurrentItem(undefined);
-                    toggleScrollLock(false);
-                  }}
-                >
-                  Voltar
-                </Button>
-              </div>
-            </div>
-          </Modal>
+                  </section>
+                );
+              })}
+          </>
         )}
-        <ScrollUp onSearch={openSearch} />
+
+        {/* Detalhe do item: gaveta no celular, cartão no computador */}
+        {sheet && (
+          <ItemSheet
+            key={menuItemAnchor(sheet.item)}
+            item={sheet.item}
+            origin={sheet.origin}
+            onClosed={closeItem}
+          />
+        )}
+        <ScrollUp onSearch={openSearch} searchHintReady={!loading && !isPopupOpen} />
       </div>
     </>
   );

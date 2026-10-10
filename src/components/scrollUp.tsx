@@ -16,6 +16,7 @@ function FloatingButton({
   children,
   isHidden,
   accent,
+  pulse,
 }: {
   onClick: () => void;
   tooltip: string;
@@ -23,6 +24,8 @@ function FloatingButton({
   isHidden?: boolean;
   /** Ação principal da página (ex: busca do cardápio), em dourado. */
   accent?: boolean;
+  /** Anel dourado pulsando para chamar atenção (dica da primeira visita). */
+  pulse?: boolean;
 }) {
   return (
     <Tooltip direction="left" content={tooltip}>
@@ -33,7 +36,9 @@ function FloatingButton({
           accent
             ? "border-primary-gold/45 text-primary-gold shadow-[0_0_14px_rgba(230,197,107,0.18)]"
             : "border-primary-gold/20 text-primary"
-        } ${isHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+        } ${isHidden ? "opacity-0 pointer-events-none" : "opacity-100"} ${
+          pulse ? "fab-pulse" : ""
+        }`}
       >
         {children}
       </button>
@@ -41,12 +46,51 @@ function FloatingButton({
   );
 }
 
-export default function ScrollUp({ onSearch }: { onSearch?: () => void }) {
+// Guarda que a dica da busca já foi mostrada neste aparelho
+const SEARCH_HINT_KEY = "carcassonne-menu-search-hint";
+
+export default function ScrollUp({
+  onSearch,
+  searchHintReady = true,
+}: {
+  onSearch?: () => void;
+  /** A dica da busca espera a página ficar livre (carregada, sem popup aberto). */
+  searchHintReady?: boolean;
+}) {
   const [isVisible, setIsVisible] = useState(false);
   const [isMusicRecommendationEnable, setIsMusicRecommendationEnable] = useState(false);
   const [activeEvents, setActiveEvents] = useState<(EventItemType & { id: string })[]>([]);
+  const [searchHint, setSearchHint] = useState<"off" | "on" | "leaving">("off");
+  const hasSearch = !!onSearch;
 
   const router = useRouter();
+
+  // Primeira visita ao cardápio: a lupa pulsa e um balão mostra onde buscar
+  useEffect(() => {
+    if (!hasSearch || !searchHintReady) return;
+    try {
+      if (localStorage.getItem(SEARCH_HINT_KEY)) return;
+    } catch {
+      // Sem acesso ao armazenamento: melhor não mostrar a cada visita
+      return;
+    }
+    const timers = [
+      window.setTimeout(() => {
+        setSearchHint("on");
+        try {
+          localStorage.setItem(SEARCH_HINT_KEY, "1");
+        } catch {
+          // segue sem guardar
+        }
+      }, 1200),
+      window.setTimeout(() => setSearchHint("leaving"), 6000),
+      window.setTimeout(() => setSearchHint("off"), 6400),
+    ];
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      setSearchHint("off");
+    };
+  }, [hasSearch, searchHintReady]);
 
   useEffect(() => {
     function handleScroll() {
@@ -121,9 +165,27 @@ export default function ScrollUp({ onSearch }: { onSearch?: () => void }) {
 
       {/* Busca (só no cardápio): por último, mais perto do polegar */}
       {onSearch && (
-        <FloatingButton onClick={onSearch} tooltip="Procurar no cardápio" accent>
-          <FaSearch size={16} />
-        </FloatingButton>
+        <div className="relative">
+          {searchHint !== "off" && (
+            <span
+              aria-hidden="true"
+              className={`fab-hint ${searchHint === "leaving" ? "fab-hint-leaving" : ""}`}
+            >
+              Busque no cardápio
+            </span>
+          )}
+          <FloatingButton
+            onClick={() => {
+              setSearchHint("off");
+              onSearch();
+            }}
+            tooltip="Procurar no cardápio"
+            accent
+            pulse={searchHint === "on"}
+          >
+            <FaSearch size={16} />
+          </FloatingButton>
+        </div>
       )}
     </div>
   );

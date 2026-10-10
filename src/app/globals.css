@@ -444,9 +444,95 @@ html[data-site-theme]:not([data-site-theme="default"]) .floating-bottom {
   bottom: calc(0.75rem + clamp(52px, 14vmin, 120px));
 }
 
+/* Dica da busca do cardápio (primeira visita): anel pulsando e um balão */
+.fab-pulse {
+  position: relative;
+}
+
+.fab-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1.5px solid rgba(230, 197, 107, 0.85);
+  /* Invisível fora da animação (não sobra um anel parado no fim) */
+  opacity: 0;
+  pointer-events: none;
+  animation: fab-ring 1.5s ease-out 3;
+}
+
+@keyframes fab-ring {
+  from {
+    opacity: 0.9;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 1.6;
+  }
+}
+
+.fab-hint {
+  position: absolute;
+  right: calc(100% + 12px);
+  top: 50%;
+  translate: 0 -50%;
+  white-space: nowrap;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1c1406;
+  background: linear-gradient(180deg, #f8e6a8, #e6c56b 60%, #c9a243);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  animation: fab-hint-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Setinha apontando para a lupa */
+.fab-hint::after {
+  content: "";
+  position: absolute;
+  right: -4px;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  translate: 0 -50%;
+  rotate: 45deg;
+  background: #e2bf62;
+}
+
+.fab-hint-leaving {
+  animation: fab-hint-out 0.35s ease forwards;
+}
+
+@keyframes fab-hint-in {
+  from {
+    opacity: 0;
+    translate: 10px -50%;
+  }
+  to {
+    opacity: 1;
+    translate: 0 -50%;
+  }
+}
+
+@keyframes fab-hint-out {
+  to {
+    opacity: 0;
+    translate: 8px -50%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .floating-bottom {
     transition: none;
+  }
+
+  .fab-pulse::after,
+  .fab-hint,
+  .fab-hint-leaving {
+    animation: none;
   }
 }
 
