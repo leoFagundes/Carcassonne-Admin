@@ -95,17 +95,19 @@ function Item({
           </div>
         </Tooltip>
       )}
-      {path === "/carcassonne" && themeReminders && themeReminders.length > 0 && (
-        <Tooltip
-          content={`Tema para ativar: ${themeReminders.join(", ")}`}
-          direction="right"
-          portal
-        >
-          <div className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#ff9a3c] text-primary-black text-[10px] font-bold animate-pulse">
-            {themeReminders.length}
-          </div>
-        </Tooltip>
-      )}
+      {path === "/carcassonne" &&
+        themeReminders &&
+        themeReminders.length > 0 && (
+          <Tooltip
+            content={`Tema para ativar: ${themeReminders.join(", ")}`}
+            direction="right"
+            portal
+          >
+            <div className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#ff9a3c] text-primary-black text-[10px] font-bold animate-pulse">
+              {themeReminders.length}
+            </div>
+          </Tooltip>
+        )}
     </div>
   );
 }
@@ -273,19 +275,23 @@ export default function Sidebar() {
         <ThemeBand variant="sidebar" />
         <div className="flex flex-col h-full w-full overflow-y-auto">
           {/* Logo section */}
-          <div className="flex flex-col items-center gap-3 px-4 pt-6 pb-4 border-b border-primary-gold/10">
+          <div className="flex flex-col items-center gap-1 px-4 pt-6 pb-4 border-b border-primary-gold/10">
             <div className="relative isolate">
               <img
-                className="w-[120px] contrast-[1.1] brightness-90 cursor-pointer"
+                className="w-[140px] contrast-[1.1] brightness-90 cursor-pointer"
                 src="images/[oficial]-logo.png"
                 alt="meeple"
                 onClick={onLogoClick}
               />
-              <div className="absolute top-2 left-2">
-                <Tooltip content="Eu sou o Duque e pego 3" direction="right" portal>
+              {/* <div className="absolute top-2 left-2">
+                <Tooltip
+                  content="Eu sou o Duque e pego 3"
+                  direction="right"
+                  portal
+                >
                   <div className="bg-primary-black p-[1px] h-1 w-1 rounded-full" />
                 </Tooltip>
-              </div>
+              </div> */}
               {/* Enfeite do tema ativo (Configurações → Temas) */}
               <ThemeLogoAccessory placement="corner" />
             </div>
@@ -307,7 +313,8 @@ export default function Sidebar() {
                 onClick={() => {
                   // Com aviso de tema, Configurações abre direto na aba Temas
                   router.push(
-                    item.path === "/carcassonne" && themeReminderNames.length > 0
+                    item.path === "/carcassonne" &&
+                      themeReminderNames.length > 0
                       ? "/carcassonne?tab=temas"
                       : item.path,
                   );
