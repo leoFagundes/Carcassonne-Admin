@@ -1,3 +1,4 @@
+import "./showcase.css";
 import { GiFleurDeLys } from "react-icons/gi";
 import { Ink } from "@/components/siteTheme/ink";
 

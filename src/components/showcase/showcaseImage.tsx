@@ -1,15 +1,22 @@
 "use client";
 
+import "./showcase.css";
 import { useEffect, useRef, useState } from "react";
 
-const PLACEHOLDER_IMAGE = "/images/[oficial]-pattern-menu-image.png";
-
 /**
- * Foto do item: só baixa quando chega perto da tela, mostra um brilho
- * dourado enquanto carrega e aparece suavemente. Sem foto (ou com erro), usa
- * a imagem padrão do cardápio.
+ * Foto de vitrine (item do cardápio, jogo do acervo): só baixa quando chega
+ * perto da tela, mostra um brilho dourado enquanto carrega e aparece
+ * suavemente. Sem foto (ou com erro), usa a imagem padrão da vitrine.
  */
-export default function MenuImage({ src, className = "" }: { src?: string; className?: string }) {
+export default function ShowcaseImage({
+  src,
+  placeholder,
+  className = "",
+}: {
+  src?: string;
+  placeholder: string;
+  className?: string;
+}) {
   const imageRef = useRef<HTMLImageElement>(null);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -24,7 +31,7 @@ export default function MenuImage({ src, className = "" }: { src?: string; class
     <span className={`cm-img ${loaded ? "cm-img-loaded" : ""} ${className}`}>
       <img
         ref={imageRef}
-        src={!src || failed ? PLACEHOLDER_IMAGE : src}
+        src={!src || failed ? placeholder : src}
         alt=""
         loading="lazy"
         decoding="async"

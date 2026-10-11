@@ -1,29 +1,14 @@
 "use client";
 
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { IconType } from "react-icons";
 import { LuChevronRight, LuSearch, LuSearchX, LuVegan, LuX } from "react-icons/lu";
 import Modal from "@/components/modal";
+import { useBackToClose } from "@/components/useBackToClose";
+import { Highlight, foldText, searchWords } from "@/components/showcase/search";
 import type { MenuItemType } from "@/types";
 
 const PLACEHOLDER_IMAGE = "/images/[oficial]-pattern-menu-image.png";
-
-// A busca ignora acentos e maiúsculas: "pao de queijo" acha "Pão de Queijo"
-const DIACRITICS = /[̀-ͯ]/g;
-
-/** Texto sem acento e minúsculo, com a posição de cada letra no texto original. */
-function fold(text: string) {
-  let folded = "";
-  const positions: number[] = [];
-  for (let i = 0; i < text.length; i++) {
-    const plain = text[i].normalize("NFD").replace(DIACRITICS, "").toLowerCase();
-    for (let k = 0; k < plain.length; k++) positions.push(i);
-    folded += plain;
-  }
-  return { folded, positions };
-}
-
-const foldText = (text: string) => fold(text).folded;
 
 /**
  * Itens com todas as palavras buscadas (no nome, na descrição ou na
@@ -31,7 +16,7 @@ const foldText = (text: string) => fold(text).folded;
  * nome e por fim os que só batem na descrição/categoria.
  */
 function searchItems(items: MenuItemType[], query: string) {
-  const words = foldText(query).split(/\s+/).filter(Boolean);
+  const words = searchWords(query);
   if (!words.length) return { words, results: [] as MenuItemType[] };
   const phrase = words.join(" ");
   const results = items
@@ -47,36 +32,6 @@ function searchItems(items: MenuItemType[], query: string) {
     .sort((a, b) => a.rank - b.rank || a.item.name.localeCompare(b.item.name, "pt-BR"))
     .map(({ item }) => item);
   return { words, results };
-}
-
-/** Destaca no texto os trechos que batem com a busca. */
-function Highlight({ text, words }: { text: string; words: string[] }) {
-  const { folded, positions } = fold(text);
-  const marked = new Array<boolean>(text.length).fill(false);
-  for (const word of words) {
-    for (let at = folded.indexOf(word); at !== -1; at = folded.indexOf(word, at + word.length)) {
-      const end = positions[at + word.length - 1] + 1;
-      for (let k = positions[at]; k < end; k++) marked[k] = true;
-    }
-  }
-
-  const parts: ReactNode[] = [];
-  for (let i = 0; i < text.length; ) {
-    let j = i;
-    while (j < text.length && marked[j] === marked[i]) j++;
-    const chunk = text.slice(i, j);
-    parts.push(
-      marked[i] ? (
-        <mark key={i} className="bg-primary-gold/20 text-primary-gold rounded-[3px] px-px">
-          {chunk}
-        </mark>
-      ) : (
-        <span key={i}>{chunk}</span>
-      ),
-    );
-    i = j;
-  }
-  return <>{parts}</>;
 }
 
 function EmptyState({ icon: Icon, title, text }: { icon: IconType; title: string; text: string }) {
@@ -110,6 +65,8 @@ export default function MenuSearch({
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const { words, results } = useMemo(() => searchItems(items, query), [items, query]);
+  // "Voltar" do celular fecha a busca em vez de sair do cardápio
+  useBackToClose(isOpen, onClose);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} isFixed noPadding patternCloseButton={false}>
@@ -139,8 +96,8 @@ export default function MenuSearch({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => {
+                  // (o Esc fecha pela camada, como o "voltar" do celular)
                   if (e.key === "Enter" && results[0]) onPick(results[0]);
-                  if (e.key === "Escape") onClose();
                 }}
                 placeholder="Procurar no cardápio..."
                 // 16px: abaixo disso o iPhone dá zoom ao focar o campo

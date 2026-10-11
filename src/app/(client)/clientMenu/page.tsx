@@ -1,5 +1,6 @@
 "use client";
 
+import "@/components/showcase/showcase.css";
 import "./clientMenu.css";
 import {
   MenuItemType,
@@ -22,10 +23,10 @@ import ComboCard from "./comboCard";
 import MenuCard from "./menuCard";
 import MenuSearch from "./menuSearch";
 import ItemSheet from "./itemSheet";
-import SectionTitle from "./sectionTitle";
+import SectionTitle from "@/components/showcase/sectionTitle";
 import MenuSkeleton, { NavSkeleton } from "./menuSkeleton";
-import { afterScrollSettles, flashCard, flashSection, prefersReducedMotion } from "./motion";
-import { useScrollReveal } from "./useScrollReveal";
+import { afterScrollSettles, flashCard, flashSection, prefersReducedMotion } from "@/components/showcase/motion";
+import { useScrollReveal } from "@/components/showcase/useScrollReveal";
 import { useAlert } from "@/contexts/alertProvider";
 import ScrollUp from "@/components/scrollUp";
 import DescriptionRepository from "@/services/repositories/DescriptionTypeRepository";
@@ -329,14 +330,11 @@ export default function ClientMenuPage() {
 
   /** Abre o detalhe do item; a foto sai voando do card tocado. */
   const openItem = (item: MenuItemType, origin: HTMLElement | null) => {
+    // (o próprio detalhe trava a rolagem da página enquanto está aberto)
     setSheet({ item, origin });
-    toggleScrollLock(true);
   };
 
-  const closeItem = () => {
-    setSheet(null);
-    toggleScrollLock(false);
-  };
+  const closeItem = () => setSheet(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

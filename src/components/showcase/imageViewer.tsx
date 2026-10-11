@@ -13,6 +13,8 @@ import {
 import { createPortal } from "react-dom";
 import gsap from "gsap";
 import { FiX } from "react-icons/fi";
+import { useBackToClose } from "@/components/useBackToClose";
+import "./showcase.css";
 import { HERO_RADIUS, HERO_SHADE, prefersReducedMotion } from "./motion";
 
 const MAX_SCALE = 4;
@@ -345,13 +347,8 @@ export default function ImageViewer({
       .to(shade, { opacity: 1, duration: 0.3, ease: "power1.in" }, 0.16);
   }, [hero, onClosed, onReturnHero]);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [close]);
+  // "Voltar" do celular (ou Esc) fecha a foto e mantém o detalhe aberto
+  useBackToClose(true, close);
 
   // Tela girou ou mudou de tamanho: a foto volta a caber inteira
   useEffect(() => {

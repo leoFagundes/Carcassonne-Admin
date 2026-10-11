@@ -3,7 +3,7 @@
 import { InfoType } from "@/types";
 import { ComponentProps, useEffect, useRef, useState } from "react";
 import { FiArrowRight } from "react-icons/fi";
-import { prefersReducedMotion } from "./motion";
+import { prefersReducedMotion } from "@/components/showcase/motion";
 
 interface InfoCardProps extends ComponentProps<"div"> {
   info: InfoType;

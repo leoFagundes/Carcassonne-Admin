@@ -3,7 +3,7 @@ import { truncateText } from "@/utils/utilFunctions";
 import React, { ComponentProps } from "react";
 import { FaStar } from "react-icons/fa";
 import { LuVegan } from "react-icons/lu";
-import MenuImage from "./menuImage";
+import ShowcaseImage from "@/components/showcase/showcaseImage";
 
 interface MenuCardProps extends ComponentProps<"div"> {
   item: MenuItemType;
@@ -19,7 +19,8 @@ export default function MenuCard({ item, index, ...props }: MenuCardProps) {
       } ${!item.isVisible ? "hidden" : ""} ${index === 0 ? "mt-0" : ""}`}
     >
       <div className="relative h-fit w-fit shrink-0">
-        <MenuImage
+        <ShowcaseImage
+          placeholder="/images/[oficial]-pattern-menu-image.png"
           src={item.image}
           className="w-[100px] h-[100px] rounded-md shadow-card transition-shadow duration-200 sm:group-hover:shadow-none"
         />
