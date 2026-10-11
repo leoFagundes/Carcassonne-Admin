@@ -1,195 +1,138 @@
 "use client";
 
-import Tooltip from "@/components/Tooltip";
-import { useAlert } from "@/contexts/alertProvider";
-import MenuItemRepository from "@/services/repositories/MenuItemRepository";
-import { MenuItemType } from "@/types";
-import { highlightMatch, truncateText } from "@/utils/utilFunctions";
-import React, { ComponentProps, useState } from "react";
-import { LuEye, LuEyeOff, LuSparkles, LuVegan } from "react-icons/lu";
+import { LuChevronRight, LuEye, LuEyeOff, LuPencil, LuSparkles, LuVegan } from "react-icons/lu";
+import type { MenuItemType } from "@/types";
+import ShowcaseImage from "@/components/showcase/showcaseImage";
+import { Highlight } from "@/components/showcase/search";
+import { CatalogBadge, CatalogView, QuickToggle } from "@/components/adminCatalog";
 
-interface MenuCardProps extends ComponentProps<"div"> {
-  item: MenuItemType;
-  menuItems: MenuItemType[];
-  setMenuItems: React.Dispatch<React.SetStateAction<MenuItemType[]>>;
-  searchTerm?: string;
-}
+const PLACEHOLDER = "/images/[oficial]-pattern-menu-image.png";
 
+/**
+ * Item do cardápio no admin. Tocar abre a edição; os botões de baixo
+ * mostram/ocultam, destacam e marcam como vegano sem abrir nada.
+ */
 export default function MenuCard({
   item,
-  searchTerm,
-  menuItems,
-  setMenuItems,
-  ...props
-}: MenuCardProps) {
-  const [isChildInFocus, setIsChildInFocus] = useState(false);
-  const { addAlert } = useAlert();
+  view,
+  words,
+  onEdit,
+  onUpdate,
+}: {
+  item: MenuItemType;
+  view: CatalogView;
+  /** Palavras buscadas (destacadas no nome). */
+  words: string[];
+  onEdit: () => void;
+  onUpdate: (patch: Partial<MenuItemType>) => void;
+}) {
+  const isHidden = !item.isVisible;
 
-  const toggleVisibility = async (
-    event: React.MouseEvent<SVGElement, MouseEvent>,
-    state: "visible" | "invisible",
-  ) => {
-    event.stopPropagation();
-    const newVisibilityValue = state === "visible";
-    const newMenuItemValue = { ...item, isVisible: newVisibilityValue };
-    if (!item.id) {
-      addAlert("ID inválido");
-      return;
-    }
-    try {
-      await MenuItemRepository.update(item.id, newMenuItemValue);
-      setMenuItems(
-        menuItems.map((p) => (p.id === item.id ? newMenuItemValue : p)),
-      );
-      addAlert(
-        `${item.name} está ${newVisibilityValue ? "visível" : "invisível"}`,
-      );
-    } catch (error) {
-      addAlert(`Erro ao mudar a visibilidade do item: ${error}`);
-    }
-  };
+  const toggles = (
+    <>
+      <QuickToggle
+        active={item.isVisible}
+        icon={LuEyeOff}
+        activeIcon={LuEye}
+        label={item.isVisible ? "Visível no cardápio — ocultar" : "Oculto — mostrar no cardápio"}
+        onToggle={() => onUpdate({ isVisible: !item.isVisible })}
+      />
+      <QuickToggle
+        active={item.isFocus}
+        icon={LuSparkles}
+        label={item.isFocus ? "Em destaque — tirar o destaque" : "Destacar no cardápio"}
+        onToggle={() => onUpdate({ isFocus: !item.isFocus })}
+      />
+      <QuickToggle
+        active={item.isVegan}
+        icon={LuVegan}
+        label={item.isVegan ? "Vegano — desmarcar" : "Marcar como vegano"}
+        onToggle={() => onUpdate({ isVegan: !item.isVegan })}
+      />
+    </>
+  );
 
-  const toggleFocus = async (
-    event: React.MouseEvent<SVGElement, MouseEvent>,
-  ) => {
-    event.stopPropagation();
-    if (!item.id) {
-      addAlert("ID inválido");
-      return;
-    }
-    const updatedItem = { ...item, isFocus: !item.isFocus };
-    try {
-      await MenuItemRepository.update(item.id, updatedItem);
-      setMenuItems(menuItems.map((p) => (p.id === item.id ? updatedItem : p)));
-      addAlert(
-        `${item.name} ${updatedItem.isFocus ? "agora está em destaque" : "não está mais em destaque"}`,
-      );
-    } catch (error) {
-      addAlert(`Erro ao atualizar destaque do item: ${error}`);
-    }
-  };
-
-  const toggleVegan = async (
-    event: React.MouseEvent<SVGElement, MouseEvent>,
-  ) => {
-    event.stopPropagation();
-    if (!item.id) {
-      addAlert("ID inválido");
-      return;
-    }
-    const updatedItem = { ...item, isVegan: !item.isVegan };
-    try {
-      await MenuItemRepository.update(item.id, updatedItem);
-      setMenuItems(menuItems.map((p) => (p.id === item.id ? updatedItem : p)));
-      addAlert(
-        `${item.name} ${updatedItem.isVegan ? "agora é vegano" : "não é mais vegano"}`,
-      );
-    } catch (error) {
-      addAlert(`Erro ao atualizar status vegano do item: ${error}`);
-    }
-  };
+  if (view === "list") {
+    return (
+      <article
+        onClick={onEdit}
+        className={`group flex items-center gap-3 p-2 pr-3 rounded-xl border bg-secondary-black/50 cursor-pointer transition-colors hover:border-primary-gold/45 hover:bg-secondary-black/80 ${
+          isHidden ? "border-dashed border-primary-gold/20" : "border-primary-gold/15"
+        }`}
+      >
+        <ShowcaseImage
+          src={item.image}
+          placeholder={PLACEHOLDER}
+          className={`w-12 h-12 rounded-lg shrink-0 ${isHidden ? "opacity-40 grayscale" : ""}`}
+        />
+        <div className={`flex flex-col gap-0.5 flex-1 min-w-0 ${isHidden ? "opacity-60" : ""}`}>
+          <span className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-semibold text-primary-gold truncate">
+              <Highlight text={item.name} words={words} />
+            </span>
+            {isHidden && <CatalogBadge icon={LuEyeOff}>Oculto</CatalogBadge>}
+          </span>
+          <span className="flex items-center gap-2 text-[11px] text-primary-gold/55 min-w-0">
+            {item.subtype && <span className="shrink-0 text-primary-gold/70">{item.subtype}</span>}
+            <span className="truncate">{item.description}</span>
+          </span>
+        </div>
+        {item.value && (
+          <span className="hidden sm:block max-w-[140px] truncate text-xs font-semibold text-primary-gold/85 shrink-0">
+            {item.value}
+          </span>
+        )}
+        <div className="flex items-center gap-1.5 shrink-0">{toggles}</div>
+        <LuChevronRight size={16} className="text-primary-gold/30 group-hover:text-primary-gold/70 shrink-0" />
+      </article>
+    );
+  }
 
   return (
-    <div
-      {...props}
-      className={`${!item.isVisible && "opacity-40"} ${
-        isChildInFocus ? "" : "hover:border-primary-gold/55"
-      } group relative flex flex-col w-[190px] rounded-xl border shadow-card border-primary-gold/20 bg-secondary-black/50 cursor-pointer transition-all duration-200 overflow-hidden`}
+    <article
+      onClick={onEdit}
+      className={`group relative flex flex-col rounded-xl border bg-secondary-black/50 overflow-hidden cursor-pointer transition-colors hover:border-primary-gold/45 ${
+        isHidden ? "border-dashed border-primary-gold/20" : "border-primary-gold/15"
+      }`}
     >
-      {/* Image */}
-      <div
-        className="w-full h-[120px] bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url(${item.image || "images/[oficial]-pattern-menu-image.png"})`,
-        }}
-      />
-
-      {/* Info */}
-      <div className="flex flex-col gap-1.5 px-3 py-2.5">
-        <span
-          className="font-semibold text-sm text-primary-gold leading-tight line-clamp-2"
-          dangerouslySetInnerHTML={{
-            __html: highlightMatch(item.name, searchTerm),
-          }}
+      <div className="relative">
+        <ShowcaseImage
+          src={item.image}
+          placeholder={PLACEHOLDER}
+          className={`w-full aspect-[4/3] ${isHidden ? "opacity-40 grayscale" : ""}`}
         />
-        <span
-          className="text-xs text-primary-gold/55 line-clamp-2"
-          dangerouslySetInnerHTML={{
-            __html: highlightMatch(
-              truncateText(item.description, 60),
-              searchTerm,
-            ),
-          }}
-        />
-      </div>
-
-      {/* Action buttons */}
-      <div
-        onMouseOver={() => setIsChildInFocus(true)}
-        onMouseLeave={() => setIsChildInFocus(false)}
-        onClick={(e) => e.stopPropagation()}
-        className="flex flex-col gap-1 absolute top-2 right-2"
-      >
-        <div className="p-1.5 rounded-lg bg-primary-black/75 text-primary-gold backdrop-blur-sm border border-primary-gold/20 hover:border-primary-gold/50 transition-all">
-          {item.isVisible ? (
-            <Tooltip direction="left" content="Deixar invisível">
-              <LuEye
-                size={14}
-                onClick={(e) => toggleVisibility(e, "invisible")}
-              />
-            </Tooltip>
-          ) : (
-            <Tooltip direction="left" content="Deixar visível">
-              <LuEyeOff
-                size={14}
-                onClick={(e) => toggleVisibility(e, "visible")}
-              />
-            </Tooltip>
+        <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
+          {isHidden && <CatalogBadge icon={LuEyeOff}>Oculto</CatalogBadge>}
+          {item.isFocus && (
+            <CatalogBadge icon={LuSparkles} tone="gold">
+              Destaque
+            </CatalogBadge>
           )}
+          {item.isVegan && <CatalogBadge icon={LuVegan}>Vegano</CatalogBadge>}
         </div>
-
-        <div
-          className={`p-1.5 rounded-lg bg-primary-black/75 backdrop-blur-sm border transition-all ${
-            item.isFocus
-              ? "border-primary-gold/60 text-primary-gold"
-              : "border-primary-gold/20 text-primary-gold/40 hover:border-primary-gold/50"
-          }`}
-        >
-          <Tooltip
-            direction="left"
-            content={item.isFocus ? "Remover destaque" : "Destacar"}
-          >
-            <div className={!item.isFocus ? "diagonal-strike" : ""}>
-              <LuSparkles
-                size={14}
-                onClick={toggleFocus}
-                className="z-10 relative"
-              />
-            </div>
-          </Tooltip>
-        </div>
-
-        <div
-          className={`p-1.5 rounded-lg bg-primary-black/75 backdrop-blur-sm border transition-all ${
-            item.isVegan
-              ? "border-primary-gold/60 text-primary-gold"
-              : "border-primary-gold/20 text-primary-gold/40 hover:border-primary-gold/50"
-          }`}
-        >
-          <Tooltip
-            direction="left"
-            content={item.isVegan ? "Remover vegano" : "Marcar como vegano"}
-          >
-            <div className={!item.isVegan ? "diagonal-strike" : ""}>
-              <LuVegan
-                size={14}
-                onClick={toggleVegan}
-                className="z-10 relative"
-              />
-            </div>
-          </Tooltip>
-        </div>
+        {item.subtype && (
+          <span className="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] truncate px-1.5 py-0.5 rounded-md bg-primary-black/80 border border-primary-gold/20 text-[10px] text-primary-gold/80 backdrop-blur-sm">
+            {item.subtype}
+          </span>
+        )}
       </div>
-    </div>
+      <div className={`flex flex-col gap-1 px-2.5 pt-2.5 flex-1 ${isHidden ? "opacity-60" : ""}`}>
+        <span className="text-sm font-semibold leading-snug line-clamp-2 text-primary-gold">
+          <Highlight text={item.name} words={words} />
+        </span>
+        {item.value && (
+          <span className="text-xs font-semibold text-primary-gold/80 line-clamp-2">{item.value}</span>
+        )}
+        {item.description && (
+          <span className="text-[11px] text-primary-gold/50 line-clamp-2">{item.description}</span>
+        )}
+      </div>
+      <div className="flex items-center gap-1.5 p-2.5">
+        {toggles}
+        <span className="ml-auto flex items-center gap-1 text-[10px] text-primary-gold/30 group-hover:text-primary-gold/70 transition-colors">
+          <LuPencil size={11} />
+        </span>
+      </div>
+    </article>
   );
 }

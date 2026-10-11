@@ -152,7 +152,7 @@ const helpCards: HelpCard[] = [
     category: "colecao",
     title: "Visão geral da página de Coleção",
     description:
-      "Exibe todos os jogos de tabuleiro cadastrados no sistema. No topo há uma barra de busca por nome ou descrição, filtros por tipo e por dificuldade, e três checkboxes de filtro rápido: mostrar só jogos em destaque, só jogos ocultos, e só jogos à venda. A lista atualiza em tempo real conforme os filtros mudam.",
+      "Exibe todos os jogos de tabuleiro cadastrados no sistema. No quadro de cima há a busca (por nome, descrição ou categoria, sem precisar de acento — aperte '/' para ir direto a ela e Esc para limpar) e os filtros em pílulas, cada uma com a quantidade de jogos: Situação (todos, ocultos, destaques, à venda), Categoria e Dificuldade. Ao lado da busca dá para alternar entre grade (com foto) e lista (mais compacta); a escolha fica guardada. Em cada jogo, os botões de baixo mostram/ocultam no site e destacam na hora, sem abrir o jogo — se der erro ao salvar, o botão volta como estava. Jogos ocultos aparecem apagados, com borda tracejada e a etiqueta 'Oculto'.",
   },
   {
     category: "colecao",
@@ -170,19 +170,19 @@ const helpCards: HelpCard[] = [
     category: "colecao",
     title: "Como destacar um jogo",
     description:
-      "No formulário de edição do jogo, ative a opção 'Em destaque'. Jogos destacados aparecem com prioridade na vitrine do site. Use o filtro 'Só em destaque' na página Coleção para visualizar apenas os jogos destacados.",
+      "Na página Coleção, toque no botão de brilho (✦) embaixo do card do jogo — ou ative 'Em destaque' no formulário de edição. Jogos destacados aparecem com prioridade na vitrine do site. Use a pílula 'Destaques' em Situação para ver só os jogos destacados.",
   },
   {
     category: "colecao",
     title: "Como ocultar um jogo sem excluí-lo",
     description:
-      "No formulário de edição do jogo, desative a opção 'Visível'. O jogo permanece no banco de dados mas não aparece para os clientes no site. É possível visualizar jogos ocultos pelo filtro 'Só ocultos' na página Coleção.",
+      "Na página Coleção, toque no botão de olho embaixo do card do jogo — ou desative 'Visível' no formulário de edição. O jogo permanece no banco de dados mas não aparece para os clientes no site. Para ver os jogos ocultos, use a pílula 'Ocultos' em Situação.",
   },
   {
     category: "colecao",
     title: "Como marcar um jogo como à venda",
     description:
-      "No formulário de edição, ative a opção 'À venda'. Jogos à venda são exibidos com uma indicação especial no site. Use o filtro 'Só à venda' na página Coleção para visualizar apenas esses jogos.",
+      "No formulário de edição, ative a opção 'À venda'. Jogos à venda são exibidos com uma indicação especial no site. Use a pílula 'À venda' em Situação, na página Coleção, para ver só esses jogos.",
   },
 
   // ── CARDÁPIO ──────────────────────────────────────────────────
@@ -190,7 +190,7 @@ const helpCards: HelpCard[] = [
     category: "cardapio",
     title: "Visão geral do Cardápio",
     description:
-      "A página Cardápio exibe todos os itens cadastrados (pratos, bebidas etc.), organizados por tipo e subtipo. No topo há filtros por tipo, subtipo e busca por nome. As categorias e sua ordem são gerenciadas pela opção 'Ordenar Tipos' na página Adicionar.",
+      "A página Cardápio exibe avisos, combos e todos os itens (pratos, bebidas etc.), separados em seções por categoria, na mesma ordem do cardápio do cliente — clique no título de uma seção para recolher ou abrir. No quadro de cima há a busca (por nome, descrição ou categoria, sem precisar de acento — '/' vai direto a ela e Esc limpa), a Situação (todos, ocultos, destaques, veganos) e a Categoria, cada pílula com a sua quantidade. Dá para alternar entre grade e lista ao lado da busca. Em cada item, os botões de baixo mostram/ocultam, destacam e marcam como vegano na hora, sem abrir o item. As categorias e sua ordem são gerenciadas pela opção 'Ordenar Tipos' na página Adicionar.",
   },
   {
     category: "cardapio",

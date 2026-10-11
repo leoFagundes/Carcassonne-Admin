@@ -1,78 +1,140 @@
 "use client";
 
 import { BoardgameType } from "@/types";
-import React, { useEffect, useState } from "react";
-import { LuDices, LuDollarSign, LuLink } from "react-icons/lu";
+import { useEffect, useMemo, useState } from "react";
+import { LuDices, LuDollarSign, LuEyeOff, LuLink, LuSparkles, LuTag } from "react-icons/lu";
 import Card from "./card";
-import Input from "@/components/input";
 import Modal from "@/components/modal";
 import CollectionForms from "@/components/collectionForms";
 import { useAlert } from "@/contexts/alertProvider";
 import BoardgameRepository from "@/services/repositories/BoardGameRepository";
 import { difficultiesOptions, patternBoardgame } from "@/utils/patternValues";
-import LoaderFullscreen from "@/components/loaderFullscreen";
 import Tooltip from "@/components/Tooltip";
-import Checkbox from "@/components/checkbox";
-import Dropdown from "@/components/dropdown";
+import { foldText, searchWords } from "@/components/showcase/search";
+import {
+  CatalogEmpty,
+  CatalogItems,
+  CatalogSearch,
+  CatalogSkeleton,
+  FilterPills,
+  ViewToggle,
+  useCatalogView,
+} from "@/components/adminCatalog";
+
+type Status = "all" | "hidden" | "featured" | "forSale";
 
 export default function CollectionPage() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<Status>("all");
   const [filterType, setFilterType] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState("");
-  const [showOnlyFocus, setShowOnlyFocus] = useState(false);
-  const [showOnlyInvisible, setShowOnlyInvisible] = useState(false);
-  const [showOnlyIsForSale, setShowOnlyIsForSale] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [boardgames, setBoardgames] = useState<BoardgameType[]>([]);
-  const [currentItem, setCurrentItem] =
-    useState<BoardgameType>(patternBoardgame);
+  const [currentItem, setCurrentItem] = useState<BoardgameType>(patternBoardgame);
+  const [view, setView] = useCatalogView("carcassonne-admin-collection-view");
 
   const { addAlert } = useAlert();
 
+  const fetchBoardgames = async (showLoading = false) => {
+    if (showLoading) setLoading(true);
+    try {
+      setBoardgames(await BoardgameRepository.getAll());
+    } catch (error) {
+      addAlert(`Erro ao carregar jogos: ${error}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchBoardgames = async () => {
-      setLoading(true);
-      try {
-        const fetchedBoardgames = await BoardgameRepository.getAll();
-        setBoardgames(fetchedBoardgames);
-      } catch (error) {
-        addAlert(`Erro ao carregar jogos: ${error}`);
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchBoardgames(true);
+  }, []);
+
+  /** Fecha a edição e atualiza a lista (pode ter salvo ou excluído). */
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setCurrentItem(patternBoardgame);
     fetchBoardgames();
-  }, [currentItem]);
+  };
 
-  const filteredBoardgames = boardgames.filter((game) => {
-    const matchesSearch =
-      game.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      game.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === "" || game.types.includes(filterType);
-    const matchesDifficulty =
-      filterDifficulty === "" || game.difficulty.includes(filterDifficulty);
-    const matchesFocus = showOnlyFocus ? game.featured : true;
-    const matchesInvisible = showOnlyInvisible ? !game.isVisible : true;
-    const matchesIsForSale = showOnlyIsForSale ? game.isForSale : true;
-    return (
-      matchesSearch &&
-      matchesType &&
-      matchesFocus &&
-      matchesInvisible &&
-      matchesIsForSale &&
-      matchesDifficulty
-    );
-  });
+  /** Liga/desliga na hora; se o banco recusar, volta como estava. */
+  const updateGame = async (game: BoardgameType, patch: Partial<BoardgameType>) => {
+    if (!game.id) {
+      addAlert("ID inválido");
+      return;
+    }
+    const updated = { ...game, ...patch };
+    const replace = (next: BoardgameType) =>
+      setBoardgames((list) => list.map((item) => (item.id === game.id ? next : item)));
+    replace(updated);
+    const ok = await BoardgameRepository.update(game.id, patch);
+    if (!ok) {
+      replace(game);
+      addAlert(`Não foi possível atualizar ${game.name}. Tente novamente.`);
+      return;
+    }
+    if ("isVisible" in patch) {
+      addAlert(`${game.name} ${updated.isVisible ? "está visível no site" : "foi ocultado do site"}`);
+    } else if ("featured" in patch) {
+      addAlert(`${game.name} ${updated.featured ? "agora está em destaque" : "não está mais em destaque"}`);
+    }
+  };
 
-  const boardgameTypes = Array.from(
-    new Set(boardgames.flatMap((b) => b.types)),
-  ).sort();
+  const words = useMemo(() => searchWords(search), [search]);
+
+  // Busca (nome, descrição e categorias, sem acento) + tipo + dificuldade:
+  // a base das contagens de cada situação
+  const searched = useMemo(
+    () =>
+      boardgames.filter((game) => {
+        if (filterType && !game.types.includes(filterType)) return false;
+        if (filterDifficulty && game.difficulty !== filterDifficulty) return false;
+        if (!words.length) return true;
+        const text = foldText(`${game.name} ${game.description} ${game.types.join(" ")}`);
+        return words.every((word) => text.includes(word));
+      }),
+    [boardgames, filterType, filterDifficulty, words],
+  );
+
+  const matchesStatus = (game: BoardgameType, value: Status) =>
+    value === "all" ||
+    (value === "hidden" && !game.isVisible) ||
+    (value === "featured" && game.featured) ||
+    (value === "forSale" && game.isForSale);
+
+  const filteredBoardgames = useMemo(
+    () =>
+      searched
+        .filter((game) => matchesStatus(game, status))
+        .sort(
+          (a, b) =>
+            Number(b.featured) - Number(a.featured) || a.name.localeCompare(b.name, "pt-BR"),
+        ),
+    [searched, status],
+  );
+
+  const boardgameTypes = useMemo(
+    () =>
+      Array.from(new Set(boardgames.flatMap((game) => game.types))).sort((a, b) =>
+        a.localeCompare(b, "pt-BR"),
+      ),
+    [boardgames],
+  );
+
+  const countBy = (predicate: (game: BoardgameType) => boolean) =>
+    boardgames.filter(predicate).length;
+
+  const hasFilters = !!search || status !== "all" || !!filterType || !!filterDifficulty;
+  const clearFilters = () => {
+    setSearch("");
+    setStatus("all");
+    setFilterType("");
+    setFilterDifficulty("");
+  };
 
   return (
-    <section className="flex flex-col gap-6 w-full h-full overflow-y-auto py-2 px-6">
-      {loading && <LoaderFullscreen />}
-
+    <section className="flex flex-col gap-5 w-full h-full overflow-y-auto py-2 px-6">
       {/* Header */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-center gap-4 w-full">
@@ -115,103 +177,128 @@ export default function CollectionPage() {
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent" />
       </div>
 
-      {/* Filters */}
-      <section className="flex flex-row flex-wrap justify-center items-center gap-4 w-fit mx-auto bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-6">
-        <div className="flex flex-col gap-4 w-full sm:w-auto">
-          <Input
-            placeholder="Buscar por nome ou descrição..."
-            value={searchTerm}
-            setValue={(e) => setSearchTerm(e.target.value)}
-            variant
-            width="!w-full sm:!w-[240px]"
-          />
-          <Dropdown
-            value={filterType}
-            setValue={(e) => setFilterType(e.target.value)}
-            options={boardgameTypes}
-            firstLabel="Tipo"
-            variant
-            width="!w-full sm:!w-[240px]"
-          />
-          <Dropdown
-            value={filterDifficulty}
-            setValue={(e) => setFilterDifficulty(e.target.value)}
-            options={difficultiesOptions}
-            firstLabel="Dificuldade"
-            variant
-            width="!w-full sm:!w-[240px]"
-          />
-        </div>
-
-        <div className="hidden lg:block w-px h-full bg-primary-gold/20 shrink-0 mx-1" />
-
-        <div className="flex flex-col gap-4 shrink-0 w-full sm:w-auto">
-          <Checkbox
-            checked={showOnlyFocus}
-            setChecked={(e) => setShowOnlyFocus(e.target.checked)}
-            label="Destaque"
-            width="!w-full sm:!w-fit"
-            variant
-          />
-          <Checkbox
-            checked={showOnlyInvisible}
-            setChecked={(e) => setShowOnlyInvisible(e.target.checked)}
-            label="Invisíveis"
-            width="!w-full sm:!w-fit"
-            variant
-          />
-          <Checkbox
-            checked={showOnlyIsForSale}
-            setChecked={(e) => setShowOnlyIsForSale(e.target.checked)}
-            label="À venda"
-            width="!w-full sm:!w-fit"
-            variant
-          />
-        </div>
-      </section>
-
-      {/* Cards */}
-      <section className="flex justify-center flex-wrap gap-4">
-        {filteredBoardgames.length > 0 ? (
-          filteredBoardgames.map((boardgame, index) => (
-            <Card
-              key={index}
-              boardgame={boardgame}
-              searchTerm={searchTerm}
-              boardgames={boardgames}
-              setBoardgames={setBoardgames}
-              onClick={() => {
-                setIsModalOpen(true);
-                setCurrentItem(boardgame);
-              }}
+      <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto">
+        {/* Busca e filtros */}
+        <div className="flex flex-col gap-3 rounded-2xl border border-primary-gold/15 bg-secondary-black/50 p-3 sm:p-4">
+          <div className="flex items-center gap-2">
+            <CatalogSearch
+              value={search}
+              onChange={setSearch}
+              placeholder="Buscar por nome, descrição ou categoria"
             />
-          ))
-        ) : (
-          <div className="flex flex-col items-center gap-2 py-16 text-primary-gold/40">
-            <LuDices size={32} />
-            <p className="text-sm">Nenhum jogo encontrado.</p>
+            <ViewToggle view={view} onChange={setView} />
           </div>
+          <FilterPills<Status>
+            label="Situação"
+            value={status}
+            onChange={setStatus}
+            options={[
+              { value: "all", label: "Todos", count: boardgames.length },
+              {
+                value: "hidden",
+                label: "Ocultos",
+                icon: LuEyeOff,
+                count: countBy((game) => !game.isVisible),
+              },
+              {
+                value: "featured",
+                label: "Destaques",
+                icon: LuSparkles,
+                count: countBy((game) => game.featured),
+              },
+              {
+                value: "forSale",
+                label: "À venda",
+                icon: LuTag,
+                count: countBy((game) => game.isForSale),
+              },
+            ]}
+          />
+          {boardgameTypes.length > 0 && (
+            <FilterPills
+              label="Categoria"
+              scroll
+              value={filterType}
+              onChange={setFilterType}
+              options={[
+                { value: "", label: "Todas" },
+                ...boardgameTypes.map((type) => ({
+                  value: type,
+                  label: type,
+                  count: countBy((game) => game.types.includes(type)),
+                })),
+              ]}
+            />
+          )}
+          <FilterPills
+            label="Dificuldade"
+            value={filterDifficulty}
+            onChange={setFilterDifficulty}
+            options={[
+              { value: "", label: "Todas" },
+              ...difficultiesOptions.map((difficulty) => ({
+                value: difficulty,
+                label: difficulty,
+                count: countBy((game) => game.difficulty === difficulty),
+              })),
+            ]}
+          />
+        </div>
+
+        {/* Resultado */}
+        <div className="flex items-center justify-between gap-3 min-h-6 px-1">
+          <span className="text-xs text-primary-gold/50">
+            {loading
+              ? "Carregando jogos..."
+              : `${filteredBoardgames.length} de ${boardgames.length} ${
+                  boardgames.length === 1 ? "jogo" : "jogos"
+                }`}
+          </span>
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-xs text-primary-gold/55 hover:text-primary-gold underline-offset-4 hover:underline transition-colors cursor-pointer"
+            >
+              Limpar busca e filtros
+            </button>
+          )}
+        </div>
+
+        {loading ? (
+          <CatalogSkeleton view={view} />
+        ) : filteredBoardgames.length === 0 ? (
+          <CatalogEmpty
+            icon={LuDices}
+            title={boardgames.length ? "Nenhum jogo com essa busca e filtros." : "Nenhum jogo cadastrado ainda."}
+            onClear={hasFilters ? clearFilters : undefined}
+          />
+        ) : (
+          <CatalogItems view={view}>
+            {filteredBoardgames.map((game) => (
+              <Card
+                key={game.id ?? game.name}
+                game={game}
+                view={view}
+                words={words}
+                onEdit={() => {
+                  setCurrentItem(game);
+                  setIsModalOpen(true);
+                }}
+                onUpdate={(patch) => updateGame(game, patch)}
+              />
+            ))}
+          </CatalogItems>
         )}
-      </section>
+      </div>
 
       {currentItem && (
-        <Modal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setCurrentItem(patternBoardgame);
-          }}
-          noPadding
-          patternCloseButton={false}
-        >
+        <Modal isOpen={isModalOpen} onClose={closeModal} noPadding patternCloseButton={false}>
           <CollectionForms
             currentItem={currentItem}
             setCurrentItem={setCurrentItem}
             formType="edit"
-            closeForms={() => {
-              setIsModalOpen(false);
-              setCurrentItem(patternBoardgame);
-            }}
+            closeForms={closeModal}
           />
         </Modal>
       )}

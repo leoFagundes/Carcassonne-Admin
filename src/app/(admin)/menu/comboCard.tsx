@@ -1,56 +1,72 @@
-import Tooltip from "@/components/Tooltip";
-import { ComboType } from "@/types";
-import { highlightMatch, truncateText } from "@/utils/utilFunctions";
-import React, { ComponentProps } from "react";
-import { LuBoxes } from "react-icons/lu";
+"use client";
 
-interface ComboCardProps extends ComponentProps<"div"> {
-  item: ComboType;
-  searchTerm?: string;
-}
+import { LuBoxes, LuChevronRight, LuPencil } from "react-icons/lu";
+import type { ComboType } from "@/types";
+import { Highlight } from "@/components/showcase/search";
+import type { CatalogView } from "@/components/adminCatalog";
 
+/** Combo do cardápio no admin. Tocar abre a edição. */
 export default function ComboCard({
-  item,
-  searchTerm,
-  ...props
-}: ComboCardProps) {
+  combo,
+  view,
+  words,
+  onEdit,
+}: {
+  combo: ComboType;
+  view: CatalogView;
+  words: string[];
+  onEdit: () => void;
+}) {
+  const icon = (
+    <span className="flex items-center justify-center w-10 h-10 shrink-0 rounded-lg border border-primary-gold/25 bg-primary-gold/10 text-primary-gold">
+      <LuBoxes size={17} />
+    </span>
+  );
+
+  if (view === "list") {
+    return (
+      <article
+        onClick={onEdit}
+        className="group flex items-center gap-3 p-2 pr-3 rounded-xl border border-primary-gold/15 bg-secondary-black/50 cursor-pointer transition-colors hover:border-primary-gold/45 hover:bg-secondary-black/80"
+      >
+        {icon}
+        <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+          <span className="text-sm font-semibold text-primary-gold truncate">
+            <Highlight text={combo.name} words={words} />
+          </span>
+          <span className="text-[11px] text-primary-gold/55 truncate">{combo.description}</span>
+        </div>
+        {combo.value && (
+          <span className="hidden sm:block shrink-0 text-xs font-semibold text-primary-gold">
+            {combo.value}
+          </span>
+        )}
+        <LuChevronRight size={16} className="text-primary-gold/30 group-hover:text-primary-gold/70 shrink-0" />
+      </article>
+    );
+  }
+
   return (
-    <div
-      {...props}
-      className={`hover:border-primary-gold/55 group relative flex flex-col w-[190px] rounded-xl border shadow-card border-primary-gold/20 bg-secondary-black/50 cursor-pointer transition-all duration-200 overflow-hidden`}
+    <article
+      onClick={onEdit}
+      className="group flex flex-col gap-2.5 p-3 rounded-xl border border-primary-gold/15 bg-secondary-black/50 cursor-pointer transition-colors hover:border-primary-gold/45"
     >
-      {/* Image */}
-      <div
-        className="w-full h-[120px] bg-contain bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url(${"images/[oficial]-mascote-combo.png"})`,
-        }}
-      />
-
-      {/* Combo */}
-      <div className="flex flex-col gap-1.5 px-3 py-2.5">
-        <span
-          className="font-semibold text-sm text-primary-gold leading-tight line-clamp-2"
-          dangerouslySetInnerHTML={{
-            __html: highlightMatch(item.name, searchTerm),
-          }}
-        />
-        <span
-          className="text-xs text-primary-gold/55 line-clamp-2"
-          dangerouslySetInnerHTML={{
-            __html: highlightMatch(
-              truncateText(item.description, 60),
-              searchTerm,
-            ),
-          }}
+      <div className="flex items-start gap-2.5">
+        {icon}
+        <span className="text-sm font-semibold leading-snug text-primary-gold line-clamp-2 pt-0.5">
+          <Highlight text={combo.name} words={words} />
+        </span>
+      </div>
+      {combo.description && (
+        <p className="text-[11px] text-primary-gold/55 leading-relaxed line-clamp-3">{combo.description}</p>
+      )}
+      <div className="flex items-end justify-between gap-2 mt-auto">
+        {combo.value && <span className="text-xs font-semibold text-primary-gold">{combo.value}</span>}
+        <LuPencil
+          size={11}
+          className="ml-auto shrink-0 text-primary-gold/30 group-hover:text-primary-gold/70 transition-colors"
         />
       </div>
-
-      <div className="flex flex-col gap-2 absolute top-4 right-3 text-primary-gold">
-        <Tooltip direction="left" content="Este item é um Combo">
-          <LuBoxes />
-        </Tooltip>
-      </div>
-    </div>
+    </article>
   );
 }
