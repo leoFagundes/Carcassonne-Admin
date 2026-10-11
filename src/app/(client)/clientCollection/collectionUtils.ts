@@ -2,7 +2,7 @@ import type { BoardgameType } from "@/types";
 import { difficultiesOptions } from "@/utils/patternValues";
 import { foldText, searchWords } from "@/components/showcase/search";
 
-export const BOARDGAME_PLACEHOLDER = "/images/[oficial]-pattern-boardgame-image.png";
+export const BOARDGAME_PLACEHOLDER = "/images/placeholder-boardgame.svg";
 
 /** Lista de jogos escolhidos pelo cliente, guardada no aparelho. */
 export const MY_LIST_KEY = "boardgames";

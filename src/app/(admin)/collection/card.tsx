@@ -6,7 +6,7 @@ import ShowcaseImage from "@/components/showcase/showcaseImage";
 import { Highlight } from "@/components/showcase/search";
 import { CatalogBadge, CatalogView, QuickToggle } from "@/components/adminCatalog";
 
-const PLACEHOLDER = "/images/[oficial]-pattern-boardgame-image.png";
+const PLACEHOLDER = "/images/placeholder-boardgame.svg";
 
 const playersLabel = (game: BoardgameType) =>
   game.minPlayers === game.maxPlayers ? `${game.maxPlayers}` : `${game.minPlayers}–${game.maxPlayers}`;

@@ -20,7 +20,7 @@ export default function MenuCard({ item, index, ...props }: MenuCardProps) {
     >
       <div className="relative h-fit w-fit shrink-0">
         <ShowcaseImage
-          placeholder="/images/[oficial]-pattern-menu-image.png"
+          placeholder="/images/placeholder-menu.svg"
           src={item.image}
           className="w-[100px] h-[100px] rounded-md shadow-card transition-shadow duration-200 sm:group-hover:shadow-none"
         />

@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <!-- Imagem padrão de jogo sem foto: peça de terreno com torre, meeple e dado sob um arco de pedra.
+       Sem tamanho próprio: ocupa a <img> inteira e recorta como object-fit: cover.
+       Em caixas pequenas o traço engrossa; nas quadradas o arco sai e o desenho se aproxima. -->
+  <style>
+    .art { transform-origin: 400px 311px; transition: transform .35s ease; }
+    .line, .detail-line { transition: stroke-width .35s ease; }
+    .backdrop, .detail { transition: opacity .3s ease; }
+    @media (max-width: 300px) {
+      .line { stroke-width: 5.5; }
+      .detail-line { stroke-width: 3.6; }
+    }
+    @media (max-aspect-ratio: 5/4) {
+      .art { transform: scale(1.3); }
+      .line { stroke-width: 5.5; }
+      .detail-line { stroke-width: 3.6; }
+      .backdrop { opacity: 0; }
+    }
+    @media (max-width: 80px) {
+      .art { transform: scale(1.45); }
+      .line { stroke-width: 9; }
+      .detail-line { stroke-width: 6; }
+      .detail { opacity: 0; }
+    }
+  </style>
+  <svg width="100%" height="100%" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
+    <defs>
+    <radialGradient id="bg" cx="400" cy="290" r="520" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1e1a15"/>
+      <stop offset="1" stop-color="#0f0e0c"/>
+    </radialGradient>
+    <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <path d="M3.5 0V7" stroke="#e6c56b" stroke-width="1.6"/>
+    </pattern>
+    <pattern id="hatchBack" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+      <path d="M3.5 0V7" stroke="#e6c56b" stroke-width="1.4"/>
+    </pattern>
+    <pattern id="hatchFlat" width="7" height="6" patternUnits="userSpaceOnUse">
+      <path d="M0 3H7" stroke="#e6c56b" stroke-width="1.4"/>
+    </pattern>
+    <radialGradient id="groundFade" cx=".5" cy=".5" r=".5">
+      <stop offset=".3" stop-color="#fff"/>
+      <stop offset="1" stop-color="#000"/>
+    </radialGradient>
+    <mask id="groundMask" maskContentUnits="objectBoundingBox">
+      <rect width="1" height="1" fill="url(#groundFade)"/>
+    </mask>
+    <radialGradient id="candleGlow" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#e6c56b" stop-opacity=".28"/>
+      <stop offset="1" stop-color="#e6c56b" stop-opacity="0"/>
+    </radialGradient>
+    </defs>
+    <rect width="800" height="600" fill="url(#bg)"/>
+    <g class="art">
+    <g class="backdrop" opacity="0.34">
+      
+        <clipPath id="c0"><path d="M196 462L196 300A214 214 0 0 1 400 86.23A214 214 0 0 1 604 300L604 462L588 462L588 300A198 198 0 0 0 400 102.25A198 198 0 0 0 212 300L212 462Z"/></clipPath>
+        <g clip-path="url(#c0)">
+          <path d="M400 0H800V600H400Z" fill="url(#hatch)" opacity="0.6"/>
+        </g>
+      <g fill="none" stroke="#e6c56b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" class="detail-line">
+        <path d="M196 462L196 300A214 214 0 0 1 400 86.23A214 214 0 0 1 604 300L604 462"/>
+        <path d="M212 462L212 300A198 198 0 0 1 400 102.25A198 198 0 0 1 588 300L588 462"/>
+        <path d="M218.35 250.25L202.87 246.22M581.65 250.25L597.13 246.22M237.01 203.68L223.03 195.9M562.99 203.68L576.97 195.9M266.76 163.3L255.18 152.26M533.24 163.3L544.82 152.26M305.71 131.69L297.28 118.09M494.29 131.69L502.72 118.09M351.34 110.89L346.6 95.61M448.66 110.89L453.4 95.61M196 334L212 334M588 334L604 334M196 370L212 370M588 370L604 370M196 406L212 406M588 406L604 406M196 442L212 442M588 442L604 442"/>
+        <path d="M150 462H650"/>
+      </g>
+    </g>
+      <g transform="translate(22 -18)">
+      <ellipse cx="400" cy="452" rx="200" ry="14" fill="url(#hatchFlat)" opacity="0.55" mask="url(#groundMask)"/>
+
+      <!-- Peça de terreno -->
+      <path d="M400 326L530 380L400 434L270 380Z" fill="#1a1713"/>
+      <path d="M270 380L400 434L400 450L270 396Z" fill="#1a1713"/>
+      <path d="M400 434L530 380L530 396L400 450Z" fill="#1a1713"/>
+      
+        <clipPath id="c1"><path d="M270 380L400 434L400 450L270 396Z"/></clipPath>
+        <g clip-path="url(#c1)">
+          <path d="M270 380L400 434L400 450L270 396Z" fill="url(#hatch)" opacity="0.45"/>
+        </g>
+      
+        <clipPath id="c2"><path d="M400 434L530 380L530 396L400 450Z"/></clipPath>
+        <g clip-path="url(#c2)">
+          <path d="M400 434L530 380L530 396L400 450Z" fill="url(#hatch)" opacity="0.7"/>
+          <path d="M400 434L530 380L530 396L400 450Z" fill="url(#hatchBack)" opacity="0.5599999999999999"/>
+        </g>
+      <g class="detail" opacity="1">
+        <g fill="none" stroke="#e6c56b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" class="detail-line">
+          <path d="M322.1 401.6L452.1 347.6M347.9 412.4L477.9 358.4"/>
+        </g>
+        <path d="M335 407L465 353" fill="none" stroke="#e6c56b" stroke-width="1.8199999999999998" stroke-dasharray="7 9" stroke-linecap="round" opacity=".7" class="detail-line"/></g>
+      <g fill="none" stroke="#e6c56b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="line">
+        <path d="M400 326L530 380L400 434L270 380Z"/>
+        <path d="M270 380L400 434L400 450L270 396Z"/>
+        <path d="M400 434L530 380L530 396L400 450Z"/>
+      </g>
+
+      <!-- Torre -->
+      <path d="M321 270L321 362A24 9 0 0 0 369 362L369 270Z" fill="#1a1713"/>
+      
+        <clipPath id="c3"><path d="M321 270L321 362A24 9 0 0 0 369 362L369 270Z"/></clipPath>
+        <g clip-path="url(#c3)">
+          <path d="M353 200H400V380H353Z" fill="url(#hatch)" opacity="0.7"/>
+        </g>
+      <path d="M314 274L345 212L376 274A31 9 0 0 1 314 274Z" fill="#1a1713"/>
+      
+        <clipPath id="c4"><path d="M314 274L345 212L376 274A31 9 0 0 1 314 274Z"/></clipPath>
+        <g clip-path="url(#c4)">
+          <path d="M345 205L384 282H345Z" fill="url(#hatch)" opacity="0.8"/>
+          <path d="M345 205L384 282H345Z" fill="url(#hatchBack)" opacity="0.6400000000000001"/>
+        </g>
+      <g class="detail" opacity="1">
+        <path d="M341 322L341 307A4 4 0 0 1 349 307L349 322Z" fill="#e6c56b" opacity=".85"/></g>
+      <g fill="none" stroke="#e6c56b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="line">
+        <path d="M321 270L321 362A24 9 0 0 0 369 362L369 270Z"/>
+        <path d="M314 274L345 212L376 274A31 9 0 0 1 314 274Z"/>
+        <path d="M345 212L345 190"/>
+      </g>
+      <path d="M346 191L368 197.5L346 204Z" fill="#e6c56b"/>
+
+      <!-- Meeple -->
+      <path d="M440 281.8C450.4 281.8 458.2 289.6 458.2 300C458.2 306.5 455.6 311.7 451.7 315.6L492 328.6C502.4 332.5 502.4 346.8 492 349.4L466 354.6L486.8 393.6C489.4 400.1 485.5 404 479 404L455.6 404C450.4 404 447.8 401.4 446.5 396.2L440 378L433.5 396.2C432.2 401.4 429.6 404 424.4 404L401 404C394.5 404 390.6 400.1 393.2 393.6L414 354.6L388 349.4C377.6 346.8 377.6 332.5 388 328.6L428.3 315.6C424.4 311.7 421.8 306.5 421.8 300C421.8 289.6 429.6 281.8 440 281.8Z" fill="#1a1713"/>
+      
+        <clipPath id="c5"><path d="M440 281.8C450.4 281.8 458.2 289.6 458.2 300C458.2 306.5 455.6 311.7 451.7 315.6L492 328.6C502.4 332.5 502.4 346.8 492 349.4L466 354.6L486.8 393.6C489.4 400.1 485.5 404 479 404L455.6 404C450.4 404 447.8 401.4 446.5 396.2L440 378L433.5 396.2C432.2 401.4 429.6 404 424.4 404L401 404C394.5 404 390.6 400.1 393.2 393.6L414 354.6L388 349.4C377.6 346.8 377.6 332.5 388 328.6L428.3 315.6C424.4 311.7 421.8 306.5 421.8 300C421.8 289.6 429.6 281.8 440 281.8Z"/></clipPath>
+        <g clip-path="url(#c5)">
+          <path d="M449.1 276.6C456.9 294.8 453 313 455.6 331.2C458.2 352 453 378 449.1 406.6L505 406.6L505 276.6Z" fill="url(#hatch)" opacity="0.75"/>
+        </g>
+      <path d="M440 281.8C450.4 281.8 458.2 289.6 458.2 300C458.2 306.5 455.6 311.7 451.7 315.6L492 328.6C502.4 332.5 502.4 346.8 492 349.4L466 354.6L486.8 393.6C489.4 400.1 485.5 404 479 404L455.6 404C450.4 404 447.8 401.4 446.5 396.2L440 378L433.5 396.2C432.2 401.4 429.6 404 424.4 404L401 404C394.5 404 390.6 400.1 393.2 393.6L414 354.6L388 349.4C377.6 346.8 377.6 332.5 388 328.6L428.3 315.6C424.4 311.7 421.8 306.5 421.8 300C421.8 289.6 429.6 281.8 440 281.8Z" fill="none" stroke="#e6c56b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="line"/>
+
+      <!-- Dado -->
+      <path d="M262 388L296.6 408L262 428L227.4 408Z" fill="#1a1713"/>
+      <path d="M227.4 408L262 428L262 468L227.4 448Z" fill="#1a1713"/>
+      <path d="M262 428L296.6 408L296.6 448L262 468Z" fill="#1a1713"/>
+      
+        <clipPath id="c6"><path d="M227.4 408L262 428L262 468L227.4 448Z"/></clipPath>
+        <g clip-path="url(#c6)">
+          <path d="M227.4 408L262 428L262 468L227.4 448Z" fill="url(#hatch)" opacity="0.45"/>
+        </g>
+      
+        <clipPath id="c7"><path d="M262 428L296.6 408L296.6 448L262 468Z"/></clipPath>
+        <g clip-path="url(#c7)">
+          <path d="M262 428L296.6 408L296.6 448L262 468Z" fill="url(#hatch)" opacity="0.7"/>
+          <path d="M262 428L296.6 408L296.6 448L262 468Z" fill="url(#hatchBack)" opacity="0.5599999999999999"/>
+        </g>
+      <g fill="none" stroke="#e6c56b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="line">
+        <path d="M262 388L296.6 408L262 428L227.4 408Z"/>
+        <path d="M227.4 408L262 428L262 468L227.4 448Z"/>
+        <path d="M262 428L296.6 408L296.6 448L262 468Z"/>
+      </g>
+      <ellipse cx="262" cy="408" rx="7" ry="4" fill="#e6c56b"/>
+      <circle r="4.4" fill="#e6c56b" transform="matrix(0.866 0.5 0 1 237.8 426)"/>
+      <circle r="4.4" fill="#e6c56b" transform="matrix(0.866 0.5 0 1 251.6 450)"/>
+      <circle r="4.4" fill="#e6c56b" transform="matrix(0.866 -0.5 0 1 270.65 433)"/>
+      <circle r="4.4" fill="#e6c56b" transform="matrix(0.866 -0.5 0 1 279.3 438)"/>
+      <circle r="4.4" fill="#e6c56b" transform="matrix(0.866 -0.5 0 1 287.95 443)"/>
+      </g>
+    </g>
+  </svg>
+</svg>

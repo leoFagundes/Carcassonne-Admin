@@ -4,7 +4,7 @@ import { LuVegan } from "react-icons/lu";
 import DetailSheet from "@/components/showcase/detailSheet";
 import type { MenuItemType } from "@/types";
 
-const PLACEHOLDER_IMAGE = "/images/[oficial]-pattern-menu-image.png";
+const PLACEHOLDER_IMAGE = "/images/placeholder-menu.svg";
 
 /** Detalhe de um item do cardápio (gaveta no celular, cartão no computador). */
 export default function ItemSheet({

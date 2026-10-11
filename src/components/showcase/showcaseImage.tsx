@@ -21,10 +21,12 @@ export default function ShowcaseImage({
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  // Já estava no cache do navegador: aparece direto
+  // Já estava no cache do navegador: aparece direto. A imagem padrão é um SVG
+  // que se ajusta à caixa (sem tamanho próprio), então o naturalWidth dela é 0
   useEffect(() => {
     const image = imageRef.current;
-    if (image?.complete && image.naturalWidth > 0) setLoaded(true);
+    const isSvg = /\.svg($|\?)/.test(image?.currentSrc ?? "");
+    if (image?.complete && (image.naturalWidth > 0 || isSvg)) setLoaded(true);
   }, []);
 
   return (
