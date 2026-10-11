@@ -13,14 +13,19 @@ interface MultiDatePickerProps {
 }
 
 const calendarClassNames = {
+  base: "rounded-2xl",
+  headerWrapper: "bg-transparent",
+  gridHeader: "bg-transparent shadow-none",
   cell: "text-primary-gold",
   cellButton:
-    "hover:bg-dark-black cursor-pointer data-[selected=true]:bg-primary-gold data-[selected=true]:text-primary-black data-[selected=true]:font-semibold data-[outside-month=true]:text-gray-400 data-[unavailable=true]:line-through data-[unavailable=true]:opacity-40 data-[unavailable=true]:cursor-not-allowed",
+    "rounded-lg text-primary-white/85 hover:bg-primary-gold/10 hover:text-primary-gold cursor-pointer transition-colors data-[today=true]:text-primary-gold data-[today=true]:font-bold data-[selected=true]:bg-primary-gold data-[selected=true]:text-primary-black data-[selected=true]:font-semibold data-[outside-month=true]:text-gray-500 data-[unavailable=true]:line-through data-[unavailable=true]:opacity-40 data-[unavailable=true]:cursor-not-allowed",
   header: "bg-transparent",
   title: "text-primary-gold font-bold",
-  gridHeaderCell: "text-primary-gold font-semibold",
-  prevButton: "text-primary-gold hover:text-secondary-gold",
-  nextButton: "text-primary-gold hover:text-secondary-gold",
+  gridHeaderCell: "text-primary-gold/45 font-semibold text-[11px]",
+  prevButton:
+    "text-primary-gold rounded-full hover:bg-primary-gold/10 hover:text-secondary-gold",
+  nextButton:
+    "text-primary-gold rounded-full hover:bg-primary-gold/10 hover:text-secondary-gold",
   errorMessage: "text-primary-gold text-sm italic",
 };
 
@@ -57,7 +62,7 @@ export default function MultiDatePicker({
   return (
     <div className="flex flex-col items-center gap-2">
       {label && (
-        <span className="text-sm font-semibold text-primary-gold/70">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-gold/70">
           {label}
         </span>
       )}
@@ -66,7 +71,7 @@ export default function MultiDatePicker({
         value={cursorDate}
         onChange={handleCalendarClick}
         isDateUnavailable={(date) => isDisabled(date as CalendarDate)}
-        className="bg-secondary-black/30 shadow-card-light"
+        className="bg-primary-black/45 border border-primary-gold/15 shadow-[0_10px_28px_rgba(0,0,0,0.35)]"
         classNames={calendarClassNames}
       />
       <span className="text-[11px] text-primary-gold/40 italic text-center">

@@ -59,34 +59,48 @@ export default function InputImage({
     <div
       className={`relative flex flex-col items-center gap-2 text-primary-gold w-full ${width}`}
     >
-      {localPreview && (
-        <>
+      {localPreview ? (
+        // Prévia: passar o mouse mostra "Trocar"; o X fica no canto da foto
+        <div className={`group relative ${width}`}>
+          <img
+            src={localPreview}
+            alt="Pré-visualização"
+            className={`block object-cover rounded-xl border border-primary-gold/25 cursor-pointer w-[100px] h-[100px] shadow-[0_10px_28px_rgba(0,0,0,0.45)] ${width}`}
+            onClick={handleClick}
+          />
           <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-xl bg-primary-black/55 text-[11px] font-semibold text-primary-gold opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          >
+            <LuImagePlus size={18} />
+            Trocar
+          </div>
+          <button
+            type="button"
+            aria-label="Remover imagem"
             onClick={() => {
               setLocalPreview(undefined);
               if (onCloseImage) onCloseImage();
             }}
-            className="absolute right-2 top-2 rounded-full p-1 bg-primary-black/60 cursor-pointer border border-transparent hover:border-primary-gold/60 transition-all"
+            className="absolute right-1.5 top-1.5 z-10 flex items-center justify-center w-7 h-7 rounded-full border border-primary-gold/30 bg-primary-black/75 backdrop-blur-sm text-primary-gold/80 cursor-pointer transition-colors hover:border-invalid-color/60 hover:text-invalid-color"
           >
-            <LuX size={"16px"} />
-          </div>
-        </>
-      )}
-      {localPreview ? (
-        <img
-          src={localPreview}
-          alt="Pré-visualização"
-          className={`object-cover rounded-lg border cursor-pointer w-[100px] h-[100px] shadow-card ${width}`}
-          onClick={handleClick}
-        />
+            <LuX size={14} />
+          </button>
+        </div>
       ) : (
-        <div
-          className={`rounded-lg flex flex-col gap-2 items-center justify-center cursor-pointer border border-dashed p-3 ${width}`}
+        <button
+          type="button"
+          className={`group flex flex-col gap-2 items-center justify-center min-w-[180px] px-6 py-5 rounded-xl border border-dashed border-primary-gold/30 bg-primary-black/40 cursor-pointer transition-colors hover:border-primary-gold/60 hover:bg-primary-gold/[0.04] ${width}`}
           onClick={handleClick}
         >
-          <LuImagePlus size={"22px"} />
-          <span>Selecionar imagem</span>
-        </div>
+          <span className="flex items-center justify-center w-10 h-10 rounded-full border border-primary-gold/25 bg-primary-gold/10 text-primary-gold transition-transform duration-200 group-hover:scale-110">
+            <LuImagePlus size={18} />
+          </span>
+          <span className="text-sm font-semibold">Selecionar imagem</span>
+          <span className="text-[10px] text-primary-gold/40">
+            JPG, PNG ou foto do celular
+          </span>
+        </button>
       )}
       <input
         type="file"

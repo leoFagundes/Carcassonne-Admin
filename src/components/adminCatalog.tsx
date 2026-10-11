@@ -3,7 +3,15 @@
 import "@/components/showcase/showcase.css";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import type { IconType } from "react-icons";
-import { LuChevronDown, LuLayoutGrid, LuList, LuSearch, LuX } from "react-icons/lu";
+import {
+  LuChevronDown,
+  LuChevronLeft,
+  LuChevronRight,
+  LuLayoutGrid,
+  LuList,
+  LuSearch,
+  LuX,
+} from "react-icons/lu";
 import Tooltip from "@/components/Tooltip";
 
 // Peças das páginas de catálogo do admin (acervo e cardápio): busca,
@@ -145,6 +153,136 @@ export function ViewToggle({
   );
 }
 
+/**
+ * Faixa que rola de lado. No computador dá para segurar e arrastar com o
+ * mouse, rolar com a rodinha e usar as setinhas das pontas; as bordas
+ * esmaecem só do lado em que ainda há mais opções.
+ */
+function ScrollRow({ label, children }: { label: string; children: ReactNode }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+
+  useEffect(() => {
+    const row = rowRef.current;
+    if (!row) return;
+
+    const update = () =>
+      setEdges({
+        left: row.scrollLeft > 2,
+        right: row.scrollLeft + row.clientWidth < row.scrollWidth - 2,
+      });
+    update();
+    row.addEventListener("scroll", update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(row);
+
+    // Rodinha do mouse: rola a faixa; nas pontas, deixa a página rolar
+    const onWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+      const max = row.scrollWidth - row.clientWidth;
+      if (max <= 0) return;
+      if ((event.deltaY < 0 && row.scrollLeft <= 0) || (event.deltaY > 0 && row.scrollLeft >= max)) {
+        return;
+      }
+      event.preventDefault();
+      row.scrollLeft = Math.min(max, Math.max(0, row.scrollLeft + event.deltaY));
+    };
+    row.addEventListener("wheel", onWheel, { passive: false });
+
+    // Segurar e arrastar (só mouse — no toque a rolagem já é natural)
+    let drag: { x: number; left: number; pointerId: number; moved: boolean } | null = null;
+    const swallowClick = (event: MouseEvent) => {
+      event.stopPropagation();
+      event.preventDefault();
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse" || event.button !== 0) return;
+      drag = { x: event.clientX, left: row.scrollLeft, pointerId: event.pointerId, moved: false };
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const distance = event.clientX - drag.x;
+      if (!drag.moved) {
+        if (Math.abs(distance) < 5) return;
+        drag.moved = true;
+        row.setPointerCapture(event.pointerId);
+        row.dataset.dragging = "true";
+      }
+      row.scrollLeft = drag.left - distance;
+    };
+    const onPointerUp = (event: PointerEvent) => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const moved = drag.moved;
+      drag = null;
+      if (!moved) return;
+      delete row.dataset.dragging;
+      // O clique que vem logo depois do arrasto não seleciona a pílula
+      row.addEventListener("click", swallowClick, { capture: true, once: true });
+      window.setTimeout(() => row.removeEventListener("click", swallowClick, { capture: true }), 0);
+    };
+    row.addEventListener("pointerdown", onPointerDown);
+    row.addEventListener("pointermove", onPointerMove);
+    row.addEventListener("pointerup", onPointerUp);
+    row.addEventListener("pointercancel", onPointerUp);
+
+    return () => {
+      row.removeEventListener("scroll", update);
+      row.removeEventListener("wheel", onWheel);
+      row.removeEventListener("pointerdown", onPointerDown);
+      row.removeEventListener("pointermove", onPointerMove);
+      row.removeEventListener("pointerup", onPointerUp);
+      row.removeEventListener("pointercancel", onPointerUp);
+      observer.disconnect();
+    };
+  }, []);
+
+  const scrollBy = (direction: 1 | -1) =>
+    rowRef.current?.scrollBy({
+      left: direction * rowRef.current.clientWidth * 0.7,
+      behavior: "smooth",
+    });
+
+  const fade = (side: boolean) => (side ? "transparent 0, #000 28px" : "#000 0");
+  const mask = `linear-gradient(to right, ${fade(edges.left)}, ${
+    edges.right ? "#000 calc(100% - 28px), transparent 100%" : "#000 100%"
+  })`;
+
+  return (
+    <div className="relative min-w-0">
+      <div
+        ref={rowRef}
+        role="radiogroup"
+        aria-label={label}
+        className="flex gap-1.5 overflow-x-auto scrollbar-none cursor-grab data-[dragging=true]:cursor-grabbing data-[dragging=true]:select-none data-[dragging=true]:[&_*]:cursor-grabbing"
+        style={{ maskImage: mask, WebkitMaskImage: mask }}
+      >
+        {children}
+      </div>
+      {(
+        [
+          { side: "left", show: edges.left, direction: -1, Icon: LuChevronLeft },
+          { side: "right", show: edges.right, direction: 1, Icon: LuChevronRight },
+        ] as const
+      ).map(({ side, show, direction, Icon }) => (
+        <button
+          key={side}
+          type="button"
+          tabIndex={-1}
+          aria-label={side === "left" ? "Ver opções anteriores" : "Ver mais opções"}
+          onClick={() => scrollBy(direction)}
+          className={`absolute top-1/2 -translate-y-1/2 ${
+            side === "left" ? "-left-1" : "-right-1"
+          } hidden sm:flex items-center justify-center w-7 h-7 rounded-full border border-primary-gold/30 bg-secondary-black text-primary-gold/70 hover:text-primary-gold hover:border-primary-gold/60 shadow-card transition-opacity cursor-pointer ${
+            show ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          <Icon size={14} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export interface PillOption<T extends string> {
   value: T;
   label: string;
@@ -167,46 +305,44 @@ export function FilterPills<T extends string>({
   /** Muitas opções: rolam de lado em vez de quebrar linha. */
   scroll?: boolean;
 }) {
+  const pills = options.map(({ value: optionValue, label: optionLabel, count, icon: Icon }) => {
+    const active = optionValue === value;
+    return (
+      <button
+        key={optionValue}
+        type="button"
+        role="radio"
+        aria-checked={active}
+        onClick={() => onChange(optionValue)}
+        className={`flex items-center gap-1.5 h-8 px-3 shrink-0 rounded-full border text-xs whitespace-nowrap transition-colors cursor-pointer ${
+          active
+            ? "border-primary-gold/60 bg-primary-gold/15 text-primary-gold font-semibold"
+            : "border-primary-gold/15 text-primary-gold/60 hover:border-primary-gold/40 hover:text-primary-gold"
+        }`}
+      >
+        {Icon && <Icon size={12} />}
+        {optionLabel}
+        {count !== undefined && (
+          <span className={`tabular-nums ${active ? "text-primary-gold/70" : "text-primary-gold/35"}`}>
+            {count}
+          </span>
+        )}
+      </button>
+    );
+  });
+
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 min-w-0">
       <span className="sm:w-20 shrink-0 text-[10px] font-semibold uppercase tracking-widest text-primary-gold/40">
         {label}
       </span>
-      <div
-        role="radiogroup"
-        aria-label={label}
-        className={`flex gap-1.5 min-w-0 ${
-          scroll
-            ? "overflow-x-auto scrollbar-none [mask-image:linear-gradient(to_right,#000_92%,transparent)] pr-6"
-            : "flex-wrap"
-        }`}
-      >
-        {options.map(({ value: optionValue, label: optionLabel, count, icon: Icon }) => {
-          const active = optionValue === value;
-          return (
-            <button
-              key={optionValue}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => onChange(optionValue)}
-              className={`flex items-center gap-1.5 h-8 px-3 shrink-0 rounded-full border text-xs whitespace-nowrap transition-colors cursor-pointer ${
-                active
-                  ? "border-primary-gold/60 bg-primary-gold/15 text-primary-gold font-semibold"
-                  : "border-primary-gold/15 text-primary-gold/60 hover:border-primary-gold/40 hover:text-primary-gold"
-              }`}
-            >
-              {Icon && <Icon size={12} />}
-              {optionLabel}
-              {count !== undefined && (
-                <span className={`tabular-nums ${active ? "text-primary-gold/70" : "text-primary-gold/35"}`}>
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      {scroll ? (
+        <ScrollRow label={label}>{pills}</ScrollRow>
+      ) : (
+        <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1.5 min-w-0">
+          {pills}
+        </div>
+      )}
     </div>
   );
 }

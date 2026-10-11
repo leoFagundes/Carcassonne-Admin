@@ -432,6 +432,64 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(0.85) brightness(1.4);
 }
 
+/* ── Campos de formulário ──────────────────────────────────────────────────── */
+
+/* Rótulo que aparece em cima do campo quando ele é preenchido */
+.ui-float-label {
+  animation: ui-float-label 0.22s ease-out both;
+}
+
+@keyframes ui-float-label {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* Ícone que aparece/troca dentro de um campo (ex: checkbox com ícone) */
+.ui-pop {
+  animation: ui-pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes ui-pop {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+/* Preenchimento automático do navegador (login, cadastro): sem o fundo
+   azul/amarelo por cima do tema escuro */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--color-primary-white);
+  caret-color: var(--color-primary-gold);
+  transition: background-color 9999s ease-out 0s;
+}
+
+/* Listas de opções e controles nativos no tema escuro */
+select {
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-float-label,
+  .ui-pop {
+    animation: none;
+  }
+}
+
 /* Botões flutuantes do canto de baixo (cardápio, ludoteca). Com um tema
    ativo eles sobem um pouco, para não cobrir a muralha e as decorações do
    rodapé — e deslizam junto quando o tema muda em tempo real. */

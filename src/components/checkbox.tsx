@@ -1,4 +1,5 @@
-import React from "react";
+import React, { ReactNode } from "react";
+import { LuCheck } from "react-icons/lu";
 
 interface CheckboxType {
   checked: boolean;
@@ -7,6 +8,8 @@ interface CheckboxType {
   variant?: boolean;
   width?: string;
   withoutBackground?: boolean;
+  /** Ícone à direita, dentro do campo (ex: olho, destaque, vegano) */
+  icon?: ReactNode;
 }
 
 export default function Checkbox({
@@ -16,41 +19,65 @@ export default function Checkbox({
   variant = false,
   width = "w-auto",
   withoutBackground = false,
+  icon,
 }: CheckboxType) {
   return (
     <label
       htmlFor={label}
-      className={`cursor-pointer text-primary-gold relative flex items-center max-w-[400px] min-w-[200px] ${width} bg-primary-black/80 py-2 ${
-        variant && "px-3 sm:px-4"
-      } sm:py-3 rounded-sm text-sm  w-full ${
-        variant && "border border-primary-gold"
-      } ${withoutBackground && "!bg-transparent"}`}
+      className={`group relative flex items-center gap-3 max-w-[400px] min-w-[200px] ${width} w-full cursor-pointer select-none rounded-xl text-sm text-primary-gold transition-[border-color,background-color] duration-200 ${
+        withoutBackground
+          ? "bg-transparent"
+          : variant && checked
+            ? "bg-primary-gold/[0.07]"
+            : "bg-primary-black/55"
+      } ${
+        variant
+          ? `border px-3.5 py-2.5 sm:py-3 ${
+              checked
+                ? "border-primary-gold/50"
+                : "border-primary-gold/20 hover:border-primary-gold/40"
+            }`
+          : withoutBackground
+            ? "py-2"
+            : "px-3 py-2 sm:py-2.5"
+      }`}
     >
       <input
         name={label}
         id={label}
-        className="cursor-pointer peer appearance-none"
+        className="peer sr-only"
         type="checkbox"
         checked={checked}
         onChange={(e) => setChecked(e)}
       />
-      <span className="scale-75 absolute top-1/2 h-[2em] w-[2em] -translate-y-1/2 rounded-[0.25em] border-[1px] border-[#e6c56b]"></span>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="76"
-        height="86"
-        fill="none"
-        viewBox="0 0 76 86"
-        className="scale-75 absolute top-1/2 h-[2em] w-[2em] -translate-y-1/2 duration-500 ease-out [stroke-dasharray:100] [stroke-dashoffset:100] peer-checked:[stroke-dashoffset:0]"
+      {/* Caixinha: fica dourada com o check quando marcada */}
+      <span
+        aria-hidden="true"
+        className="flex items-center justify-center w-5 h-5 shrink-0 rounded-md border border-primary-gold/40 bg-primary-black/60 transition-all duration-200 group-hover:border-primary-gold/75 peer-checked:bg-primary-gold peer-checked:border-primary-gold peer-focus-visible:shadow-[0_0_0_3px_rgba(230,197,107,0.25)]"
       >
-        <path
-          stroke="#e6c56b"
-          pathLength="100"
-          strokeWidth="4px"
-          d="M65.988 12.645c-4.136-3.922-9.554-6.9-15.047-8.398C45.855 2.86 38.462-.12 33.096 1.797 26.002 4.331 20.525 11.961 15.6 17.193 2.02 31.623-6.386 59.79 12.101 74.58c8.711 6.97 18.19 9.184 29.043 9.798 24.117 1.365 28.693-3.588 32.542-27.643.772-4.83 3.15-16.094.7-20.995-4.678-9.354-22.35-11.08-31.143-7.698-9.911 3.812-18.558 14.775-20.295 25.193-1.45 8.707 5.447 10.548 12.947 10.848 6.772.27 10.148 1.421 10.148-5.949 0-5.412.09-7.166-2.1-11.547"
-        ></path>
-      </svg>
-      <span className="ml-8">{label}</span>
+        <LuCheck
+          size={13}
+          strokeWidth={3.5}
+          className={`text-primary-black transition-transform duration-200 ${
+            checked ? "scale-100" : "scale-0"
+          }`}
+        />
+      </span>
+      <span className="leading-snug">{label}</span>
+      {icon && (
+        // key: reanima quando marca/desmarca (o ícone pode trocar junto)
+        <span
+          key={String(checked)}
+          aria-hidden="true"
+          className={`ui-pop ml-auto flex items-center justify-center shrink-0 w-7 h-7 -my-1 rounded-lg transition-colors ${
+            checked
+              ? "bg-primary-gold/15 text-primary-gold"
+              : "text-primary-gold/40"
+          }`}
+        >
+          {icon}
+        </span>
+      )}
     </label>
   );
 }

@@ -72,7 +72,7 @@ export default function OptionsInput({
       <>
         {parts.map((part, i) =>
           part.toLowerCase() === search.toLowerCase() ? (
-            <span key={i} className="text-secondary-gold">
+            <span key={i} className="text-primary-gold font-semibold">
               {part}
             </span>
           ) : (
@@ -84,40 +84,49 @@ export default function OptionsInput({
   }
 
   return (
-    <div>
+    // Com label, o botão de vírgula é mais alto que um label comum: o mt
+    // evita que ele encoste no campo de cima
+    <div className={label ? "mt-2.5" : ""}>
       <div
-        className={`relative flex items-center max-w-[400px] min-w-[200px] ${width} bg-primary-black/80 py-2 px-3 sm:py-3 sm:px-4 rounded-sm text-sm gap-2 w-full shadow-card ${
-          variant && "border border-primary-gold"
+        className={`group relative flex items-center max-w-[400px] min-w-[200px] ${width} w-full rounded-xl border text-sm gap-2 py-2 pl-3 pr-2 sm:pl-3.5 bg-primary-black/55 transition-[border-color,background-color,box-shadow] duration-200 hover:border-primary-gold/40 focus-within:border-primary-gold/70 focus-within:bg-primary-black/80 focus-within:shadow-[0_0_0_3px_rgba(230,197,107,0.12)] ${
+          variant ? "border-primary-gold/30" : "border-primary-gold/15"
         }`}
       >
         {label && (
-          <div className="absolute bottom-full left-1 text-xs text-gradient-gold font-semibold flex items-center gap-2">
-            <span>{label}</span>
-            <label className="flex items-center gap-1 cursor-pointer text-[10px]">
-              {useCommaSeparator && (
-                <div
-                  className="flex items-center gap-1 border-transparent border-x hover:border-primary-gold px-1 rounded-sm"
-                  onClick={() => setUseCommaSeparator(false)}
-                >
-                  <LuCheck size={12} />
-                  <span>vírgula habilitada</span>
-                </div>
-              )}
-              {!useCommaSeparator && (
-                <div
-                  className="flex items-center gap-1 border-transparent border-x hover:border-primary-gold px-1 rounded-sm"
-                  onClick={() => setUseCommaSeparator(true)}
-                >
-                  <LuX size={12} />
-                  <span>vírgula desabilitada</span>
-                </div>
-              )}
-            </label>
+          <div className="absolute bottom-[calc(100%+5px)] left-1 flex items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-gold/70">
+              {label}
+            </span>
+            {/* Separar por vírgula: liga/desliga */}
+            <button
+              type="button"
+              onClick={() => setUseCommaSeparator(!useCommaSeparator)}
+              title={
+                useCommaSeparator
+                  ? "Vírgula separa os itens — clique para desligar"
+                  : "Vírgula faz parte do texto — clique para ligar"
+              }
+              className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[10px] leading-none transition-colors cursor-pointer ${
+                useCommaSeparator
+                  ? "border-primary-gold/35 text-primary-gold/70 hover:border-primary-gold/60"
+                  : "border-primary-gold/15 text-primary-gold/40 hover:border-primary-gold/40"
+              }`}
+            >
+              {useCommaSeparator ? <LuCheck size={10} /> : <LuX size={10} />}
+              {useCommaSeparator ? "vírgula habilitada" : "vírgula desabilitada"}
+            </button>
           </div>
         )}
         <input
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          // Enter também adiciona o que foi digitado
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              sendValueToList();
+            }
+          }}
           type="text"
           placeholder={placeholder}
           onFocus={() => setInFocus(true)}
@@ -126,20 +135,28 @@ export default function OptionsInput({
               setInFocus(false);
             }, 150)
           }
-          className="px-1 w-full h-full rounded-md text-white placeholder:text-primary-gold/60 outline-none bg-transparent"
+          className="w-full h-full py-0.5 sm:py-1 text-primary-white placeholder:text-primary-gold/35 caret-primary-gold outline-none bg-transparent"
         />
-        <LuSendHorizontal
+        <button
+          type="button"
           onClick={() => sendValueToList()}
-          size={"20px"}
-          className="cursor-pointer"
-        />
+          aria-label="Adicionar"
+          title="Adicionar (ou aperte Enter)"
+          className={`flex items-center justify-center shrink-0 w-8 h-8 rounded-lg border transition-colors cursor-pointer ${
+            value.trim()
+              ? "border-primary-gold/50 bg-primary-gold/15 text-primary-gold hover:bg-primary-gold/25"
+              : "border-transparent text-primary-gold/35 hover:text-primary-gold/70"
+          }`}
+        >
+          <LuSendHorizontal size={16} />
+        </button>
         {filteredOptions.length > 0 &&
           inFocus &&
           (!value.includes(",") || useCommaSeparator) && (
-            <div className="flex flex-col gap-2 max-h-[120px] overflow-y-scroll absolute top-full z-50 border w-full left-0 rounded shadow-card p-2 bg-primary-black">
+            <div className="absolute top-[calc(100%+6px)] left-0 z-50 flex flex-col gap-0.5 w-full max-h-[180px] overflow-y-auto p-1 rounded-xl border border-primary-gold/25 bg-secondary-black/95 backdrop-blur-md shadow-[0_14px_36px_rgba(0,0,0,0.55)]">
               {filteredOptions.map((option, index) => (
                 <div
-                  className="py-1 px-2 rounded-sm border border-dashed cursor-pointer hover:text-secondary-gold transition-all duration-200 ease-in"
+                  className="px-3 py-2 rounded-lg text-sm text-primary-gold/75 cursor-pointer hover:bg-primary-gold/10 hover:text-primary-gold transition-colors"
                   key={index}
                   onClick={() => {
                     setValue(option);
@@ -153,20 +170,26 @@ export default function OptionsInput({
       </div>
       {values && values.length > 0 && (
         <div
-          className={`flex gap-4 flex-wrap border border-t-0 rounded p-2 w-full max-h-[120px] overflow-y-scroll ${width}`}
+          className={`flex gap-1.5 flex-wrap mt-2 w-full max-h-[120px] overflow-y-auto ${width}`}
         >
           {values.map((value, index) => (
-            <div
+            <button
+              type="button"
               key={index}
               onClick={() => removeValueFromList(index)}
-              className="hover:text-invalid-color cursor-pointer transition-all duration-100 ease-in flex items-center gap-1 border-dashed border rounded py-1 px-2"
+              title="Clique para remover"
+              className="group/chip flex items-center gap-1.5 rounded-full border border-primary-gold/25 bg-primary-gold/[0.07] py-1 pl-2.5 pr-1.5 text-xs text-primary-gold/85 cursor-pointer transition-colors hover:border-invalid-color/50 hover:bg-invalid-color/10 hover:text-invalid-color"
             >
               <span>
-                {withIndex && `${index + 1}- `}
+                {withIndex && (
+                  <span className="text-primary-gold/45 group-hover/chip:text-invalid-color/70">
+                    {index + 1}.{" "}
+                  </span>
+                )}
                 {value}
               </span>
-              <LuX size={"16px"} className="min-w-[16px]" />
-            </div>
+              <LuX size={12} className="shrink-0 opacity-60 group-hover/chip:opacity-100" />
+            </button>
           ))}
         </div>
       )}

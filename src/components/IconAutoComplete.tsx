@@ -42,9 +42,9 @@ export default function IconAutocomplete({ value, onChange }: Props) {
       />
 
       {open && search && (
-        <div className="absolute top-[100%] mt-2 w-full max-h-60 overflow-y-auto bg-black border rounded z-[999]">
+        <div className="absolute top-[calc(100%+6px)] w-full max-h-60 overflow-y-auto p-1 flex flex-col gap-0.5 rounded-xl border border-primary-gold/25 bg-secondary-black/95 backdrop-blur-md shadow-[0_14px_36px_rgba(0,0,0,0.55)] z-[999]">
           {filtered.length === 0 && (
-            <div className="p-2 text-sm text-gray-400">
+            <div className="px-3 py-2 text-sm text-primary-gold/40">
               Nenhum ícone encontrado
             </div>
           )}
@@ -60,9 +60,9 @@ export default function IconAutocomplete({ value, onChange }: Props) {
                   setSearch(name);
                   setOpen(false);
                 }}
-                className="flex items-center gap-2 p-2 hover:bg-white/10 cursor-pointer"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-primary-gold/75 hover:bg-primary-gold/10 hover:text-primary-gold cursor-pointer transition-colors"
               >
-                <Icon size={18} />
+                <Icon size={18} className="shrink-0" />
                 <span className="text-sm">{name}</span>
               </div>
             );

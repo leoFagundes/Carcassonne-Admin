@@ -296,16 +296,14 @@ export default function MenuForms({
               }
               variant
               label={`${localItem.isVisible ? "Visível" : "Invisível"}`}
+              icon={
+                localItem.isVisible ? (
+                  <LuEye size={"16px"} />
+                ) : (
+                  <LuEyeClosed size={"16px"} />
+                )
+              }
             />
-            {localItem.isVisible ? (
-              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
-                <LuEye size={"16px"} />
-              </div>
-            ) : (
-              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
-                <LuEyeClosed size={"16px"} />
-              </div>
-            )}
           </div>
           <div className="relative">
             <Checkbox
@@ -318,12 +316,8 @@ export default function MenuForms({
               }
               variant
               label={`Está em destaque: ${localItem.isFocus ? "Sim" : "Não"}`}
+              icon={localItem.isFocus && <LuSparkles size={"16px"} />}
             />
-            {localItem.isFocus && (
-              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
-                <LuSparkles size={"16px"} />
-              </div>
-            )}
           </div>
           <div className="relative">
             <Checkbox
@@ -336,12 +330,8 @@ export default function MenuForms({
               }
               variant
               label={`Item ${localItem.isVegan ? "" : "não"} vegano`}
+              icon={localItem.isVegan && <LuVegan size={"16px"} />}
             />
-            {localItem.isVegan && (
-              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
-                <LuVegan size={"16px"} />
-              </div>
-            )}
           </div>
 
           <div className="flex flex-col gap-1 border p-1 rounded shadow-card border-dashed border-primary-gold/20">

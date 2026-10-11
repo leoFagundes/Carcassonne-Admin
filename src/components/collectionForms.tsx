@@ -281,12 +281,8 @@ export default function CollectionForms({
               }
               variant
               label={`Jogo ${localItem.featured ? "é" : "não é"} destaque`}
+              icon={localItem.featured && <LuSparkles size={"16px"} />}
             />
-            {localItem.featured && (
-              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
-                <LuSparkles size={"16px"} />
-              </div>
-            )}
           </div>
           <div className="relative">
             <Checkbox
@@ -299,16 +295,14 @@ export default function CollectionForms({
               }
               variant
               label={`${localItem.isVisible ? "Visível" : "Invisível"}`}
+              icon={
+                localItem.isVisible ? (
+                  <LuEye size={"16px"} />
+                ) : (
+                  <LuEyeClosed size={"16px"} />
+                )
+              }
             />
-            {localItem.isVisible ? (
-              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
-                <LuEye size={"16px"} />
-              </div>
-            ) : (
-              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
-                <LuEyeClosed size={"16px"} />
-              </div>
-            )}
           </div>
           <div className="relative">
             <Checkbox
@@ -325,12 +319,8 @@ export default function CollectionForms({
                   ? "Jogo está à venda"
                   : "Jogo não está à venda"
               }`}
+              icon={localItem.isForSale && <LuDollarSign size={"16px"} />}
             />
-            {localItem.isForSale && (
-              <div className="absolute -bottom-2 -right-2 p-1 bg-primary-black">
-                <LuDollarSign size={"16px"} />
-              </div>
-            )}
           </div>
           {localItem.isForSale && (
             <Input

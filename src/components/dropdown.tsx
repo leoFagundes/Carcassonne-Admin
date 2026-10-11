@@ -1,5 +1,5 @@
 import React from "react";
-import { IoIosArrowDown } from "react-icons/io";
+import { LuChevronDown } from "react-icons/lu";
 
 interface DropdownType {
   options: string[];
@@ -22,17 +22,17 @@ export default function Dropdown({
   width = "w-auto",
 }: DropdownType) {
   return (
-    <div className={` relative max-w-[400px] min-w-[200px] ${width} w-full`}>
+    <div className={`relative max-w-[400px] min-w-[200px] ${width} w-full`}>
       {label && value && (
-        <span className="absolute bottom-full left-1 text-xs text-gradient-gold font-semibold">
+        <span className="ui-float-label absolute bottom-[calc(100%+5px)] left-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-gold/70 pointer-events-none">
           {label}
         </span>
       )}
 
       <select
-        className={`cursor-pointer appearance-none flex items-center w-full outline-none text-primary-gold bg-primary-black py-2 px-3 sm:py-3 sm:px-4 rounded-sm text-sm gap-2 shadow-card ${
-          variant && "border border-primary-gold"
-        }`}
+        className={`peer cursor-pointer appearance-none w-full outline-none rounded-xl border bg-primary-black text-sm py-2.5 sm:py-3 pl-3 sm:pl-3.5 pr-10 shadow-card transition-[border-color,box-shadow] duration-200 hover:border-primary-gold/40 focus:border-primary-gold/70 focus:shadow-[0_0_0_3px_rgba(230,197,107,0.12)] [&>option]:bg-secondary-black [&>option]:text-primary-white ${
+          value ? "text-primary-white" : "text-primary-gold/45"
+        } ${variant ? "border-primary-gold/30" : "border-primary-gold/15"}`}
         value={value}
         onChange={(e) => setValue(e)}
       >
@@ -43,9 +43,10 @@ export default function Dropdown({
           </option>
         ))}
       </select>
-      <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-primary-gold">
-        <IoIosArrowDown />
-      </div>
+      <LuChevronDown
+        size={16}
+        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-primary-gold/50 transition-colors peer-hover:text-primary-gold/80 peer-focus:text-primary-gold"
+      />
     </div>
   );
 }

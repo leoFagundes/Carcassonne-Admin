@@ -1,7 +1,7 @@
 "use client";
 
 import React, { ComponentProps, ReactNode, useState } from "react";
-import { FiEye, FiEyeOff } from "react-icons/fi";
+import { LuEye, LuEyeOff } from "react-icons/lu";
 
 interface InputProps extends ComponentProps<"input"> {
   value: string;
@@ -36,6 +36,8 @@ export default function Input({
 }: InputProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [inFocus, setInFocus] = useState(false);
+  // Foco/saída de quem usa o campo também são chamados (ex: abrir sugestões)
+  const { onFocus, onBlur, ...inputProps } = props;
 
   const filteredOptions =
     options?.filter((option) =>
@@ -49,7 +51,7 @@ export default function Input({
       <>
         {parts.map((part, i) =>
           part.toLowerCase() === search.toLowerCase() ? (
-            <span key={i} className="text-secondary-gold">
+            <span key={i} className="text-primary-gold font-semibold">
               {part}
             </span>
           ) : (
@@ -62,57 +64,74 @@ export default function Input({
 
   return (
     <div
-      className={`relative flex items-center max-w-[400px]  ${width} bg-primary-black/80 ${
-        smallInput ? "py-[5px] px-2" : "py-2 sm:py-3 px-3 sm:px-4 min-w-[200px]"
-      }   rounded-sm text-sm gap-2 w-full shadow-card ${
-        variant && "border border-primary-gold"
+      className={`group relative flex gap-2.5 w-full max-w-[400px] ${width} rounded-xl border text-sm bg-primary-black/55 transition-[border-color,background-color,box-shadow] duration-200 hover:border-primary-gold/40 focus-within:border-primary-gold/70 focus-within:bg-primary-black/80 focus-within:shadow-[0_0_0_3px_rgba(230,197,107,0.12)] ${
+        variant ? "border-primary-gold/30" : "border-primary-gold/15"
+      } ${
+        smallInput
+          ? "py-[5px] px-2.5"
+          : "py-2.5 sm:py-3 px-3 sm:px-3.5 min-w-[200px]"
       } ${multiline ? "items-start" : "items-center"}`}
     >
       {label && value && (
-        <span className="absolute bottom-full left-1 text-xs text-gradient-gold font-semibold">
+        <span className="ui-float-label absolute bottom-[calc(100%+5px)] left-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-gold/70 pointer-events-none">
           {label}
         </span>
       )}
-      {icon && icon}
+      {icon && (
+        <span
+          className={`flex shrink-0 text-primary-gold/45 transition-colors group-focus-within:text-primary-gold ${
+            multiline ? "mt-0.5" : ""
+          }`}
+        >
+          {icon}
+        </span>
+      )}
       {multiline ? (
         <textarea
           {...(props as ComponentProps<"textarea">)}
           rows={rows}
-          className="px-1 w-full h-full rounded-md text-white placeholder:text-primary-gold/60 outline-none resize-none bg-transparent"
+          className="w-full h-full text-primary-white placeholder:text-primary-gold/35 caret-primary-gold outline-none resize-none bg-transparent leading-relaxed"
           value={value}
           onChange={(e) => setValue(e)}
           placeholder={placeholder}
         />
       ) : (
         <input
-          {...props}
+          {...inputProps}
           autoComplete="off"
-          className="px-1 w-full h-full rounded-md text-white placeholder:text-primary-gold/60 outline-none bg-transparent"
+          className="w-full h-full text-primary-white placeholder:text-primary-gold/35 caret-primary-gold outline-none bg-transparent"
           value={value}
           onChange={(e) => setValue(e)}
           placeholder={placeholder}
-          onFocus={() => setInFocus(true)}
-          onBlur={() =>
+          onFocus={(e) => {
+            setInFocus(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
             setTimeout(() => {
               setInFocus(false);
-            }, 150)
-          }
+            }, 150);
+            onBlur?.(e);
+          }}
           type={isPasswordVisible ? "text" : type}
         />
       )}
       {!multiline && type === "password" && (
-        <div
-          className="cursor-pointer text-primary-gold"
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label={isPasswordVisible ? "Esconder a senha" : "Mostrar a senha"}
+          className="flex shrink-0 cursor-pointer text-primary-gold/50 hover:text-primary-gold transition-colors"
           onClick={() => setIsPasswordVisible(!isPasswordVisible)}
         >
-          {isPasswordVisible ? <FiEye /> : <FiEyeOff />}
-        </div>
+          {isPasswordVisible ? <LuEye size={16} /> : <LuEyeOff size={16} />}
+        </button>
       )}
       {filteredOptions.length > 0 && !options?.includes(value) && inFocus && (
-        <div className="flex flex-col gap-2 max-h-[120px] overflow-y-scroll absolute top-full z-50 border w-full left-0 rounded shadow-card p-2 bg-primary-black">
+        <div className="absolute top-[calc(100%+6px)] left-0 z-50 flex flex-col gap-0.5 w-full max-h-[180px] overflow-y-auto p-1 rounded-xl border border-primary-gold/25 bg-secondary-black/95 backdrop-blur-md shadow-[0_14px_36px_rgba(0,0,0,0.55)]">
           {filteredOptions.map((option, index) => (
             <div
-              className="py-1 px-2 rounded-sm border border-dashed cursor-pointer hover:text-secondary-gold transition-all duration-200 ease-in"
+              className="px-3 py-2 rounded-lg text-sm text-primary-gold/75 cursor-pointer hover:bg-primary-gold/10 hover:text-primary-gold transition-colors"
               key={index}
               onClick={() =>
                 setValue({
