@@ -7,6 +7,7 @@ import { HEART_COLORS } from "../palettes";
 import { RoseWreathArt, WallArt } from "../art";
 import { GarlandRow } from "../rows";
 import { Ink } from "../ink";
+import { EmblemArt, Line, Part } from "../emblemKit";
 
 const look: BandLook = {
   particle: "heart",
@@ -19,6 +20,7 @@ const look: BandLook = {
     </div>
   ),
   cornerRight: <Ink icon={GiHeartWings} tone="rose" coarse />,
+  emblem: <Emblem />,
   footer: (width) => (
     <>
       <div className="absolute left-0 right-0 bottom-0 h-[22px]">
@@ -77,5 +79,23 @@ export function Thumbnail() {
         <Ink icon={GiLockedHeart} />
       </div>
     </ThumbFrame>
+  );
+}
+
+/** Selo da versão minimalista (cabeçalho do cardápio): gravura com hachura. */
+function Emblem() {
+  return (
+    <EmblemArt hatch="#ff9eb5">
+      {/* Flecha atravessando o coração: a haste passa por trás dele */}
+      <Line d="M6 41L42 7" width={1.6} />
+      <Line d="M6 41L4.6 36.4M6 41L10.6 42.4M8.6 38.6L7.2 34M8.6 38.6L13.2 40" width={1.1} />
+      <Part
+        d="M24 40C12.5 31.5 7.5 24.5 7.5 17.5C7.5 11.5 12 7.5 17 7.5C20.2 7.5 22.6 9.3 24 11.8C25.4 9.3 27.8 7.5 31 7.5C36 7.5 40.5 11.5 40.5 17.5C40.5 24.5 35.5 31.5 24 40Z"
+        shade="M29 4C34.5 14 34 28 25 44L46 44L46 4Z"
+      >
+        <Line d="M11.8 15.6C12.2 13 14.2 11.4 16.8 11.2" width={1} opacity={0.75} />
+      </Part>
+      <Part d="M43 6L35.8 8.4L40.6 13.2Z" line={1.2} />
+    </EmblemArt>
   );
 }

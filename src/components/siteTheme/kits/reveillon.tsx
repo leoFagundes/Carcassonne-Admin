@@ -6,6 +6,32 @@ import { AccessorySlot, ThumbFrame, THUMB_WIDTH, type AccessoryPlacement } from 
 import { GOLD_GLITTER_COLORS } from "../palettes";
 import { FireworkBurstArt, HangingStarArt, WallArt } from "../art";
 import { Ink } from "../ink";
+import { Dots, EmblemArt, Light, Line, Part, place, rotatePoint, star } from "../emblemKit";
+
+// Taça de champanhe em volta da origem; duas, inclinadas, brindando
+const BOWL = "M-5 -17L5 -17L4.2 -3C3.8 0.5 2 2 0 2C-2 2 -3.8 0.5 -4.2 -3Z";
+const FLUTES = (
+  [
+    [16, 18],
+    [32, -18],
+  ] as const
+).map(([x, degrees]) => ({
+  degrees,
+  bowl: place(BOWL, x, 28, degrees),
+  liquid: place("M-7 -10.5L7 -10.5L7 4L-7 4Z", x, 28, degrees),
+  stem: place("M0 2L0 13", x, 28, degrees),
+  base: place("M-5.2 13.6L5.2 13.6", x, 28, degrees),
+  bubbles: (
+    [
+      [-1.5, -7],
+      [1.8, -4],
+      [-0.6, -1.5],
+    ] as const
+  ).map(([bx, by]) => {
+    const [rx, ry] = rotatePoint(bx, by, degrees);
+    return [rx + x, ry + 28] as [number, number];
+  }),
+}));
 
 const look: BandLook = {
   particle: "glitter",
@@ -14,6 +40,7 @@ const look: BandLook = {
   sideStrip: "stars",
   cornerLeft: <Ink icon={GiRingingBell} coarse />,
   cornerRight: <FireworkBurstArt />,
+  emblem: <Emblem />,
   footer: (width) => (
     <>
       <div className="absolute left-[8%] top-[4%] w-[26%] st-twinkle">
@@ -79,5 +106,25 @@ export function Thumbnail() {
         <Ink icon={GiGlassCelebration} />
       </div>
     </ThumbFrame>
+  );
+}
+
+/** Selo da versão minimalista (cabeçalho do cardápio): gravura com hachura. */
+function Emblem() {
+  return (
+    <EmblemArt hatch="#f7e7b4">
+      {FLUTES.map((flute) => (
+        <g key={flute.degrees}>
+          <Line d={flute.stem} width={1.5} />
+          <Line d={flute.base} width={1.8} />
+          <Part d={flute.bowl} shade={flute.liquid} line={1.5}>
+            <Dots points={flute.bubbles} r={0.7} color="#fff3d0" />
+          </Part>
+        </g>
+      ))}
+      {/* Brilho do brinde */}
+      <Light d={star(24, 6.6, 4.4, 4, 0.32)} color="#fff3d0" />
+      <Dots points={[[17.5, 6], [30.5, 5.4], [33, 9.6]]} r={0.8} color="#fff3d0" />
+    </EmblemArt>
   );
 }

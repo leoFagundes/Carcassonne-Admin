@@ -20,6 +20,8 @@ export interface BandLook {
   stripColors?: string[];
   cornerLeft: ReactNode;
   cornerRight: ReactNode;
+  /** Símbolo do tema no selo do cabeçalho (versão minimalista). */
+  emblem: ReactNode;
   /** Cena pequena no pé do menu lateral (recebe a largura do menu). */
   footer: (width: number) => ReactNode;
 }
@@ -63,7 +65,12 @@ export function BandFrame({ look, variant }: { look: BandLook; variant: BandVari
           />
         )}
         {isHeader ? (
-          !minimal && (
+          minimal ? (
+            // Selo com o símbolo do tema no canto, ao lado do título
+            <div className="st-band-emblem">
+              <div className="st-band-emblem-art">{look.emblem}</div>
+            </div>
+          ) : (
             <>
               <div className="st-band-corner st-band-corner-left">{look.cornerLeft}</div>
               <div className="st-band-corner st-band-corner-right">{look.cornerRight}</div>

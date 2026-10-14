@@ -7,6 +7,7 @@ import { CARNIVAL_COLORS, CONFETTI_COLORS } from "../palettes";
 import { SerpentineCurlArt, WallArt } from "../art";
 import { OrnamentStrip } from "../strips";
 import { Ink } from "../ink";
+import { EMBLEM_LINE, EmblemArt, Light, Line, Part } from "../emblemKit";
 
 const look: BandLook = {
   particle: "confetti",
@@ -20,6 +21,7 @@ const look: BandLook = {
     </div>
   ),
   cornerRight: <Ink icon={GiTambourine} coarse />,
+  emblem: <Emblem />,
   footer: (width) => (
     <>
       <div className="absolute left-0 right-0 bottom-0 h-[22px]">
@@ -75,5 +77,31 @@ export function Thumbnail() {
         <Ink icon={GiDramaMasks} style={{ fill: "#19c3b2", fillOpacity: 0.8 }} />
       </div>
     </ThumbFrame>
+  );
+}
+
+/** Selo da versão minimalista (cabeçalho do cardápio): gravura com hachura. */
+function Emblem() {
+  return (
+    <EmblemArt hatch="#ff3ea5">
+      <Line d="M35.5 30.5L41.5 42" width={2.2} />
+      {/* Plumas saindo da têmpora esquerda, abertas em leque */}
+      <Part d="M12 18.6C7 17.6 3.2 14 2.4 8.6C6.8 9.6 10.6 13 13.6 17.6Z" shade="M0 12L14 12L14 20L0 20Z" line={1.3}>
+        <Line d="M12.6 17.9C9 15.6 6 12.6 3.8 9.6" width={0.8} opacity={0.85} />
+      </Part>
+      <Part d="M14.6 17.6C10.6 14.8 8.4 10.2 9.2 4.6C12.8 7.2 15.2 11.6 16.4 17.2Z" shade="M12 9L18 9L18 19L12 19Z" line={1.3}>
+        <Line d="M15.4 17.2C13 13.8 11.2 9.8 10.2 6" width={0.8} opacity={0.85} />
+      </Part>
+      <Part
+        d="M7 19C12 16 18 17 24 20.5C30 17 36 16 41 19C41.5 27 36.5 32 30.5 31C27.5 30.5 25.5 28.5 24 27C22.5 28.5 20.5 30.5 17.5 31C11.5 32 6.5 27 7 19Z"
+        shade="M0 25.5C10 27 38 27 48 24.5L48 48L0 48Z"
+      >
+        <Line d="M9.6 21.2C10.8 19.6 13 19.2 14.2 20.2" width={0.9} opacity={0.85} />
+        <Line d="M38.4 21.2C37.2 19.6 35 19.2 33.8 20.2" width={0.9} opacity={0.85} />
+      </Part>
+      <path d="M12.5 23C14.5 20.8 18.6 20.8 20.6 23.4C18.6 25.8 14.5 25.8 12.5 23Z" fill="#0b0907" stroke={EMBLEM_LINE} strokeWidth={1.1} />
+      <path d="M35.5 23C33.5 20.8 29.4 20.8 27.4 23.4C29.4 25.8 33.5 25.8 35.5 23Z" fill="#0b0907" stroke={EMBLEM_LINE} strokeWidth={1.1} />
+      <Light d="M24 18.4L25.5 20.4L24 22.4L22.5 20.4Z" color="#ff7ac0" />
+    </EmblemArt>
   );
 }

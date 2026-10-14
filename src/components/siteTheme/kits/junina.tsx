@@ -7,6 +7,7 @@ import { CHITA_COLORS, EMBER_COLORS } from "../palettes";
 import { PaperBalloonArt, WallArt } from "../art";
 import { OrnamentStrip } from "../strips";
 import { Ink } from "../ink";
+import { Dots, EmblemArt, Light, Line, Part, place } from "../emblemKit";
 
 /** Fogueira com a luz tremulando atrás das chamas. */
 function Campfire({ coarse = false }: { coarse?: boolean }) {
@@ -17,6 +18,16 @@ function Campfire({ coarse = false }: { coarse?: boolean }) {
     </div>
   );
 }
+
+// Tora de lenha em volta da origem; duas, cruzadas, debaixo da chama
+const LOG =
+  "M-15 -3L15 -3C16.7 -3 18 -1.7 18 0C18 1.7 16.7 3 15 3L-15 3C-16.7 3 -18 1.7 -18 0C-18 -1.7 -16.7 -3 -15 -3Z";
+const LOGS = [16, -16].map((degrees) => ({
+  degrees,
+  d: place(LOG, 24, 37.5, degrees),
+  shade: place("M-20 0.4L20 0.4L20 5L-20 5Z", 24, 37.5, degrees),
+  grain: place("M-12 -0.6L9 -0.6", 24, 37.5, degrees),
+}));
 
 const look: BandLook = {
   particle: "ember",
@@ -30,6 +41,7 @@ const look: BandLook = {
       <PaperBalloonArt />
     </div>
   ),
+  emblem: <Emblem />,
   footer: (width) => (
     <>
       <div className="absolute left-0 right-0 bottom-0 h-[22px]">
@@ -85,5 +97,28 @@ export function Thumbnail() {
         <Ink icon={GiAccordion} />
       </div>
     </ThumbFrame>
+  );
+}
+
+/** Selo da versão minimalista (cabeçalho do cardápio): gravura com hachura. */
+function Emblem() {
+  return (
+    <EmblemArt hatch="#ff6b1a">
+      {LOGS.map((log) => (
+        <Part key={log.degrees} d={log.d} shade={log.shade} line={1.4}>
+          <Line d={log.grain} width={0.8} opacity={0.8} />
+        </Part>
+      ))}
+      <Part
+        d="M24 6C27.5 11.5 33 15 32.5 23.5C32 30 28 33.5 24 33.5C20 33.5 15.5 30 15.5 23.5C15.5 18.5 19 16 20.5 11.5C21.8 14.2 23 15.5 24 16.5C24.6 13 23.5 9.5 24 6Z"
+        shade="M26 4C30 14 33.5 25 27 36L46 36L46 4Z"
+      />
+      <Light
+        d="M24 17.5C26.5 21 28.5 23.5 28 27.5C27.6 30.5 25.8 31.8 24 31.8C22.2 31.8 20.4 30.5 20 27.5C19.6 24.5 22 22 24 17.5Z"
+        color="#ffcf5c"
+        flicker
+      />
+      <Dots points={[[13.5, 12.5], [34.5, 10.5], [31, 6]]} r={0.9} color="#ffcf5c" />
+    </EmblemArt>
   );
 }

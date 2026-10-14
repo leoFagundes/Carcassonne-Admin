@@ -1020,6 +1020,109 @@ html[data-site-theme="torneio"] :is(.st-band-glow-header, .st-band-glow-sidebar)
   right: 14px;
 }
 
+/* Versão minimalista: selo redondo com o símbolo do tema em gravura (traço
+   dourado + hachura na cor do tema, ver emblemKit) no canto do cabeçalho,
+   alinhado ao título. Encolhe junto com o cabeçalho ao rolar. */
+.st-band-emblem {
+  position: absolute;
+  top: 12.5px;
+  left: 14px;
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(230, 197, 107, 0.65);
+  background: radial-gradient(circle at 50% 40%, rgba(230, 197, 107, 0.16), transparent 72%),
+    rgba(14, 12, 10, 0.88);
+  background: radial-gradient(
+      circle at 50% 40%,
+      color-mix(in srgb, var(--theme-accent) 24%, transparent),
+      transparent 72%
+    ),
+    rgba(14, 12, 10, 0.88);
+  box-shadow:
+    0 0 0 3px rgba(14, 12, 10, 0.7),
+    0 0 0 4px rgba(230, 197, 107, 0.22),
+    0 0 18px rgba(230, 197, 107, 0.2);
+  box-shadow:
+    0 0 0 3px rgba(14, 12, 10, 0.7),
+    0 0 0 4px rgba(230, 197, 107, 0.22),
+    0 0 20px color-mix(in srgb, var(--theme-accent) 34%, transparent);
+  transition:
+    top 0.35s var(--cm-ease, ease),
+    scale 0.35s var(--cm-ease, ease);
+  animation: st-emblem-in 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+}
+
+/* Anel tracejado por dentro, como num selo */
+.st-band-emblem::before {
+  content: "";
+  position: absolute;
+  inset: 3.5px;
+  border-radius: inherit;
+  border: 1px dashed rgba(230, 197, 107, 0.28);
+}
+
+.st-band-emblem-art {
+  position: relative;
+  width: 94%;
+  animation: st-emblem-sway 4.8s ease-in-out infinite alternate;
+}
+
+.st-emblem-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* Luzes do selo (velas, chama, rosto da abóbora) tremulando */
+.st-emblem-flicker {
+  animation: st-flicker 2.6s linear infinite;
+}
+
+@keyframes st-emblem-in {
+  from {
+    opacity: 0;
+    transform: scale(0.55) rotate(-25deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes st-emblem-sway {
+  from {
+    translate: 0 0.5px;
+    rotate: -3deg;
+  }
+  to {
+    translate: 0 -1px;
+    rotate: 3deg;
+  }
+}
+
+.cm-header[data-compact="true"] .st-band-emblem {
+  top: -6px;
+  scale: 0.62;
+}
+
+@media (min-width: 640px) {
+  .st-band-emblem {
+    top: 14.5px;
+    left: 22px;
+    width: 58px;
+    height: 58px;
+  }
+
+  .cm-header[data-compact="true"] .st-band-emblem {
+    top: -6.5px;
+    scale: 0.58;
+  }
+}
+
 .st-band-side-strip {
   position: absolute;
   top: 0;

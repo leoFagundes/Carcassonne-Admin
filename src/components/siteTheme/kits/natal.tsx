@@ -7,6 +7,7 @@ import { SNOW_COLORS } from "../palettes";
 import { CrownWithHolly, SnowGroundArt } from "../art";
 import { EvergreenGarland } from "../rows";
 import { Ink } from "../ink";
+import { Dots, EmblemArt, Light, Line, Part, star } from "../emblemKit";
 
 const look: BandLook = {
   particle: "snow",
@@ -19,6 +20,7 @@ const look: BandLook = {
       <Ink icon={GiPolarStar} coarse />
     </div>
   ),
+  emblem: <Emblem />,
   footer: () => (
     <>
       <div className="absolute left-[44%] top-[2%] w-[16%] st-star-glow">
@@ -78,5 +80,24 @@ export function Thumbnail() {
         <SnowGroundArt />
       </div>
     </ThumbFrame>
+  );
+}
+
+/** Selo da versão minimalista (cabeçalho do cardápio): gravura com hachura. */
+function Emblem() {
+  return (
+    <EmblemArt hatch="#9cc7a4">
+      <Part d="M21.6 35H26.4V41.5H21.6Z" shade="M24 30H30V44H24Z" line={1.5} />
+      <Part
+        d="M24 8.5L31.5 18L28 18L34.5 27L30.5 27L38.5 36.5L9.5 36.5L17.5 27L13.5 27L20 18L16.5 18Z"
+        shade="M24 6L27 40L46 40L46 6Z"
+      >
+        <Line d="M14.5 31.5C20 34 28.5 33.5 33.6 30.5" width={1} opacity={0.85} />
+        <Line d="M18.6 22.8C22 24.6 27 24.3 29.8 22.2" width={1} opacity={0.85} />
+      </Part>
+      <Dots points={[[17.6, 32.8], [29.4, 31.4], [21.6, 24.4], [27.6, 19.6]]} r={1.45} color="#ff6b6b" />
+      {/* Estrela-guia no topo */}
+      <Light d={star(24, 7.2, 4.6)} color="#f8e6a8" />
+    </EmblemArt>
   );
 }

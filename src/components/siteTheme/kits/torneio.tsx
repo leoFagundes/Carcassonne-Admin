@@ -7,6 +7,7 @@ import { AccessorySlot, ThumbFrame, THUMB_WIDTH, type AccessoryPlacement } from 
 import { GOLD_GLITTER_COLORS } from "../palettes";
 import { WallArt } from "../art";
 import { Ink } from "../ink";
+import { EmblemArt, Light, Line, Part, star } from "../emblemKit";
 
 const GOLD: CSSProperties = { fill: "url(#st-grad-gold)", stroke: "#8a6a14" };
 
@@ -21,6 +22,7 @@ const look: BandLook = {
       <Ink icon={GiTrophyCup} style={GOLD} />
     </div>
   ),
+  emblem: <Emblem />,
   footer: (width) => (
     <>
       <div className="absolute left-0 right-0 bottom-0 h-[22px]">
@@ -79,5 +81,22 @@ export function Thumbnail() {
         <Ink icon={GiDiceSixFacesSix} />
       </div>
     </ThumbFrame>
+  );
+}
+
+/** Selo da versão minimalista (cabeçalho do cardápio): gravura com hachura. */
+function Emblem() {
+  return (
+    <EmblemArt hatch="#e6c56b">
+      <Line d="M15 12C8.5 12 8 21.5 15.5 22.5" width={1.8} />
+      <Line d="M33 12C39.5 12 40 21.5 32.5 22.5" width={1.8} />
+      <Part d="M14.5 8.5H33.5V16.5C33.5 24 29.5 28.5 24 28.5C18.5 28.5 14.5 24 14.5 16.5Z" shade="M27 5C30.5 12 31 24 26 32L46 32L46 5Z">
+        <Line d="M14.5 11.2H33.5" width={0.9} opacity={0.85} />
+      </Part>
+      <Part d="M22 28H26L25.4 33H22.6Z" line={1.3} />
+      <Part d="M17 33H31V36.5H17Z" shade="M26 30H34V40H26Z" line={1.4} />
+      <Part d="M14 36.5H34V41.5H14Z" shade="M27 34H38V44H27Z" line={1.5} />
+      <Light d={star(24, 18.2, 3.6)} color="#ff8a8a" />
+    </EmblemArt>
   );
 }

@@ -14,6 +14,7 @@ import { PETAL_COLORS } from "../palettes";
 import { BunnyEarsArt, WallArt } from "../art";
 import { OrnamentStrip } from "../strips";
 import { Ink } from "../ink";
+import { Dots, EmblemArt, Line, Part } from "../emblemKit";
 
 const look: BandLook = {
   particle: "petal",
@@ -22,6 +23,7 @@ const look: BandLook = {
   sideStrip: "vine",
   cornerLeft: <Ink icon={GiFlowerEmblem} style={{ fill: "#ffb3d1", fillOpacity: 0.85 }} />,
   cornerRight: <Ink icon={GiButterfly} style={{ fill: "#c4a7ff", fillOpacity: 0.85 }} />,
+  emblem: <Emblem />,
   footer: () => (
     <>
       <div className="absolute left-[6%] bottom-[4px] w-[34%]">
@@ -77,5 +79,25 @@ export function Thumbnail() {
         <Ink icon={GiRabbit} tone="cream" />
       </div>
     </ThumbFrame>
+  );
+}
+
+/** Selo da versão minimalista (cabeçalho do cardápio): gravura com hachura. */
+function Emblem() {
+  return (
+    <EmblemArt hatch="#c4a7ff">
+      <Part
+        d="M24 6.5C31.5 6.5 37.5 18 37.5 28C37.5 36.5 31.5 41.5 24 41.5C16.5 41.5 10.5 36.5 10.5 28C10.5 18 16.5 6.5 24 6.5Z"
+        shade="M29 4C35 14 36 32 30 44L46 44L46 4Z"
+      >
+        <Line d="M10 24.5L13.5 21L17 24.5L20.5 21L24 24.5L27.5 21L31 24.5L34.5 21L38 24.5" width={1.2} />
+        <Line d="M10 27.2L38 27.2" width={0.9} opacity={0.8} />
+        <Line
+          d="M10 32C13 29.4 15.5 34.6 18.5 32C21.5 29.4 24 34.6 27 32C30 29.4 32.5 34.6 35.5 32C36.5 31.2 37.5 31 38.5 31.4"
+          width={1.1}
+        />
+        <Dots points={[[18.6, 15.2], [24, 13], [29.4, 15.2]]} r={1.3} color="#ffb3d1" />
+      </Part>
+    </EmblemArt>
   );
 }
