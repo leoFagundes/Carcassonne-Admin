@@ -77,7 +77,16 @@ export interface GeneralConfigsType {
   siteTheme?: SiteThemeId;
   /** Avisos por tema: lembram de ativar o tema dentro de um período. */
   siteThemeReminders?: Partial<Record<SiteThemeId, SiteThemeReminder>>;
+  /** Versão de cada tema (completa ou minimalista). Ausente = "full". */
+  siteThemeStyles?: Partial<Record<SiteThemeId, SiteThemeStyle>>;
 }
+
+/**
+ * "full": todas as decorações (como sempre foi). "minimal": só a decoração do
+ * topo, poucas partículas, o enfeite do logo e a cor de destaque — sem a
+ * muralha no rodapé nem coisas passando pela tela.
+ */
+export type SiteThemeStyle = "full" | "minimal";
 
 export type SiteThemeId =
   | "default"

@@ -6,6 +6,7 @@ import { GiLanternFlame, GiPineTree, GiPolarStar } from "react-icons/gi";
 import ParticleCanvas from "../ParticleCanvas";
 import { BOKEH_COLORS, SNOW_COLORS } from "../palettes";
 import {
+  FullOnly,
   SceneLayer,
   prefersReducedMotion,
   random,
@@ -33,49 +34,55 @@ export default function NatalScene({ variant }: { variant: SceneVariant }) {
     <>
       <SceneLayer variant={variant} depth="back" layerRef={backRef}>
         <div className="st-natal-sky absolute inset-0" />
-        <ShootingStar layerRef={backRef} />
+        <FullOnly>
+          <ShootingStar layerRef={backRef} />
+        </FullOnly>
         <div className="st-star">
           <Ink icon={GiPolarStar} />
         </div>
         <ParticleCanvas kind="snow" density={22} max={170} colors={SNOW_COLORS} />
 
-        {/* A Cité de Carcassonne nevada, entre pinheiros */}
-        <div className="st-skyline-glow st-skyline-glow-natal" />
-        <CastleSkyline tone="frost" width={width} />
-        <div className="st-pine st-pine-left">
-          <Ink icon={GiPineTree} tone="pine" />
-        </div>
-        <div className="st-pine st-pine-left-small">
-          <Ink icon={GiPineTree} tone="pine" />
-        </div>
-        <div className="st-pine st-pine-right">
-          <Ink icon={GiPineTree} tone="pine" />
-        </div>
-        <div className="st-snow-ground">
-          <SnowGroundArt />
-        </div>
+        <FullOnly>
+          {/* A Cité de Carcassonne nevada, entre pinheiros */}
+          <div className="st-skyline-glow st-skyline-glow-natal" />
+          <CastleSkyline tone="frost" width={width} />
+          <div className="st-pine st-pine-left">
+            <Ink icon={GiPineTree} tone="pine" />
+          </div>
+          <div className="st-pine st-pine-left-small">
+            <Ink icon={GiPineTree} tone="pine" />
+          </div>
+          <div className="st-pine st-pine-right">
+            <Ink icon={GiPineTree} tone="pine" />
+          </div>
+          <div className="st-snow-ground">
+            <SnowGroundArt />
+          </div>
+        </FullOnly>
 
         <div className="st-garland">
           <EvergreenGarland width={width} />
         </div>
-        {lanterns.map((swag, i) => (
-          <div
-            key={i}
-            className="st-lantern"
-            style={{
-              left: swag.low.x,
-              top: swag.low.y,
-              animationDuration: `${3.2 + (i % 3) * 0.5}s`,
-              animationDelay: `${-i * 0.7}s`,
-            }}
-          >
-            <div className="st-lantern-chain" style={{ height: 10 + (i % 3) * 8 }} />
-            <div className="st-lantern-body">
-              <div className="st-lantern-light" style={{ animationDelay: `${-i * 0.4}s` }} />
-              <Ink icon={GiLanternFlame} />
+        <FullOnly>
+          {lanterns.map((swag, i) => (
+            <div
+              key={i}
+              className="st-lantern"
+              style={{
+                left: swag.low.x,
+                top: swag.low.y,
+                animationDuration: `${3.2 + (i % 3) * 0.5}s`,
+                animationDelay: `${-i * 0.7}s`,
+              }}
+            >
+              <div className="st-lantern-chain" style={{ height: 10 + (i % 3) * 8 }} />
+              <div className="st-lantern-body">
+                <div className="st-lantern-light" style={{ animationDelay: `${-i * 0.4}s` }} />
+                <Ink icon={GiLanternFlame} />
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </FullOnly>
       </SceneLayer>
 
       {/* Cristais grandes e desfocados na frente dão profundidade à neve */}

@@ -10,10 +10,28 @@ import {
   Unsubscribe,
   deleteField,
 } from "firebase/firestore";
-import { GeneralConfigsType, SiteThemeId, SiteThemeReminder } from "@/types";
+import { GeneralConfigsType, SiteThemeId, SiteThemeReminder, SiteThemeStyle } from "@/types";
 
 class GeneralConfigsRepository {
   static collectionName = "general-configs";
+
+  /**
+   * Grava a versão (completa ou minimalista) de um tema, sem mexer nos
+   * outros temas. A completa é o padrão: nem fica salva.
+   */
+  static async setSiteThemeStyle(theme: SiteThemeId, style: SiteThemeStyle): Promise<boolean> {
+    try {
+      const snapshot = await getDocs(collection(db, this.collectionName));
+      if (snapshot.empty) return false;
+      await updateDoc(doc(db, this.collectionName, snapshot.docs[0].id), {
+        [`siteThemeStyles.${theme}`]: style === "full" ? deleteField() : style,
+      });
+      return true;
+    } catch (error) {
+      console.error("Erro ao salvar a versão do tema: ", error);
+      return false;
+    }
+  }
 
   /**
    * Grava (ou remove, com `null`) o aviso de um tema, sem mexer nos avisos

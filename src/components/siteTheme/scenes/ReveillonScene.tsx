@@ -5,7 +5,7 @@ import { GiChampagneCork, GiHourglass, GiRingingBell, GiWineGlass } from "react-
 import ParticleCanvas, { type Rgb } from "../ParticleCanvas";
 import FireworksCanvas from "../FireworksCanvas";
 import { GOLD_GLITTER_COLORS } from "../palettes";
-import { SceneLayer, useLayerWidth, type SceneVariant } from "../sceneKit";
+import { FullOnly, SceneLayer, useLayerWidth, type SceneVariant } from "../sceneKit";
 import { CastleSkyline, HangingStarArt } from "../art";
 import { HangingRow, swagGeometry } from "../rows";
 import { ToastPair } from "../actors";
@@ -34,8 +34,10 @@ export default function ReveillonScene({ variant }: { variant: SceneVariant }) {
     <>
       <SceneLayer variant={variant} depth="back" layerRef={backRef}>
         <div className="st-sky-reveillon absolute inset-0" />
-        {/* Fogos atrás da Cité (o canvas vem antes da muralha) */}
-        <FireworksCanvas colors={FIREWORK_COLORS} />
+        <FullOnly>
+          {/* Fogos atrás da Cité (o canvas vem antes da muralha) */}
+          <FireworksCanvas colors={FIREWORK_COLORS} />
+        </FullOnly>
         <ParticleCanvas kind="glitter" density={3} max={30} colors={GOLD_GLITTER_COLORS} />
 
         {/* Estrelas penduradas num fio dourado e sinos nos cantos */}
@@ -55,40 +57,42 @@ export default function ReveillonScene({ variant }: { variant: SceneVariant }) {
             />
           </>
         )}
-        <div className="st-bell" style={{ left: "5%" }}>
-          <div className="st-hang-chain" style={{ height: "clamp(14px, 3cqmin, 26px)" }} />
-          <Ink icon={GiRingingBell} />
-        </div>
-        <div className="st-bell" style={{ right: "5%", animationDelay: "-0.9s" }}>
-          <div className="st-hang-chain" style={{ height: "clamp(20px, 4.5cqmin, 40px)" }} />
-          <Ink icon={GiRingingBell} />
-        </div>
+        <FullOnly>
+          <div className="st-bell" style={{ left: "5%" }}>
+            <div className="st-hang-chain" style={{ height: "clamp(14px, 3cqmin, 26px)" }} />
+            <Ink icon={GiRingingBell} />
+          </div>
+          <div className="st-bell" style={{ right: "5%", animationDelay: "-0.9s" }}>
+            <div className="st-hang-chain" style={{ height: "clamp(20px, 4.5cqmin, 40px)" }} />
+            <Ink icon={GiRingingBell} />
+          </div>
 
-        {/* Brinde diante da Cité */}
-        <div className="st-skyline-glow st-skyline-glow-reveillon" />
-        <CastleSkyline tone="frost" width={width} />
-        <div
-          className="absolute st-glow-gold"
-          style={{ left: "3%", bottom: "0.5%", width: "clamp(36px, 8.5cqmin, 74px)", rotate: "-10deg" }}
-        >
-          <Ink icon={GiChampagneCork} />
-        </div>
-        <div
-          className="absolute"
-          style={{
-            left: "calc(3% + clamp(34px, 8cqmin, 70px))",
-            bottom: "0.5%",
-            width: "clamp(22px, 5cqmin, 44px)",
-          }}
-        >
-          <Ink icon={GiHourglass} tone="frost" />
-        </div>
-        <ToastPair
-          className="right-[4%] bottom-[1.5%] w-[clamp(80px,19cqmin,160px)] h-[clamp(52px,12.5cqmin,108px)]"
-          left={<Ink icon={GiWineGlass} />}
-          right={<Ink icon={GiWineGlass} />}
-          splash="#fff8e1"
-        />
+          {/* Brinde diante da Cité */}
+          <div className="st-skyline-glow st-skyline-glow-reveillon" />
+          <CastleSkyline tone="frost" width={width} />
+          <div
+            className="absolute st-glow-gold"
+            style={{ left: "3%", bottom: "0.5%", width: "clamp(36px, 8.5cqmin, 74px)", rotate: "-10deg" }}
+          >
+            <Ink icon={GiChampagneCork} />
+          </div>
+          <div
+            className="absolute"
+            style={{
+              left: "calc(3% + clamp(34px, 8cqmin, 70px))",
+              bottom: "0.5%",
+              width: "clamp(22px, 5cqmin, 44px)",
+            }}
+          >
+            <Ink icon={GiHourglass} tone="frost" />
+          </div>
+          <ToastPair
+            className="right-[4%] bottom-[1.5%] w-[clamp(80px,19cqmin,160px)] h-[clamp(52px,12.5cqmin,108px)]"
+            left={<Ink icon={GiWineGlass} />}
+            right={<Ink icon={GiWineGlass} />}
+            splash="#fff8e1"
+          />
+        </FullOnly>
       </SceneLayer>
 
       <SceneLayer variant={variant} depth="front">

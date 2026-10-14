@@ -4,7 +4,7 @@ import { useMemo, useRef } from "react";
 import { GiCarnivalMask, GiDramaMasks, GiTambourine, GiTwoFeathers } from "react-icons/gi";
 import ParticleCanvas from "../ParticleCanvas";
 import { CARNIVAL_COLORS, CONFETTI_COLORS } from "../palettes";
-import { SceneLayer, useLayerWidth, type SceneVariant } from "../sceneKit";
+import { FullOnly, SceneLayer, useLayerWidth, type SceneVariant } from "../sceneKit";
 import { CastleSkyline, SerpentineCurlArt } from "../art";
 import { BuntingRow, HangingRow, swagGeometry } from "../rows";
 import { StreamerThrow } from "../actors";
@@ -45,40 +45,42 @@ export default function CarnavalScene({ variant }: { variant: SceneVariant }) {
           )}
         />
 
-        {/* Serpentinas sendo lançadas de vez em quando */}
-        <StreamerThrow layerRef={backRef} colors={CARNIVAL_COLORS} />
+        <FullOnly>
+          {/* Serpentinas sendo lançadas de vez em quando */}
+          <StreamerThrow layerRef={backRef} colors={CARNIVAL_COLORS} />
 
-        {/* Baile de máscaras diante da Cité */}
-        <div className="st-skyline-glow st-skyline-glow-magenta" />
-        <CastleSkyline tone="gold" width={width} />
-        <div
-          className="absolute"
-          style={{ left: "3%", bottom: "1%", width: "clamp(56px, 13cqmin, 120px)" }}
-        >
-          <div className="absolute w-[58%] left-[-16%] bottom-[34%] rotate-[-22deg]">
-            <Ink icon={GiTwoFeathers} style={{ fill: "#8b5cf6", fillOpacity: 0.8 }} />
+          {/* Baile de máscaras diante da Cité */}
+          <div className="st-skyline-glow st-skyline-glow-magenta" />
+          <CastleSkyline tone="gold" width={width} />
+          <div
+            className="absolute"
+            style={{ left: "3%", bottom: "1%", width: "clamp(56px, 13cqmin, 120px)" }}
+          >
+            <div className="absolute w-[58%] left-[-16%] bottom-[34%] rotate-[-22deg]">
+              <Ink icon={GiTwoFeathers} style={{ fill: "#8b5cf6", fillOpacity: 0.8 }} />
+            </div>
+            <div className="relative st-glow-magenta">
+              <Ink icon={GiCarnivalMask} style={{ fill: "#ff3ea5", fillOpacity: 0.85 }} />
+            </div>
           </div>
-          <div className="relative st-glow-magenta">
-            <Ink icon={GiCarnivalMask} style={{ fill: "#ff3ea5", fillOpacity: 0.85 }} />
+          <div
+            className="absolute st-glow-teal"
+            style={{ right: "3%", bottom: "0.5%", width: "clamp(48px, 11.5cqmin, 104px)" }}
+          >
+            <Ink icon={GiDramaMasks} style={{ fill: "#19c3b2", fillOpacity: 0.8 }} />
           </div>
-        </div>
-        <div
-          className="absolute st-glow-teal"
-          style={{ right: "3%", bottom: "0.5%", width: "clamp(48px, 11.5cqmin, 104px)" }}
-        >
-          <Ink icon={GiDramaMasks} style={{ fill: "#19c3b2", fillOpacity: 0.8 }} />
-        </div>
-        <div
-          className="absolute"
-          style={{
-            right: "calc(3% + clamp(42px, 10cqmin, 92px))",
-            bottom: "0.5%",
-            width: "clamp(28px, 6.5cqmin, 58px)",
-            rotate: "-14deg",
-          }}
-        >
-          <Ink icon={GiTambourine} />
-        </div>
+          <div
+            className="absolute"
+            style={{
+              right: "calc(3% + clamp(42px, 10cqmin, 92px))",
+              bottom: "0.5%",
+              width: "clamp(28px, 6.5cqmin, 58px)",
+              rotate: "-14deg",
+            }}
+          >
+            <Ink icon={GiTambourine} />
+          </div>
+        </FullOnly>
       </SceneLayer>
 
       <SceneLayer variant={variant} depth="front">

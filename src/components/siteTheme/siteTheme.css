@@ -172,6 +172,15 @@ html[data-site-theme]:not([data-site-theme="default"])
   }
 }
 
+/* Detalhe ou gaveta aberto por cima (data-layer-open, ver scrollLock): as
+   decorações ficam atrás do véu escuro e param — no celular, animar tudo por
+   baixo da camada que está abrindo deixava a abertura piscando */
+html[data-layer-open] .site-theme-layer *,
+html[data-layer-open] .st-band *,
+html[data-layer-open] .st-band-hang * {
+  animation-play-state: paused !important;
+}
+
 /* Tema trocado em tempo real: o anterior some enquanto o novo aparece */
 .site-theme-layer-leaving {
   animation: st-layer-out 0.9s ease forwards;

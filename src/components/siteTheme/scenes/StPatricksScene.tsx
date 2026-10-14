@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { GiCrownCoin, GiHarp } from "react-icons/gi";
 import ParticleCanvas from "../ParticleCanvas";
 import { CLOVER_COLORS, GOLD_GLITTER_COLORS } from "../palettes";
-import { SceneLayer, useLayerWidth, type SceneVariant } from "../sceneKit";
+import { FullOnly, SceneLayer, useLayerWidth, type SceneVariant } from "../sceneKit";
 import { CastleSkyline, PotOfGold, RainbowArt } from "../art";
 import { GarlandRow } from "../rows";
 import { Roller } from "../actors";
@@ -26,34 +26,36 @@ export default function StPatricksScene({ variant }: { variant: SceneVariant }) 
           <GarlandRow width={width} kind="clover" />
         </div>
 
-        {/* Arco-íris terminando no pote de ouro, atrás da muralha */}
-        <div
-          className="absolute"
-          style={{
-            right: "calc(3% + clamp(27px, 6.5cqmin, 59px) - clamp(21px, 6cqmin, 55px))",
-            bottom: "calc(0.5% + clamp(36px, 8.5cqmin, 80px))",
-            width: "clamp(160px, 46cqmin, 420px)",
-            opacity: 0.85,
-          }}
-        >
-          <RainbowArt />
-        </div>
-        <CastleSkyline tone="gold" width={width} />
-        <div
-          className="absolute st-glow-gold"
-          style={{ right: "3%", bottom: "0.5%", width: POT_WIDTH }}
-        >
-          <PotOfGold />
-        </div>
-        <div
-          className="absolute"
-          style={{ left: "3%", bottom: "0.5%", width: "clamp(40px, 9.5cqmin, 86px)" }}
-        >
-          <Ink icon={GiHarp} />
-        </div>
-        <Roller layerRef={backRef} className="bottom-[1%] w-[clamp(20px,4.6cqmin,38px)] st-glow-gold">
-          <Ink icon={GiCrownCoin} style={{ fill: "url(#st-grad-gold)", stroke: "#8a6a14" }} />
-        </Roller>
+        <FullOnly>
+          {/* Arco-íris terminando no pote de ouro, atrás da muralha */}
+          <div
+            className="absolute"
+            style={{
+              right: "calc(3% + clamp(27px, 6.5cqmin, 59px) - clamp(21px, 6cqmin, 55px))",
+              bottom: "calc(0.5% + clamp(36px, 8.5cqmin, 80px))",
+              width: "clamp(160px, 46cqmin, 420px)",
+              opacity: 0.85,
+            }}
+          >
+            <RainbowArt />
+          </div>
+          <CastleSkyline tone="gold" width={width} />
+          <div
+            className="absolute st-glow-gold"
+            style={{ right: "3%", bottom: "0.5%", width: POT_WIDTH }}
+          >
+            <PotOfGold />
+          </div>
+          <div
+            className="absolute"
+            style={{ left: "3%", bottom: "0.5%", width: "clamp(40px, 9.5cqmin, 86px)" }}
+          >
+            <Ink icon={GiHarp} />
+          </div>
+          <Roller layerRef={backRef} className="bottom-[1%] w-[clamp(20px,4.6cqmin,38px)] st-glow-gold">
+            <Ink icon={GiCrownCoin} style={{ fill: "url(#st-grad-gold)", stroke: "#8a6a14" }} />
+          </Roller>
+        </FullOnly>
       </SceneLayer>
 
       <SceneLayer variant={variant} depth="front">

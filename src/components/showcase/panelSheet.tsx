@@ -218,7 +218,9 @@ export default function PanelSheet({
       onClick={(event) => {
         if (event.target === event.currentTarget) close();
       }}
-      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-[3px]"
+      // Desfoque só no computador (no celular, desfocar a página animada por
+      // trás enquanto o véu aparece fazia a abertura piscar)
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/70 sm:bg-black/60 sm:backdrop-blur-[3px]"
     >
       <div
         ref={panelRef}

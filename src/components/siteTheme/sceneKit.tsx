@@ -29,6 +29,20 @@ const LAYER_CLASS: Record<SceneVariant, Record<"back" | "front", string>> = {
 /** true enquanto o tema está saindo (trocado em tempo real) — as camadas somem. */
 export const SceneLeavingContext = createContext(false);
 
+/**
+ * true na versão minimalista do tema: fica só o céu, a decoração do topo e
+ * poucas partículas — sai a camada da frente (o que passa pela tela) e tudo
+ * que estiver dentro de <FullOnly> (a muralha, os enfeites do rodapé...).
+ */
+export const SceneMinimalContext = createContext(false);
+
+export const useSceneMinimal = () => useContext(SceneMinimalContext);
+
+/** Só aparece na versão completa do tema. */
+export function FullOnly({ children }: { children: ReactNode }) {
+  return useSceneMinimal() ? null : <>{children}</>;
+}
+
 export function SceneLayer({
   variant,
   depth,
@@ -41,6 +55,9 @@ export function SceneLayer({
   children: ReactNode;
 }) {
   const leaving = useContext(SceneLeavingContext);
+  const minimal = useSceneMinimal();
+  // A camada da frente (coisas passando pela tela) é só da versão completa
+  if (minimal && depth === "front") return null;
   return (
     <div
       ref={layerRef}

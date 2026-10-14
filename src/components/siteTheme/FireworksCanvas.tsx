@@ -159,16 +159,22 @@ export default function FireworksCanvas({ colors }: { colors: readonly Rgb[] }) 
       cancelAnimationFrame(raf);
       raf = 0;
     };
-    const onVisibility = () => (document.hidden ? stop() : start());
+    // Para com a aba em segundo plano ou com um detalhe/gaveta aberto por cima
+    const root = document.documentElement;
+    const sync = () =>
+      document.hidden || root.hasAttribute("data-layer-open") ? stop() : start();
+    const layerObserver = new MutationObserver(sync);
 
     const observer = new ResizeObserver(resize);
     observer.observe(canvas);
-    start();
-    document.addEventListener("visibilitychange", onVisibility);
+    sync();
+    document.addEventListener("visibilitychange", sync);
+    layerObserver.observe(root, { attributes: true, attributeFilter: ["data-layer-open"] });
     return () => {
       stop();
       observer.disconnect();
-      document.removeEventListener("visibilitychange", onVisibility);
+      layerObserver.disconnect();
+      document.removeEventListener("visibilitychange", sync);
     };
   }, [colors]);
 

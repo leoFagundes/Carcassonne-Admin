@@ -10,7 +10,7 @@ import {
 } from "react-icons/gi";
 import ParticleCanvas from "../ParticleCanvas";
 import { GOLD_GLITTER_COLORS } from "../palettes";
-import { SceneLayer, useLayerWidth, type SceneVariant } from "../sceneKit";
+import { FullOnly, SceneLayer, useLayerWidth, type SceneVariant } from "../sceneKit";
 import { CastleSkyline } from "../art";
 import { HangingRow, swagGeometry } from "../rows";
 import { Roller } from "../actors";
@@ -30,9 +30,11 @@ export default function TorneioScene({ variant }: { variant: SceneVariant }) {
   return (
     <SceneLayer variant={variant} depth="back" layerRef={backRef}>
       <div className="st-sky-torneio absolute inset-0" />
-      {/* Holofotes da arena varrendo o céu */}
-      <div className="st-spotlight st-spotlight-left" />
-      <div className="st-spotlight st-spotlight-right" />
+      <FullOnly>
+        {/* Holofotes da arena varrendo o céu */}
+        <div className="st-spotlight st-spotlight-left" />
+        <div className="st-spotlight st-spotlight-right" />
+      </FullOnly>
       <ParticleCanvas kind="glitter" density={2} max={20} colors={GOLD_GLITTER_COLORS} />
 
       {/* Estandartes dos dois times */}
@@ -61,41 +63,43 @@ export default function TorneioScene({ variant }: { variant: SceneVariant }) {
         </>
       )}
 
-      {/* Troféu no centro da arena, diante da Cité */}
-      <div className="st-skyline-glow st-skyline-glow-gold" />
-      <CastleSkyline tone="gold" width={width} />
-      <div
-        className="absolute st-trophy"
-        style={{ left: "50%", bottom: "0.5%", width: "clamp(54px, 13cqmin, 118px)", translate: "-50% 0" }}
-      >
-        <Ink icon={GiTrophyCup} style={{ fill: "url(#st-grad-gold)", stroke: "#8a6a14" }} />
-      </div>
-      <div
-        className="absolute"
-        style={{ left: "3%", bottom: "0.5%", width: "clamp(44px, 10.5cqmin, 96px)" }}
-      >
-        <Ink icon={GiCrossedSwords} />
-      </div>
-      <div
-        className="absolute"
-        style={{ right: "3%", bottom: "0.5%", width: "clamp(34px, 8cqmin, 72px)", rotate: "8deg" }}
-      >
-        <Ink icon={GiCheckedShield} tone="royal" />
-      </div>
-      <div
-        className="absolute"
-        style={{
-          right: "calc(3% + clamp(28px, 6.5cqmin, 60px))",
-          bottom: "0.5%",
-          width: "clamp(34px, 8cqmin, 72px)",
-          rotate: "-8deg",
-        }}
-      >
-        <Ink icon={GiCheckedShield} tone="crimson" />
-      </div>
-      <Roller layerRef={backRef} tumble className="bottom-[1%] w-[clamp(22px,5cqmin,40px)]">
-        <Ink icon={GiDiceSixFacesSix} />
-      </Roller>
+      <FullOnly>
+        {/* Troféu no centro da arena, diante da Cité */}
+        <div className="st-skyline-glow st-skyline-glow-gold" />
+        <CastleSkyline tone="gold" width={width} />
+        <div
+          className="absolute st-trophy"
+          style={{ left: "50%", bottom: "0.5%", width: "clamp(54px, 13cqmin, 118px)", translate: "-50% 0" }}
+        >
+          <Ink icon={GiTrophyCup} style={{ fill: "url(#st-grad-gold)", stroke: "#8a6a14" }} />
+        </div>
+        <div
+          className="absolute"
+          style={{ left: "3%", bottom: "0.5%", width: "clamp(44px, 10.5cqmin, 96px)" }}
+        >
+          <Ink icon={GiCrossedSwords} />
+        </div>
+        <div
+          className="absolute"
+          style={{ right: "3%", bottom: "0.5%", width: "clamp(34px, 8cqmin, 72px)", rotate: "8deg" }}
+        >
+          <Ink icon={GiCheckedShield} tone="royal" />
+        </div>
+        <div
+          className="absolute"
+          style={{
+            right: "calc(3% + clamp(28px, 6.5cqmin, 60px))",
+            bottom: "0.5%",
+            width: "clamp(34px, 8cqmin, 72px)",
+            rotate: "-8deg",
+          }}
+        >
+          <Ink icon={GiCheckedShield} tone="crimson" />
+        </div>
+        <Roller layerRef={backRef} tumble className="bottom-[1%] w-[clamp(22px,5cqmin,40px)]">
+          <Ink icon={GiDiceSixFacesSix} />
+        </Roller>
+      </FullOnly>
     </SceneLayer>
   );
 }

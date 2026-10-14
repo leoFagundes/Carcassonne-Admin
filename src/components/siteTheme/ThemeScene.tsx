@@ -4,7 +4,7 @@ import "./siteTheme.css";
 import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 import type { SiteThemeId } from "@/types";
-import { SceneLeavingContext, type SceneVariant } from "./sceneKit";
+import { SceneLeavingContext, SceneMinimalContext, type SceneVariant } from "./sceneKit";
 
 type SceneProps = { variant: SceneVariant };
 
@@ -27,18 +27,23 @@ const SCENES: Record<Exclude<SiteThemeId, "default">, ComponentType<SceneProps>>
 export default function ThemeScene({
   theme,
   variant = "site",
+  minimal = false,
   leaving = false,
 }: {
   theme: SiteThemeId;
   variant?: SceneVariant;
+  /** Versão minimalista: só o céu, a decoração do topo e poucas partículas. */
+  minimal?: boolean;
   /** Tema que acabou de ser trocado: as camadas somem suavemente. */
   leaving?: boolean;
 }) {
   if (theme === "default") return null;
   const Scene = SCENES[theme];
   return (
-    <SceneLeavingContext.Provider value={leaving}>
-      <Scene variant={variant} />
-    </SceneLeavingContext.Provider>
+    <SceneMinimalContext.Provider value={minimal}>
+      <SceneLeavingContext.Provider value={leaving}>
+        <Scene variant={variant} />
+      </SceneLeavingContext.Provider>
+    </SceneMinimalContext.Provider>
   );
 }

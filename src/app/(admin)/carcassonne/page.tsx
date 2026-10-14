@@ -549,6 +549,7 @@ export default function SettingsPage() {
       const configsToSave = { ...localGeneralConfigs };
       delete configsToSave.siteTheme;
       delete configsToSave.siteThemeReminders;
+      delete configsToSave.siteThemeStyles;
       await GeneralConfigsRepository.update(configsToSave);
       // O documento inteiro é salvo a cada clique em "Salvar", então o snapshot
       // de referência para detectar alterações pendentes vale para as duas seções.

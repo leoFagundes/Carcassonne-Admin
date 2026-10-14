@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useSceneMinimal } from "./sceneKit";
 
 export type Rgb = readonly [number, number, number];
+
+// Versão minimalista do tema: bem menos partículas
+const MINIMAL_FACTOR = 0.4;
 
 export type ParticleKind =
   | "snow" // flocos (os maiores em cristal riscado) caindo
@@ -67,11 +71,14 @@ const GLOW_KINDS: ParticleKind[] = ["ember", "bokeh", "glitter"];
 
 export default function ParticleCanvas({
   kind,
-  density,
-  max,
+  density: fullDensity,
+  max: fullMax,
   colors,
 }: ParticleCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const minimal = useSceneMinimal();
+  const density = minimal ? fullDensity * MINIMAL_FACTOR : fullDensity;
+  const max = minimal ? Math.max(1, Math.round(fullMax * MINIMAL_FACTOR)) : fullMax;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -451,21 +458,27 @@ export default function ParticleCanvas({
       cancelAnimationFrame(raf);
       raf = 0;
     };
-    // Aba em segundo plano: para de desenhar
-    const onVisibility = () => (document.hidden ? stop() : start());
+    // Para de desenhar com a aba em segundo plano ou com um detalhe/gaveta
+    // aberto por cima (data-layer-open, ver scrollLock)
+    const root = document.documentElement;
+    const sync = () =>
+      document.hidden || root.hasAttribute("data-layer-open") ? stop() : start();
+    const layerObserver = new MutationObserver(sync);
 
     const observer = new ResizeObserver(resize);
     observer.observe(canvas);
     // Com "reduzir movimento" ligado, as partículas aparecem paradas
     if (!reduceMotion) {
-      start();
-      document.addEventListener("visibilitychange", onVisibility);
+      sync();
+      document.addEventListener("visibilitychange", sync);
+      layerObserver.observe(root, { attributes: true, attributeFilter: ["data-layer-open"] });
     }
 
     return () => {
       stop();
       observer.disconnect();
-      document.removeEventListener("visibilitychange", onVisibility);
+      layerObserver.disconnect();
+      document.removeEventListener("visibilitychange", sync);
     };
   }, [kind, density, max, colors]);
 

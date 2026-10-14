@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { GiLockedHeart, GiRose, GiWingedArrow } from "react-icons/gi";
 import ParticleCanvas from "../ParticleCanvas";
 import { HEART_COLORS, ROSE_PETAL_COLORS } from "../palettes";
-import { SceneLayer, useLayerWidth, type SceneVariant } from "../sceneKit";
+import { FullOnly, SceneLayer, useLayerWidth, type SceneVariant } from "../sceneKit";
 import { CastleSkyline } from "../art";
 import { GarlandRow } from "../rows";
 import { Flyers } from "../actors";
@@ -24,38 +24,40 @@ export default function NamoradosScene({ variant }: { variant: SceneVariant }) {
           <GarlandRow width={width} kind="roses" />
         </div>
 
-        {/* Roseiras e o cadeado do amor na muralha */}
-        <div className="st-skyline-glow st-skyline-glow-rose" />
-        <CastleSkyline tone="gold" width={width} />
-        <div
-          className="absolute st-glow-rose"
-          style={{ left: "2%", bottom: "0.5%", width: "clamp(44px, 10.5cqmin, 96px)", rotate: "-10deg" }}
-        >
-          <Ink icon={GiRose} tone="rose" />
-        </div>
-        <div
-          className="absolute st-glow-rose"
-          style={{
-            left: "calc(2% + clamp(34px, 8cqmin, 74px))",
-            bottom: "0.5%",
-            width: "clamp(32px, 7.5cqmin, 68px)",
-            rotate: "12deg",
-          }}
-        >
-          <Ink icon={GiRose} tone="rose" />
-        </div>
-        <div
-          className="absolute st-glow-gold"
-          style={{ right: "5%", bottom: "clamp(10px, 2.5cqmin, 24px)", width: "clamp(26px, 6cqmin, 54px)", rotate: "8deg" }}
-        >
-          <Ink icon={GiLockedHeart} />
-        </div>
-        <div
-          className="absolute st-glow-rose"
-          style={{ right: "calc(5% + clamp(28px, 6.5cqmin, 58px))", bottom: "0.5%", width: "clamp(36px, 8.5cqmin, 78px)" }}
-        >
-          <Ink icon={GiRose} tone="rose" />
-        </div>
+        <FullOnly>
+          {/* Roseiras e o cadeado do amor na muralha */}
+          <div className="st-skyline-glow st-skyline-glow-rose" />
+          <CastleSkyline tone="gold" width={width} />
+          <div
+            className="absolute st-glow-rose"
+            style={{ left: "2%", bottom: "0.5%", width: "clamp(44px, 10.5cqmin, 96px)", rotate: "-10deg" }}
+          >
+            <Ink icon={GiRose} tone="rose" />
+          </div>
+          <div
+            className="absolute st-glow-rose"
+            style={{
+              left: "calc(2% + clamp(34px, 8cqmin, 74px))",
+              bottom: "0.5%",
+              width: "clamp(32px, 7.5cqmin, 68px)",
+              rotate: "12deg",
+            }}
+          >
+            <Ink icon={GiRose} tone="rose" />
+          </div>
+          <div
+            className="absolute st-glow-gold"
+            style={{ right: "5%", bottom: "clamp(10px, 2.5cqmin, 24px)", width: "clamp(26px, 6cqmin, 54px)", rotate: "8deg" }}
+          >
+            <Ink icon={GiLockedHeart} />
+          </div>
+          <div
+            className="absolute st-glow-rose"
+            style={{ right: "calc(5% + clamp(28px, 6.5cqmin, 58px))", bottom: "0.5%", width: "clamp(36px, 8.5cqmin, 78px)" }}
+          >
+            <Ink icon={GiRose} tone="rose" />
+          </div>
+        </FullOnly>
       </SceneLayer>
 
       {/* Flechas de cupido cruzando a tela e coraçõezinhos subindo */}

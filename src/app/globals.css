@@ -492,13 +492,15 @@ select {
 
 /* Botões flutuantes do canto de baixo (cardápio, ludoteca). Com um tema
    ativo eles sobem um pouco, para não cobrir a muralha e as decorações do
-   rodapé — e deslizam junto quando o tema muda em tempo real. */
+   rodapé — e deslizam junto quando o tema muda em tempo real. Na versão
+   minimalista do tema não tem nada no rodapé: ficam no lugar de sempre. */
 .floating-bottom {
   bottom: 0.75rem;
   transition: bottom 0.6s ease;
 }
 
-html[data-site-theme]:not([data-site-theme="default"]) .floating-bottom {
+html[data-site-theme]:not([data-site-theme="default"]):not([data-site-theme-style="minimal"])
+  .floating-bottom {
   bottom: calc(0.75rem + clamp(52px, 14vmin, 120px));
 }
 

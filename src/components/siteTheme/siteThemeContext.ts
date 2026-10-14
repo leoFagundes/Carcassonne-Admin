@@ -1,13 +1,28 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { SiteThemeId } from "@/types";
-import type { PendingThemeReminder, SiteThemeReminders } from "@/utils/siteThemes";
+import type { SiteThemeId, SiteThemeStyle } from "@/types";
+import type { PendingThemeReminder, SiteThemeReminders, SiteThemeStyles } from "@/utils/siteThemes";
 
 export const SiteThemeContext = createContext<SiteThemeId>("default");
 
 /** Tema ativo no site (fora do provider, sempre "default"). */
 export const useSiteTheme = () => useContext(SiteThemeContext);
+
+export interface SiteThemeStyleValue {
+  /** Versão do tema que está no ar. */
+  style: SiteThemeStyle;
+  /** Versão escolhida para cada tema (para a aba Temas do admin). */
+  styles: SiteThemeStyles;
+}
+
+export const SiteThemeStyleContext = createContext<SiteThemeStyleValue>({
+  style: "full",
+  styles: {},
+});
+
+/** Versão (completa ou minimalista) do tema no ar e de cada tema. */
+export const useSiteThemeStyle = () => useContext(SiteThemeStyleContext);
 
 export interface SiteThemeRemindersValue {
   /** Avisos configurados, por tema. */

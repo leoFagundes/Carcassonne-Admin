@@ -7,6 +7,7 @@ import { GiBat, GiSpectre, GiSpiderAlt } from "react-icons/gi";
 import ParticleCanvas from "../ParticleCanvas";
 import { EMBER_COLORS } from "../palettes";
 import {
+  FullOnly,
   SceneLayer,
   prefersReducedMotion,
   random,
@@ -43,23 +44,25 @@ export default function HalloweenScene({ variant }: { variant: SceneVariant }) {
             <EngravedCloud />
           </div>
         </div>
-        <SpiderOnWeb layerRef={backRef} />
+        <FullOnly>
+          <SpiderOnWeb layerRef={backRef} />
 
-        {/* A Cité de Carcassonne contra um clarão de fogueira */}
-        <div className="st-skyline-glow st-skyline-glow-halloween" />
-        <CastleSkyline tone="amber" width={width} />
-        <div className="st-fog st-fog-1" />
-        <div className="st-fog st-fog-2" />
-        <div className="st-fog st-fog-3" />
-        <div className="st-pumpkin st-pumpkin-left">
-          <PumpkinLantern />
-        </div>
-        <div className="st-pumpkin st-pumpkin-left-small">
-          <PumpkinLantern />
-        </div>
-        <div className="st-pumpkin st-pumpkin-right">
-          <PumpkinLantern />
-        </div>
+          {/* A Cité de Carcassonne contra um clarão de fogueira */}
+          <div className="st-skyline-glow st-skyline-glow-halloween" />
+          <CastleSkyline tone="amber" width={width} />
+          <div className="st-fog st-fog-1" />
+          <div className="st-fog st-fog-2" />
+          <div className="st-fog st-fog-3" />
+          <div className="st-pumpkin st-pumpkin-left">
+            <PumpkinLantern />
+          </div>
+          <div className="st-pumpkin st-pumpkin-left-small">
+            <PumpkinLantern />
+          </div>
+          <div className="st-pumpkin st-pumpkin-right">
+            <PumpkinLantern />
+          </div>
+        </FullOnly>
       </SceneLayer>
 
       <SceneLayer variant={variant} depth="front" layerRef={frontRef}>

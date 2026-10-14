@@ -65,7 +65,9 @@ export default function Popup({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 backdrop-blur-[4px] px-4"
+      // Desfoque só no computador: no celular, com tema ativo, desfocar a
+      // página animada por trás pesa e pode piscar
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 sm:bg-black/65 sm:backdrop-blur-[4px] px-4"
       onClick={handleClose}
     >
       <div

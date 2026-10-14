@@ -14,6 +14,7 @@ import {
 import ParticleCanvas from "../ParticleCanvas";
 import { PETAL_COLORS } from "../palettes";
 import {
+  FullOnly,
   SceneLayer,
   prefersReducedMotion,
   random,
@@ -44,28 +45,30 @@ export default function PascoaScene({ variant }: { variant: SceneVariant }) {
         {/* Varal de flâmulas medievais no topo */}
         <BuntingRow width={width} shapes={["triangle", "swallowtail", "triangle"]} />
 
-        {/* A Cité de Carcassonne em festa, com ninho, ovos e flores */}
-        <div className="st-skyline-glow st-skyline-glow-pascoa" />
-        <CastleSkyline tone="gold" width={width} />
-        <div className="st-nest">
-          <div className="st-nest-egg" style={{ left: "-6%", bottom: "4%", width: "30%", rotate: "-14deg" }}>
-            <Ink icon={GiEasterEgg} style={{ fill: "#c4a7ff", fillOpacity: 0.9 }} />
+        <FullOnly>
+          {/* A Cité de Carcassonne em festa, com ninho, ovos e flores */}
+          <div className="st-skyline-glow st-skyline-glow-pascoa" />
+          <CastleSkyline tone="gold" width={width} />
+          <div className="st-nest">
+            <div className="st-nest-egg" style={{ left: "-6%", bottom: "4%", width: "30%", rotate: "-14deg" }}>
+              <Ink icon={GiEasterEgg} style={{ fill: "#c4a7ff", fillOpacity: 0.9 }} />
+            </div>
+            <Ink icon={GiNestEggs} />
+            <div className="st-nest-egg" style={{ right: "-14%", bottom: "2%", width: "28%", rotate: "12deg" }}>
+              <Ink icon={GiEasterEgg} style={{ fill: "#9be7c4", fillOpacity: 0.9 }} />
+            </div>
           </div>
-          <Ink icon={GiNestEggs} />
-          <div className="st-nest-egg" style={{ right: "-14%", bottom: "2%", width: "28%", rotate: "12deg" }}>
-            <Ink icon={GiEasterEgg} style={{ fill: "#9be7c4", fillOpacity: 0.9 }} />
+          <div className="st-flower" style={{ left: "38%" }}>
+            <Ink icon={GiFlowerEmblem} style={{ fill: "#ffb3d1", fillOpacity: 0.85 }} />
           </div>
-        </div>
-        <div className="st-flower" style={{ left: "38%" }}>
-          <Ink icon={GiFlowerEmblem} style={{ fill: "#ffb3d1", fillOpacity: 0.85 }} />
-        </div>
-        <div className="st-flower st-flower-small" style={{ left: "61%" }}>
-          <Ink icon={GiTwirlyFlower} style={{ fill: "#ffe08a", fillOpacity: 0.85 }} />
-        </div>
-        <div className="st-flower" style={{ left: "88%" }}>
-          <Ink icon={GiFlowerEmblem} style={{ fill: "#c4a7ff", fillOpacity: 0.85 }} />
-        </div>
-        <HoppingRabbit layerRef={backRef} />
+          <div className="st-flower st-flower-small" style={{ left: "61%" }}>
+            <Ink icon={GiTwirlyFlower} style={{ fill: "#ffe08a", fillOpacity: 0.85 }} />
+          </div>
+          <div className="st-flower" style={{ left: "88%" }}>
+            <Ink icon={GiFlowerEmblem} style={{ fill: "#c4a7ff", fillOpacity: 0.85 }} />
+          </div>
+          <HoppingRabbit layerRef={backRef} />
+        </FullOnly>
       </SceneLayer>
 
       <SceneLayer variant={variant} depth="front" layerRef={frontRef}>

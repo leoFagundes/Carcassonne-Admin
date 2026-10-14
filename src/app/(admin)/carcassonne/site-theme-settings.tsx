@@ -12,6 +12,8 @@ import {
   LuDices,
   LuExternalLink,
   LuEye,
+  LuFeather,
+  LuLayers,
   LuPalette,
   LuRepeat,
   LuSparkles,
@@ -38,10 +40,11 @@ import {
 } from "react-icons/gi";
 import { useAlert } from "@/contexts/alertProvider";
 import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
-import type { SiteThemeId, SiteThemeReminder } from "@/types";
+import type { SiteThemeId, SiteThemeReminder, SiteThemeStyle } from "@/types";
 import {
   SITE_THEMES,
   SITE_THEME_IDS,
+  SITE_THEME_STYLE_LABELS,
   daysUntilReminder,
   describeReminderPeriod,
   formatReminderDate,
@@ -53,6 +56,7 @@ import ThemeThumbnail from "@/components/siteTheme/ThemeThumbnail";
 import {
   useSiteTheme,
   useSiteThemeReminders,
+  useSiteThemeStyle,
 } from "@/components/siteTheme/siteThemeContext";
 import { Ink } from "@/components/siteTheme/ink";
 
@@ -98,13 +102,25 @@ function shortPeriod(reminder: SiteThemeReminder) {
 
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
+const STYLE_OPTIONS: { style: SiteThemeStyle; Icon: IconType; description: string }[] = [
+  { style: "full", Icon: LuSparkles, description: "Todas as decorações e animações" },
+  {
+    style: "minimal",
+    Icon: LuFeather,
+    description: "Só a decoração do topo, poucas partículas e o enfeite do logo",
+  },
+];
+
 export default function SiteThemeSettings() {
   const { addAlert } = useAlert();
   // Tema no ar e avisos, em tempo real (os mesmos que o site inteiro usa)
   const savedTheme = useSiteTheme();
   const { reminders, pending, today } = useSiteThemeReminders();
+  // Versão (completa/minimalista) de cada tema, também em tempo real
+  const { styles } = useSiteThemeStyle();
   const [selected, setSelected] = useState<SiteThemeId>(savedTheme);
   const [applying, setApplying] = useState(false);
+  const [savingStyle, setSavingStyle] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const previousSaved = useRef(savedTheme);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -121,6 +137,27 @@ export default function SiteThemeSettings() {
   const isDirty = selected !== savedTheme;
   const selectedInfo = SITE_THEMES[selected];
   const savedInfo = SITE_THEMES[savedTheme];
+  const selectedStyle: SiteThemeStyle = styles[selected] ?? "full";
+  const selectedHighlights =
+    selectedStyle === "minimal" ? selectedInfo.minimal : selectedInfo.highlights;
+
+  // A versão fica salva por tema: no tema no ar, muda o site na hora
+  const changeStyle = async (style: SiteThemeStyle) => {
+    if (style === selectedStyle || savingStyle) return;
+    setSavingStyle(true);
+    const ok = await GeneralConfigsRepository.setSiteThemeStyle(selected, style);
+    setSavingStyle(false);
+    if (!ok) {
+      addAlert("Não foi possível salvar a versão do tema. Confira a conexão e tente novamente.");
+      return;
+    }
+    const label = SITE_THEME_STYLE_LABELS[style].toLowerCase();
+    addAlert(
+      selected === savedTheme
+        ? `${selectedInfo.name}: versão ${label} já no ar!`
+        : `${selectedInfo.name}: versão ${label} salva para quando o tema for aplicado.`,
+    );
+  };
 
   const applyTheme = async (theme: SiteThemeId = selected) => {
     if (theme === savedTheme || applying) return;
@@ -247,13 +284,67 @@ export default function SiteThemeSettings() {
                   </span>
                 </div>
               </div>
+              {/* Versão do tema: completa (tudo) ou minimalista (menos coisas) */}
+              {selected !== "default" && (
+                <div className="flex flex-col gap-1.5">
+                  <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
+                    <LuLayers size={13} />
+                    Versão do tema
+                  </span>
+                  <div
+                    role="radiogroup"
+                    aria-label="Versão do tema"
+                    className="grid grid-cols-2 gap-1 p-1 rounded-lg border border-primary-gold/15 bg-primary-black/40"
+                  >
+                    {STYLE_OPTIONS.map(({ style, Icon, description }) => {
+                      const active = selectedStyle === style;
+                      return (
+                        <button
+                          key={style}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          onClick={() => changeStyle(style)}
+                          disabled={savingStyle}
+                          className={`flex flex-col items-start gap-0.5 px-3 py-2 rounded-md border text-left transition-all cursor-pointer disabled:cursor-wait ${
+                            active
+                              ? "border-primary-gold/40 bg-primary-gold/[0.12] text-primary-gold"
+                              : "border-transparent text-primary-gold/50 hover:text-primary-gold/80 hover:bg-primary-gold/5"
+                          }`}
+                        >
+                          <span className="flex items-center gap-1.5 text-xs font-semibold">
+                            <Icon size={13} />
+                            {SITE_THEME_STYLE_LABELS[style]}
+                          </span>
+                          <span
+                            className={`text-[10px] leading-snug ${
+                              active ? "text-primary-gold/55" : "text-primary-gold/35"
+                            }`}
+                          >
+                            {description}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <span className="text-[10px] text-primary-gold/35">
+                    {selected === savedTheme
+                      ? "O tema está no ar: a troca aparece na hora no site."
+                      : "Fica salva neste tema e vale quando ele for aplicado."}
+                  </span>
+                </div>
+              )}
               <div className="flex flex-col gap-1.5">
                 <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
                   <LuSparkles size={13} />
-                  {selected === "default" ? "Visual padrão" : "O que aparece no site"}
+                  {selected === "default"
+                    ? "Visual padrão"
+                    : selectedStyle === "minimal"
+                      ? "O que aparece no site (minimalista)"
+                      : "O que aparece no site"}
                 </span>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                  {selectedInfo.highlights.map((highlight) => (
+                  {selectedHighlights.map((highlight) => (
                     <li key={highlight} className="flex items-center gap-2 text-xs text-primary-gold/60">
                       <span
                         className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -330,6 +421,12 @@ export default function SiteThemeSettings() {
                             style={{ background: color }}
                           />
                         ))}
+                        {styles[id] === "minimal" && (
+                          <span className="ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-primary-gold/25 text-[9px] font-semibold uppercase tracking-wider text-primary-gold/60">
+                            <LuFeather size={9} />
+                            Minimalista
+                          </span>
+                        )}
                       </div>
                     </div>
                   </button>
@@ -385,7 +482,7 @@ export default function SiteThemeSettings() {
           <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
             Pré-visualização
           </span>
-          <PhonePreview theme={selected} />
+          <PhonePreview theme={selected} minimal={selectedStyle === "minimal"} />
           <a
             href="/linktree"
             target="_blank"
@@ -702,7 +799,7 @@ const SCREEN_HEIGHT = 760;
 const SCREEN_SCALE = 258 / SCREEN_WIDTH; // 270px de aparelho menos as bordas
 
 /** Celular com a página de links do site, já com o tema aplicado. */
-function PhonePreview({ theme }: { theme: SiteThemeId }) {
+function PhonePreview({ theme, minimal }: { theme: SiteThemeId; minimal: boolean }) {
   return (
     <div
       className="relative shrink-0 rounded-[30px] border-[6px] border-[#232020] bg-primary-black overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
@@ -725,7 +822,12 @@ function PhonePreview({ theme }: { theme: SiteThemeId }) {
           style={{ background: "linear-gradient(135deg, #0a0a0a, #1a1a1a, #121111)" }}
         />
         {theme !== "default" && (
-          <ThemeScene key={theme} theme={theme} variant="preview" />
+          <ThemeScene
+            key={`${theme}:${minimal}`}
+            theme={theme}
+            variant="preview"
+            minimal={minimal}
+          />
         )}
 
         <div className="relative z-10 flex flex-col items-center justify-center gap-8 h-full px-4">

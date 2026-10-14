@@ -1,4 +1,4 @@
-import type { SiteThemeId, SiteThemeReminder } from "@/types";
+import type { SiteThemeId, SiteThemeReminder, SiteThemeStyle } from "@/types";
 
 // Registro dos temas sazonais do site. O dourado e o preto do Carcassonne
 // continuam sendo as cores principais em todos eles — o tema só soma
@@ -12,8 +12,10 @@ export interface SiteThemeInfo {
   season: string;
   /** Cores mostradas no admin — o dourado sempre vem primeiro. */
   swatches: string[];
-  /** O que o tema adiciona ao site (lista do admin). */
+  /** O que o tema adiciona ao site na versão completa (lista do admin). */
   highlights: string[];
+  /** O que fica na versão minimalista. */
+  minimal: string[];
 }
 
 /** Ordem do calendário (o Padrão primeiro e a Noite de Torneio, sem data, no fim). */
@@ -33,6 +35,7 @@ export const SITE_THEME_IDS: SiteThemeId[] = [
 ];
 
 const DECORATED_BARS = "Cabeçalho do cardápio e menu do admin decorados";
+const MINIMAL_BARS = "Só a faixa do tema no cabeçalho do cardápio e no menu do admin";
 
 export const SITE_THEMES: Record<SiteThemeId, SiteThemeInfo> = {
   default: {
@@ -42,6 +45,7 @@ export const SITE_THEMES: Record<SiteThemeId, SiteThemeInfo> = {
     season: "O ano todo",
     swatches: ["#e6c56b", "#d4af37", "#121111"],
     highlights: ["Preto e dourado clássicos", "Sem decorações extras"],
+    minimal: [],
   },
   carnaval: {
     id: "carnaval",
@@ -56,6 +60,12 @@ export const SITE_THEMES: Record<SiteThemeId, SiteThemeInfo> = {
       "Máscaras venezianas, plumas e pandeiro",
       "Chapéu de bobo da corte nos logos",
       DECORATED_BARS,
+    ],
+    minimal: [
+      "Flâmulas em losango e serpentinas no topo",
+      "Um pouco de confete caindo",
+      "Chapéu de bobo da corte nos logos",
+      MINIMAL_BARS,
     ],
   },
   stpatricks: {
@@ -73,6 +83,12 @@ export const SITE_THEMES: Record<SiteThemeId, SiteThemeInfo> = {
       "Cartola verde de duende nos logos",
       DECORATED_BARS,
     ],
+    minimal: [
+      "Guirlanda de trevos com moedas",
+      "Poucos trevos caindo",
+      "Cartola verde de duende nos logos",
+      MINIMAL_BARS,
+    ],
   },
   pascoa: {
     id: "pascoa",
@@ -87,6 +103,12 @@ export const SITE_THEMES: Record<SiteThemeId, SiteThemeInfo> = {
       "Borboletas e pétalas no ar",
       "Orelhas de coelho nos logos",
       DECORATED_BARS,
+    ],
+    minimal: [
+      "Varal de flâmulas medievais",
+      "Algumas pétalas no ar",
+      "Orelhas de coelho nos logos",
+      MINIMAL_BARS,
     ],
   },
   aniversario: {
@@ -104,6 +126,12 @@ export const SITE_THEMES: Record<SiteThemeId, SiteThemeInfo> = {
       "Chapéu de festa nos logos",
       DECORATED_BARS,
     ],
+    minimal: [
+      "Estandartes nas cores dos meeples",
+      "Algumas peças do Carcassonne caindo",
+      "Chapéu de festa nos logos",
+      MINIMAL_BARS,
+    ],
   },
   namorados: {
     id: "namorados",
@@ -118,6 +146,12 @@ export const SITE_THEMES: Record<SiteThemeId, SiteThemeInfo> = {
       "Cadeado do amor na muralha",
       "Coroa de rosas nos logos",
       DECORATED_BARS,
+    ],
+    minimal: [
+      "Guirlanda de rosas no topo",
+      "Algumas pétalas caindo",
+      "Coroa de rosas nos logos",
+      MINIMAL_BARS,
     ],
   },
   junina: {
@@ -134,6 +168,12 @@ export const SITE_THEMES: Record<SiteThemeId, SiteThemeInfo> = {
       "Chapéu de palha nos logos",
       DECORATED_BARS,
     ],
+    minimal: [
+      "Um varal de bandeirinhas de chita",
+      "Poucas brasas subindo",
+      "Chapéu de palha nos logos",
+      MINIMAL_BARS,
+    ],
   },
   oktoberfest: {
     id: "oktoberfest",
@@ -149,6 +189,12 @@ export const SITE_THEMES: Record<SiteThemeId, SiteThemeInfo> = {
       "Bolhinhas de chopp subindo",
       "Chapéu tirolês com pena nos logos",
       DECORATED_BARS,
+    ],
+    minimal: [
+      "Flâmulas da Baviera e ramos de lúpulo",
+      "Algumas bolhinhas de chopp subindo",
+      "Chapéu tirolês com pena nos logos",
+      MINIMAL_BARS,
     ],
   },
   halloween: {
@@ -167,6 +213,12 @@ export const SITE_THEMES: Record<SiteThemeId, SiteThemeInfo> = {
       "Chapéu de bruxa nos logos",
       DECORATED_BARS,
     ],
+    minimal: [
+      "Lua cheia riscada, com nuvens passando",
+      "Poucas brasas subindo",
+      "Chapéu de bruxa nos logos",
+      MINIMAL_BARS,
+    ],
   },
   natal: {
     id: "natal",
@@ -183,6 +235,12 @@ export const SITE_THEMES: Record<SiteThemeId, SiteThemeInfo> = {
       "Coroa dos Reis Magos nos logos",
       DECORATED_BARS,
     ],
+    minimal: [
+      "Guirlanda de pinheiro e estrela-guia",
+      "Neve fininha caindo",
+      "Coroa dos Reis Magos nos logos",
+      MINIMAL_BARS,
+    ],
   },
   reveillon: {
     id: "reveillon",
@@ -197,6 +255,12 @@ export const SITE_THEMES: Record<SiteThemeId, SiteThemeInfo> = {
       "Purpurina dourada no ar",
       "Cartola nos logos",
       DECORATED_BARS,
+    ],
+    minimal: [
+      "Estrelas penduradas num fio dourado",
+      "Um pouco de purpurina no ar",
+      "Cartola nos logos",
+      MINIMAL_BARS,
     ],
   },
   torneio: {
@@ -214,6 +278,12 @@ export const SITE_THEMES: Record<SiteThemeId, SiteThemeInfo> = {
       "Coroa de louros nos logos",
       DECORATED_BARS,
     ],
+    minimal: [
+      "Estandartes dos dois times",
+      "Um pouco de brilho dourado no ar",
+      "Coroa de louros nos logos",
+      MINIMAL_BARS,
+    ],
   },
 };
 
@@ -226,6 +296,32 @@ export function normalizeSiteTheme(value: unknown): SiteThemeId {
 
 /** Último tema visto no aparelho — aplicado na hora, antes de o banco responder. */
 export const SITE_THEME_CACHE_KEY = "carcassonne-site-theme";
+/** Versão (completa/minimalista) do último tema visto no aparelho. */
+export const SITE_THEME_STYLE_CACHE_KEY = "carcassonne-site-theme-style";
+
+// ── Versões dos temas ────────────────────────────────────────────────────────
+
+export type SiteThemeStyles = Partial<Record<SiteThemeId, SiteThemeStyle>>;
+
+export const SITE_THEME_STYLE_LABELS: Record<SiteThemeStyle, string> = {
+  full: "Completa",
+  minimal: "Minimalista",
+};
+
+export const normalizeThemeStyle = (value: unknown): SiteThemeStyle =>
+  value === "minimal" ? "minimal" : "full";
+
+/** Só aceita versões bem formadas vindas do banco (a completa é o padrão). */
+export function normalizeThemeStyles(value: unknown): SiteThemeStyles {
+  if (!value || typeof value !== "object") return {};
+  const result: SiteThemeStyles = {};
+  for (const [theme, style] of Object.entries(value as Record<string, unknown>)) {
+    if (SITE_THEME_IDS.includes(theme as SiteThemeId) && style === "minimal") {
+      result[theme as SiteThemeId] = "minimal";
+    }
+  }
+  return result;
+}
 
 // ── Avisos de tema ───────────────────────────────────────────────────────────
 

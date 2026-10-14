@@ -10,7 +10,7 @@ import {
 } from "react-icons/gi";
 import ParticleCanvas from "../ParticleCanvas";
 import { GOLD_GLITTER_COLORS, MEEPLE_COLORS, TILE_COLORS } from "../palettes";
-import { SceneLayer, useLayerWidth, type SceneVariant } from "../sceneKit";
+import { FullOnly, SceneLayer, useLayerWidth, type SceneVariant } from "../sceneKit";
 import { CakeWithCandles, CastleSkyline } from "../art";
 import { HangingRow, swagGeometry } from "../rows";
 import { JumpingCrowd, Roller } from "../actors";
@@ -79,23 +79,25 @@ export default function AniversarioScene({ variant }: { variant: SceneVariant })
           </>
         )}
 
-        {/* A festa diante da Cité: meeples pulando, bolo e um dado rolando */}
-        <div className="st-skyline-glow st-skyline-glow-gold" />
-        <CastleSkyline tone="gold" width={width} />
-        <JumpingCrowd
-          className="left-[3%] bottom-[0.5%] gap-[2px]"
-          itemClassName="w-[clamp(20px,4.6cqmin,40px)]"
-          items={CROWD}
-        />
-        <div
-          className="absolute st-glow-gold"
-          style={{ right: "4%", bottom: "0.5%", width: "clamp(56px, 13cqmin, 122px)" }}
-        >
-          <CakeWithCandles />
-        </div>
-        <Roller layerRef={backRef} tumble className="bottom-[1%] w-[clamp(22px,5cqmin,40px)]">
-          <Ink icon={GiDiceSixFacesFive} />
-        </Roller>
+        <FullOnly>
+          {/* A festa diante da Cité: meeples pulando, bolo e um dado rolando */}
+          <div className="st-skyline-glow st-skyline-glow-gold" />
+          <CastleSkyline tone="gold" width={width} />
+          <JumpingCrowd
+            className="left-[3%] bottom-[0.5%] gap-[2px]"
+            itemClassName="w-[clamp(20px,4.6cqmin,40px)]"
+            items={CROWD}
+          />
+          <div
+            className="absolute st-glow-gold"
+            style={{ right: "4%", bottom: "0.5%", width: "clamp(56px, 13cqmin, 122px)" }}
+          >
+            <CakeWithCandles />
+          </div>
+          <Roller layerRef={backRef} tumble className="bottom-[1%] w-[clamp(22px,5cqmin,40px)]">
+            <Ink icon={GiDiceSixFacesFive} />
+          </Roller>
+        </FullOnly>
       </SceneLayer>
 
       <SceneLayer variant={variant} depth="front">
