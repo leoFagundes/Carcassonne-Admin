@@ -573,12 +573,17 @@ export default function SettingsPage() {
     "hoursToCloseReserve",
     "blockedDates",
     "specialDates",
+    "showDayOccupancy",
   ];
 
+  // Opções liga/desliga que ainda não existem no banco valem como desligadas
+  const sameConfig = (a: unknown, b: unknown) =>
+    typeof a === "boolean" || typeof b === "boolean"
+      ? !!a === !!b
+      : JSON.stringify(a) === JSON.stringify(b);
+
   const isReservaDirty = RESERVA_CONFIG_FIELDS.some(
-    (field) =>
-      JSON.stringify(localGeneralConfigs[field]) !==
-      JSON.stringify(savedConfigsSnapshot[field]),
+    (field) => !sameConfig(localGeneralConfigs[field], savedConfigsSnapshot[field]),
   );
 
   const EFEITOS_CONFIG_FIELDS: (keyof GeneralConfigsType)[] = [
@@ -1532,6 +1537,25 @@ export default function SettingsPage() {
                   variant
                   width="!w-[min(280px,100%)] sm:!w-[300px]"
                 />
+              </div>
+              <div className="flex flex-col gap-1.5 mt-1">
+                <Checkbox
+                  checked={!!localGeneralConfigs.showDayOccupancy}
+                  setChecked={(e) =>
+                    setLocalGeneralConfigs({
+                      ...localGeneralConfigs,
+                      showDayOccupancy: e.target.checked,
+                    })
+                  }
+                  label="Mostrar a lotação de cada dia no calendário"
+                  variant
+                />
+                <p className="text-[11px] text-primary-gold/40 leading-relaxed">
+                  O cliente vê, embaixo de cada dia, quantos lugares já foram
+                  reservados do total do dia (ex: 45/{localGeneralConfigs.maxCapacityInDay || 75}).
+                  A contagem fica laranja quando o dia está quase cheio e
+                  vermelha quando lota.
+                </p>
               </div>
             </div>
 

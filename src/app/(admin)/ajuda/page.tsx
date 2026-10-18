@@ -438,6 +438,12 @@ const helpCards: HelpCard[] = [
   },
   {
     category: "configuracoes",
+    title: "Como mostrar a lotação de cada dia no calendário de reservas",
+    description:
+      "Em Configurações, na seção 'Capacidade e antecedência', marque 'Mostrar a lotação de cada dia no calendário' e clique em 'Salvar'. A partir daí, no calendário da página de reservas, cada dia aberto mostra embaixo do número quantos lugares já foram reservados do total do dia — por exemplo 45/75, usando a 'Capacidade máxima em um dia' como total e somando só as reservas confirmadas. A contagem fica laranja quando o dia passa de 80% e vermelha quando lota; ao escolher um dia, aparece também '45 de 75 lugares reservados'. Dias fechados (dia da semana sem reserva, datas bloqueadas, passados ou além do prazo) não mostram contagem. Desmarque a opção e salve para esconder de novo.",
+  },
+  {
+    category: "configuracoes",
     title: "Como controlar os efeitos visuais do site",
     description:
       "Na seção de efeitos visuais há três toggles: 'Efeito de clique' (faíscas ao clicar), 'Seguir cursor' (elemento que acompanha o mouse) e 'Canvas cursor' (efeito canvas no cursor). As mudanças entram em vigor para todos os visitantes após salvar.",

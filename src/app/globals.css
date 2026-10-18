@@ -365,61 +365,189 @@ input:-webkit-autofill {
 
 /* FULLCALENDAR STYLES - end */
 
-/* REACT CALENDAR STYLES - start */
+/* REACT CALENDAR STYLES - start (calendário das reservas)
+   Ocupa a largura do card e os dias são quadrados que encolhem junto com a
+   tela — cabe até nos celulares mais estreitos. */
 .react-calendar {
+  width: 100%;
+  max-width: 340px;
   border: none;
-  max-width: 600px;
+  background: transparent;
+  font-family: inherit;
+  line-height: 1.125;
 }
 
+.react-calendar button {
+  margin: 0;
+  font-family: inherit;
+  outline: none;
+}
+
+/* Navegação: setas redondas e o mês numa linha só */
 .react-calendar__navigation {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+  margin-bottom: 10px;
   background-color: transparent;
   color: var(--color-primary-gold);
 }
 
-.react-calendar__navigation__label {
-  font-weight: bold;
+.react-calendar__navigation button {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: rgba(230, 197, 107, 0.75);
   font-size: 18px;
-}
-
-.react-calendar__tile {
-  max-width: 100%;
-  padding: 10px 6px;
-  background: var(--color-primary-black);
-  border: 1px solid var(--color-primary-gold);
-  color: var(--color-primary-gold);
+  line-height: 1;
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
-.react-calendar__tile--active {
-  background: var(--color-primary-gold) !important;
-  color: var(--color-primary-black) !important;
+.react-calendar__navigation button:enabled:hover,
+.react-calendar__navigation button:focus-visible {
+  background-color: rgba(230, 197, 107, 0.12);
+  color: var(--color-primary-gold);
 }
 
-.react-calendar__tile--now {
-  background: var(--color-dark-black);
+.react-calendar__navigation button:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
 
-  color: var(--color-primary-white);
-  font-weight: bold;
+.react-calendar__navigation .react-calendar__navigation__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 36px;
+  border-radius: 10px;
+  padding: 0 6px;
+  color: var(--color-primary-gold);
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Celulares estreitos: sem as setas duplas (pular um ano) — dá para trocar o
+   ano tocando no nome do mês */
+@media (max-width: 400px) {
+  .react-calendar__navigation__prev2-button,
+  .react-calendar__navigation__next2-button {
+    display: none !important;
+  }
+}
+
+.react-calendar__month-view__weekdays {
+  margin-bottom: 2px;
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(230, 197, 107, 0.5);
 }
 
 .react-calendar__month-view__weekdays__weekday {
-  font-weight: bold;
+  padding: 4px 0;
+}
+
+.react-calendar__month-view__weekdays__weekday abbr {
+  text-decoration: none;
+  cursor: default;
+}
+
+/* Dia: quadrado com cantos arredondados; a borda transparente cria o
+   espaço entre um dia e outro */
+.react-calendar__tile {
+  position: relative;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 11px;
+  background-color: rgba(230, 197, 107, 0.06);
+  background-clip: padding-box;
+  box-shadow: inset 0 0 0 1px rgba(230, 197, 107, 0.22);
   color: var(--color-primary-gold);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease;
+}
+
+.react-calendar__tile:enabled:hover,
+.react-calendar__tile:enabled:focus-visible {
+  background-color: rgba(230, 197, 107, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(230, 197, 107, 0.6);
+}
+
+/* Hoje: número em destaque e um pontinho embaixo */
+.react-calendar__tile--now {
+  color: var(--color-primary-white);
+  box-shadow: inset 0 0 0 1px rgba(230, 197, 107, 0.55);
+}
+
+.react-calendar__month-view .react-calendar__tile--now::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 14%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0.8;
+}
+
+.react-calendar__tile--active,
+.react-calendar__tile--active:enabled:hover {
+  background-color: transparent !important;
+  background-image: linear-gradient(180deg, #f0d382, var(--color-primary-gold)) !important;
+  color: var(--color-primary-black) !important;
+  font-weight: 800;
+  box-shadow: 0 4px 14px rgba(230, 197, 107, 0.3) !important;
+}
+
+/* Visão de meses/anos (tocando no nome do mês): botões em vez de quadrados */
+.react-calendar__year-view .react-calendar__tile,
+.react-calendar__decade-view .react-calendar__tile,
+.react-calendar__century-view .react-calendar__tile {
+  aspect-ratio: auto;
+  padding: 14px 4px;
+  font-size: 12px;
+  text-transform: capitalize;
 }
 
 .react-calendar__month-view__days__day--neighboringMonth {
-  color: #ccc;
-  background-color: var(--color-secondary-black);
+  color: rgba(230, 197, 107, 0.25);
+  background-color: transparent;
+  box-shadow: none;
   cursor: not-allowed;
-  opacity: 0.5;
   pointer-events: none;
 }
 
+/* Indisponível (dia da semana fechado, lotado, fora do prazo) */
+.react-calendar__tile:disabled,
 .my-disabled-day {
-  color: #ccc;
-  background-color: var(--color-secondary-black);
+  color: rgba(230, 197, 107, 0.22);
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1px rgba(230, 197, 107, 0.06);
   cursor: not-allowed;
-  opacity: 0.5;
   pointer-events: none;
 }
 
@@ -596,30 +724,84 @@ html[data-site-theme]:not([data-site-theme="default"]):not([data-site-theme-styl
   }
 }
 
+/* Lotação do dia (opção nas configurações de reserva): "45/75" embaixo do
+   número; laranja quando está quase cheio e vermelho quando lotou */
+.rc-with-occupancy .react-calendar__month-view__days .react-calendar__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+/* O pontinho de "hoje" daria em cima da contagem: fica só o contorno */
+.rc-with-occupancy .react-calendar__month-view .react-calendar__tile--now::after {
+  display: none;
+}
+
+.rc-occupancy {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 8px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: rgba(230, 197, 107, 0.55);
+}
+
+@media (min-width: 380px) {
+  .rc-occupancy {
+    font-size: 9px;
+  }
+}
+
+.rc-occupancy-high {
+  color: #ffb36b;
+}
+
+.rc-occupancy-full {
+  color: #ff8a8a;
+}
+
+/* Dia que não cabe mais o grupo (desabilitado): a contagem continua legível */
+.react-calendar__tile:disabled .rc-occupancy:not(.rc-occupancy-full) {
+  color: rgba(230, 197, 107, 0.35);
+}
+
+.react-calendar__tile:disabled .rc-occupancy-full {
+  color: rgba(255, 138, 138, 0.7);
+}
+
+.react-calendar__tile--active .rc-occupancy {
+  color: rgba(18, 17, 17, 0.7);
+}
+
+/* Dia bloqueado pelo admin (casa fechada) e dia especial (evento) */
 .my-blocked-day {
-  border-color: var(--color-invalid-color) !important;
-  background-color: color-mix(
-    in srgb,
-    var(--color-invalid-color) 18%,
-    var(--color-primary-black)
-  );
+  color: #ff9a9a;
+  background-color: color-mix(in srgb, var(--color-invalid-color) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-invalid-color) 70%, transparent);
 }
 
 .my-special-day {
-  border-color: #22c55e !important;
-  background-color: color-mix(in srgb, #22c55e 18%, var(--color-primary-black));
+  color: #86efac;
+  background-color: color-mix(in srgb, #22c55e 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #22c55e 70%, transparent);
 }
 
-.react-calendar__navigation {
-  display: flex;
-  justify-content: center; /* centraliza */
-  gap: 40px; /* espaço entre os botões */
+/* Passar o mouse mantém a cor do aviso (vermelho/verde) */
+.my-blocked-day:enabled:hover,
+.my-blocked-day:enabled:focus-visible {
+  background-color: color-mix(in srgb, var(--color-invalid-color) 24%, transparent);
+  box-shadow: inset 0 0 0 1px var(--color-invalid-color);
 }
 
-.react-calendar__navigation__arrow {
-  flex: 0 0 auto;
-  margin: 0 10px; /* margem lateral */
-  font-size: 1.5em; /* deixa as setas maiores, opcional */
+.my-special-day:enabled:hover,
+.my-special-day:enabled:focus-visible {
+  background-color: color-mix(in srgb, #22c55e 24%, transparent);
+  box-shadow: inset 0 0 0 1px #22c55e;
 }
 
 /* REACT CALENDAR STYLES - end */

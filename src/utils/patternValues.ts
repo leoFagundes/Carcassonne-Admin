@@ -130,6 +130,7 @@ export const patternGeneralConfigs: GeneralConfigsType = {
   isPersonCheckEnabled: false,
   blockedDates: [],
   specialDates: [],
+  showDayOccupancy: false,
 };
 
 export const patternPopup: PopupType = {

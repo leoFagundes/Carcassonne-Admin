@@ -73,6 +73,8 @@ export interface GeneralConfigsType {
   isPersonCheckEnabled: boolean;
   blockedDates: { date: string; reason?: string }[]; // date as "YYYY-MM-DD"
   specialDates: { date: string; description?: string }[]; // date as "YYYY-MM-DD"
+  /** Mostra no calendário de reservas quantos lugares cada dia já tem (ex: 45/75). */
+  showDayOccupancy?: boolean;
   /** Tema visual do site (todas as páginas). Ausente = "default". */
   siteTheme?: SiteThemeId;
   /** Avisos por tema: lembram de ativar o tema dentro de um período. */

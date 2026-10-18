@@ -170,8 +170,8 @@ export default function Reserve() {
     );
   }
 
-  function disableDate({ date, view }: { date: Date; view: string }): boolean {
-    if (view !== "month") return false;
+  /** Dia fechado para reservas: dia da semana sem reserva, passado, além do prazo ou hoje depois do horário limite. */
+  function isOutsideBookingWindow(date: Date): boolean {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const maxDate = new Date(today);
@@ -185,10 +185,33 @@ export default function Reserve() {
       now.getHours() >= localGeneralConfigs.hoursToCloseReserve
     )
       return true;
-    if (date < today || date > maxDate) return true;
+    return date < today || date > maxDate;
+  }
+
+  function disableDate({ date, view }: { date: Date; view: string }): boolean {
+    if (view !== "month") return false;
+    if (isOutsideBookingWindow(date)) return true;
     return (
       getTotalPeopleOnDate(date, allReserves) + adults + childs >
       localGeneralConfigs.maxCapacityInDay
+    );
+  }
+
+  // Lotação de cada dia no calendário (opção nas configurações de reserva)
+  const showOccupancy =
+    !!localGeneralConfigs.showDayOccupancy && localGeneralConfigs.maxCapacityInDay > 0;
+
+  function renderOccupancy({ date, view }: { date: Date; view: string }) {
+    if (view !== "month" || isOutsideBookingWindow(date) || getBlockedDate(date)) {
+      return null;
+    }
+    const taken = getTotalPeopleOnDate(date, allReserves);
+    const max = localGeneralConfigs.maxCapacityInDay;
+    const level = taken >= max ? "rc-occupancy-full" : taken / max >= 0.8 ? "rc-occupancy-high" : "";
+    return (
+      <span className={`rc-occupancy ${level}`}>
+        {taken}/{max}
+      </span>
     );
   }
 
@@ -499,7 +522,7 @@ export default function Reserve() {
         {/* Page 2 — data e horário */}
         {page === 2 && (
           <div className="relative z-10 flex flex-col items-center gap-5 w-full max-w-[420px]">
-            <div className="w-full bg-secondary-black/60 border border-primary-gold/20 rounded-xl p-5 flex flex-col items-center gap-4">
+            <div className="w-full bg-secondary-black/60 border border-primary-gold/20 rounded-xl p-4 sm:p-5 flex flex-col items-center gap-4">
               <p className="text-lg sm:text-xl font-semibold text-center">
                 Data e Horário
               </p>
@@ -507,6 +530,8 @@ export default function Reserve() {
               <Calendar
                 onChange={setDate}
                 value={date}
+                className={showOccupancy ? "rc-with-occupancy" : undefined}
+                tileContent={showOccupancy ? renderOccupancy : undefined}
                 tileDisabled={disableDate}
                 tileClassName={({ date, view }) => {
                   if (view !== "month") return null;
@@ -521,9 +546,17 @@ export default function Reserve() {
               {reserve.bookingDate.day &&
                 reserve.bookingDate.month &&
                 reserve.bookingDate.year && (
-                  <span className="text-sm text-primary-gold/70">
-                    {reserve.bookingDate.day}/{reserve.bookingDate.month}/
-                    {reserve.bookingDate.year}
+                  <span className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-sm text-primary-gold/70">
+                    <span>
+                      {reserve.bookingDate.day}/{reserve.bookingDate.month}/
+                      {reserve.bookingDate.year}
+                    </span>
+                    {showOccupancy && date instanceof Date && !blockedInfo && (
+                      <span className="text-xs text-primary-gold/50">
+                        · {getTotalPeopleOnDate(date, allReserves)} de{" "}
+                        {localGeneralConfigs.maxCapacityInDay} lugares reservados
+                      </span>
+                    )}
                   </span>
                 )}
 
@@ -568,8 +601,11 @@ export default function Reserve() {
                 </div>
               )}
 
-              <div className="flex gap-2">
+              {/* minWidth 0: em celulares bem estreitos os dois botões dividem o
+                  espaço em vez de passar da borda do card */}
+              <div className="flex gap-2 w-full max-w-[260px]">
                 <Button
+                  style={{ minWidth: 0 }}
                   onClick={() => {
                     setPage(1);
                     setDate(undefined);
@@ -592,6 +628,7 @@ export default function Reserve() {
                       reserve.bookingDate.year
                     )
                   }
+                  style={{ minWidth: 0 }}
                   onClick={() => setPage(3)}
                 >
                   Continuar
