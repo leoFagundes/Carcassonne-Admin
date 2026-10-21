@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 import type { SiteThemeId, SiteThemeStyle } from "@/types";
@@ -28,17 +29,24 @@ const ThemeScene = dynamic(() => import("./ThemeScene"), { ssr: false });
 // Tempo para as decorações do tema anterior sumirem (igual ao CSS)
 const LEAVE_MS = 1000;
 
+// Páginas que ficam sempre no visual padrão, com qualquer tema no ar: o login
+// (tela inicial) e o cadastro do admin
+const UNTHEMED_PATHS = ["/", "/signup"];
+
 type MountedScene = { theme: SiteThemeId; style: SiteThemeStyle; leaving: boolean };
 
 /**
- * Aplica em todas as páginas (site e admin) o tema escolhido em
+ * Aplica em todas as páginas (site e admin, menos login e cadastro) o tema escolhido em
  * Configurações → Temas: marca o <html> com data-site-theme (cores de
  * destaque via CSS) e data-site-theme-style (versão completa ou
  * minimalista) e desenha as decorações animadas. Fica escutando o banco,
  * então a troca de tema chega na hora em quem está com a página aberta.
  */
 export default function SiteThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<SiteThemeId>("default");
+  // Tema no ar (do banco) — `theme`, mais abaixo, é o que esta página usa
+  const [liveTheme, setTheme] = useState<SiteThemeId>("default");
+  const pathname = usePathname();
+  const theme: SiteThemeId = UNTHEMED_PATHS.includes(pathname) ? "default" : liveTheme;
   // Versão do tema no ar vinda do cache, até o banco responder
   const [cachedStyle, setCachedStyle] = useState<SiteThemeStyle>("full");
   const [styles, setStyles] = useState<SiteThemeStyles | null>(null);
@@ -72,7 +80,8 @@ export default function SiteThemeProvider({ children }: { children: ReactNode })
     });
   }, []);
 
-  const style: SiteThemeStyle = styles ? (styles[theme] ?? "full") : cachedStyle;
+  const style: SiteThemeStyle =
+    theme === "default" ? "full" : styles ? (styles[theme] ?? "full") : cachedStyle;
 
   // A data muda à meia-noite: os avisos começam e terminam sem recarregar
   useEffect(() => {
@@ -80,9 +89,10 @@ export default function SiteThemeProvider({ children }: { children: ReactNode })
     return () => clearInterval(interval);
   }, []);
 
+  // Avisos comparam com o tema no ar (não com o da página atual)
   const remindersValue = useMemo(
-    () => ({ reminders, pending: pendingThemeReminders(reminders, theme, today), today }),
-    [reminders, theme, today],
+    () => ({ reminders, pending: pendingThemeReminders(reminders, liveTheme, today), today }),
+    [reminders, liveTheme, today],
   );
 
   const styleValue = useMemo(() => ({ style, styles: styles ?? {} }), [style, styles]);

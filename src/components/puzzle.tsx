@@ -71,7 +71,7 @@ export default function Puzzle() {
           }
           direction="right"
         >
-          <div className="h-1 w-1 bg-primary-black/60 rounded-full"></div>
+          <div className="h-1 w-1 rounded-full bg-[#f3e2b8]/40 shadow-[0_0_0_1px_rgba(0,0,0,0.3)]"></div>
         </Tooltip>
       </div>
       <div className="absolute bottom-1/3 left-6">
@@ -89,7 +89,7 @@ export default function Puzzle() {
           }
           direction="right"
         >
-          <div className="h-1 w-1 bg-primary-black/60 rounded-full"></div>
+          <div className="h-1 w-1 rounded-full bg-[#f3e2b8]/40 shadow-[0_0_0_1px_rgba(0,0,0,0.3)]"></div>
         </Tooltip>
       </div>
       <div className="absolute bottom-1/4 left-1/3">
@@ -108,7 +108,7 @@ export default function Puzzle() {
           }
           direction="right"
         >
-          <div className="h-1 w-1 bg-primary-black/80 rounded-full"></div>
+          <div className="h-1 w-1 rounded-full bg-[#f3e2b8]/50 shadow-[0_0_0_1px_rgba(0,0,0,0.3)]"></div>
         </Tooltip>
       </div>
       <div className="absolute bottom-1/2 right-1/3">
@@ -128,7 +128,7 @@ export default function Puzzle() {
           }
           direction="left"
         >
-          <div className="h-1 w-1 bg-primary-black/60 rounded-full"></div>
+          <div className="h-1 w-1 rounded-full bg-[#f3e2b8]/40 shadow-[0_0_0_1px_rgba(0,0,0,0.3)]"></div>
         </Tooltip>
       </div>
       <div className="absolute top-1/3 right-6">
@@ -147,7 +147,7 @@ export default function Puzzle() {
           }
           direction="left"
         >
-          <div className="h-1 w-1 bg-primary-black/40 rounded-full"></div>
+          <div className="h-1 w-1 rounded-full bg-[#f3e2b8]/30 shadow-[0_0_0_1px_rgba(0,0,0,0.3)]"></div>
         </Tooltip>
       </div>
       <div className="absolute top-10 right-1/3">
@@ -166,7 +166,7 @@ export default function Puzzle() {
           }
           direction="bottom"
         >
-          <div className="h-1 w-1 bg-primary-black/40 rounded-full"></div>
+          <div className="h-1 w-1 rounded-full bg-[#f3e2b8]/30 shadow-[0_0_0_1px_rgba(0,0,0,0.3)]"></div>
         </Tooltip>
       </div>
       <div className="absolute bottom-5 right-1/3">
@@ -184,7 +184,7 @@ export default function Puzzle() {
           }
           direction="top"
         >
-          <div className="h-1 w-1 bg-primary-black/80 rounded-full"></div>
+          <div className="h-1 w-1 rounded-full bg-[#f3e2b8]/50 shadow-[0_0_0_1px_rgba(0,0,0,0.3)]"></div>
         </Tooltip>
       </div>
     </>

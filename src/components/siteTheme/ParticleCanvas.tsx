@@ -18,7 +18,8 @@ export type ParticleKind =
   | "glitter" // purpurina: brilhos de quatro pontas piscando
   | "heart" // coraçõezinhos subindo devagar
   | "clover" // trevos caindo
-  | "tile"; // peças do Carcassonne (estrada, cidade, mosteiro) caindo
+  | "tile" // peças do Carcassonne (estrada, cidade, mosteiro) caindo
+  | "dust"; // poeira flutuando na luz da lamparina (login)
 
 interface Particle {
   x: number;
@@ -67,7 +68,7 @@ function makeGlowSprite([r, g, b]: Rgb) {
   return sprite;
 }
 
-const GLOW_KINDS: ParticleKind[] = ["ember", "bokeh", "glitter"];
+const GLOW_KINDS: ParticleKind[] = ["ember", "bokeh", "glitter", "dust"];
 
 export default function ParticleCanvas({
   kind,
@@ -195,6 +196,15 @@ export default function ParticleCanvas({
           p.amp = rand(6, 14);
           p.alpha = rand(0.45, 0.8);
           p.spin = rand(-0.9, 0.9);
+          break;
+        case "dust":
+          // Bem devagar, quase parada no ar quente, subindo de leve
+          p.r = rand(0.5, 1.7);
+          p.vy = -rand(2.5, 9);
+          p.vx = rand(-3, 3);
+          p.amp = rand(3, 9);
+          p.freq = rand(0.15, 0.45);
+          p.alpha = rand(0.2, 0.65);
           break;
       }
       const rising = p.vy < 0;
@@ -421,6 +431,18 @@ export default function ParticleCanvas({
             tile(p);
             ctx.restore();
             break;
+          case "dust": {
+            // Pisca devagar, como poeira que entra e sai do facho de luz
+            const shimmer = 0.45 + 0.55 * Math.abs(Math.sin(time * p.freq * 2 + p.phase));
+            ctx.globalAlpha = p.alpha * shimmer * 0.5;
+            ctx.drawImage(sprites[p.color], p.x - p.r * 5, p.y - p.r * 5, p.r * 10, p.r * 10);
+            ctx.globalAlpha = p.alpha * shimmer;
+            ctx.fillStyle = fills[p.color];
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r * 0.7, 0, TAU);
+            ctx.fill();
+            break;
+          }
         }
       }
       ctx.globalAlpha = 1;
