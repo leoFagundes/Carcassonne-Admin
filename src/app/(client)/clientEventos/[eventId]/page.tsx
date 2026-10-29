@@ -1982,11 +1982,14 @@ function VotingSection({
         addAlert("Você já votou!");
         return;
       }
-      await Promise.all(
+      const voteIds = await Promise.all(
         selectedEntryIds.map((entryId) =>
           VotingVoteRepository.create({ eventId, participantId, entryId }),
         ),
       );
+      // create() engole o erro e devolve null — sem essa checagem, a falha
+      // aparecia como "Voto registrado!" sem nada ter sido salvo.
+      if (voteIds.some((id) => !id)) throw new Error("Falha ao registrar voto");
       addAlert("Voto registrado! Obrigado por participar 🎭");
     } catch {
       addAlert("Erro ao registrar seu voto.");
