@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { ReactNode } from "react";
 import {
   LuBoxes,
   LuCalendarPlus,
@@ -11,6 +11,7 @@ import {
   LuListOrdered,
   LuMailCheck,
   LuMusic,
+  LuPackage,
   LuPizza,
   LuPlus,
   LuText,
@@ -18,304 +19,177 @@ import {
   LuUserPlus,
 } from "react-icons/lu";
 import Card from "./card";
-import Modal from "@/components/modal";
-import {
-  BoardgameType,
-  MenuItemType,
-  ComboType,
-  InfoType,
-  DescriptionTypeProps,
-  TypeOrderType,
-} from "@/types";
-import CollectionForms from "@/components/collectionForms";
-import MenuForms from "@/components/menuForms";
-import ComboForms from "@/components/comboForms";
-import InfoForms from "@/components/infoForms";
-import DescriptionTypeForms from "@/components/descriptionTypeForms";
-import {
-  patternBoardgame,
-  patternCombo,
-  patternDescriptionType,
-  patternInfo,
-  patternMenuItem,
-  patternTypeOrder,
-} from "@/utils/patternValues";
-import PopupForms from "@/components/popupForms";
-import TypesOrderForms from "@/components/typesOrderForms";
-import ReservationEmailForms from "@/components/reservationEmailForms";
-import { useRouter } from "next/navigation";
+
+interface Shortcut {
+  title: string;
+  description: string;
+  icon: ReactNode;
+  href: string;
+  destination: string;
+}
+
+const icon = (Icon: typeof LuDices) => <Icon size={"32px"} className="min-w-[32px]" />;
+
+/**
+ * Atalhos para criar qualquer coisa no site. Cada um leva para a página
+ * onde aquilo vive, com o formulário já aberto — nada é criado aqui.
+ */
+const GROUPS: { title: string; shortcuts: Shortcut[] }[] = [
+  {
+    title: "Reservas",
+    shortcuts: [
+      {
+        title: "Nova Reserva",
+        description: "Crie uma reserva manualmente.",
+        icon: icon(LuCalendarPlus),
+        href: "/myreserves?createreserve=true",
+        destination: "Reservas",
+      },
+      {
+        title: "Freelancers",
+        description: "Cadastre freelancers e escale eles em um ou vários dias.",
+        icon: icon(LuUserPlus),
+        href: "/myreserves/freelancer",
+        destination: "Freelancers",
+      },
+    ],
+  },
+  {
+    title: "Jogos",
+    shortcuts: [
+      {
+        title: "Jogo da Coleção",
+        description: "Adicione um jogo ao acervo do pub (ludoteca).",
+        icon: icon(LuDices),
+        href: "/collection?createjogo=true",
+        destination: "Coleção",
+      },
+      {
+        title: "Jogo para Aluguel",
+        description: "Cadastre um jogo no acervo de aluguel, com preço, prazo e cópias.",
+        icon: icon(LuPackage),
+        href: "/aluguel-admin?tab=jogos&createjogo=true",
+        destination: "Aluguel",
+      },
+    ],
+  },
+  {
+    title: "Cardápio",
+    shortcuts: [
+      {
+        title: "Item",
+        description: "Adicione um prato, bebida ou petisco ao cardápio.",
+        icon: icon(LuPizza),
+        href: "/menu?createitem=true",
+        destination: "Cardápio",
+      },
+      {
+        title: "Combo",
+        description: "Adicione um combo ao cardápio.",
+        icon: icon(LuBoxes),
+        href: "/menu?createcombo=true",
+        destination: "Cardápio",
+      },
+      {
+        title: "Aviso",
+        description: "Adicione um aviso ao cardápio.",
+        icon: icon(LuClipboardPenLine),
+        href: "/menu?createaviso=true",
+        destination: "Cardápio",
+      },
+      {
+        title: "Descrição de Tipo",
+        description: "Escreva a descrição de um tipo de item já criado.",
+        icon: icon(LuText),
+        href: "/menu?createdescricao=true",
+        destination: "Cardápio",
+      },
+      {
+        title: "Ordenar Tipos",
+        description: "Adicione e ordene os tipos e subtipos dos itens.",
+        icon: icon(LuListOrdered),
+        href: "/menu?createtipos=true",
+        destination: "Cardápio",
+      },
+      {
+        title: "Popup",
+        description: "Crie e agende os banners que aparecem ao abrir o cardápio.",
+        icon: icon(LuGroup),
+        href: "/menu?createpopup=true",
+        destination: "Cardápio",
+      },
+    ],
+  },
+  {
+    title: "Site e eventos",
+    shortcuts: [
+      {
+        title: "Evento",
+        description: "Crie um quiz, bolão ou votação de fantasias.",
+        icon: icon(LuTrophy),
+        href: "/eventos?createevento=true",
+        destination: "Eventos",
+      },
+      {
+        title: "Link",
+        description: "Adicione um link ao linktree do Carcassonne.",
+        icon: icon(LuExternalLink),
+        href: "/links?createlink=true",
+        destination: "Links",
+      },
+      {
+        title: "Música",
+        description: "Recomende uma música pela página dos clientes.",
+        icon: icon(LuMusic),
+        href: "/clientMusicRecommendation",
+        destination: "página do cliente",
+      },
+    ],
+  },
+  {
+    title: "Configurações",
+    shortcuts: [
+      {
+        title: "E-mail de Reserva",
+        description: "Personalize o e-mail que o cliente recebe ao fazer uma reserva.",
+        icon: icon(LuMailCheck),
+        href: "/carcassonne?tab=emails",
+        destination: "Configurações → E-mails",
+      },
+    ],
+  },
+];
 
 export default function AddPage() {
-  const [isAddGameModalOpen, setIsAddGameModalOpen] = useState(false);
-  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
-  const [isAddComboModalOpen, setIsAddComboModalOpen] = useState(false);
-  const [isAddInfoModalOpen, setIsAddInfoModalOpen] = useState(false);
-  const [isAddPopupModalOpen, setIsAddPopupModalOpen] = useState(false);
-  const [isAddTypesOrderModalOpen, setIsAddTypesOrderModalOpen] =
-    useState(false);
-  const [isDescriptionTypeModalOpen, setIsDescriptionTypeModalOpen] =
-    useState(false);
-  const [isReservationEmailModalOpen, setIsReservationEmailModalOpen] =
-    useState(false);
-
-  const [newBoardgame, setNewBoardgame] =
-    useState<BoardgameType>(patternBoardgame);
-
-  const [newMenuItem, setNewMenuItem] = useState<MenuItemType>(patternMenuItem);
-
-  const [newCombo, setNewCombo] = useState<ComboType>(patternCombo);
-
-  const [newInfo, setNewInfo] = useState<InfoType>(patternInfo);
-
-  const [newTypeOrder, setNewTypeOrder] =
-    useState<TypeOrderType>(patternTypeOrder);
-
-  const [newDescriptionType, setNewDescriptionType] =
-    useState<DescriptionTypeProps>(patternDescriptionType);
-
-  const router = useRouter();
-
   return (
     <section className="flex flex-col gap-5 w-full h-full overflow-y-auto">
       {/* Header */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-center gap-2">
           <LuPlus size={32} className="text-primary-gold/70 shrink-0" />
-          <h1 className="text-3xl font-semibold text-primary-gold">
-            Adicionar
-          </h1>
+          <h1 className="text-3xl font-semibold text-primary-gold">Adicionar</h1>
         </div>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent" />
+        <p className="text-center text-xs text-primary-gold/45 px-6">
+          Atalhos para criar qualquer coisa no site. Cada card leva para a página certa, com o
+          formulário já aberto.
+        </p>
       </div>
-      <section className="flex justify-center flex-wrap gap-4 pb-6 px-6">
-        <Card
-          title="Adicionar Jogo"
-          description="Adicione um novo jogo a coleção do Carcassonne!"
-          icon={<LuDices size={"32px"} className="min-w-[32px]" />}
-          onClick={() => setIsAddGameModalOpen(true)}
-        />
-        <Card
-          title="Adicionar Item"
-          description="Adicione um novo item ao cardápio do Carcassonne!"
-          icon={<LuPizza size={"32px"} className="min-w-[32px]" />}
-          onClick={() => setIsAddItemModalOpen(true)}
-        />
-        <Card
-          title="Adicionar Descrição"
-          description="Adicione uma descrição a um tipo de item já criado no cardápio!"
-          icon={<LuText size={"32px"} className="min-w-[32px]" />}
-          onClick={() => setIsDescriptionTypeModalOpen(true)}
-        />
-        <Card
-          title="Adicionar Combo"
-          description="Adicione um novo Combo ao cardápio do Carcassonne!"
-          icon={<LuBoxes size={"32px"} className="min-w-[32px]" />}
-          onClick={() => setIsAddComboModalOpen(true)}
-        />
-        <Card
-          title="Adicionar Aviso"
-          description="Adicione um novo Aviso ao cardápio do Carcassonne!"
-          icon={<LuClipboardPenLine size={"32px"} className="min-w-[32px]" />}
-          onClick={() => setIsAddInfoModalOpen(true)}
-        />
-        <Card
-          title="Adicionar Popup"
-          description="Adicione um novo Popup ao cardápio!"
-          icon={<LuGroup size={"32px"} className="min-w-[32px]" />}
-          onClick={() => setIsAddPopupModalOpen(true)}
-        />
-        <Card
-          title="Ordenar Tipos"
-          description="Adicione e ordene os tipos e subtipos de cada item!"
-          icon={<LuListOrdered size={"32px"} className="min-w-[32px]" />}
-          onClick={() => setIsAddTypesOrderModalOpen(true)}
-        />
-        <Card
-          title="Adicionar Reserva"
-          description="Adicione uma nova reserva!"
-          icon={<LuCalendarPlus size={"32px"} className="min-w-[32px]" />}
-          onClick={() => router.push(`/myreserves?createreserve=true`)}
-        />
-        <Card
-          title="E-mail de Reserva"
-          description="Personalize o e-mail que o cliente recebe ao fazer uma reserva!"
-          icon={<LuMailCheck size={"32px"} className="min-w-[32px]" />}
-          onClick={() => setIsReservationEmailModalOpen(true)}
-        />
-        <Card
-          title="Gerenciar Freelancers"
-          description="Cadastre freelancers e escale eles em um ou vários dias!"
-          icon={<LuUserPlus size={"32px"} className="min-w-[32px]" />}
-          onClick={() => router.push(`/myreserves/freelancer`)}
-        />
-        {/* <Card
-          title="Adicionar Foto ao Mural"
-          description="Adicione uma nova foto ao mural do Carcassonne!"
-          icon={<LuImagePlus size={"32px"} className="min-w-[32px]" />}
-          onClick={() => router.push(`/carcassonne?createimage=true`)}
-        /> */}
-        <Card
-          title="Adicionar uma Música"
-          description="Adicione uma recomendação de música para a lista!"
-          icon={<LuMusic size={"32px"} className="min-w-[32px]" />}
-          onClick={() => router.push(`/clientMusicRecommendation`)}
-        />
-        <Card
-          title="Adicionar um Link"
-          description="Adicione um novo Link ao Linktree do Carcassonne"
-          icon={<LuExternalLink size={"32px"} className="min-w-[32px]" />}
-          onClick={() => router.push(`/links?createlink=true`)}
-        />
-        <Card
-          title="Adicionar Evento"
-          description="Crie um novo evento como bolão, votação ou qualquer outra atividade!"
-          icon={<LuTrophy size={"32px"} className="min-w-[32px]" />}
-          onClick={() => router.push(`/eventos?createevento=true`)}
-        />
-      </section>
 
-      <Modal
-        isOpen={isAddGameModalOpen}
-        onClose={() => {
-          setIsAddGameModalOpen(false);
-          setNewBoardgame(patternBoardgame);
-        }}
-        noPadding
-        patternCloseButton={false}
-      >
-        <CollectionForms
-          currentItem={newBoardgame}
-          setCurrentItem={setNewBoardgame}
-          formType="add"
-          closeForms={() => {
-            setIsAddGameModalOpen(false);
-            setNewBoardgame(patternBoardgame);
-          }}
-        />
-      </Modal>
-
-      <Modal
-        isOpen={isAddItemModalOpen}
-        onClose={() => {
-          setIsAddItemModalOpen(false);
-          setNewMenuItem(patternMenuItem);
-        }}
-        noPadding
-        patternCloseButton={false}
-      >
-        <MenuForms
-          currentItem={newMenuItem}
-          setCurrentItem={setNewMenuItem}
-          formType="add"
-          closeForms={() => {
-            setIsAddItemModalOpen(false);
-            setNewMenuItem(patternMenuItem);
-          }}
-        />
-      </Modal>
-
-      <Modal
-        isOpen={isAddComboModalOpen}
-        onClose={() => {
-          setIsAddComboModalOpen(false);
-          setNewCombo(patternCombo);
-        }}
-        noPadding
-        patternCloseButton={false}
-      >
-        <ComboForms
-          currentCombo={newCombo}
-          setCurrentCombo={setNewCombo}
-          formType="add"
-          closeForms={() => {
-            setIsAddComboModalOpen(false);
-            setNewCombo(patternCombo);
-          }}
-        />
-      </Modal>
-
-      <Modal
-        isOpen={isAddInfoModalOpen}
-        onClose={() => {
-          setIsAddInfoModalOpen(false);
-          setNewInfo(patternInfo);
-        }}
-        noPadding
-        patternCloseButton={false}
-      >
-        <InfoForms
-          currentInfo={newInfo}
-          setCurrentInfo={setNewInfo}
-          formType="add"
-          closeForms={() => {
-            setIsAddInfoModalOpen(false);
-            setNewInfo(patternInfo);
-          }}
-        />
-      </Modal>
-
-      <Modal
-        isOpen={isDescriptionTypeModalOpen}
-        onClose={() => {
-          setIsDescriptionTypeModalOpen(false);
-          setNewDescriptionType(patternDescriptionType);
-        }}
-        noPadding
-        patternCloseButton={false}
-      >
-        <DescriptionTypeForms
-          currentDescriptionType={newDescriptionType}
-          setcurrentDescriptionType={setNewDescriptionType}
-          closeForms={() => {
-            setIsDescriptionTypeModalOpen(false);
-            setNewDescriptionType(patternDescriptionType);
-          }}
-        />
-      </Modal>
-
-      <Modal
-        isOpen={isAddTypesOrderModalOpen}
-        onClose={() => {
-          setIsAddTypesOrderModalOpen(false);
-          setNewTypeOrder(patternTypeOrder);
-        }}
-        noPadding
-        patternCloseButton={false}
-      >
-        <TypesOrderForms
-          currentTypeOrder={newTypeOrder}
-          closeForms={() => {
-            setIsAddTypesOrderModalOpen(false);
-            setNewTypeOrder(patternTypeOrder);
-          }}
-        />
-      </Modal>
-
-      <Modal
-        isOpen={isAddPopupModalOpen}
-        onClose={() => {
-          setIsAddPopupModalOpen(false);
-        }}
-        noPadding
-        patternCloseButton={false}
-      >
-        <PopupForms
-          closeForms={() => {
-            setIsAddPopupModalOpen(false);
-          }}
-        />
-      </Modal>
-
-      <Modal
-        isOpen={isReservationEmailModalOpen}
-        onClose={() => setIsReservationEmailModalOpen(false)}
-        noPadding
-        patternCloseButton={false}
-      >
-        <ReservationEmailForms
-          closeForms={() => setIsReservationEmailModalOpen(false)}
-        />
-      </Modal>
+      <div className="flex flex-col gap-7 pb-6 px-6">
+        {GROUPS.map((group) => (
+          <section key={group.title} className="flex flex-col gap-3">
+            <h2 className="text-center text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
+              {group.title}
+            </h2>
+            <div className="flex justify-center flex-wrap gap-4">
+              {group.shortcuts.map((shortcut) => (
+                <Card key={shortcut.href} {...shortcut} />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
     </section>
   );
 }

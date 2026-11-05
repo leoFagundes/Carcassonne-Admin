@@ -56,6 +56,15 @@ export default function GamesTab() {
     return () => unsub();
   }, []);
 
+  // Atalho da página Adicionar (?tab=jogos&createjogo=true): já abre o formulário.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("createjogo") !== "true") return;
+    setEditing(emptyRentalGame);
+    params.delete("createjogo");
+    window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+  }, []);
+
   /** Liga/desliga na hora; se o banco recusar, volta como estava. */
   const toggleActive = async (game: RentalGameType) => {
     if (!game.id) return;

@@ -53,17 +53,18 @@ import {
 } from "recharts";
 import { DragCards } from "./drag-cards";
 import SiteThemeSettings from "./site-theme-settings";
+import EmailsTab from "./emails-tab";
 import { useSiteThemeReminders } from "@/components/siteTheme/siteThemeContext";
 
 /**
- * Vindo do aviso do menu lateral (?tab=temas), abre a aba Temas — inclusive
- * quando a página já está aberta em outra aba.
+ * Abre uma aba pela URL — o aviso do menu lateral usa ?tab=temas e a página
+ * Adicionar usa ?tab=emails — inclusive quando a página já está aberta.
  */
-function TabFromQuery({ onTemas }: { onTemas: () => void }) {
+function TabFromQuery({ onTab }: { onTab: (tab: "temas" | "emails") => void }) {
   const tab = useSearchParams().get("tab");
   useEffect(() => {
-    if (tab === "temas") onTemas();
-  }, [tab, onTemas]);
+    if (tab === "temas" || tab === "emails") onTab(tab);
+  }, [tab, onTab]);
   return null;
 }
 
@@ -220,10 +221,16 @@ export default function SettingsPage() {
     useState<GeneralConfigsType>(patternGeneralConfigs);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
-    "stats" | "settings" | "temas" | "mural"
+    "stats" | "settings" | "temas" | "emails" | "mural"
   >("stats");
   const { pending: pendingThemeReminders } = useSiteThemeReminders();
-  const openTemas = React.useCallback(() => setActiveTab("temas"), []);
+  // Vindo da página Adicionar (?tab=emails), o editor do e-mail já abre.
+  const [openEmailEditor, setOpenEmailEditor] = useState(false);
+  const openTab = React.useCallback((tab: "temas" | "emails") => {
+    setActiveTab(tab);
+    if (tab === "emails") setOpenEmailEditor(true);
+  }, []);
+  const emailEditorOpened = React.useCallback(() => setOpenEmailEditor(false), []);
   const [newBlockedDate, setNewBlockedDate] = useState("");
   const [newBlockedReason, setNewBlockedReason] = useState("");
   const [newSpecialDate, setNewSpecialDate] = useState("");
@@ -797,7 +804,7 @@ export default function SettingsPage() {
     <section className="flex flex-col gap-5 w-full h-full pb-8 overflow-y-auto outline-none px-1">
       {loading && <LoaderFullscreen />}
       <Suspense fallback={null}>
-        <TabFromQuery onTemas={openTemas} />
+        <TabFromQuery onTab={openTab} />
       </Suspense>
       {/* Header */}
       <div className="flex flex-col gap-2">
@@ -817,6 +824,7 @@ export default function SettingsPage() {
             { key: "stats", label: "Estatísticas" },
             { key: "settings", label: "Configurações" },
             { key: "temas", label: "Temas" },
+            { key: "emails", label: "E-mails" },
             { key: "mural", label: "Mural de fotos" },
           ] as const
         ).map((tab) => (
@@ -1758,6 +1766,10 @@ export default function SettingsPage() {
       )}
 
       {activeTab === "temas" && <SiteThemeSettings />}
+
+      {activeTab === "emails" && (
+        <EmailsTab openEditorOnLoad={openEmailEditor} onEditorOpened={emailEditorOpened} />
+      )}
 
       {activeTab === "mural" && (
         <>

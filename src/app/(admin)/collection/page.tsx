@@ -2,7 +2,7 @@
 
 import { BoardgameType } from "@/types";
 import { useEffect, useMemo, useState } from "react";
-import { LuDices, LuDollarSign, LuEyeOff, LuLink, LuSparkles, LuTag } from "react-icons/lu";
+import { LuDices, LuDollarSign, LuEyeOff, LuLink, LuPlus, LuSparkles, LuTag } from "react-icons/lu";
 import Card from "./card";
 import Modal from "@/components/modal";
 import CollectionForms from "@/components/collectionForms";
@@ -32,6 +32,7 @@ export default function CollectionPage() {
   const [loading, setLoading] = useState(true);
   const [boardgames, setBoardgames] = useState<BoardgameType[]>([]);
   const [currentItem, setCurrentItem] = useState<BoardgameType>(patternBoardgame);
+  const [formType, setFormType] = useState<"add" | "edit">("edit");
   const [view, setView] = useCatalogView("carcassonne-admin-collection-view");
 
   const { addAlert } = useAlert();
@@ -49,6 +50,20 @@ export default function CollectionPage() {
 
   useEffect(() => {
     fetchBoardgames(true);
+  }, []);
+
+  const openNewGame = () => {
+    setCurrentItem(patternBoardgame);
+    setFormType("add");
+    setIsModalOpen(true);
+  };
+
+  // Atalho da página Adicionar (?createjogo=true): já abre o formulário.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("createjogo") !== "true") return;
+    openNewGame();
+    window.history.replaceState(null, "", window.location.pathname);
   }, []);
 
   /** Fecha a edição e atualiza a lista (pode ter salvo ou excluído). */
@@ -148,6 +163,14 @@ export default function CollectionPage() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <Tooltip direction="bottom" content="Adicionar jogo">
+              <button
+                onClick={openNewGame}
+                className="p-2 cursor-pointer rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all"
+              >
+                <LuPlus size={14} />
+              </button>
+            </Tooltip>
             <Tooltip direction="bottom" content="Visão do cliente">
               <button
                 onClick={() =>
@@ -283,6 +306,7 @@ export default function CollectionPage() {
                 words={words}
                 onEdit={() => {
                   setCurrentItem(game);
+                  setFormType("edit");
                   setIsModalOpen(true);
                 }}
                 onUpdate={(patch) => updateGame(game, patch)}
@@ -297,7 +321,7 @@ export default function CollectionPage() {
           <CollectionForms
             currentItem={currentItem}
             setCurrentItem={setCurrentItem}
-            formType="edit"
+            formType={formType}
             closeForms={closeModal}
           />
         </Modal>

@@ -72,7 +72,7 @@ const helpCards: HelpCard[] = [
     category: "reservas",
     title: "Como criar uma nova reserva manualmente",
     description:
-      "Clique no ícone de calendário com + (tooltip: 'Criar uma nova reserva') no cabeçalho da página. Um formulário abrirá em modal com a data já preenchida com o dia selecionado. Preencha nome, telefone, e-mail, horário, quantidade de pessoas e observação. Outra forma de chegar no mesmo formulário é pela página Adicionar → 'Adicionar Reserva'.",
+      "Clique no ícone de calendário com + (tooltip: 'Criar uma nova reserva') no cabeçalho da página. Um formulário abrirá em modal com a data já preenchida com o dia selecionado. Preencha nome, telefone, e-mail, horário, quantidade de pessoas e observação. Outra forma de chegar no mesmo formulário é pelo atalho 'Nova Reserva' da página Adicionar.",
   },
   {
     category: "reservas",
@@ -108,7 +108,7 @@ const helpCards: HelpCard[] = [
     category: "reservas",
     title: "Como gerenciar os freelancers",
     description:
-      "Clique no ícone de pessoas (tooltip: 'Gerenciar freelancers') no cabeçalho de /myreserves, ou vá em Adicionar → 'Gerenciar Freelancers'. Isso abre a página /myreserves/freelancer, onde cada freelancer é cadastrado uma única vez — com nome, WhatsApp e observações opcionais, e uma foto opcional (enviada na hora ou escolhida do mural de fotos do Carcassonne) — e pode ser escalado em um ou vários dias sem precisar digitar o nome de novo a cada agendamento. Use a busca por nome e os filtros rápidos (Hoje, Próximos 7 dias, Pagamento pendente — cada um já mostra quantos resultados dá) pra achar rápido quem precisa de atenção; a lista vem ordenada com quem tem o próximo dia mais próximo no topo. Clique num freelancer pra expandir o card e ver os dias agendados dele, agendar novos dias, mudar status e pagamento de cada dia, editar os dados ou excluir o freelancer (isso remove também todos os agendamentos dele). Por padrão só aparecem os agendamentos de 7 dias atrás em diante; um agendamento mais antigo que isso só aparece clicando em 'Ver todos os agendamentos antigos', e pode ser limpo de uma vez com 'Excluir agendamentos antigos'.",
+      "Clique no ícone de pessoas (tooltip: 'Gerenciar freelancers') no cabeçalho de /myreserves, ou use o atalho 'Freelancers' da página Adicionar. Isso abre a página /myreserves/freelancer, onde cada freelancer é cadastrado uma única vez — com nome, WhatsApp e observações opcionais, e uma foto opcional (enviada na hora ou escolhida do mural de fotos do Carcassonne) — e pode ser escalado em um ou vários dias sem precisar digitar o nome de novo a cada agendamento. Use a busca por nome e os filtros rápidos (Hoje, Próximos 7 dias, Pagamento pendente — cada um já mostra quantos resultados dá) pra achar rápido quem precisa de atenção; a lista vem ordenada com quem tem o próximo dia mais próximo no topo. Clique num freelancer pra expandir o card e ver os dias agendados dele, agendar novos dias, mudar status e pagamento de cada dia, editar os dados ou excluir o freelancer (isso remove também todos os agendamentos dele). Por padrão só aparecem os agendamentos de 7 dias atrás em diante; um agendamento mais antigo que isso só aparece clicando em 'Ver todos os agendamentos antigos', e pode ser limpo de uma vez com 'Excluir agendamentos antigos'.",
   },
   {
     category: "reservas",
@@ -164,7 +164,7 @@ const helpCards: HelpCard[] = [
     category: "colecao",
     title: "Como adicionar um novo jogo",
     description:
-      "Para adicionar um jogo à coleção vá em Adicionar → 'Adicionar Jogo'. Preencha nome, descrição, dificuldade, número mínimo e máximo de jogadores, tempo de jogo, tipos (pode ser mais de um), e defina se está visível, em destaque e à venda. A imagem pode ser adicionada via URL.",
+      "Na página Coleção, clique no ícone de + (tooltip: 'Adicionar jogo') no cabeçalho — ou use o atalho 'Jogo da Coleção' da página Adicionar. Preencha nome, descrição, dificuldade, número mínimo e máximo de jogadores, tempo de jogo, tipos (pode ser mais de um), e defina se está visível, em destaque e à venda. A imagem pode ser adicionada via URL.",
   },
   {
     category: "colecao",
@@ -282,37 +282,37 @@ const helpCards: HelpCard[] = [
     category: "cardapio",
     title: "Visão geral do Cardápio",
     description:
-      "A página Cardápio exibe avisos, combos e todos os itens (pratos, bebidas etc.), separados em seções por categoria, na mesma ordem do cardápio do cliente — clique no título de uma seção para recolher ou abrir. No quadro de cima há a busca (por nome, descrição ou categoria, sem precisar de acento — '/' vai direto a ela e Esc limpa), a Situação (todos, ocultos, destaques, veganos) e a Categoria, cada pílula com a sua quantidade. Dá para alternar entre grade e lista ao lado da busca. Em cada item, os botões de baixo mostram/ocultam, destacam e marcam como vegano na hora, sem abrir o item. As categorias e sua ordem são gerenciadas pela opção 'Ordenar Tipos' na página Adicionar.",
+      "A página Cardápio exibe avisos, combos e todos os itens (pratos, bebidas etc.), separados em seções por categoria, na mesma ordem do cardápio do cliente — clique no título de uma seção para recolher ou abrir. No quadro de cima há a busca (por nome, descrição ou categoria, sem precisar de acento — '/' vai direto a ela e Esc limpa), a Situação (todos, ocultos, destaques, veganos) e a Categoria, cada pílula com a sua quantidade. Dá para alternar entre grade e lista ao lado da busca. Em cada item, os botões de baixo mostram/ocultam, destacam e marcam como vegano na hora, sem abrir o item. No cabeçalho, o ícone de + (tooltip: 'Adicionar') cria um Item, um Combo ou um Aviso, e o ícone de ajustes (tooltip: 'Organizar e popups') abre as Descrições dos tipos, a ordem dos tipos e subtipos (que define as categorias e sua ordem) e os Popups.",
   },
   {
     category: "cardapio",
     title: "Como adicionar um item ao cardápio",
     description:
-      "Vá em Adicionar → 'Adicionar Item'. Preencha nome, descrição, valor, tipo e subtipo, se é vegano e se é item em foco. O item só aparece no site quando a opção 'Visível' estiver ativada. Avisos e complementos opcionais também podem ser adicionados no formulário.",
+      "Na página Cardápio, clique no ícone de + (tooltip: 'Adicionar') no cabeçalho e escolha 'Item' — ou use o atalho 'Item' da página Adicionar. Preencha nome, descrição, valor, tipo e subtipo, se é vegano e se é item em foco. O item só aparece no site quando a opção 'Visível' estiver ativada. Avisos e complementos opcionais também podem ser adicionados no formulário.",
   },
   {
     category: "cardapio",
     title: "Como adicionar uma descrição a um tipo",
     description:
-      "Vá em Adicionar → 'Adicionar Descrição'. Isso permite adicionar um texto descritivo a uma categoria existente do cardápio, como uma explicação sobre um tipo de prato. Esse texto aparece acima dos itens daquela categoria no site.",
+      "Na página Cardápio, clique no ícone de ajustes (tooltip: 'Organizar e popups') no cabeçalho e escolha 'Descrições dos tipos'. Isso permite adicionar um texto descritivo a uma categoria existente do cardápio, como uma explicação sobre um tipo de prato. Esse texto aparece acima dos itens daquela categoria no site.",
   },
   {
     category: "cardapio",
     title: "Como adicionar um combo",
     description:
-      "Vá em Adicionar → 'Adicionar Combo'. Preencha nome, descrição e valor do combo. Combos aparecem em uma seção própria no cardápio do site, separada dos itens comuns.",
+      "Na página Cardápio, clique no ícone de + (tooltip: 'Adicionar') no cabeçalho e escolha 'Combo'. Preencha nome, descrição e valor do combo. Combos aparecem em uma seção própria no cardápio do site, separada dos itens comuns.",
   },
   {
     category: "cardapio",
     title: "Como adicionar um aviso ao cardápio",
     description:
-      "Vá em Adicionar → 'Adicionar Aviso'. Um aviso (Info) é um bloco de texto institucional que aparece no cardápio, como um aviso sobre taxas, políticas ou informações especiais. Você pode adicionar múltiplos valores/linhas por aviso.",
+      "Na página Cardápio, clique no ícone de + (tooltip: 'Adicionar') no cabeçalho e escolha 'Aviso'. Um aviso (Info) é um bloco de texto institucional que aparece no cardápio, como um aviso sobre taxas, políticas ou informações especiais. Você pode adicionar múltiplos valores/linhas por aviso.",
   },
   {
     category: "cardapio",
     title: "Como reordenar tipos e subtipos do cardápio",
     description:
-      "Vá em Adicionar → 'Ordenar Tipos'. Aqui você cria, edita e reordena os tipos (ex: 'Pratos Quentes') e subtipos (ex: 'Massas') que organizam o cardápio. A ordem definida aqui reflete diretamente na exibição do site.",
+      "Na página Cardápio, clique no ícone de ajustes (tooltip: 'Organizar e popups') no cabeçalho e escolha 'Ordenar tipos e subtipos'. Aqui você cria, edita e reordena os tipos (ex: 'Pratos Quentes') e subtipos (ex: 'Massas') que organizam o cardápio. A ordem definida aqui reflete diretamente na exibição do site.",
   },
   {
     category: "cardapio",
@@ -364,7 +364,7 @@ const helpCards: HelpCard[] = [
     category: "links",
     title: "Como adicionar um link",
     description:
-      "Clique no ícone de + no cabeçalho da página Links, ou vá em Adicionar → 'Adicionar um Link'. Preencha o nome exibido, a URL de destino, uma descrição curta e escolha um ícone da biblioteca de ícones disponível. O link é criado como visível por padrão.",
+      "Clique no ícone de + no cabeçalho da página Links, ou use o atalho 'Link' da página Adicionar. Preencha o nome exibido, a URL de destino, uma descrição curta e escolha um ícone da biblioteca de ícones disponível. O link é criado como visível por padrão.",
   },
   {
     category: "links",
@@ -402,7 +402,7 @@ const helpCards: HelpCard[] = [
     category: "eventos",
     title: "Como criar um novo evento",
     description:
-      "Clique no ícone de + no cabeçalho, ou vá em Adicionar → 'Adicionar Evento'. Preencha nome, descrição, escolha um ícone e defina o subtipo (Quiz ou Bolão). O evento começa inativo. Para que os clientes vejam, ative-o pelo toggle de ativo/inativo no painel do evento.",
+      "Clique no ícone de + no cabeçalho, ou use o atalho 'Evento' da página Adicionar. Preencha nome, descrição, escolha um ícone e defina o subtipo (Quiz, Bolão ou Votação). O evento começa inativo. Para que os clientes vejam, ative-o pelo toggle de ativo/inativo no painel do evento.",
   },
   {
     category: "eventos",
@@ -500,19 +500,19 @@ const helpCards: HelpCard[] = [
     category: "adicionar",
     title: "Visão geral da página Adicionar",
     description:
-      "Hub central de criação de conteúdo. Agrupa atalhos para todos os formulários de cadastro do sistema em cards visuais. Alguns abrem um modal diretamente na página; outros redirecionam para a página correspondente já com o modal de criação aberto.",
+      "Página de atalhos para criar qualquer coisa no site. Nada é criado nela: cada card leva para a página onde aquilo vive, já com o formulário aberto, e mostra no rodapé para onde vai (ex.: 'Em Cardápio →'). Os cards ficam agrupados por área — Reservas, Jogos, Cardápio, Site e eventos, Configurações. Tudo o que tem atalho aqui também pode ser criado direto na própria página.",
   },
   {
     category: "adicionar",
     title: "O que cada card faz na página Adicionar",
     description:
-      "Adicionar Jogo → abre formulário de novo jogo (modal). Adicionar Item → abre formulário de item do cardápio (modal). Adicionar Descrição → descrição de tipo de item existente (modal). Adicionar Combo → formulário de combo (modal). Adicionar Aviso → texto de aviso para o cardápio (modal). Adicionar Popup → popup do site (modal). Ordenar Tipos → gerencia tipos e subtipos do cardápio (modal). Adicionar Reserva → vai para Reservas com formulário aberto. E-mail de Reserva → edita o e-mail que o cliente recebe ao reservar (modal). Gerenciar Freelancers → vai para a página de gestão de freelancers (/myreserves/freelancer). Adicionar uma Música → vai para a página de recomendação de música do cliente. Adicionar um Link → vai para Links com formulário aberto. Adicionar Evento → vai para Eventos com formulário aberto.",
+      "Reservas: Nova Reserva → Reservas com o formulário aberto; Freelancers → página de freelancers. Jogos: Jogo da Coleção → Coleção com o formulário de novo jogo; Jogo para Aluguel → Aluguel → Jogos com o formulário aberto. Cardápio: Item, Combo e Aviso → Cardápio com o formulário certo aberto; Descrição de Tipo, Ordenar Tipos e Popup → Cardápio com o organizador correspondente aberto. Site e eventos: Evento → Eventos com o formulário aberto; Link → Links com o formulário aberto; Música → página de recomendação de música dos clientes. Configurações: E-mail de Reserva → Configurações → aba 'E-mails' com o editor aberto.",
   },
   {
-    category: "adicionar",
+    category: "configuracoes",
     title: "Como personalizar o e-mail de reserva",
     description:
-      "Em Adicionar → 'E-mail de Reserva' você edita o e-mail de confirmação que o cliente recebe: assunto, texto de prévia, imagens do topo e do rodapé, título, mensagens, aviso, endereço, bloco de cancelamento e assinatura. As variáveis ({nome}, {codigo}, {data}, {data_curta}, {dia_semana}, {horario}, {pessoas}) são trocadas pelos dados de cada reserva — clique em um campo e depois na variável para inseri-la. Use **texto** para negrito. A pré-visualização ao lado atualiza enquanto você digita (com visão de computador e de celular). O código da reserva e o link de cancelamento sempre aparecem e não podem ser removidos. As mudanças só valem depois de 'Salvar alterações' (ou Ctrl + S); depois de salvar, use 'Enviar um teste' para receber o e-mail de verdade. 'Restaurar padrão' volta ao conteúdo original (também precisa salvar).",
+      "Em Configurações → aba 'E-mails', clique em 'Editar e-mail' (ou use o atalho 'E-mail de Reserva' da página Adicionar). Ali você edita o e-mail de confirmação que o cliente recebe: assunto, texto de prévia, imagens do topo e do rodapé, título, mensagens, aviso, endereço, bloco de cancelamento e assinatura. As variáveis ({nome}, {codigo}, {data}, {data_curta}, {dia_semana}, {horario}, {pessoas}) são trocadas pelos dados de cada reserva — clique em um campo e depois na variável para inseri-la. Use **texto** para negrito. A pré-visualização ao lado atualiza enquanto você digita (com visão de computador e de celular). O código da reserva e o link de cancelamento sempre aparecem e não podem ser removidos. As mudanças só valem depois de 'Salvar alterações' (ou Ctrl + S); depois de salvar, use 'Enviar um teste' para receber o e-mail de verdade. 'Restaurar padrão' volta ao conteúdo original (também precisa salvar).",
   },
 
   // ── USUÁRIOS ──────────────────────────────────────────────────
@@ -552,7 +552,7 @@ const helpCards: HelpCard[] = [
     category: "configuracoes",
     title: "Visão geral da página Configurações",
     description:
-      "Centraliza estatísticas do sistema e as configurações globais do site. Está dividida em seções: estatísticas de reservas do mês atual, gráficos de distribuição de reservas por dia da semana, ranking de cliques nos links, informações do banco de dados, configurações gerais de reservas, efeitos visuais do site, temas sazonais do site (aba 'Temas') e o editor do painel decorativo (mural).",
+      "Centraliza estatísticas do sistema e as configurações globais do site. Está dividida em seções: estatísticas de reservas do mês atual, gráficos de distribuição de reservas por dia da semana, ranking de cliques nos links, informações do banco de dados, configurações gerais de reservas, efeitos visuais do site, temas sazonais do site (aba 'Temas'), os e-mails enviados pelo site (aba 'E-mails', com o editor do e-mail de reserva) e o editor do painel decorativo (mural).",
   },
   {
     category: "configuracoes",
@@ -633,10 +633,10 @@ const helpCards: HelpCard[] = [
       "No final da página Configurações há o editor do mural — o painel visual decorativo exibido na página inicial do site. Você pode reposicionar, redimensionar e rotacionar cada elemento arrastando-os na visualização. As alterações são salvas ao clicar em salvar.",
   },
   {
-    category: "configuracoes",
+    category: "cardapio",
     title: "Como adicionar e agendar um popup no site",
     description:
-      "Vá em Adicionar → 'Adicionar Popup'. Um popup é um banner que aparece automaticamente para os clientes ao entrar no cardápio. Você define a imagem e, opcionalmente, um nome interno (só aparece aqui no admin, pra te ajudar a identificar o popup), um título e uma descrição (esses dois aparecem pro cliente, abaixo da imagem). Cada popup pode ter um ou mais horários — dias da semana + hora de início e fim — em que fica visível; sem nenhum horário definido, ele fica ativo o dia inteiro, todos os dias, enquanto o toggle 'ativo' estiver ligado. Se dois popups ativos tiverem horários que se sobrepõem, o sistema mostra um aviso de conflito (na lista e ao editar) — nesse caso, só um deles é exibido por vez.",
+      "Na página Cardápio, clique no ícone de ajustes (tooltip: 'Organizar e popups') no cabeçalho e escolha 'Popups' — lá ficam a lista e o formulário. Um popup é um banner que aparece automaticamente para os clientes ao entrar no cardápio. Você define a imagem e, opcionalmente, um nome interno (só aparece aqui no admin, pra te ajudar a identificar o popup), um título e uma descrição (esses dois aparecem pro cliente, abaixo da imagem). Cada popup pode ter um ou mais horários — dias da semana + hora de início e fim — em que fica visível; sem nenhum horário definido, ele fica ativo o dia inteiro, todos os dias, enquanto o toggle 'ativo' estiver ligado. Se dois popups ativos tiverem horários que se sobrepõem, o sistema mostra um aviso de conflito (na lista e ao editar) — nesse caso, só um deles é exibido por vez.",
   },
 
   // ── EASTER EGG ────────────────────────────────────────────────

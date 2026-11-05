@@ -1,15 +1,21 @@
 "use client";
 
-import { ComboType, InfoType, MenuItemType, TypeOrderType } from "@/types";
+import { ComboType, DescriptionTypeProps, InfoType, MenuItemType, TypeOrderType } from "@/types";
 import { useEffect, useMemo, useState } from "react";
 import {
   LuBoxes,
+  LuClipboardPenLine,
   LuEyeOff,
   LuFileCode2,
+  LuGroup,
   LuLink,
+  LuListOrdered,
   LuMegaphone,
   LuPizza,
+  LuPlus,
+  LuSlidersHorizontal,
   LuSparkles,
+  LuText,
   LuUtensils,
   LuVegan,
 } from "react-icons/lu";
@@ -18,9 +24,19 @@ import MenuForms from "@/components/menuForms";
 import MenuCard from "./menuCard";
 import InfoCard from "./infoCard";
 import ComboCard from "./comboCard";
+import HeaderMenu from "./headerMenu";
 import InfoForms from "@/components/infoForms";
 import ComboForms from "@/components/comboForms";
-import { patternCombo, patternInfo, patternMenuItem } from "@/utils/patternValues";
+import DescriptionTypeForms from "@/components/descriptionTypeForms";
+import TypesOrderForms from "@/components/typesOrderForms";
+import PopupForms from "@/components/popupForms";
+import {
+  patternCombo,
+  patternDescriptionType,
+  patternInfo,
+  patternMenuItem,
+  patternTypeOrder,
+} from "@/utils/patternValues";
 import InfoRepository from "@/services/repositories/InfoRepository";
 import { useAlert } from "@/contexts/alertProvider";
 import ComboRepository from "@/services/repositories/ComboRepository";
@@ -56,6 +72,13 @@ export default function MenuPage() {
   const [currentInfo, setCurrentInfo] = useState<InfoType>(patternInfo);
   const [isComboModalOpen, setIsComboModalOpen] = useState(false);
   const [currentCombo, setCurrentCombo] = useState<ComboType>(patternCombo);
+  // "add" quando vem do botão Adicionar; "edit" ao tocar num card
+  const [formType, setFormType] = useState<"add" | "edit">("edit");
+  const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
+  const [currentDescription, setCurrentDescription] =
+    useState<DescriptionTypeProps>(patternDescriptionType);
+  const [isTypesOrderModalOpen, setIsTypesOrderModalOpen] = useState(false);
+  const [isPopupModalOpen, setIsPopupModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [infos, setInfos] = useState<InfoType[]>([]);
   const [combos, setCombos] = useState<ComboType[]>([]);
@@ -106,6 +129,48 @@ export default function MenuPage() {
     setCurrentCombo(patternCombo);
     fetchAll();
   };
+  const closeDescriptionModal = () => {
+    setIsDescriptionModalOpen(false);
+    setCurrentDescription(patternDescriptionType);
+  };
+  // A ordem dos tipos muda como as seções aparecem aqui
+  const closeTypesOrderModal = () => {
+    setIsTypesOrderModalOpen(false);
+    fetchAll();
+  };
+
+  const openNewItem = () => {
+    setFormType("add");
+    setCurrentItem(patternMenuItem);
+    setIsMenuModalOpen(true);
+  };
+  const openNewCombo = () => {
+    setFormType("add");
+    setCurrentCombo(patternCombo);
+    setIsComboModalOpen(true);
+  };
+  const openNewInfo = () => {
+    setFormType("add");
+    setCurrentInfo(patternInfo);
+    setIsInfoModalOpen(true);
+  };
+
+  // Atalhos da página Adicionar (?createitem=true etc.): já abre o modal certo.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const shortcuts: Record<string, () => void> = {
+      createitem: openNewItem,
+      createcombo: openNewCombo,
+      createaviso: openNewInfo,
+      createdescricao: () => setIsDescriptionModalOpen(true),
+      createtipos: () => setIsTypesOrderModalOpen(true),
+      createpopup: () => setIsPopupModalOpen(true),
+    };
+    const key = Object.keys(shortcuts).find((name) => params.get(name) === "true");
+    if (!key) return;
+    shortcuts[key]();
+    window.history.replaceState(null, "", window.location.pathname);
+  }, []);
 
   /** Liga/desliga na hora; se o banco recusar, volta como estava. */
   const updateItem = async (item: MenuItemType, patch: Partial<MenuItemType>) => {
@@ -228,6 +293,39 @@ export default function MenuPage() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <HeaderMenu
+              tooltip="Adicionar"
+              icon={<LuPlus size={14} />}
+              options={[
+                { label: "Item", description: "Prato, bebida ou petisco", icon: <LuPizza size={15} />, onSelect: openNewItem },
+                { label: "Combo", description: "Conjunto de itens com preço", icon: <LuBoxes size={15} />, onSelect: openNewCombo },
+                { label: "Aviso", description: "Texto informativo no cardápio", icon: <LuClipboardPenLine size={15} />, onSelect: openNewInfo },
+              ]}
+            />
+            <HeaderMenu
+              tooltip="Organizar e popups"
+              icon={<LuSlidersHorizontal size={14} />}
+              options={[
+                {
+                  label: "Descrições dos tipos",
+                  description: "Texto exibido no topo de cada tipo",
+                  icon: <LuText size={15} />,
+                  onSelect: () => setIsDescriptionModalOpen(true),
+                },
+                {
+                  label: "Ordenar tipos e subtipos",
+                  description: "Ordem das seções no cardápio",
+                  icon: <LuListOrdered size={15} />,
+                  onSelect: () => setIsTypesOrderModalOpen(true),
+                },
+                {
+                  label: "Popups",
+                  description: "Banners que aparecem ao abrir o cardápio",
+                  icon: <LuGroup size={15} />,
+                  onSelect: () => setIsPopupModalOpen(true),
+                },
+              ]}
+            />
             <Tooltip direction="bottom" content="Visão do cliente">
               <button
                 onClick={() =>
@@ -350,6 +448,7 @@ export default function MenuPage() {
                       view={view}
                       words={words}
                       onEdit={() => {
+                        setFormType("edit");
                         setCurrentInfo(info);
                         setIsInfoModalOpen(true);
                       }}
@@ -375,6 +474,7 @@ export default function MenuPage() {
                       view={view}
                       words={words}
                       onEdit={() => {
+                        setFormType("edit");
                         setCurrentCombo(combo);
                         setIsComboModalOpen(true);
                       }}
@@ -401,6 +501,7 @@ export default function MenuPage() {
                       view={view}
                       words={words}
                       onEdit={() => {
+                        setFormType("edit");
                         setCurrentItem(item);
                         setIsMenuModalOpen(true);
                       }}
@@ -419,7 +520,7 @@ export default function MenuPage() {
           <MenuForms
             currentItem={currentItem}
             setCurrentItem={setCurrentItem}
-            formType="edit"
+            formType={formType}
             closeForms={closeMenuModal}
           />
         </Modal>
@@ -429,7 +530,7 @@ export default function MenuPage() {
           <InfoForms
             currentInfo={currentInfo}
             setCurrentInfo={setCurrentInfo}
-            formType="edit"
+            formType={formType}
             closeForms={closeInfoModal}
           />
         </Modal>
@@ -439,11 +540,30 @@ export default function MenuPage() {
           <ComboForms
             currentCombo={currentCombo}
             setCurrentCombo={setCurrentCombo}
-            formType="edit"
+            formType={formType}
             closeForms={closeComboModal}
           />
         </Modal>
       )}
+
+      <Modal isOpen={isDescriptionModalOpen} onClose={closeDescriptionModal} noPadding patternCloseButton={false}>
+        <DescriptionTypeForms
+          currentDescriptionType={currentDescription}
+          setcurrentDescriptionType={setCurrentDescription}
+          closeForms={closeDescriptionModal}
+        />
+      </Modal>
+      <Modal isOpen={isTypesOrderModalOpen} onClose={closeTypesOrderModal} noPadding patternCloseButton={false}>
+        <TypesOrderForms currentTypeOrder={patternTypeOrder} closeForms={closeTypesOrderModal} />
+      </Modal>
+      <Modal
+        isOpen={isPopupModalOpen}
+        onClose={() => setIsPopupModalOpen(false)}
+        noPadding
+        patternCloseButton={false}
+      >
+        <PopupForms closeForms={() => setIsPopupModalOpen(false)} />
+      </Modal>
     </section>
   );
 }
