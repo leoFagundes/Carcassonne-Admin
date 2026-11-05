@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FiLock, FiMail } from "react-icons/fi";
 import { createUserWithEmailAndPassword } from "firebase/auth";
@@ -31,6 +31,12 @@ export default function CadastroPage() {
   // trocaria para o formulário de perfil antes de terminar o fluxo.
   const [creating, setCreating] = useState(false);
   const [finished, setFinished] = useState(false);
+  const [loadedOnce, setLoadedOnce] = useState(false);
+  const submitRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (!loading) setLoadedOnce(true);
+  }, [loading]);
 
   useEffect(() => RentalConfigRepository.subscribeSettings(setSettings), []);
 
@@ -87,6 +93,9 @@ export default function CadastroPage() {
 
   // Logado, mas sem cadastro (ex.: o CPF já estava em uso): só o perfil.
   const profileOnly = !!user && !customer && !creating;
+  // O formulário nunca volta ao "Carregando": o login do Firebase no meio do
+  // cadastro faria ele remontar e apagar o que foi digitado.
+  const showLoading = loading && !creating && !loadedOnce;
 
   return (
     <div className="flex flex-col justify-center items-center gap-5 min-h-[100dvh] w-full px-4 py-10">
@@ -94,7 +103,7 @@ export default function CadastroPage() {
 
       <AuthCard
         eyebrow={profileOnly ? "Complete seu cadastro" : "Nova conta de cliente"}
-        onSubmit={() => {}}
+        onSubmit={() => submitRef.current?.()}
         footer={
           profileOnly ? (
             <>Conta: {user?.email}</>
@@ -106,50 +115,47 @@ export default function CadastroPage() {
           )
         }
       >
-        {loading ? (
+        {showLoading ? (
           <span className="text-center text-xs text-primary-gold/50">Carregando...</span>
-        ) : profileOnly ? (
-          <ProfileForm
-            requireCpf={settings.requireCpf}
-            requireTerms
-            submitLabel="Concluir cadastro"
-            onSaved={afterSaved}
-          />
         ) : (
           <ProfileForm
+            embedded
+            submitRef={submitRef}
             requireCpf={settings.requireCpf}
             requireTerms
-            submitLabel="Criar conta"
-            onBeforeSave={createAccount}
+            submitLabel={profileOnly ? "Concluir cadastro" : "Criar conta"}
+            onBeforeSave={profileOnly ? undefined : createAccount}
             onSaveFailed={() => setCreating(false)}
             onSaved={afterSaved}
             extraFields={
-              <>
-                <Input
-                  icon={<FiMail size={17} />}
-                  label="E-mail"
-                  placeholder="E-mail"
-                  type="email"
-                  value={email}
-                  setValue={(e) => setEmail(e.target.value)}
-                />
-                <Input
-                  icon={<FiLock size={17} />}
-                  label="Senha"
-                  placeholder="Senha"
-                  type="password"
-                  value={password}
-                  setValue={(e) => setPassword(e.target.value)}
-                />
-                <Input
-                  icon={<FiLock size={17} />}
-                  label="Confirmar senha"
-                  placeholder="Confirmar senha"
-                  type="password"
-                  value={confirmPassword}
-                  setValue={(e) => setConfirmPassword(e.target.value)}
-                />
-              </>
+              profileOnly ? undefined : (
+                <>
+                  <Input
+                    icon={<FiMail size={17} />}
+                    label="E-mail"
+                    placeholder="E-mail"
+                    type="email"
+                    value={email}
+                    setValue={(e) => setEmail(e.target.value)}
+                  />
+                  <Input
+                    icon={<FiLock size={17} />}
+                    label="Senha"
+                    placeholder="Senha"
+                    type="password"
+                    value={password}
+                    setValue={(e) => setPassword(e.target.value)}
+                  />
+                  <Input
+                    icon={<FiLock size={17} />}
+                    label="Confirmar senha"
+                    placeholder="Confirmar senha"
+                    type="password"
+                    value={confirmPassword}
+                    setValue={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </>
+              )
             }
           />
         )}

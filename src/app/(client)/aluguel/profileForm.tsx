@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type MutableRefObject, type ReactNode } from "react";
 import Link from "next/link";
 import { FiCreditCard, FiPhone, FiUser } from "react-icons/fi";
 import Input from "@/components/input";
@@ -48,6 +48,8 @@ export default function ProfileForm({
   extraFields,
   onBeforeSave,
   onSaveFailed,
+  embedded = false,
+  submitRef,
 }: {
   initial?: Initial;
   requireCpf: boolean;
@@ -60,6 +62,10 @@ export default function ProfileForm({
   onBeforeSave?: () => Promise<boolean>;
   /** Chamado quando a rota recusa o cadastro (ex.: CPF em uso). */
   onSaveFailed?: () => void;
+  /** Dentro de outro <form> (ex.: AuthCard): não cria um <form> aninhado. */
+  embedded?: boolean;
+  /** Em modo embutido, recebe a função de envio para o <form> pai chamar. */
+  submitRef?: MutableRefObject<(() => void) | null>;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [phone, setPhone] = useState(maskPhone(initial?.phone ?? ""));
@@ -91,15 +97,24 @@ export default function ProfileForm({
     }
   }
 
+  useEffect(() => {
+    if (!submitRef) return;
+    submitRef.current = () => void submit();
+  });
+
+  const Wrapper = embedded ? "div" : "form";
+  const wrapperProps = embedded
+    ? {}
+    : {
+        noValidate: true,
+        onSubmit: (e: FormEvent) => {
+          e.preventDefault();
+          void submit();
+        },
+      };
+
   return (
-    <form
-      noValidate
-      className="flex flex-col gap-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        void submit();
-      }}
-    >
+    <Wrapper className="flex flex-col gap-4" {...wrapperProps}>
       <Input
         icon={<FiUser size={17} />}
         label="Nome completo"
@@ -148,6 +163,6 @@ export default function ProfileForm({
         </label>
       )}
       <AuthSubmit loading={loading}>{submitLabel}</AuthSubmit>
-    </form>
+    </Wrapper>
   );
 }

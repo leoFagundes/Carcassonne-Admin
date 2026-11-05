@@ -11,14 +11,7 @@ import { AUTH_SCENE } from "@/utils/authScene";
 import { useAlert } from "@/contexts/alertProvider";
 import { auth } from "@/services/firebaseConfig";
 import { accountApi } from "@/services/rentalApi";
-
-/** Só aceita caminhos do próprio site (evita redirecionar para outro domínio). */
-function safeNext(next: string | null): string {
-  if (next && next.startsWith("/") && !next.startsWith("//") && !next.includes("\\")) {
-    return next;
-  }
-  return "/aluguel";
-}
+import { safeNextPath } from "@/rental/navigation";
 
 function LoginCard() {
   const router = useRouter();
@@ -36,7 +29,7 @@ function LoginCard() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.replace(safeNext(params.get("next")));
+      router.replace(safeNextPath(params.get("next"), window.location.origin) ?? "/aluguel");
     } catch {
       addAlert("E-mail ou senha inválidos.");
     } finally {
