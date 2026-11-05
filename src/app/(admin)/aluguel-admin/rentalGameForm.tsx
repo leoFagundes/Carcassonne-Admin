@@ -72,8 +72,15 @@ export default function RentalGameForm({
 
   const typeOptions = Array.from(new Set(pubGames.flatMap((g) => g.types)));
 
-  const importFromPub = (id: string) => {
-    setImportId(id);
+  // Rótulos com o nome do jogo; nomes repetidos ganham "(2)", "(3)"...
+  const pubLabels = pubGames.map((g, i) => {
+    const before = pubGames.slice(0, i).filter((o) => o.name === g.name).length;
+    return before ? `${g.name} (${before + 1})` : g.name;
+  });
+
+  const importFromPub = (label: string) => {
+    setImportId(label);
+    const id = pubGames[pubLabels.indexOf(label)]?.id;
     const source = pubGames.find((g) => g.id === id);
     if (!source) return;
     setLocal((prev) => ({
@@ -200,7 +207,7 @@ export default function RentalGameForm({
       <div className="flex flex-col gap-6 items-center py-2 text-primary-gold w-full">
         <Dropdown
           label="Importar do acervo do pub"
-          options={pubGames.map((g) => g.id ?? "")}
+          options={pubLabels}
           firstLabel="Importar do acervo do pub"
           value={importId}
           setValue={(e) => importFromPub(e.target.value)}
