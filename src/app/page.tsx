@@ -9,12 +9,12 @@ import fabiosali from "../../public/images/fabio&sali.png";
 import klausjurgen from "../../public/images/klausjurgen.png";
 import {
   onAuthStateChanged,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   UserCredential,
 } from "firebase/auth";
 import { auth } from "@/services/firebaseConfig";
+import { accountApi } from "@/services/rentalApi";
 import { AdminAccessStatus, User } from "@/types";
 import AdminRepository from "@/services/repositories/AdminRepository";
 import { useAlert } from "@/contexts/alertProvider";
@@ -139,12 +139,14 @@ export default function Home() {
         );
         return;
       }
-      await sendPasswordResetEmail(auth, user.email);
-      addAlert("Instruções de recuperação de senha enviadas para seu e-mail.");
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        addAlert(`Não encontramos o e-mail: ${user.email}.`);
-      }
+      const result = await accountApi.sendPasswordReset(user.email, "admin");
+      addAlert(
+        result.ok
+          ? "Se o e-mail estiver cadastrado, enviaremos as instruções."
+          : result.message,
+      );
+    } catch {
+      addAlert("Não foi possível enviar o e-mail. Tente novamente.");
     }
   }
 

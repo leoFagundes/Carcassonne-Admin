@@ -31,7 +31,7 @@ const LEAVE_MS = 1000;
 
 // Páginas que ficam sempre no visual padrão, com qualquer tema no ar: o login
 // (tela inicial) e o cadastro do admin
-const UNTHEMED_PATHS = ["/", "/signup"];
+const UNTHEMED_PATHS = ["/", "/signup", "/conta/acao"];
 
 type MountedScene = { theme: SiteThemeId; style: SiteThemeStyle; leaving: boolean };
 

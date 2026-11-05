@@ -4,11 +4,8 @@ import Input from "@/components/input";
 import { useState } from "react";
 import { FiLock, FiMail } from "react-icons/fi";
 import { useRouter } from "next/navigation";
-import {
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
-  signOut,
-} from "firebase/auth";
+import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { accountApi } from "@/services/rentalApi";
 import { auth } from "@/services/firebaseConfig";
 import { User } from "@/types";
 import { useAlert } from "@/contexts/alertProvider";
@@ -44,7 +41,12 @@ export default function SignUpPage() {
         newUser.password,
       );
       const { user } = userCredential;
-      await sendEmailVerification(user);
+      const verification = await accountApi.sendVerification("admin");
+      if (!verification.ok) {
+        addAlert(
+          "Conta criada, mas não foi possível enviar o e-mail de verificação. Fale com um administrador.",
+        );
+      }
       // Usa o e-mail como o Firebase salvou (minúsculo) — as regras comparam
       // com o e-mail do token.
       const requested = await AdminRepository.requestAccess(
