@@ -6,6 +6,24 @@ export interface User {
   password: string;
 }
 
+/** Documento em /admins/{uid} — quem tem esse documento é administrador. */
+export interface AdminType {
+  id?: string; // = UID da conta no Firebase Auth
+  role: "admin";
+  email?: string;
+  createdAt?: Timestamp;
+}
+
+/** Documento em /adminRequests/{uid} — conta criada no /signup aguardando aprovação. */
+export interface AdminRequestType {
+  id?: string; // = UID da conta no Firebase Auth
+  email: string;
+  createdAt?: Timestamp;
+}
+
+/** admin = acesso liberado · pending = pediu acesso e aguarda · none = conta comum */
+export type AdminAccessStatus = "admin" | "pending" | "none";
+
 export interface BoardgameType {
   id?: string;
   name: string;

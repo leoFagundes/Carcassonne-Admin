@@ -11,10 +11,12 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signOut,
   UserCredential,
 } from "firebase/auth";
 import { auth } from "@/services/firebaseConfig";
-import { User } from "@/types";
+import { AdminAccessStatus, User } from "@/types";
+import AdminRepository from "@/services/repositories/AdminRepository";
 import { useAlert } from "@/contexts/alertProvider";
 import Puzzle from "@/components/puzzle";
 import AuthBackground from "@/components/authBackground";
@@ -62,11 +64,17 @@ export default function Home() {
   }, [user.email]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         const expiresAt = localStorage.getItem("session_expires_at");
         if (expiresAt && Date.now() > Number(expiresAt)) return;
         if (currentUser.emailVerified) {
+          // Sessão ativa de uma conta que não é admin (ex.: cliente do
+          // aluguel) não redireciona — o login segue disponível.
+          const status = await AdminRepository.getAccessStatus(
+            currentUser.uid,
+          ).catch(() => "none" as const);
+          if (status !== "admin") return;
           setLoading(true);
           addAlert("Sua sessão está ativa.");
           router.push("/myreserves");
@@ -88,6 +96,26 @@ export default function Home() {
         addAlert("Você precisa verificar seu e-mail antes de fazer login.");
         return;
       }
+
+      let status: AdminAccessStatus;
+      try {
+        status = await AdminRepository.getAccessStatus(authUser.user.uid);
+      } catch (error) {
+        console.error("Erro ao verificar acesso:", error);
+        await signOut(auth);
+        addAlert("Não foi possível verificar seu acesso. Tente novamente.");
+        return;
+      }
+      if (status !== "admin") {
+        await signOut(auth);
+        addAlert(
+          status === "pending"
+            ? "Seu acesso está aguardando a aprovação de um administrador."
+            : "Esta conta não tem acesso à área do administrador.",
+        );
+        return;
+      }
+
       localStorage.setItem(
         "session_expires_at",
         String(Date.now() + SESSION_DURATION),

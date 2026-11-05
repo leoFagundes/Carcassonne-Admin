@@ -106,7 +106,6 @@ A aplicação estará disponível em [http://localhost:3000](http://localhost:30
 | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Sender ID do Firebase Cloud Messaging                                    |
 | `NEXT_PUBLIC_FIREBASE_APP_ID`              | ID do app no Firebase                                                    |
 | `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`      | ID do Google Analytics do Firebase                                       |
-| `NEXT_PUBLIC_CREATION_TOKEN`               | Token exigido para criar novas contas de admin                           |
 | `RESEND_API_KEY`                           | Chave de API do [Resend](https://resend.com/), usada no envio de e-mails |
 
 ## Scripts disponíveis

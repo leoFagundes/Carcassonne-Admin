@@ -15,6 +15,7 @@ import {
   LuLogOut,
   LuTrophy,
   LuCircleHelp,
+  LuUsers,
 } from "react-icons/lu";
 import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebaseConfig";
@@ -22,6 +23,7 @@ import Tooltip from "@/components/Tooltip";
 import { MusicRecommendationType } from "@/types";
 import MusicRecommendationRepository from "@/services/repositories/MusicRecommendationsRepository";
 import EventRepository from "@/services/repositories/EventRepository";
+import AdminRepository from "@/services/repositories/AdminRepository";
 import { useAlert } from "@/contexts/alertProvider";
 import { useLogoEasterEgg } from "@/hooks/useLogoEasterEgg";
 import ThemeLogoAccessory from "@/components/siteTheme/ThemeLogoAccessory";
@@ -41,6 +43,8 @@ interface ItemProps {
   activeCount?: number;
   /** Nomes dos temas com aviso para ativar (Configurações → Temas). */
   themeReminders?: string[];
+  /** Pedidos de acesso de admin aguardando aprovação (Usuários). */
+  pendingRequests?: number;
 }
 
 function Item({
@@ -52,6 +56,7 @@ function Item({
   setSongsToNotify,
   activeCount,
   themeReminders,
+  pendingRequests,
 }: ItemProps) {
   const pathname = usePathname();
   const isActive = pathname === path;
@@ -108,6 +113,17 @@ function Item({
             </div>
           </Tooltip>
         )}
+      {path === "/usuarios" && !!pendingRequests && (
+        <Tooltip
+          content={`${pendingRequests} pedido${pendingRequests !== 1 ? "s" : ""} de acesso aguardando`}
+          direction="right"
+          portal
+        >
+          <div className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary-gold text-primary-black text-[10px] font-bold animate-pulse">
+            {pendingRequests}
+          </div>
+        </Tooltip>
+      )}
     </div>
   );
 }
@@ -118,6 +134,7 @@ export default function Sidebar() {
     (MusicRecommendationType & { id: string })[]
   >([]);
   const [activeEventsCount, setActiveEventsCount] = useState(0);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   const { addAlert } = useAlert();
   const router = useRouter();
@@ -155,6 +172,13 @@ export default function Sidebar() {
   useEffect(() => {
     const unsub = EventRepository.subscribeToAll((events) => {
       setActiveEventsCount(events.filter((e) => e.isActive).length);
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const unsub = AdminRepository.subscribeToRequests((requests) => {
+      setPendingRequestsCount(requests.length);
     });
     return () => unsub();
   }, []);
@@ -220,6 +244,7 @@ export default function Sidebar() {
     { path: "/links", message: "Links", icon: <LuExternalLink size={18} /> },
     { path: "/eventos", message: "Eventos", icon: <LuTrophy size={18} /> },
     { path: "/add", message: "Adicionar", icon: <LuListPlus size={18} /> },
+    { path: "/usuarios", message: "Usuários", icon: <LuUsers size={18} /> },
     {
       path: "/carcassonne",
       message: "Configurações",
@@ -329,6 +354,9 @@ export default function Sidebar() {
                   item.path === "/eventos" ? activeEventsCount : undefined
                 }
                 themeReminders={themeReminderNames}
+                pendingRequests={
+                  item.path === "/usuarios" ? pendingRequestsCount : undefined
+                }
               />
             ))}
           </nav>

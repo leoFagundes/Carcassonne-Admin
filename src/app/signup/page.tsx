@@ -2,11 +2,12 @@
 
 import Input from "@/components/input";
 import { useState } from "react";
-import { FiKey, FiLock, FiMail } from "react-icons/fi";
+import { FiLock, FiMail } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
+  signOut,
 } from "firebase/auth";
 import { auth } from "@/services/firebaseConfig";
 import { User } from "@/types";
@@ -14,18 +15,18 @@ import { useAlert } from "@/contexts/alertProvider";
 import AuthBackground from "@/components/authBackground";
 import AuthCard, { AuthLink, AuthSubmit } from "@/components/authCard";
 import { AUTH_SCENE } from "@/utils/authScene";
+import AdminRepository from "@/services/repositories/AdminRepository";
 
 export default function SignUpPage() {
   const [newUser, setNewUser] = useState<User>({ email: "", password: "" });
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [creationToken, setCreationToken] = useState("");
   const [loading, setLoading] = useState(false);
 
   const { addAlert } = useAlert();
   const router = useRouter();
 
-  const creationTokenEnv = process.env.NEXT_PUBLIC_CREATION_TOKEN;
-
+  // A conta criada aqui não tem acesso nenhum até um admin aprovar o pedido
+  // em Usuários — é isso que protege o admin, não um token no navegador.
   async function createAccount() {
     setLoading(true);
     try {
@@ -37,17 +38,30 @@ export default function SignUpPage() {
         addAlert("As senhas não coincidem!");
         return;
       }
-      if (creationToken !== creationTokenEnv) {
-        addAlert("Token de criação inválido!");
-        return;
-      }
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         newUser.email,
         newUser.password,
       );
-      await sendEmailVerification(userCredential.user);
-      addAlert("Conta criada! Verifique seu e-mail para ativar a conta.");
+      const { user } = userCredential;
+      await sendEmailVerification(user);
+      // Usa o e-mail como o Firebase salvou (minúsculo) — as regras comparam
+      // com o e-mail do token.
+      const requested = await AdminRepository.requestAccess(
+        user.uid,
+        user.email ?? newUser.email,
+      );
+      await signOut(auth);
+      if (!requested) {
+        addAlert(
+          "Conta criada, mas não foi possível enviar o pedido de acesso. Fale com um administrador.",
+        );
+        router.push("/");
+        return;
+      }
+      addAlert(
+        "Conta criada! Verifique seu e-mail e aguarde um administrador aprovar seu acesso.",
+      );
       router.push("/");
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -97,19 +111,9 @@ export default function SignUpPage() {
           value={confirmPassword}
           setValue={(e) => setConfirmPassword(e.target.value)}
         />
-        <div className="flex flex-col gap-1.5">
-          <Input
-            icon={<FiKey size={17} />}
-            label="Token de criação"
-            placeholder="Token de criação"
-            type="password"
-            value={creationToken}
-            setValue={(e) => setCreationToken(e.target.value)}
-          />
-          <span className="pl-1 text-[11px] text-primary-gold/35">
-            Fornecido pela administração do Carcassonne Pub.
-          </span>
-        </div>
+        <span className="pl-1 text-[11px] text-primary-gold/35">
+          O acesso é liberado depois que um administrador aprovar seu pedido.
+        </span>
         <AuthSubmit loading={loading}>Criar conta</AuthSubmit>
       </AuthCard>
     </div>
