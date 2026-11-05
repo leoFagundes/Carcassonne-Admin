@@ -107,6 +107,12 @@ A aplicação estará disponível em [http://localhost:3000](http://localhost:30
 | `NEXT_PUBLIC_FIREBASE_APP_ID`              | ID do app no Firebase                                                    |
 | `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`      | ID do Google Analytics do Firebase                                       |
 | `RESEND_API_KEY`                           | Chave de API do [Resend](https://resend.com/), usada no envio de e-mails |
+| `FIREBASE_ADMIN_PROJECT_ID`                | `project_id` da conta de serviço (Admin SDK). Somente servidor           |
+| `FIREBASE_ADMIN_CLIENT_EMAIL`              | `client_email` da conta de serviço. Somente servidor                     |
+| `FIREBASE_ADMIN_PRIVATE_KEY`               | `private_key` da conta de serviço, entre aspas, com `\n`. Somente servidor |
+| `SITE_URL`                                 | URL pública do site (ex.: `http://localhost:3000`). Somente servidor     |
+
+> As variáveis `FIREBASE_ADMIN_*` e `SITE_URL` são exclusivas do servidor: nunca use o prefixo `NEXT_PUBLIC_` nelas e nunca as commite.
 
 ## Scripts disponíveis
 
