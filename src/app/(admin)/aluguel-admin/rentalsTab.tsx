@@ -1,43 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { FaWhatsapp } from "react-icons/fa";
 import { LuPackage } from "react-icons/lu";
 import type { RentalStatus, RentalType } from "@/types";
 import { CatalogEmpty, CatalogSearch, FilterPills } from "@/components/adminCatalog";
 import { foldText, searchWords } from "@/components/showcase/search";
 import RentalRepository from "@/services/repositories/RentalRepository";
 import { rentalAttention } from "@/rental/attention";
-import { diffDays, formatDateBR, todaySP } from "@/rental/dates";
+import { diffDays, formatDateBR } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
 import RentalActions from "./rentalActions";
+import { CustomerModal } from "./customerDetail";
+import { STATUS_LABEL, plural, useToday, whatsappLink } from "./rentalShared";
 
 export { rentalAttention };
 
 type Rental = RentalType & { id: string };
 type StatusFilter = "all" | RentalStatus;
-
-export const STATUS_LABEL: Record<RentalStatus, string> = {
-  reserved: "Reservado",
-  picked_up: "Retirado",
-  returned: "Devolvido",
-  canceled: "Cancelado",
-};
-
-/** Hoje (fuso de São Paulo), recalculado a cada minuto. */
-export function useToday() {
-  const [today, setToday] = useState(() => todaySP());
-  useEffect(() => {
-    const id = setInterval(() => setToday(todaySP()), 60_000);
-    return () => clearInterval(id);
-  }, []);
-  return today;
-}
-
-export function whatsappLink(phone: string) {
-  return `https://wa.me/55${phone.replace(/\D/g, "")}`;
-}
-
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 function Band({
   title,
@@ -74,7 +54,15 @@ function Band({
   );
 }
 
-function RentalRow({ rental, today }: { rental: Rental; today: string }) {
+function RentalRow({
+  rental,
+  today,
+  onOpenCustomer,
+}: {
+  rental: Rental;
+  today: string;
+  onOpenCustomer: (rental: Rental) => void;
+}) {
   const late = rental.status === "picked_up" && rental.dueDate < today;
   // Cancelado não pede ação nenhuma: fica esmaecido, mas legível para consulta.
   const canceled = rental.status === "canceled";
@@ -115,14 +103,26 @@ function RentalRow({ rental, today }: { rental: Rental; today: string }) {
         <span>
           {rental.gameName} · {rental.unitLabel}
         </span>
-        <a
-          href={whatsappLink(rental.customer.phone)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline underline-offset-2 hover:text-primary-gold"
-        >
-          {rental.customer.name}
-        </a>
+        <span className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => onOpenCustomer(rental)}
+            title="Ver dados do cliente"
+            className="underline underline-offset-2 hover:text-primary-gold cursor-pointer text-left"
+          >
+            {rental.customer.name}
+          </button>
+          <a
+            href={whatsappLink(rental.customer.phone)}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`WhatsApp de ${rental.customer.name}`}
+            title="Abrir WhatsApp"
+            className="text-primary-gold/50 hover:text-primary-gold transition-colors"
+          >
+            <FaWhatsapp size={13} />
+          </a>
+        </span>
         <span>
           Retirada {formatDateBR(rental.startDate)} · Devolução {formatDateBR(rental.dueDate)}
         </span>
@@ -146,6 +146,7 @@ export default function RentalsTab() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
+  const [customerOf, setCustomerOf] = useState<Rental | null>(null);
   const today = useToday();
 
   useEffect(() => {
@@ -244,10 +245,12 @@ export default function RentalsTab() {
       ) : (
         <div className="flex flex-col gap-2">
           {filtered.map((r) => (
-            <RentalRow key={r.id} rental={r} today={today} />
+            <RentalRow key={r.id} rental={r} today={today} onOpenCustomer={setCustomerOf} />
           ))}
         </div>
       )}
+
+      <CustomerModal rental={customerOf} rentals={rentals} onClose={() => setCustomerOf(null)} />
     </div>
   );
 }
