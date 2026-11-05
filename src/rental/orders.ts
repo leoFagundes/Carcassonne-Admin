@@ -1,7 +1,13 @@
 import { bookingEnd, pickUnit, type GameLike } from "./availability";
 import { isValidCpf } from "./cpf";
 import { addDays, weekdayOf } from "./dates";
-import type { RentalCustomerType, RentalGameType, RentalSettingsType } from "@/types";
+import type {
+  RentalBooking,
+  RentalCustomerType,
+  RentalGameType,
+  RentalSettingsType,
+  RentalType,
+} from "@/types";
 
 export type OrderInput = { gameIds: string[]; startDate: string; rulesVersion: number };
 
@@ -118,6 +124,60 @@ export function planOrder(input: OrderInput, ctx: OrderContext): PlanResult {
     });
   }
   return { ok: true, items };
+}
+
+export type OrderRecordsMeta = {
+  orderId: string;
+  code: string;
+  /** Um id de `rentals/{id}` por item, na mesma ordem. */
+  rentalIds: string[];
+  customerUid: string;
+  customer: RentalType["customer"];
+  gameNames: Record<string, string>;
+  rulesVersion: number;
+};
+
+export type OrderRecords = {
+  rentals: Omit<RentalType, "id" | "createdAt">[];
+  /** Só os bookings novos de cada jogo (o chamador junta com os existentes). */
+  bookingsByGame: Record<string, RentalBooking[]>;
+};
+
+/** Converte o plano aprovado nos docs de `rentals` e nos novos bookings de cada jogo. */
+export function buildOrderRecords(items: PlannedItem[], meta: OrderRecordsMeta): OrderRecords {
+  if (meta.rentalIds.length !== items.length) {
+    throw new Error("buildOrderRecords: rentalIds e itens com tamanhos diferentes.");
+  }
+  const rentals: OrderRecords["rentals"] = [];
+  const bookingsByGame: OrderRecords["bookingsByGame"] = {};
+  items.forEach((item, i) => {
+    rentals.push({
+      orderId: meta.orderId,
+      code: meta.code,
+      customerUid: meta.customerUid,
+      customer: meta.customer,
+      gameId: item.gameId,
+      gameName: Object.prototype.hasOwnProperty.call(meta.gameNames, item.gameId)
+        ? meta.gameNames[item.gameId]
+        : item.gameId,
+      unitId: item.unitId,
+      unitLabel: item.unitLabel,
+      price: item.price,
+      rentalDays: item.rentalDays,
+      startDate: item.startDate,
+      dueDate: item.dueDate,
+      status: "reserved",
+      rulesVersion: meta.rulesVersion,
+    });
+    (bookingsByGame[item.gameId] ??= []).push({
+      rentalId: meta.rentalIds[i],
+      unitId: item.unitId,
+      startDate: item.startDate,
+      dueDate: item.dueDate,
+      status: "reserved",
+    });
+  });
+  return { rentals, bookingsByGame };
 }
 
 /** Nova devolução ≥ início e sem cruzar outro booking da mesma unidade. */

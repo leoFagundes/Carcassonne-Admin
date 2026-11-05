@@ -12,7 +12,7 @@ type ActionMode = "verifyEmail" | "resetPassword";
 const FROM_ADDRESS = "Carcassonne Pub <conta@carcassonnepub.com.br>";
 const THROTTLE_MS = 60_000;
 
-function siteUrl(): string {
+export function siteUrl(): string {
   return (process.env.SITE_URL || "https://www.carcassonnepub.com.br").replace(
     /\/+$/,
     "",
