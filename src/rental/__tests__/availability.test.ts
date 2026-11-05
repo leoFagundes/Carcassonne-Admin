@@ -45,4 +45,67 @@ describe("availability", () => {
     expect(pickUnit(two, today, today)).toBe("u1");
     expect(pickUnit(late, today, today)).toBeNull();
   });
+
+  describe("regressões", () => {
+    it("(a) bookings fora de ordem na mesma unidade", () => {
+      const g = {
+        units: [unit("u1")],
+        bookings: [
+          bk("u1", "2026-11-20", "2026-11-27", "reserved", "y"),
+          bk("u1", "2026-11-01", "2026-11-08", "picked_up", "x"),
+          bk("u1", "2026-11-10", "2026-11-14", "reserved", "z"),
+        ],
+        rentalDays: 7,
+      };
+      expect(gameAvailability(g, today)).toEqual({ state: "from", start: "2026-11-28" });
+    });
+
+    it("(b) vão menor que rentalDays não serve", () => {
+      const g = {
+        units: [unit("u1")],
+        bookings: [bk("u1", "2026-11-01", "2026-11-08", "picked_up", "x"), bk("u1", "2026-11-12", "2026-11-19", "reserved", "y")],
+        rentalDays: 7,
+      };
+      const r = gameAvailability(g, today);
+      expect(r).toEqual({ state: "from", start: "2026-11-20" });
+      expect(r).not.toHaveProperty("returnDate");
+    });
+
+    it("(c) reservada com início passado e vencimento futuro ainda bloqueia", () => {
+      const g = { units: [unit("u1")], bookings: [bk("u1", "2026-11-01", "2026-11-08", "reserved")], rentalDays: 7 };
+      expect(gameAvailability(g, today)).toEqual({ state: "from", start: "2026-11-09" });
+      expect(availabilityFor(g, today, today)).toEqual({ ok: false, nextStart: "2026-11-09" });
+    });
+
+    it("(d) todas as unidades indisponíveis", () => {
+      const g = { units: [unit("u1", "unavailable"), unit("u2", "unavailable")], bookings: [], rentalDays: 7 };
+      expect(availabilityFor(g, today, today)).toEqual({ ok: false, nextStart: null });
+    });
+
+    it("(e) pickUnit ignora indisponível e desempata pela ordem de units", () => {
+      const skip = { units: [unit("u1", "unavailable"), unit("u2")], bookings: [], rentalDays: 7 };
+      expect(pickUnit(skip, today, today)).toBe("u2");
+      const tie = {
+        units: [unit("u1"), unit("u2")],
+        bookings: [bk("u2", "2026-11-01", "2026-11-08", "picked_up", "a"), bk("u1", "2026-11-01", "2026-11-08", "picked_up", "b")],
+        rentalDays: 7,
+      };
+      expect(pickUnit(tie, "2026-11-10", today)).toBe("u1");
+    });
+
+    it("(f) availabilityFor com início futuro", () => {
+      const one = {
+        units: [unit("u1"), unit("u2")],
+        bookings: [bk("u1", "2026-11-18", "2026-11-25", "reserved", "a"), bk("u2", "2026-11-01", "2026-11-08", "picked_up", "b")],
+        rentalDays: 7,
+      };
+      expect(availabilityFor(one, "2026-11-20", today)).toEqual({ ok: true });
+      const both = {
+        units: [unit("u1"), unit("u2")],
+        bookings: [bk("u1", "2026-11-18", "2026-11-25", "reserved", "a"), bk("u2", "2026-11-22", "2026-11-29", "reserved", "b")],
+        rentalDays: 7,
+      };
+      expect(availabilityFor(both, "2026-11-20", today)).toEqual({ ok: false, nextStart: "2026-11-26" });
+    });
+  });
 });
