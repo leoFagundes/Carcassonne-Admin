@@ -55,7 +55,9 @@ export default function RentalShowcase() {
   const [settings, setSettings] = useState<RentalSettingsType | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [today, setToday] = useState(() => todaySP());
-  const [filters, setFilters] = useState<GameFilters>(EMPTY_FILTERS);
+  const [rawFilters, setFilters] = useState<GameFilters>(EMPTY_FILTERS);
+  // Aluguel não tem destaques: esse filtro nunca vale
+  const filters = useMemo(() => ({ ...rawFilters, featured: false }), [rawFilters]);
   const [view, setView] = useState<CollectionView>("grid");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [detail, setDetail] = useState<{
@@ -452,6 +454,7 @@ export default function RentalShowcase() {
             onChange={setFilters}
             types={types}
             resultCount={results.length}
+            hideFeatured
             onClosed={() => setFiltersOpen(false)}
           />
         )}

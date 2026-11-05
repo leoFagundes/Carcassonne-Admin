@@ -81,6 +81,7 @@ export default function FiltersSheet({
   onChange,
   types,
   resultCount,
+  hideFeatured = false,
   onClosed,
 }: {
   filters: GameFilters;
@@ -88,6 +89,8 @@ export default function FiltersSheet({
   /** Categorias existentes no acervo. */
   types: string[];
   resultCount: number;
+  /** Esconde "Destaques da casa" (vitrines sem destaques). */
+  hideFeatured?: boolean;
   onClosed: () => void;
 }) {
   const set = (patch: Partial<GameFilters>) => onChange({ ...filters, ...patch });
@@ -193,9 +196,11 @@ export default function FiltersSheet({
         )}
 
         <Section icon={LuSparkles} title="Mais">
-          <FilterChip active={filters.featured} onClick={() => set({ featured: !filters.featured })}>
-            Destaques da casa
-          </FilterChip>
+          {!hideFeatured && (
+            <FilterChip active={filters.featured} onClick={() => set({ featured: !filters.featured })}>
+              Destaques da casa
+            </FilterChip>
+          )}
           <FilterChip active={filters.forTwo} onClick={() => set({ forTwo: !filters.forTwo })}>
             Só para dois
           </FilterChip>
