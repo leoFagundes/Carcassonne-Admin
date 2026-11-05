@@ -118,7 +118,8 @@ export default function UnitsEditor({
             <div className="flex items-center gap-2">
               <input
                 aria-label="Nome da cópia"
-                className={inputClass}
+                // min-w-0: sem isso o input não encolhe e empurra os botões para fora no celular
+                className={`${inputClass} min-w-0 flex-1`}
                 value={unit.label}
                 onChange={(e) => patch(unit.id, { label: e.target.value })}
               />

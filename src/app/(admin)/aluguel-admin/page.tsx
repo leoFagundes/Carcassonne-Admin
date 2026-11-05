@@ -25,12 +25,12 @@ function AluguelAdmin() {
   const tab: TabKey = TABS.find((t) => t.key === param)?.key ?? "alugueis";
 
   return (
-    <section className="flex flex-col gap-5 w-full h-full overflow-y-auto py-2 px-6">
+    <section className="flex flex-col gap-5 w-full h-full overflow-y-auto py-2 px-0 sm:px-6">
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-center gap-4 w-full">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-3 sm:gap-4 w-full">
+          <div className="flex items-center gap-2 min-w-0">
             <LuPackage size={30} className="text-primary-gold/70 shrink-0" />
-            <h1 className="text-3xl font-semibold text-primary-gold">Aluguel de Jogos</h1>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-primary-gold">Aluguel de Jogos</h1>
           </div>
           <Tooltip direction="bottom" content="Ir para visão do cliente">
             <button

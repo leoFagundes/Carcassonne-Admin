@@ -118,7 +118,7 @@ export default function SettingsForm() {
           value={String(local.maxAdvanceDays)}
           setValue={(e) => set("maxAdvanceDays", Number(e.target.value))}
           variant
-          width="!w-[250px]"
+          width="!w-full sm:!w-[250px] !min-w-0"
         />
         <Input
           label="Máx. de jogos por pedido"
@@ -127,7 +127,7 @@ export default function SettingsForm() {
           value={String(local.maxGamesPerOrder)}
           setValue={(e) => set("maxGamesPerOrder", Number(e.target.value))}
           variant
-          width="!w-[250px]"
+          width="!w-full sm:!w-[250px] !min-w-0"
         />
         <Input
           label="Máx. de jogos ativos por cliente"
@@ -136,7 +136,7 @@ export default function SettingsForm() {
           value={String(local.maxActiveGamesPerCustomer)}
           setValue={(e) => set("maxActiveGamesPerCustomer", Number(e.target.value))}
           variant
-          width="!w-[250px]"
+          width="!w-full sm:!w-[250px] !min-w-0"
         />
       </div>
 
@@ -154,7 +154,7 @@ export default function SettingsForm() {
         value={local.staffEmail}
         setValue={(e) => set("staffEmail", e.target.value)}
         variant
-        width="!w-[320px]"
+        width="!w-full sm:!w-[320px] !min-w-0"
       />
 
       <button

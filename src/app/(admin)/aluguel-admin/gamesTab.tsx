@@ -237,9 +237,11 @@ export default function GamesTab() {
           <button
             type="button"
             onClick={() => setEditing(emptyRentalGame)}
-            className="flex items-center gap-1 shrink-0 text-xs px-3 py-2 rounded-xl bg-primary-gold text-primary-black font-semibold cursor-pointer"
+            aria-label="Novo jogo"
+            className="flex items-center gap-1 shrink-0 h-10 text-xs px-3 rounded-xl bg-primary-gold text-primary-black font-semibold cursor-pointer"
           >
-            <LuPlus size={14} /> Novo jogo
+            {/* No celular só o ícone, para a busca não ficar espremida */}
+            <LuPlus size={14} /> <span className="hidden sm:inline">Novo jogo</span>
           </button>
         </div>
         <FilterPills<Status>
