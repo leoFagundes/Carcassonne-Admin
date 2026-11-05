@@ -4,6 +4,8 @@ import { Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LuPackage } from "react-icons/lu";
 import GamesTab from "./gamesTab";
+import RentalsTab from "./rentalsTab";
+import CustomersTab from "./customersTab";
 import RulesAndSettingsTab from "./rulesAndSettingsTab";
 
 const TABS = [
@@ -14,15 +16,6 @@ const TABS = [
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
-
-function Placeholder({ title }: { title: string }) {
-  return (
-    <div className="w-full max-w-6xl mx-auto rounded-2xl border border-primary-gold/15 bg-secondary-black/50 p-8 text-center">
-      <p className="text-primary-gold/70">{title}</p>
-      <p className="text-xs text-primary-gold/40 mt-1">Em breve</p>
-    </div>
-  );
-}
 
 function AluguelAdmin() {
   const router = useRouter();
@@ -56,9 +49,9 @@ function AluguelAdmin() {
         ))}
       </div>
 
-      {tab === "alugueis" && <Placeholder title="Aluguéis" />}
+      {tab === "alugueis" && <RentalsTab />}
       {tab === "jogos" && <GamesTab />}
-      {tab === "clientes" && <Placeholder title="Clientes" />}
+      {tab === "clientes" && <CustomersTab />}
       {tab === "regras" && <RulesAndSettingsTab />}
     </section>
   );

@@ -31,6 +31,9 @@ import ThemeLogoAccessory from "@/components/siteTheme/ThemeLogoAccessory";
 import ThemeBand from "@/components/siteTheme/ThemeBand";
 import { useSiteThemeReminders } from "@/components/siteTheme/siteThemeContext";
 import { SITE_THEMES } from "@/utils/siteThemes";
+import RentalRepository from "@/services/repositories/RentalRepository";
+import { rentalAttention } from "@/rental/attention";
+import { todaySP } from "@/rental/dates";
 
 interface ItemProps {
   message: string;
@@ -46,6 +49,8 @@ interface ItemProps {
   themeReminders?: string[];
   /** Pedidos de acesso de admin aguardando aprovação (Usuários). */
   pendingRequests?: number;
+  /** Aluguéis que pedem atenção hoje (Aluguel). */
+  rentalCounts?: { pickups: number; returns: number; overdue: number };
 }
 
 function Item({
@@ -58,6 +63,7 @@ function Item({
   activeCount,
   themeReminders,
   pendingRequests,
+  rentalCounts,
 }: ItemProps) {
   const pathname = usePathname();
   const isActive = pathname === path;
@@ -125,6 +131,19 @@ function Item({
           </div>
         </Tooltip>
       )}
+      {path === "/aluguel-admin" &&
+        !!rentalCounts &&
+        rentalCounts.pickups + rentalCounts.returns + rentalCounts.overdue > 0 && (
+          <Tooltip
+            content={`${rentalCounts.pickups} ${rentalCounts.pickups === 1 ? "retirada" : "retiradas"}, ${rentalCounts.returns} ${rentalCounts.returns === 1 ? "devolução" : "devoluções"}, ${rentalCounts.overdue} ${rentalCounts.overdue === 1 ? "atrasado" : "atrasados"}`}
+            direction="right"
+            portal
+          >
+            <div className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary-gold text-primary-black text-[10px] font-bold animate-pulse">
+              {rentalCounts.pickups + rentalCounts.returns + rentalCounts.overdue}
+            </div>
+          </Tooltip>
+        )}
     </div>
   );
 }
@@ -136,6 +155,7 @@ export default function Sidebar() {
   >([]);
   const [activeEventsCount, setActiveEventsCount] = useState(0);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [rentalCounts, setRentalCounts] = useState({ pickups: 0, returns: 0, overdue: 0 });
 
   const { addAlert } = useAlert();
   const router = useRouter();
@@ -182,6 +202,30 @@ export default function Sidebar() {
       setPendingRequestsCount(requests.length);
     });
     return () => unsub();
+  }, []);
+
+  // Badge do Aluguel: recalcula a cada minuto para acompanhar a virada do dia
+  useEffect(() => {
+    let rentals: Parameters<typeof rentalAttention>[0] = [];
+    const recompute = () => {
+      const a = rentalAttention(rentals, todaySP());
+      setRentalCounts((prev) =>
+        prev.pickups === a.pickupsToday &&
+        prev.returns === a.returnsToday &&
+        prev.overdue === a.overdue
+          ? prev
+          : { pickups: a.pickupsToday, returns: a.returnsToday, overdue: a.overdue },
+      );
+    };
+    const unsub = RentalRepository.subscribeToAll((list) => {
+      rentals = list;
+      recompute();
+    });
+    const interval = setInterval(recompute, 60_000);
+    return () => {
+      unsub();
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
@@ -362,6 +406,9 @@ export default function Sidebar() {
                 themeReminders={themeReminderNames}
                 pendingRequests={
                   item.path === "/usuarios" ? pendingRequestsCount : undefined
+                }
+                rentalCounts={
+                  item.path === "/aluguel-admin" ? rentalCounts : undefined
                 }
               />
             ))}
