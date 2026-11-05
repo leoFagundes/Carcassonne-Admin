@@ -1,0 +1,110 @@
+// Regras de segurança do Firestore (fonte da verdade versionada).
+// Publicar colando no console do Firebase (Firestore → Regras).
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Admin = conta logada que tem documento em /admins/{uid}.
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isSelf(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /reserves/{docId} {
+      allow create: if true;
+      allow read: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    match /musicRecommendations/{docId} {
+      allow create: if true;
+      allow read: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    match /quiz-participants/{docId} {
+      allow create: if true;
+      allow read: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    match /bolao-participants/{docId} {
+      allow create: if true;
+      allow read: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    match /voting-votes/{docId} {
+      allow create: if true;
+      allow read: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    match /voting-entries/{docId} {
+      allow create: if true;
+      allow read: if true;
+      // Cliente só pode editar nome/fotos de fantasias enviadas por cliente
+      allow update: if isAdmin()
+        || (resource.data.submittedByClient == true
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'images']));
+      allow delete: if isAdmin();
+    }
+
+    // Cada um lê o próprio documento; só admin lista e altera.
+    match /admins/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Pedido criado no /signup pela própria conta, com o e-mail dela.
+    match /adminRequests/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow create: if isSelf(uid)
+        && request.resource.data.keys().hasOnly(['email', 'createdAt'])
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if isAdmin();
+    }
+
+    // Aluguel de jogos: catálogo público; "bookings" só o servidor altera.
+    match /rentalGames/{gameId} {
+      allow read: if true;
+      allow create: if isAdmin() && request.resource.data.bookings == [];
+      allow update: if isAdmin()
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['bookings']);
+      allow delete: if isAdmin() && resource.data.bookings.size() == 0;
+    }
+
+    match /rental-config/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Pedidos: o dono (ou admin) lê; escrita só pelo servidor.
+    match /rentals/{rentalId} {
+      allow read: if isAdmin() || (request.auth != null && resource.data.customerUid == request.auth.uid);
+      allow write: if false;
+    }
+
+    match /rentalCustomers/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow write: if false;
+    }
+
+    match /rentalCpfIndex/{cpf} { allow read, write: if false; }
+    match /authEmailThrottle/{id} { allow read, write: if false; }
+
+    // Leitura pública em tudo, menos nas coleções com dados pessoais.
+    // Escrita de admin vale em tudo, exceto nas coleções protegidas/só-servidor.
+    match /{collection}/{document=**} {
+      allow read: if !(collection in ['admins', 'adminRequests', 'rentals', 'rentalCustomers', 'rentalCpfIndex', 'authEmailThrottle']);
+      allow write: if isAdmin() && !(collection in ['rentalGames', 'rentals', 'rentalCustomers', 'rentalCpfIndex', 'authEmailThrottle']);
+    }
+
+  }
+}
