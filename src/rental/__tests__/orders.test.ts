@@ -47,6 +47,8 @@ describe("planOrder", () => {
     expect(planOrder(input(["g1"], "2026-11-04"), ctx)).toMatchObject({ code: "date_out_of_range" });
     expect(planOrder(input(["g1"], "2026-12-06"), ctx)).toMatchObject({ code: "date_out_of_range" });
     expect(planOrder(input(["g1"], "2026-12-05"), ctx)).toMatchObject({ ok: true });
+    expect(planOrder(input(["g1"], "2026-11-31"), ctx)).toMatchObject({ code: "date_out_of_range" });
+    expect(planOrder(input(["g1"], "2026-11-00"), ctx)).toMatchObject({ code: "date_out_of_range" });
     expect(planOrder(input(["g1"], "2026-11-08"), withSettings(ctx, { pickupWeekdays: [1, 2, 3, 4, 5, 6] }))).toMatchObject({ code: "weekday_not_allowed" });
   });
 

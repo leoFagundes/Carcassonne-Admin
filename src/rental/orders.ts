@@ -88,6 +88,7 @@ export function planOrder(input: OrderInput, ctx: OrderContext): PlanResult {
   if (new Set(gameIds).size !== gameIds.length) return fail("duplicate_game");
   if (
     !/^\d{4}-\d{2}-\d{2}$/.test(startDate) ||
+    addDays(startDate, 0) !== startDate ||
     startDate < today ||
     startDate > addDays(today, settings.maxAdvanceDays)
   ) {
