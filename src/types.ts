@@ -398,3 +398,105 @@ export interface VotingVoteType {
   entryId: string;
   createdAt?: Timestamp;
 }
+
+// ---------- Aluguel de jogos ----------
+
+export interface RentalUnit {
+  id: string;
+  label: string;
+  status: "active" | "unavailable";
+  note?: string;
+}
+
+export interface RentalBooking {
+  rentalId: string;
+  unitId: string;
+  startDate: string;
+  dueDate: string;
+  status: "reserved" | "picked_up";
+}
+
+export interface RentalGameType {
+  id?: string;
+  name: string;
+  description: string;
+  image: string;
+  difficulty: string;
+  minPlayers: number;
+  maxPlayers: number;
+  playTime: number;
+  types: string[];
+  price: number;
+  rentalDays: number;
+  isActive: boolean;
+  units: RentalUnit[];
+  bookings: RentalBooking[];
+  sourceBoardgameId?: string;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+export type RentalStatus = "reserved" | "picked_up" | "returned" | "canceled";
+export type RentalReturnCondition = "ok" | "damaged" | "missing_parts";
+
+export interface RentalType {
+  id?: string;
+  orderId: string;
+  code: string;
+  customerUid: string;
+  customer: { name: string; email: string; phone: string };
+  gameId: string;
+  gameName: string;
+  unitId: string;
+  unitLabel: string;
+  price: number;
+  rentalDays: number;
+  startDate: string;
+  dueDate: string;
+  status: RentalStatus;
+  pickedUpAt?: Timestamp;
+  pickedUpBy?: string;
+  returnedAt?: Timestamp;
+  returnedBy?: string;
+  returnCondition?: RentalReturnCondition;
+  returnNote?: string;
+  canceledAt?: Timestamp;
+  canceledBy?: "customer" | "admin";
+  cancelReason?: string;
+  rulesVersion: number;
+  createdAt?: Timestamp;
+}
+
+export interface RentalCustomerType {
+  id?: string;
+  name: string;
+  phone: string;
+  cpf: string;
+  email: string;
+  isBlocked?: boolean;
+  blockedReason?: string;
+  acceptedTermsAt?: Timestamp;
+  createdAt?: Timestamp;
+}
+
+export interface RentalSettingsType {
+  isEnabled: boolean;
+  pickupWeekdays: number[];
+  maxAdvanceDays: number;
+  maxGamesPerOrder: number;
+  maxActiveGamesPerCustomer: number;
+  requireCpf: boolean;
+  staffEmail?: string;
+}
+
+export interface RentalRuleSection {
+  id: string;
+  title: string;
+  body: string;
+}
+
+export interface RentalRulesType {
+  sections: RentalRuleSection[];
+  version: number;
+  updatedAt?: Timestamp;
+}
