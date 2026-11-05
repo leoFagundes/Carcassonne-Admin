@@ -65,10 +65,28 @@ export async function requireUser(req: Request): Promise<DecodedIdToken> {
   }
 }
 
+export async function isAdminUid(uid: string): Promise<boolean> {
+  const snap = await getAdminDb().collection("admins").doc(uid).get();
+  return snap.exists;
+}
+
+// Id de documento do Firestore: sem "/" (senão vira caminho de outra coleção),
+// sem "." / ".." e sem o padrão reservado __x__.
+export function isDocId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= 128 &&
+    !value.includes("/") &&
+    value !== "." &&
+    value !== ".." &&
+    !/^__.*__$/.test(value)
+  );
+}
+
 export async function requireAdmin(req: Request): Promise<DecodedIdToken> {
   const user = await requireUser(req);
-  const snap = await getAdminDb().collection("admins").doc(user.uid).get();
-  if (!snap.exists) {
+  if (!(await isAdminUid(user.uid))) {
     throw new ApiError(403, "forbidden", "Acesso restrito a administradores.");
   }
   return user;

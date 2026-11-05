@@ -16,6 +16,7 @@ import {
   type OrderInput,
 } from "@/rental/orders";
 import type {
+  RentalBooking,
   RentalCustomerType,
   RentalGameType,
   RentalSettingsType,
@@ -248,4 +249,59 @@ export async function createOrder(
   }
 
   return { orderId: order.orderId, code: order.code };
+}
+
+const MAX_CANCEL_REASON = 500;
+
+/**
+ * Cancela um aluguel e libera a unidade (remove o booking do jogo), tudo numa
+ * transação. Cliente: só o próprio e só `reserved`. Admin: `reserved` ou
+ * `picked_up`.
+ */
+export async function cancelRental(
+  rentalId: string,
+  actor: { uid: string; isAdmin: boolean },
+  reason?: string,
+): Promise<void> {
+  const db = getAdminDb();
+  const rentalRef = db.collection("rentals").doc(rentalId);
+  const cleanReason = typeof reason === "string" ? reason.trim().slice(0, MAX_CANCEL_REASON) : "";
+
+  await db.runTransaction(async (tx) => {
+    const rentalSnap = await tx.get(rentalRef);
+    if (!rentalSnap.exists) {
+      throw new ApiError(404, "not_found", "Aluguel não encontrado.");
+    }
+    const rental = rentalSnap.data() as RentalType;
+
+    if (!actor.isAdmin && rental.customerUid !== actor.uid) {
+      throw new ApiError(403, "forbidden", "Você não tem permissão para esta ação.");
+    }
+    const cancelable: RentalType["status"][] = actor.isAdmin
+      ? ["reserved", "picked_up"]
+      : ["reserved"];
+    if (!cancelable.includes(rental.status)) {
+      throw new ApiError(409, "not_cancelable", "Este aluguel não pode mais ser cancelado.");
+    }
+
+    // Leitura antes de qualquer escrita.
+    const gameRef = db.collection("rentalGames").doc(rental.gameId);
+    const gameSnap = await tx.get(gameRef);
+
+    tx.update(rentalRef, {
+      status: "canceled",
+      canceledAt: FieldValue.serverTimestamp(),
+      canceledBy: actor.isAdmin ? "admin" : "customer",
+      ...(cleanReason ? { cancelReason: cleanReason } : {}),
+    });
+
+    if (gameSnap.exists) {
+      const raw = gameSnap.data()?.bookings;
+      const bookings: RentalBooking[] = Array.isArray(raw) ? raw : [];
+      tx.update(gameRef, {
+        bookings: bookings.filter((b) => b.rentalId !== rentalId),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+  });
 }

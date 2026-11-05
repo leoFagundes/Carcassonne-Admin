@@ -1,22 +1,8 @@
-import { ApiError, readJson, requireUser, withApi } from "@/services/server/apiHelpers";
+import { ApiError, isDocId, readJson, requireUser, withApi } from "@/services/server/apiHelpers";
 import { createOrder } from "@/services/server/rentalService";
 import type { OrderInput } from "@/rental/orders";
 
 const MAX_GAME_IDS = 20;
-
-// Id de documento do Firestore: sem "/" (senão vira caminho de outra coleção),
-// sem "." / ".." e sem o padrão reservado __x__.
-function isDocId(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.length > 0 &&
-    value.length <= 128 &&
-    !value.includes("/") &&
-    value !== "." &&
-    value !== ".." &&
-    !/^__.*__$/.test(value)
-  );
-}
 
 function parseOrderInput(body: unknown): OrderInput {
   const b = (body ?? {}) as Record<string, unknown>;
