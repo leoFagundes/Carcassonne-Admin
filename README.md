@@ -123,6 +123,50 @@ A aplicação estará disponível em [http://localhost:3000](http://localhost:30
 | `npm run start` | Inicia a aplicação já compilada                  |
 | `npm run lint`  | Executa o ESLint                                 |
 
+## Aluguel de jogos
+
+Módulo de **aluguel de jogos de tabuleiro** para os clientes do pub: o cliente cria uma conta, escolhe jogos do acervo disponíveis para aluguel, monta o pedido, aceita as regras e acompanha tudo em "Minha conta". A equipe gerencia pedidos, retiradas, devoluções, prazos e bloqueio de clientes em `/aluguel-admin`. As operações sensíveis passam por rotas de API que usam o Firebase Admin SDK; o acervo público (`/clientCollection`) não é afetado.
+
+### Rotas
+
+| Área    | Rotas                                                                                                                                  |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Cliente | `/aluguel`, `/aluguel/regras`, `/aluguel/entrar`, `/aluguel/cadastro`, `/aluguel/pedido`, `/aluguel/minha-conta`, `/conta/acao`        |
+| Admin   | `/aluguel-admin` (aluguéis, clientes e regras), `/usuarios` (aprovação de administradores)                                             |
+| API     | `/api/rental/*` (pedidos, perfil, cancelamento, retirada, devolução, prazo, bloqueio), `/api/auth/*` (e-mails de verificação e redefinição de senha) |
+
+### Variáveis de ambiente
+
+O módulo usa `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY` e `SITE_URL`, descritas na [tabela de variáveis](#variáveis-de-ambiente) acima. Todas são exclusivas do servidor.
+
+### Testes
+
+```bash
+npm test
+```
+
+Executa a suíte do [Vitest](https://vitest.dev/) (regras de negócio do aluguel em `src/rental`).
+
+### Regras de segurança
+
+Os arquivos `firestore.rules` e `storage.rules`, na raiz do repositório, são a **fonte da verdade**. Para publicar, cole o conteúdo no console do Firebase (Firestore → Regras e Storage → Regras) e clique em **Publicar**.
+
+> As regras **devem ser publicadas antes de existir qualquer dado de aluguel**. Elas impedem a leitura anônima de `rentals` e `rentalCustomers` e bloqueiam escrita direta do navegador nessas coleções.
+
+### Primeira configuração
+
+1. Crie a chave da conta de serviço: Console do Firebase → Configurações do projeto → Contas de serviço → **Gerar nova chave privada**.
+2. Copie `project_id`, `client_email` e `private_key` do JSON para `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL` e `FIREBASE_ADMIN_PRIVATE_KEY`, no `.env` local e no provedor de hospedagem (a chave privada entre aspas, com `\n`). Defina também `SITE_URL`. **Nunca** commite o JSON e apague-o depois de copiar os valores.
+3. Publique `firestore.rules` e `storage.rules` (veja acima).
+4. Em `/aluguel-admin` → **Regras**, configure e publique a página de regras e ative o serviço.
+
+### Checklist de validação manual (dono)
+
+- No Playground de regras do Firebase, confirme que a leitura anônima de `rentals/*` e `rentalCustomers/*` é **negada**.
+- Entre com uma conta de cliente e confirme que ela não acessa as páginas do admin.
+- Confirme que `/clientCollection` não exibe nada do aluguel.
+- Faça um pedido de ponta a ponta: criar, retirar, alterar prazo, devolver e cancelar.
+
 ## Licença
 
 Projeto privado, de uso interno do Carcassonne Pub.
