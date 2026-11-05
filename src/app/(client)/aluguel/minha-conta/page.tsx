@@ -147,6 +147,12 @@ function MinhaContaContent() {
     router.replace("/aluguel");
   }
 
+  // Aberta direto (sem página anterior no histórico), volta para o catálogo.
+  function goBack() {
+    if (window.history.length > 1) router.back();
+    else router.push("/aluguel");
+  }
+
   const cpfShown = customer ? maskedCpf(customer.cpf ?? "") : "";
   const initial = { name: customer?.name, phone: customer?.phone, cpf: customer?.cpf };
 
@@ -292,9 +298,14 @@ function MinhaContaContent() {
           )}
         </section>
 
-        <button type="button" onClick={logout} className={`${smallBtn} self-center`}>
-          Sair
-        </button>
+        <div className="flex items-center justify-center gap-2">
+          <button type="button" onClick={goBack} className={smallBtn}>
+            Voltar
+          </button>
+          <button type="button" onClick={logout} className={smallBtn}>
+            Sair da conta
+          </button>
+        </div>
       </>
     );
   }
