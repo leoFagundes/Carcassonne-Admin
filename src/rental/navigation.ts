@@ -15,3 +15,8 @@ export function safeNextPath(next: string | null, origin: string): string | null
     return null;
   }
 }
+
+/** Repassa o destino (?next=) para a próxima página do fluxo de conta. */
+export function withNext(path: string, next: string | null): string {
+  return next ? `${path}?next=${encodeURIComponent(next)}` : path;
+}

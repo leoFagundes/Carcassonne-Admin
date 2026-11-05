@@ -12,6 +12,7 @@ import { availabilityFor } from "@/rental/availability";
 import { addDays, formatDateBR, todaySP, weekdayOf } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
 import { isProfileComplete, ORDER_ERROR_MESSAGES, type OrderErrorCode } from "@/rental/orders";
+import { withNext } from "@/rental/navigation";
 import { useRentalCart } from "../useRentalCart";
 import { useRentalCustomer } from "../useRentalCustomer";
 import RentalHeader from "../rentalHeader";
@@ -108,7 +109,7 @@ export default function PedidoPage() {
       return;
     }
     if (!isProfileComplete(customer, settings.requireCpf)) {
-      router.push("/aluguel/minha-conta");
+      router.push(withNext("/aluguel/minha-conta", "/aluguel/pedido"));
       return;
     }
     if (!emailVerified) return;

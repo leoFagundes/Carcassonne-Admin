@@ -11,7 +11,7 @@ import { AUTH_SCENE } from "@/utils/authScene";
 import { useAlert } from "@/contexts/alertProvider";
 import { auth } from "@/services/firebaseConfig";
 import { accountApi } from "@/services/rentalApi";
-import { safeNextPath } from "@/rental/navigation";
+import { safeNextPath, withNext } from "@/rental/navigation";
 
 function LoginCard() {
   const router = useRouter();
@@ -55,7 +55,18 @@ function LoginCard() {
       footer={
         <>
           Não tem conta?{" "}
-          <AuthLink onClick={() => router.push("/aluguel/cadastro")}>Criar conta</AuthLink>
+          <AuthLink
+            onClick={() =>
+              router.push(
+                withNext(
+                  "/aluguel/cadastro",
+                  safeNextPath(params.get("next"), window.location.origin),
+                ),
+              )
+            }
+          >
+            Criar conta
+          </AuthLink>
         </>
       }
     >

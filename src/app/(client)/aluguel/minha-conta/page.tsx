@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebaseConfig";
 import type { RentalSettingsType, RentalType } from "@/types";
@@ -13,6 +13,7 @@ import { diffDays, formatDateBR, todaySP } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
 import { isProfileComplete } from "@/rental/orders";
 import { formatCpf, normalizeCpf } from "@/rental/cpf";
+import { safeNextPath, withNext } from "@/rental/navigation";
 import { useRentalCart } from "../useRentalCart";
 import { useRentalCustomer } from "../useRentalCustomer";
 import RentalHeader from "../rentalHeader";
@@ -69,8 +70,11 @@ function statusInfo(rental: Rental, today: string): { label: string; detail: str
 }
 
 /** Conta do cliente: cadastro, aluguéis agrupados por pedido e cancelamento. */
-export default function MinhaContaPage() {
+function MinhaContaContent() {
   const router = useRouter();
+  const params = useSearchParams();
+  // Quem veio do pedido para completar o cadastro volta para lá ao salvar.
+  const nextPath = () => safeNextPath(params.get("next"), window.location.origin);
   const cart = useRentalCart();
   const { user, customer, loading, emailVerified, reloadUser } = useRentalCustomer();
   const [settings, setSettings] = useState<RentalSettingsType | null>(null);
@@ -90,8 +94,11 @@ export default function MinhaContaPage() {
     return () => clearInterval(id);
   }, []);
   useEffect(() => {
-    if (!loading && !user) router.replace("/aluguel/entrar?next=/aluguel/minha-conta");
-  }, [loading, user, router]);
+    if (!loading && !user) {
+      const next = safeNextPath(params.get("next"), window.location.origin);
+      router.replace(withNext("/aluguel/entrar", withNext("/aluguel/minha-conta", next)));
+    }
+  }, [loading, user, router, params]);
   useEffect(() => {
     if (!uid) return;
     return RentalRepository.subscribeToCustomer(uid, setRentals);
@@ -157,7 +164,12 @@ export default function MinhaContaPage() {
           initial={initial}
           requireCpf={settings.requireCpf}
           requireTerms={!customer}
-          onSaved={() => {}}
+          onSaved={() => {
+            // Sem destino, a própria página troca sozinha para a conta quando
+            // o perfil salvo chega pelo snapshot.
+            const next = nextPath();
+            if (next) router.replace(next);
+          }}
           submitLabel="Salvar cadastro"
         />
       </section>
@@ -303,5 +315,13 @@ export default function MinhaContaPage() {
         </main>
       </div>
     </>
+  );
+}
+
+export default function MinhaContaPage() {
+  return (
+    <Suspense fallback={null}>
+      <MinhaContaContent />
+    </Suspense>
   );
 }

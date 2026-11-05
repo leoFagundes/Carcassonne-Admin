@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FiLock, FiMail } from "react-icons/fi";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import Input from "@/components/input";
@@ -13,15 +13,20 @@ import { auth } from "@/services/firebaseConfig";
 import { accountApi } from "@/services/rentalApi";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import { DEFAULT_RENTAL_SETTINGS } from "@/rental/defaults";
+import { safeNextPath, withNext } from "@/rental/navigation";
 import type { RentalSettingsType } from "@/types";
 import ProfileForm from "../profileForm";
 import { useRentalCustomer } from "../useRentalCustomer";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function CadastroPage() {
+function CadastroCard() {
   const router = useRouter();
+  const params = useSearchParams();
   const { addAlert } = useAlert();
+  // Destino de quem veio de outra página (ex.: o pedido) — só lido em
+  // handlers/efeitos, onde window existe.
+  const nextPath = () => safeNextPath(params.get("next"), window.location.origin);
   const { user, customer, loading } = useRentalCustomer();
   const [settings, setSettings] = useState<RentalSettingsType>(DEFAULT_RENTAL_SETTINGS);
   const [email, setEmail] = useState("");
@@ -42,8 +47,10 @@ export default function CadastroPage() {
 
   // Quem já tem cadastro não tem o que fazer aqui.
   useEffect(() => {
-    if (customer && !creating && !finished) router.replace("/aluguel/minha-conta");
-  }, [customer, creating, finished, router]);
+    if (customer && !creating && !finished) {
+      router.replace(safeNextPath(params.get("next"), window.location.origin) ?? "/aluguel/minha-conta");
+    }
+  }, [customer, creating, finished, router, params]);
 
   async function createAccount(): Promise<boolean> {
     if (!EMAIL_RE.test(email)) {
@@ -88,7 +95,7 @@ export default function CadastroPage() {
         );
       }
     }
-    router.replace("/aluguel/minha-conta");
+    router.replace(nextPath() ?? "/aluguel/minha-conta");
   }
 
   // Logado, mas sem cadastro (ex.: o CPF já estava em uso): só o perfil.
@@ -110,7 +117,9 @@ export default function CadastroPage() {
           ) : (
             <>
               Já tem uma conta?{" "}
-              <AuthLink onClick={() => router.push("/aluguel/entrar")}>Entrar</AuthLink>
+              <AuthLink onClick={() => router.push(withNext("/aluguel/entrar", nextPath()))}>
+                Entrar
+              </AuthLink>
             </>
           )
         }
@@ -161,5 +170,13 @@ export default function CadastroPage() {
         )}
       </AuthCard>
     </div>
+  );
+}
+
+export default function CadastroPage() {
+  return (
+    <Suspense fallback={null}>
+      <CadastroCard />
+    </Suspense>
   );
 }
