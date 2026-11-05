@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState, type FormEvent, type MutableRefObject, type ReactNode } from "react";
-import Link from "next/link";
 import { FiCreditCard, FiPhone, FiUser } from "react-icons/fi";
 import Input from "@/components/input";
 import { AuthSubmit } from "@/components/authCard";
 import { useAlert } from "@/contexts/alertProvider";
 import { rentalApi } from "@/services/rentalApi";
 import { isValidCpf, normalizeCpf } from "@/rental/cpf";
+import { RulesLink } from "./rulesSheet";
 
 export function maskPhone(input: string): string {
   const d = input.replace(/\D/g, "").slice(0, 11);
@@ -152,13 +152,9 @@ export default function ProfileForm({
           />
           <span>
             Li e aceito as{" "}
-            <Link
-              href="/aluguel/regras"
-              target="_blank"
-              className="underline underline-offset-4 text-primary-gold hover:brightness-110"
-            >
+            <RulesLink className="underline underline-offset-4 text-primary-gold hover:brightness-110 cursor-pointer">
               regras do aluguel
-            </Link>
+            </RulesLink>
           </span>
         </label>
       )}

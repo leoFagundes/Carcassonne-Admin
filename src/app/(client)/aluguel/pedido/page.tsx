@@ -16,6 +16,7 @@ import { withNext } from "@/rental/navigation";
 import { useRentalCart } from "../useRentalCart";
 import { useRentalCustomer } from "../useRentalCustomer";
 import RentalHeader from "../rentalHeader";
+import { RulesLink } from "../rulesSheet";
 
 type Game = RentalGameType & { id: string };
 
@@ -352,13 +353,9 @@ export default function PedidoPage() {
                 />
                 <span>
                   Li e aceito as{" "}
-                  <Link
-                    href="/aluguel/regras"
-                    target="_blank"
-                    className="underline text-primary-gold"
-                  >
+                  <RulesLink className="underline text-primary-gold cursor-pointer">
                     regras do aluguel
-                  </Link>{" "}
+                  </RulesLink>{" "}
                   (versão {rules.version}).
                 </span>
               </label>

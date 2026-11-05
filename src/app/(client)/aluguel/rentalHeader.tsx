@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { LuShoppingBag } from "react-icons/lu";
 import { auth } from "@/services/firebaseConfig";
+import { RulesLink } from "./rulesSheet";
 
 /** Barra de atalhos do aluguel: regras, conta e o contador do pedido. */
 export default function RentalHeader({ cartCount }: { cartCount: number }) {
@@ -24,9 +25,7 @@ export default function RentalHeader({ cartCount }: { cartCount: number }) {
         Aluguel de jogos
       </span>
       <div className="flex items-center gap-1.5 shrink-0">
-        <Link href="/aluguel/regras" className={link}>
-          Regras
-        </Link>
+        <RulesLink className={`${link} cursor-pointer`}>Regras</RulesLink>
         <Link href={loggedIn ? "/aluguel/minha-conta" : "/aluguel/entrar"} className={link}>
           {loggedIn ? "Minha conta" : "Entrar"}
         </Link>
