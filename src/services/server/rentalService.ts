@@ -4,21 +4,30 @@ import {
   FieldValue,
   type DocumentSnapshot,
   type Firestore,
+  type Transaction,
 } from "firebase-admin/firestore";
+import {
+  asBookings,
+  asUnits,
+  markUnitUnavailable,
+  removeBooking,
+  updateBooking,
+} from "@/rental/bookings";
 import { isValidCpf, normalizeCpf } from "@/rental/cpf";
 import { todaySP } from "@/rental/dates";
 import { DEFAULT_RENTAL_RULES, DEFAULT_RENTAL_SETTINGS } from "@/rental/defaults";
 import {
   ORDER_ERROR_MESSAGES,
   buildOrderRecords,
+  canChangeDueDate,
   generateOrderCode,
   planOrder,
   type OrderInput,
 } from "@/rental/orders";
 import type {
-  RentalBooking,
   RentalCustomerType,
   RentalGameType,
+  RentalReturnCondition,
   RentalSettingsType,
   RentalType,
 } from "@/types";
@@ -296,12 +305,144 @@ export async function cancelRental(
     });
 
     if (gameSnap.exists) {
-      const raw = gameSnap.data()?.bookings;
-      const bookings: RentalBooking[] = Array.isArray(raw) ? raw : [];
       tx.update(gameRef, {
-        bookings: bookings.filter((b) => b.rentalId !== rentalId),
+        bookings: removeBooking(asBookings(gameSnap.data()?.bookings), rentalId),
         updatedAt: FieldValue.serverTimestamp(),
       });
     }
+  });
+}
+
+const invalidStatus = () =>
+  new ApiError(409, "invalid_status", "Este aluguel está em outro status. Atualize a página.");
+
+/** Lê o aluguel e depois o jogo, na transação; 404 se o aluguel não existir. */
+async function readRentalAndGame(db: Firestore, tx: Transaction, rentalId: string) {
+  const rentalRef = db.collection("rentals").doc(rentalId);
+  const rentalSnap = await tx.get(rentalRef);
+  if (!rentalSnap.exists) {
+    throw new ApiError(404, "not_found", "Aluguel não encontrado.");
+  }
+  const rental = rentalSnap.data() as RentalType;
+  const gameRef = db.collection("rentalGames").doc(rental.gameId);
+  const gameSnap = await tx.get(gameRef);
+  return { rentalRef, rental, gameRef, gameSnap };
+}
+
+/** Registra a retirada (reserved para picked_up). */
+export async function pickupRental(rentalId: string, adminUid: string): Promise<void> {
+  const db = getAdminDb();
+  await db.runTransaction(async (tx) => {
+    const { rentalRef, rental, gameRef, gameSnap } = await readRentalAndGame(db, tx, rentalId);
+    if (rental.status !== "reserved") throw invalidStatus();
+
+    tx.update(rentalRef, {
+      status: "picked_up",
+      pickedUpAt: FieldValue.serverTimestamp(),
+      pickedUpBy: adminUid,
+    });
+    if (gameSnap.exists) {
+      tx.update(gameRef, {
+        bookings: updateBooking(asBookings(gameSnap.data()?.bookings), rentalId, {
+          status: "picked_up",
+        }),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+  });
+}
+
+const DEFAULT_UNAVAILABLE_NOTES: Record<RentalReturnCondition, string> = {
+  ok: "Devolvido",
+  damaged: "Devolvido com avaria",
+  missing_parts: "Devolvido com peças faltando",
+};
+
+/** Registra a devolução (picked_up para returned); opcionalmente tira a unidade de circulação. */
+export async function returnRental(
+  rentalId: string,
+  adminUid: string,
+  input: { condition: RentalReturnCondition; note?: string; markUnitUnavailable: boolean },
+): Promise<void> {
+  const db = getAdminDb();
+  await db.runTransaction(async (tx) => {
+    const { rentalRef, rental, gameRef, gameSnap } = await readRentalAndGame(db, tx, rentalId);
+    if (rental.status !== "picked_up") throw invalidStatus();
+
+    tx.update(rentalRef, {
+      status: "returned",
+      returnedAt: FieldValue.serverTimestamp(),
+      returnedBy: adminUid,
+      returnCondition: input.condition,
+      ...(input.note ? { returnNote: input.note } : {}),
+    });
+    if (gameSnap.exists) {
+      const data = gameSnap.data();
+      tx.update(gameRef, {
+        bookings: removeBooking(asBookings(data?.bookings), rentalId),
+        ...(input.markUnitUnavailable
+          ? {
+              units: markUnitUnavailable(
+                asUnits(data?.units),
+                rental.unitId,
+                input.note || DEFAULT_UNAVAILABLE_NOTES[input.condition],
+              ),
+            }
+          : {}),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+  });
+}
+
+/** Altera a devolução de um aluguel ativo, sem cruzar outra reserva da mesma cópia. */
+export async function changeDueDate(rentalId: string, dueDate: string): Promise<void> {
+  const db = getAdminDb();
+  await db.runTransaction(async (tx) => {
+    const { rentalRef, rental, gameRef, gameSnap } = await readRentalAndGame(db, tx, rentalId);
+    if (rental.status !== "reserved" && rental.status !== "picked_up") throw invalidStatus();
+    if (dueDate < rental.startDate) {
+      throw new ApiError(400, "invalid_body", "Corpo da requisição inválido.");
+    }
+
+    if (gameSnap.exists) {
+      const data = gameSnap.data();
+      const bookings = asBookings(data?.bookings);
+      const game = {
+        units: asUnits(data?.units),
+        bookings,
+        rentalDays: Number(data?.rentalDays ?? 0),
+      };
+      if (!canChangeDueDate(game, rentalId, dueDate, todaySP())) {
+        throw new ApiError(
+          409,
+          "due_date_conflict",
+          "A nova data cruza com outra reserva desta cópia.",
+        );
+      }
+      tx.update(gameRef, {
+        bookings: updateBooking(bookings, rentalId, { dueDate }),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+    tx.update(rentalRef, { dueDate });
+  });
+}
+
+/** Bloqueia ou desbloqueia um cliente (o cadastro precisa existir). */
+export async function setCustomerBlocked(
+  uid: string,
+  blocked: boolean,
+  reason?: string,
+): Promise<void> {
+  const db = getAdminDb();
+  const ref = db.collection("rentalCustomers").doc(uid);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new ApiError(404, "not_found", "Cliente não encontrado.");
+    tx.update(ref, {
+      isBlocked: blocked,
+      blockedReason: blocked ? reason : FieldValue.delete(),
+    });
   });
 }
