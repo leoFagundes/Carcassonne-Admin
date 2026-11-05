@@ -44,14 +44,18 @@ export default function RegrasPage() {
           {rules && (
             <p className="text-xs text-primary-gold/45">
               Versão {rules.version}
-              {updated ? ` · atualizada em ${updated.toLocaleDateString("pt-BR")}` : ""}
+              {updated
+                ? ` · atualizada em ${updated.toLocaleDateString("pt-BR")}`
+                : ""}
             </p>
           )}
         </div>
 
         <div className="relative z-10 flex flex-col gap-4 w-full max-w-2xl">
           {!rules ? (
-            <p className="text-sm text-primary-gold/55 text-center">Carregando regras...</p>
+            <p className="text-sm text-primary-gold/55 text-center">
+              Carregando regras...
+            </p>
           ) : rules.sections.length === 0 ? (
             <p className="text-sm text-primary-gold/55 text-center">
               As regras ainda não foram publicadas.

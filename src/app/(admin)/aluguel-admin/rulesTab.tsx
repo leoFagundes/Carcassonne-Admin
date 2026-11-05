@@ -30,7 +30,9 @@ export default function RulesTab() {
   }, []);
 
   const update = (id: string, patch: Partial<RentalRuleSection>) =>
-    setSections((list) => list.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+    setSections((list) =>
+      list.map((s) => (s.id === id ? { ...s, ...patch } : s)),
+    );
 
   const move = (index: number, delta: -1 | 1) =>
     setSections((list) => {
@@ -53,21 +55,31 @@ export default function RulesTab() {
     setSaving(true);
     try {
       const ok = await RentalConfigRepository.publishRules(
-        sections.map((s) => ({ id: s.id, title: s.title.trim(), body: s.body })),
+        sections.map((s) => ({
+          id: s.id,
+          title: s.title.trim(),
+          body: s.body,
+        })),
       );
-      addAlert(ok ? "Regras publicadas!" : "Não foi possível publicar as regras. Tente novamente.");
+      addAlert(
+        ok
+          ? "Regras publicadas!"
+          : "Não foi possível publicar as regras. Tente novamente.",
+      );
     } finally {
       setSaving(false);
     }
   };
 
   const iconBtn =
-    "p-1.5 rounded-lg border border-primary-gold/20 text-primary-gold/60 hover:text-primary-gold hover:border-primary-gold/50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors";
+    "shrink-0 p-1.5 rounded-lg border border-primary-gold/20 text-primary-gold/60 hover:text-primary-gold hover:border-primary-gold/50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors";
 
   return (
     <div className="flex flex-col gap-4 min-w-0">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h2 className="text-lg font-semibold text-primary-gold">Regras do aluguel</h2>
+        <h2 className="text-lg font-semibold text-primary-gold">
+          Regras do aluguel
+        </h2>
         <span className="text-xs text-primary-gold/50">
           {version === null ? "Carregando..." : `Versão atual: ${version}`}
         </span>
@@ -76,17 +88,14 @@ export default function RulesTab() {
       {sections.map((section, index) => (
         <div
           key={section.id}
-          className="flex flex-col gap-3 rounded-xl border border-primary-gold/15 bg-primary-black/30 p-3"
+          className="flex flex-col gap-5 rounded-xl border border-primary-gold/15 bg-primary-black/30 px-4 py-5"
         >
+          {/* Botões num cabeçalho próprio: na mesma linha do título, eles
+              saíam da tela em celulares (o campo tem largura mínima). */}
           <div className="flex items-center gap-2">
-            <Input
-              label="Título"
-              placeholder="Título da seção"
-              value={section.title}
-              setValue={(e) => update(section.id, { title: e.target.value })}
-              variant
-              width="flex-1 !max-w-none"
-            />
+            <span className="flex-1 min-w-0 text-[10px] font-semibold uppercase tracking-widest text-primary-gold/40">
+              Seção {index + 1}
+            </span>
             <button
               type="button"
               aria-label="Mover para cima"
@@ -108,12 +117,22 @@ export default function RulesTab() {
             <button
               type="button"
               aria-label="Remover seção"
-              onClick={() => setSections((list) => list.filter((s) => s.id !== section.id))}
+              onClick={() =>
+                setSections((list) => list.filter((s) => s.id !== section.id))
+              }
               className={iconBtn}
             >
               <LuTrash size={14} />
             </button>
           </div>
+          <Input
+            label="Título"
+            placeholder="Título da seção"
+            value={section.title}
+            setValue={(e) => update(section.id, { title: e.target.value })}
+            variant
+            width="!max-w-none !min-w-0"
+          />
           <Input
             label="Texto"
             placeholder="Texto da seção (use **negrito** e quebras de linha)"
@@ -138,7 +157,10 @@ export default function RulesTab() {
       <button
         type="button"
         onClick={() =>
-          setSections((list) => [...list, { id: crypto.randomUUID(), title: "", body: "" }])
+          setSections((list) => [
+            ...list,
+            { id: crypto.randomUUID(), title: "", body: "" },
+          ])
         }
         className="flex items-center justify-center gap-1 text-xs px-3 py-2 rounded-xl border border-dashed border-primary-gold/30 text-primary-gold/80 hover:text-primary-gold hover:border-primary-gold/60 cursor-pointer"
       >

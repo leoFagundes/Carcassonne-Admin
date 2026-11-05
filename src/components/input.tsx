@@ -6,7 +6,7 @@ import { LuEye, LuEyeOff } from "react-icons/lu";
 interface InputProps extends ComponentProps<"input"> {
   value: string;
   setValue: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => void;
   icon?: ReactNode;
   placeholder: string;
@@ -41,7 +41,7 @@ export default function Input({
 
   const filteredOptions =
     options?.filter((option) =>
-      option.toLowerCase().includes(value.toLowerCase())
+      option.toLowerCase().includes(value.toLowerCase()),
     ) || [];
 
   function highlightMatch(text: string, search: string = "") {
@@ -56,7 +56,7 @@ export default function Input({
             </span>
           ) : (
             <span key={i}>{part}</span>
-          )
+          ),
         )}
       </>
     );
@@ -64,7 +64,7 @@ export default function Input({
 
   return (
     <div
-      className={`group relative flex gap-2.5 w-full max-w-[400px] ${width} rounded-xl border text-sm bg-primary-black/55 transition-[border-color,background-color,box-shadow] duration-200 hover:border-primary-gold/40 focus-within:border-primary-gold/70 focus-within:bg-primary-black/80 focus-within:shadow-[0_0_0_3px_rgba(230,197,107,0.12)] ${
+      className={`mt-2 group relative flex gap-2.5 w-full max-w-[400px] ${width} rounded-xl border text-sm bg-primary-black/55 transition-[border-color,background-color,box-shadow] duration-200 hover:border-primary-gold/40 focus-within:border-primary-gold/70 focus-within:bg-primary-black/80 focus-within:shadow-[0_0_0_3px_rgba(230,197,107,0.12)] ${
         variant ? "border-primary-gold/30" : "border-primary-gold/15"
       } ${
         smallInput
@@ -120,7 +120,9 @@ export default function Input({
         <button
           type="button"
           tabIndex={-1}
-          aria-label={isPasswordVisible ? "Esconder a senha" : "Mostrar a senha"}
+          aria-label={
+            isPasswordVisible ? "Esconder a senha" : "Mostrar a senha"
+          }
           className="flex shrink-0 cursor-pointer text-primary-gold/50 hover:text-primary-gold transition-colors"
           onClick={() => setIsPasswordVisible(!isPasswordVisible)}
         >
