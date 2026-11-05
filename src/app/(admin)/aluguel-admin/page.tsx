@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LuPackage } from "react-icons/lu";
 import GamesTab from "./gamesTab";
+import RulesAndSettingsTab from "./rulesAndSettingsTab";
 
 const TABS = [
   { key: "alugueis", label: "Aluguéis" },
@@ -58,7 +59,7 @@ function AluguelAdmin() {
       {tab === "alugueis" && <Placeholder title="Aluguéis" />}
       {tab === "jogos" && <GamesTab />}
       {tab === "clientes" && <Placeholder title="Clientes" />}
-      {tab === "regras" && <Placeholder title="Regras" />}
+      {tab === "regras" && <RulesAndSettingsTab />}
     </section>
   );
 }
