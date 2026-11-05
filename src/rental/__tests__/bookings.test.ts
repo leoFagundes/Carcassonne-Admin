@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canPickUp,
   isRealDate,
   markUnitUnavailable,
   removeBooking,
@@ -42,5 +43,21 @@ describe("isRealDate", () => {
     expect(isRealDate("2026-02-30")).toBe(false);
     expect(isRealDate("2026-2-3")).toBe(false);
     expect(isRealDate("abc")).toBe(false);
+  });
+});
+
+describe("canPickUp", () => {
+  const today = "2026-11-05";
+  it("reservado para hoje", () => {
+    expect(canPickUp({ status: "reserved", startDate: "2026-11-05" }, today)).toBe(true);
+  });
+  it("reservado para ontem (atrasado)", () => {
+    expect(canPickUp({ status: "reserved", startDate: "2026-11-04" }, today)).toBe(true);
+  });
+  it("reservado para amanhã", () => {
+    expect(canPickUp({ status: "reserved", startDate: "2026-11-06" }, today)).toBe(false);
+  });
+  it("já retirado", () => {
+    expect(canPickUp({ status: "picked_up", startDate: "2026-11-05" }, today)).toBe(false);
   });
 });

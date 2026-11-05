@@ -58,8 +58,9 @@ export async function requireUser(req: Request): Promise<DecodedIdToken> {
   if (!match) {
     throw new ApiError(401, "unauthenticated", "Faça login para continuar.");
   }
+  const auth = getAdminAuth();
   try {
-    return await getAdminAuth().verifyIdToken(match[1]);
+    return await auth.verifyIdToken(match[1]);
   } catch {
     throw new ApiError(401, "unauthenticated", "Sessão inválida ou expirada.");
   }

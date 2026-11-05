@@ -9,7 +9,8 @@ import Input from "@/components/input";
 import Checkbox from "@/components/checkbox";
 import { useAlert } from "@/contexts/alertProvider";
 import { rentalApi, type ApiResult } from "@/services/rentalApi";
-import { formatDateBR } from "@/rental/dates";
+import { formatDateBR, todaySP } from "@/rental/dates";
+import { canPickUp } from "@/rental/bookings";
 
 type ActionKind = "pickup" | "return" | "dueDate" | "cancel";
 
@@ -170,14 +171,22 @@ function ActionModal({
       )}
 
       {kind === "cancel" && (
-        <Input
-          value={reason}
-          setValue={(e) => setReason(e.target.value)}
-          placeholder="Motivo do cancelamento (obrigatório)"
-          label="Motivo"
-          multiline
-          rows={3}
-        />
+        <>
+          {rental.status === "picked_up" && (
+            <p className="text-xs text-invalid-color/80">
+              Este jogo foi retirado. Se ele já voltou, use &quot;Registrar devolução&quot; —
+              cancelar libera a cópia imediatamente.
+            </p>
+          )}
+          <Input
+            value={reason}
+            setValue={(e) => setReason(e.target.value)}
+            placeholder="Motivo do cancelamento (obrigatório)"
+            label="Motivo"
+            multiline
+            rows={3}
+          />
+        </>
       )}
     </FormCard>
   );
@@ -188,6 +197,7 @@ export default function RentalActions({ rental }: { rental: RentalType & { id: s
   const [kind, setKind] = useState<ActionKind | null>(null);
   const reserved = rental.status === "reserved";
   const pickedUp = rental.status === "picked_up";
+  const today = todaySP();
   if (!reserved && !pickedUp) return null;
 
   const gold = `${buttonClass} border-primary-gold/50 bg-primary-gold/10 text-primary-gold hover:bg-primary-gold/20`;
@@ -198,9 +208,21 @@ export default function RentalActions({ rental }: { rental: RentalType & { id: s
     <>
       <div className="flex flex-wrap gap-1.5">
         {reserved && (
-          <button type="button" className={gold} onClick={() => setKind("pickup")}>
-            Registrar retirada
-          </button>
+          <>
+            <button
+              type="button"
+              className={gold}
+              disabled={!canPickUp(rental, today)}
+              onClick={() => setKind("pickup")}
+            >
+              Registrar retirada
+            </button>
+            {!canPickUp(rental, today) && (
+              <span className="self-center text-xs text-primary-gold/55">
+                Retirada a partir de {formatDateBR(rental.startDate)}
+              </span>
+            )}
+          </>
         )}
         {pickedUp && (
           <button type="button" className={gold} onClick={() => setKind("return")}>

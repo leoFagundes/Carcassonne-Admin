@@ -156,9 +156,9 @@ Os arquivos `firestore.rules` e `storage.rules`, na raiz do repositório, são a
 
 ### Primeira configuração
 
-1. Crie a chave da conta de serviço: Console do Firebase → Configurações do projeto → Contas de serviço → **Gerar nova chave privada**.
-2. Copie `project_id`, `client_email` e `private_key` do JSON para `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL` e `FIREBASE_ADMIN_PRIVATE_KEY`, no `.env` local e no provedor de hospedagem (a chave privada entre aspas, com `\n`). Defina também `SITE_URL` e confirme que `RESEND_API_KEY` (já na [tabela de variáveis](#variáveis-de-ambiente)) está configurada, também no provedor de hospedagem. **Nunca** commite o JSON e apague-o depois de copiar os valores.
-3. Publique `firestore.rules` e `storage.rules` (veja acima).
+1. **Publique `firestore.rules` e `storage.rules` no console ANTES de fazer o deploy deste branch** (veja acima). Sem isso, `rentalCustomers` (CPF) e `rentals` ficam expostos pela regra antiga de leitura pública. As novas regras são compatíveis com o código atual de produção, então publicar primeiro é seguro.
+2. Crie a chave da conta de serviço: Console do Firebase → Configurações do projeto → Contas de serviço → **Gerar nova chave privada**.
+3. Copie `project_id`, `client_email` e `private_key` do JSON para `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL` e `FIREBASE_ADMIN_PRIVATE_KEY`, no `.env` local e no provedor de hospedagem (a chave privada entre aspas, com `\n`). Defina também `SITE_URL` e confirme que `RESEND_API_KEY` (já na [tabela de variáveis](#variáveis-de-ambiente)) está configurada, também no provedor de hospedagem. **Nunca** commite o JSON e apague-o depois de copiar os valores.
 4. Em `/aluguel-admin` → **Regras**, configure e publique a página de regras e ative o serviço.
 
 ### Checklist de validação manual (dono)

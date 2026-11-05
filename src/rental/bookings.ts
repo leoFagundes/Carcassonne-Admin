@@ -1,4 +1,4 @@
-import type { RentalBooking, RentalUnit } from "@/types";
+import type { RentalBooking, RentalType, RentalUnit } from "@/types";
 import { addDays } from "./dates";
 
 /** Lê a lista de bookings de um doc de jogo (campo ausente/inválido → []). */
@@ -38,4 +38,12 @@ export function markUnitUnavailable(
 export function isRealDate(value: unknown): value is string {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   return addDays(value, 0) === value;
+}
+
+/** Retirada só é possível para reservas ativas cuja data de início já chegou. */
+export function canPickUp(
+  rental: Pick<RentalType, "status" | "startDate">,
+  today: string,
+): boolean {
+  return rental.status === "reserved" && rental.startDate <= today;
 }

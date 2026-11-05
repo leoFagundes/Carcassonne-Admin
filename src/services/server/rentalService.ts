@@ -14,7 +14,7 @@ import {
   updateBooking,
 } from "@/rental/bookings";
 import { isValidCpf, normalizeCpf } from "@/rental/cpf";
-import { todaySP } from "@/rental/dates";
+import { formatDateBR, todaySP } from "@/rental/dates";
 import { DEFAULT_RENTAL_RULES, DEFAULT_RENTAL_SETTINGS } from "@/rental/defaults";
 import {
   ORDER_ERROR_MESSAGES,
@@ -335,6 +335,13 @@ export async function pickupRental(rentalId: string, adminUid: string): Promise<
   await db.runTransaction(async (tx) => {
     const { rentalRef, rental, gameRef, gameSnap } = await readRentalAndGame(db, tx, rentalId);
     if (rental.status !== "reserved") throw invalidStatus();
+    if (rental.startDate > todaySP()) {
+      throw new ApiError(
+        409,
+        "too_early",
+        `A retirada só pode ser registrada a partir de ${formatDateBR(rental.startDate)}.`,
+      );
+    }
 
     tx.update(rentalRef, {
       status: "picked_up",
