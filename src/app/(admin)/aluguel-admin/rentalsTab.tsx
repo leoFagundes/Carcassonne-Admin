@@ -76,22 +76,38 @@ function Band({
 
 function RentalRow({ rental, today }: { rental: Rental; today: string }) {
   const late = rental.status === "picked_up" && rental.dueDate < today;
+  // Cancelado não pede ação nenhuma: fica esmaecido, mas legível para consulta.
+  const canceled = rental.status === "canceled";
   return (
-    <article className="flex flex-col gap-2 rounded-xl border border-primary-gold/15 bg-secondary-black/50 p-3">
+    <article
+      className={`flex flex-col gap-2 rounded-xl border p-3 transition-opacity ${
+        canceled
+          ? "border-dashed border-primary-gold/10 bg-secondary-black/20 opacity-55 hover:opacity-80"
+          : "border-primary-gold/15 bg-secondary-black/50"
+      }`}
+    >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="text-sm font-semibold text-primary-gold">{rental.code}</span>
         <span
           className={`text-[10px] px-2 py-0.5 rounded-full border ${
             late
               ? "border-invalid-color/50 text-invalid-color"
-              : "border-primary-gold/30 text-primary-gold/70"
+              : canceled
+                ? "border-primary-gold/15 text-primary-gold/50"
+                : "border-primary-gold/30 text-primary-gold/70"
           }`}
         >
           {late
             ? `Atrasado ${plural(diffDays(rental.dueDate, today), "dia", "dias")}`
-            : STATUS_LABEL[rental.status]}
+            : canceled && rental.canceledBy
+              ? `Cancelado pelo ${rental.canceledBy === "customer" ? "cliente" : "admin"}`
+              : STATUS_LABEL[rental.status]}
         </span>
-        <span className="ml-auto text-sm font-semibold text-primary-gold/80">
+        <span
+          className={`ml-auto text-sm font-semibold text-primary-gold/80 ${
+            canceled ? "line-through" : ""
+          }`}
+        >
           {formatBRL(rental.price)}
         </span>
       </div>
