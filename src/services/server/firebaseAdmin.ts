@@ -3,6 +3,11 @@ import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
+// Variáveis de ambiente guardam a chave com "\\n" literal; o PEM precisa de quebras reais.
+export function normalizePrivateKey(raw: string): string {
+  return raw.replace(/\\n/g, "\n");
+}
+
 // Inicialização preguiçosa: o `next build` importa os módulos das rotas sem as
 // variáveis de ambiente do Admin, então nada pode quebrar na importação.
 function getAdminApp(): App {
@@ -31,7 +36,7 @@ function getAdminApp(): App {
     credential: cert({
       projectId,
       clientEmail,
-      privateKey: privateKey!.replace(/\n/g, "\n"),
+      privateKey: normalizePrivateKey(privateKey!),
     }),
   });
 }
