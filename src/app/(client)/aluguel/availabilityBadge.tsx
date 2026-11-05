@@ -19,11 +19,14 @@ export function availabilityLabel(availability: GameAvailability) {
   }
 }
 
-const TONE: Record<GameAvailability["state"], string> = {
-  available: "bg-emerald-500/20 text-emerald-300 border-emerald-400/40",
-  from: "bg-primary-gold/15 text-primary-gold border-primary-gold/40",
-  overdue: "bg-orange-500/20 text-orange-300 border-orange-400/40",
-  unavailable: "bg-red-500/20 text-red-300 border-red-400/40",
+// Fundo escuro quase opaco: o selo fica por cima da capa do jogo, e com fundo
+// translúcido o texto sumia em fotos claras. A cor do status vai no texto, na
+// borda e no pontinho.
+const TONE: Record<GameAvailability["state"], { text: string; dot: string }> = {
+  available: { text: "text-emerald-300 border-emerald-400/60", dot: "bg-emerald-400" },
+  from: { text: "text-primary-gold border-primary-gold/60", dot: "bg-primary-gold" },
+  overdue: { text: "text-orange-300 border-orange-400/60", dot: "bg-orange-400" },
+  unavailable: { text: "text-red-300 border-red-400/60", dot: "bg-red-400" },
 };
 
 export default function AvailabilityBadge({
@@ -33,10 +36,12 @@ export default function AvailabilityBadge({
   availability: GameAvailability;
   className?: string;
 }) {
+  const tone = TONE[availability.state];
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold backdrop-blur-sm whitespace-nowrap ${TONE[availability.state]} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border bg-primary-black/90 shadow-[0_1px_6px_rgba(0,0,0,0.6)] text-[10px] font-semibold whitespace-nowrap ${tone.text} ${className}`}
     >
+      <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full shrink-0 ${tone.dot}`} />
       {availabilityLabel(availability)}
     </span>
   );
