@@ -33,6 +33,7 @@ function getAdminApp(): App {
   }
 
   return initializeApp({
+    projectId,
     credential: cert({
       projectId,
       clientEmail,
