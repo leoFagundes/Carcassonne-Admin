@@ -122,6 +122,7 @@ A aplicação estará disponível em [http://localhost:3000](http://localhost:30
 | `npm run build` | Gera a build de produção                         |
 | `npm run start` | Inicia a aplicação já compilada                  |
 | `npm run lint`  | Executa o ESLint                                 |
+| `npm test`      | Executa os testes (Vitest)                       |
 
 ## Aluguel de jogos
 
@@ -137,7 +138,7 @@ Módulo de **aluguel de jogos de tabuleiro** para os clientes do pub: o cliente 
 
 ### Variáveis de ambiente
 
-O módulo usa `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY` e `SITE_URL`, descritas na [tabela de variáveis](#variáveis-de-ambiente) acima. Todas são exclusivas do servidor.
+O módulo usa `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY`, `SITE_URL` e `RESEND_API_KEY` (necessária para os e-mails de pedido e de conta), descritas na [tabela de variáveis](#variáveis-de-ambiente) acima. Todas são exclusivas do servidor.
 
 ### Testes
 
@@ -156,7 +157,7 @@ Os arquivos `firestore.rules` e `storage.rules`, na raiz do repositório, são a
 ### Primeira configuração
 
 1. Crie a chave da conta de serviço: Console do Firebase → Configurações do projeto → Contas de serviço → **Gerar nova chave privada**.
-2. Copie `project_id`, `client_email` e `private_key` do JSON para `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL` e `FIREBASE_ADMIN_PRIVATE_KEY`, no `.env` local e no provedor de hospedagem (a chave privada entre aspas, com `\n`). Defina também `SITE_URL`. **Nunca** commite o JSON e apague-o depois de copiar os valores.
+2. Copie `project_id`, `client_email` e `private_key` do JSON para `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL` e `FIREBASE_ADMIN_PRIVATE_KEY`, no `.env` local e no provedor de hospedagem (a chave privada entre aspas, com `\n`). Defina também `SITE_URL` e confirme que `RESEND_API_KEY` (já na [tabela de variáveis](#variáveis-de-ambiente)) está configurada, também no provedor de hospedagem. **Nunca** commite o JSON e apague-o depois de copiar os valores.
 3. Publique `firestore.rules` e `storage.rules` (veja acima).
 4. Em `/aluguel-admin` → **Regras**, configure e publique a página de regras e ative o serviço.
 
