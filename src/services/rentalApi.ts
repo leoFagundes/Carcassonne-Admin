@@ -1,0 +1,82 @@
+import { auth } from "@/services/firebaseConfig";
+import type { RentalReturnCondition } from "@/types";
+import type { OrderInput } from "@/rental/orders";
+
+export type ApiResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; code: string; message: string; gameId?: string };
+
+const INTERNAL_ERROR = "Erro inesperado. Tente novamente.";
+
+async function call<T>(
+  path: string,
+  body: unknown = {},
+  options: { auth?: boolean } = {}
+): Promise<ApiResult<T>> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+
+  if (options.auth !== false) {
+    const user = auth.currentUser;
+    if (!user) {
+      return { ok: false, code: "unauthenticated", message: "Faça login para continuar." };
+    }
+    try {
+      headers.Authorization = `Bearer ${await user.getIdToken()}`;
+    } catch (error) {
+      console.error("Erro ao obter token de acesso: ", error);
+      return { ok: false, code: "unauthenticated", message: "Faça login para continuar." };
+    }
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(path, { method: "POST", headers, body: JSON.stringify(body) });
+  } catch (error) {
+    console.error("Erro de rede ao chamar a API: ", error);
+    return { ok: false, code: "network", message: "Sem conexão. Tente novamente." };
+  }
+
+  try {
+    const json = await response.json();
+    if (json && typeof json === "object" && typeof json.ok === "boolean") {
+      return json as ApiResult<T>;
+    }
+  } catch {
+    // resposta não-JSON: cai no erro genérico abaixo
+  }
+  return { ok: false, code: "internal", message: INTERNAL_ERROR };
+}
+
+const rentalPath = (id: string, action: string) =>
+  `/api/rental/rentals/${encodeURIComponent(id)}/${action}`;
+
+export const rentalApi = {
+  createOrder: (input: OrderInput) =>
+    call<{ orderId: string; code: string }>("/api/rental/orders", input),
+
+  cancel: (id: string, reason?: string) => call<null>(rentalPath(id, "cancel"), { reason }),
+
+  pickup: (id: string) => call<null>(rentalPath(id, "pickup"), {}),
+
+  returnRental: (
+    id: string,
+    body: { condition: RentalReturnCondition; note?: string; markUnitUnavailable: boolean }
+  ) => call<null>(rentalPath(id, "return"), body),
+
+  changeDueDate: (id: string, dueDate: string) =>
+    call<null>(rentalPath(id, "due-date"), { dueDate }),
+
+  saveProfile: (body: { name: string; phone: string; cpf: string; acceptTerms: boolean }) =>
+    call<null>("/api/rental/profile", body),
+
+  setBlocked: (uid: string, blocked: boolean, reason?: string) =>
+    call<null>(`/api/rental/customers/${encodeURIComponent(uid)}/block`, { blocked, reason }),
+};
+
+export const accountApi = {
+  sendVerification: (from: "admin" | "aluguel") =>
+    call<null>("/api/auth/send-verification", { from }),
+
+  sendPasswordReset: (email: string, from: "admin" | "aluguel") =>
+    call<null>("/api/auth/send-password-reset", { email, from }, { auth: false }),
+};
