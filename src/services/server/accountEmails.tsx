@@ -72,22 +72,32 @@ export async function sendPasswordResetEmail(
 ): Promise<void> {
   const normalized = email.trim().toLowerCase();
   const id = createHash("sha256").update(normalized).digest("hex");
-  const ref = getAdminDb().collection("authEmailThrottle").doc(id);
+  const db = getAdminDb();
+  const ref = db.collection("authEmailThrottle").doc(id);
 
-  const snap = await ref.get();
-  const last = snap.exists
-    ? (snap.data()?.lastSentAt as Timestamp | undefined)
-    : undefined;
-  if (last && Date.now() - last.toMillis() < THROTTLE_MS) return;
+  // Reserva a vaga ANTES de procurar a conta (atômico): pedidos paralelos
+  // não passam todos, e e-mails desconhecidos também são limitados.
+  const claimed = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const last = snap.exists
+      ? (snap.data()?.lastSentAt as Timestamp | undefined)
+      : undefined;
+    if (last && Date.now() - last.toMillis() < THROTTLE_MS) return false;
+    tx.set(ref, { lastSentAt: Timestamp.now() });
+    return true;
+  });
+  if (!claimed) return;
 
   let firebaseLink: string;
   try {
     firebaseLink = await getAdminAuth().generatePasswordResetLink(normalized);
   } catch (error) {
-    if ((error as { code?: string }).code === "auth/user-not-found") return;
+    const code = (error as { code?: string }).code;
+    if (code === "auth/user-not-found" || code === "auth/email-not-found") {
+      return;
+    }
     throw error;
   }
   const link = buildActionLink(firebaseLink, "resetPassword", from);
   await sendMail(normalized, "Redefinir sua senha - Carcassonne Pub", "reset", link);
-  await ref.set({ lastSentAt: Timestamp.now() });
 }
