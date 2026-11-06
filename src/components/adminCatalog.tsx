@@ -21,7 +21,9 @@ import Tooltip from "@/components/Tooltip";
 export type CatalogView = "grid" | "list";
 
 /** Grade ou lista, lembrando a última escolha neste aparelho. */
-export function useCatalogView(storageKey: string): [CatalogView, (view: CatalogView) => void] {
+export function useCatalogView(
+  storageKey: string,
+): [CatalogView, (view: CatalogView) => void] {
   const [view, setView] = useState<CatalogView>("grid");
 
   useEffect(() => {
@@ -59,9 +61,11 @@ export function CatalogSearch({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey)
+        return;
       const target = event.target as HTMLElement | null;
-      if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
+      if (target?.closest("input, textarea, select, [contenteditable='true']"))
+        return;
       event.preventDefault();
       inputRef.current?.focus();
     };
@@ -70,7 +74,7 @@ export function CatalogSearch({
   }, []);
 
   return (
-    <label className="flex-1 min-w-0 flex items-center gap-2 h-10 px-3 rounded-xl bg-primary-black/50 border border-primary-gold/20 focus-within:border-primary-gold/55 transition-colors">
+    <label className="flex-1 min-w-0 flex items-center gap-2 h-10 p-3 rounded-xl bg-primary-black/50 border border-primary-gold/20 focus-within:border-primary-gold/55 transition-colors">
       <LuSearch size={16} className="text-primary-gold/50 shrink-0" />
       <input
         ref={inputRef}
@@ -143,7 +147,9 @@ export function ViewToggle({
           title={label}
           onClick={() => onChange(value)}
           className={`relative z-[1] flex items-center justify-center w-8 transition-colors cursor-pointer ${
-            view === value ? "text-primary-gold" : "text-primary-gold/40 hover:text-primary-gold/75"
+            view === value
+              ? "text-primary-gold"
+              : "text-primary-gold/40 hover:text-primary-gold/75"
           }`}
         >
           <Icon size={15} />
@@ -158,7 +164,13 @@ export function ViewToggle({
  * mouse, rolar com a rodinha e usar as setinhas das pontas; as bordas
  * esmaecem só do lado em que ainda há mais opções.
  */
-function ScrollRow({ label, children }: { label: string; children: ReactNode }) {
+function ScrollRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
   const rowRef = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ left: false, right: false });
 
@@ -181,23 +193,39 @@ function ScrollRow({ label, children }: { label: string; children: ReactNode }) 
       if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
       const max = row.scrollWidth - row.clientWidth;
       if (max <= 0) return;
-      if ((event.deltaY < 0 && row.scrollLeft <= 0) || (event.deltaY > 0 && row.scrollLeft >= max)) {
+      if (
+        (event.deltaY < 0 && row.scrollLeft <= 0) ||
+        (event.deltaY > 0 && row.scrollLeft >= max)
+      ) {
         return;
       }
       event.preventDefault();
-      row.scrollLeft = Math.min(max, Math.max(0, row.scrollLeft + event.deltaY));
+      row.scrollLeft = Math.min(
+        max,
+        Math.max(0, row.scrollLeft + event.deltaY),
+      );
     };
     row.addEventListener("wheel", onWheel, { passive: false });
 
     // Segurar e arrastar (só mouse — no toque a rolagem já é natural)
-    let drag: { x: number; left: number; pointerId: number; moved: boolean } | null = null;
+    let drag: {
+      x: number;
+      left: number;
+      pointerId: number;
+      moved: boolean;
+    } | null = null;
     const swallowClick = (event: MouseEvent) => {
       event.stopPropagation();
       event.preventDefault();
     };
     const onPointerDown = (event: PointerEvent) => {
       if (event.pointerType !== "mouse" || event.button !== 0) return;
-      drag = { x: event.clientX, left: row.scrollLeft, pointerId: event.pointerId, moved: false };
+      drag = {
+        x: event.clientX,
+        left: row.scrollLeft,
+        pointerId: event.pointerId,
+        moved: false,
+      };
     };
     const onPointerMove = (event: PointerEvent) => {
       if (!drag || event.pointerId !== drag.pointerId) return;
@@ -217,8 +245,14 @@ function ScrollRow({ label, children }: { label: string; children: ReactNode }) 
       if (!moved) return;
       delete row.dataset.dragging;
       // O clique que vem logo depois do arrasto não seleciona a pílula
-      row.addEventListener("click", swallowClick, { capture: true, once: true });
-      window.setTimeout(() => row.removeEventListener("click", swallowClick, { capture: true }), 0);
+      row.addEventListener("click", swallowClick, {
+        capture: true,
+        once: true,
+      });
+      window.setTimeout(
+        () => row.removeEventListener("click", swallowClick, { capture: true }),
+        0,
+      );
     };
     row.addEventListener("pointerdown", onPointerDown);
     row.addEventListener("pointermove", onPointerMove);
@@ -242,7 +276,8 @@ function ScrollRow({ label, children }: { label: string; children: ReactNode }) 
       behavior: "smooth",
     });
 
-  const fade = (side: boolean) => (side ? "transparent 0, #000 28px" : "#000 0");
+  const fade = (side: boolean) =>
+    side ? "transparent 0, #000 28px" : "#000 0";
   const mask = `linear-gradient(to right, ${fade(edges.left)}, ${
     edges.right ? "#000 calc(100% - 28px), transparent 100%" : "#000 100%"
   })`;
@@ -260,15 +295,27 @@ function ScrollRow({ label, children }: { label: string; children: ReactNode }) 
       </div>
       {(
         [
-          { side: "left", show: edges.left, direction: -1, Icon: LuChevronLeft },
-          { side: "right", show: edges.right, direction: 1, Icon: LuChevronRight },
+          {
+            side: "left",
+            show: edges.left,
+            direction: -1,
+            Icon: LuChevronLeft,
+          },
+          {
+            side: "right",
+            show: edges.right,
+            direction: 1,
+            Icon: LuChevronRight,
+          },
         ] as const
       ).map(({ side, show, direction, Icon }) => (
         <button
           key={side}
           type="button"
           tabIndex={-1}
-          aria-label={side === "left" ? "Ver opções anteriores" : "Ver mais opções"}
+          aria-label={
+            side === "left" ? "Ver opções anteriores" : "Ver mais opções"
+          }
           onClick={() => scrollBy(direction)}
           className={`absolute top-1/2 -translate-y-1/2 ${
             side === "left" ? "-left-1" : "-right-1"
@@ -305,31 +352,35 @@ export function FilterPills<T extends string>({
   /** Muitas opções: rolam de lado em vez de quebrar linha. */
   scroll?: boolean;
 }) {
-  const pills = options.map(({ value: optionValue, label: optionLabel, count, icon: Icon }) => {
-    const active = optionValue === value;
-    return (
-      <button
-        key={optionValue}
-        type="button"
-        role="radio"
-        aria-checked={active}
-        onClick={() => onChange(optionValue)}
-        className={`flex items-center gap-1.5 h-8 px-3 shrink-0 rounded-full border text-xs whitespace-nowrap transition-colors cursor-pointer ${
-          active
-            ? "border-primary-gold/60 bg-primary-gold/15 text-primary-gold font-semibold"
-            : "border-primary-gold/15 text-primary-gold/60 hover:border-primary-gold/40 hover:text-primary-gold"
-        }`}
-      >
-        {Icon && <Icon size={12} />}
-        {optionLabel}
-        {count !== undefined && (
-          <span className={`tabular-nums ${active ? "text-primary-gold/70" : "text-primary-gold/35"}`}>
-            {count}
-          </span>
-        )}
-      </button>
-    );
-  });
+  const pills = options.map(
+    ({ value: optionValue, label: optionLabel, count, icon: Icon }) => {
+      const active = optionValue === value;
+      return (
+        <button
+          key={optionValue}
+          type="button"
+          role="radio"
+          aria-checked={active}
+          onClick={() => onChange(optionValue)}
+          className={`flex items-center gap-1.5 h-8 px-3 shrink-0 rounded-full border text-xs whitespace-nowrap transition-colors cursor-pointer ${
+            active
+              ? "border-primary-gold/60 bg-primary-gold/15 text-primary-gold font-semibold"
+              : "border-primary-gold/15 text-primary-gold/60 hover:border-primary-gold/40 hover:text-primary-gold"
+          }`}
+        >
+          {Icon && <Icon size={12} />}
+          {optionLabel}
+          {count !== undefined && (
+            <span
+              className={`tabular-nums ${active ? "text-primary-gold/70" : "text-primary-gold/35"}`}
+            >
+              {count}
+            </span>
+          )}
+        </button>
+      );
+    },
+  );
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 min-w-0">
@@ -339,7 +390,11 @@ export function FilterPills<T extends string>({
       {scroll ? (
         <ScrollRow label={label}>{pills}</ScrollRow>
       ) : (
-        <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1.5 min-w-0">
+        <div
+          role="radiogroup"
+          aria-label={label}
+          className="flex flex-wrap gap-1.5 min-w-0"
+        >
           {pills}
         </div>
       )}
@@ -455,7 +510,13 @@ export function CatalogSection({
 }
 
 /** Container dos itens na visão escolhida. */
-export function CatalogItems({ view, children }: { view: CatalogView; children: ReactNode }) {
+export function CatalogItems({
+  view,
+  children,
+}: {
+  view: CatalogView;
+  children: ReactNode;
+}) {
   return (
     <div
       className={
@@ -499,7 +560,13 @@ export function CatalogEmpty({
 }
 
 /** Esqueleto enquanto os itens carregam. */
-export function CatalogSkeleton({ view, count = 12 }: { view: CatalogView; count?: number }) {
+export function CatalogSkeleton({
+  view,
+  count = 12,
+}: {
+  view: CatalogView;
+  count?: number;
+}) {
   return (
     <CatalogItems view={view}>
       {Array.from({ length: count }, (_, index) =>
