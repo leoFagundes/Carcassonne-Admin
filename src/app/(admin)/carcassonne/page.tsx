@@ -54,6 +54,7 @@ import {
 import { DragCards } from "./drag-cards";
 import SiteThemeSettings from "./site-theme-settings";
 import EmailsTab from "./emails-tab";
+import RentalStats from "./rental-stats";
 import { useSiteThemeReminders } from "@/components/siteTheme/siteThemeContext";
 
 /**
@@ -223,6 +224,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<
     "stats" | "settings" | "temas" | "emails" | "mural"
   >("stats");
+  const [statsTab, setStatsTab] = useState<"reservas" | "aluguel" | "links" | "banco">("reservas");
   const { pending: pendingThemeReminders } = useSiteThemeReminders();
   // Vindo da página Adicionar (?tab=emails), o editor do e-mail já abre.
   const [openEmailEditor, setOpenEmailEditor] = useState(false);
@@ -800,6 +802,52 @@ export default function SettingsPage() {
     }
   }, [rawReserves, selectedYear]);
 
+  // Período compartilhado pelas subabas Reservas e Links.
+  const periodSelector = (
+      <div className="flex flex-col gap-2 bg-secondary-black/40 border border-primary-gold/15 rounded-xl px-4 py-3">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {(
+            [
+              { key: "7d", label: "7 dias" },
+              { key: "30d", label: "30 dias" },
+              { key: "3m", label: "3 meses" },
+              { key: "6m", label: "6 meses" },
+              { key: "1y", label: "1 ano" },
+              { key: "all", label: "Total" },
+              { key: "custom", label: "Personalizado" },
+            ] as {
+              key: "7d" | "30d" | "3m" | "6m" | "1y" | "all" | "custom";
+              label: string;
+            }[]
+          ).map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setChartPeriod(key)}
+              className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                chartPeriod === key
+                  ? "border-primary-gold/50 text-primary-gold bg-primary-gold/10"
+                  : "border-primary-gold/15 text-primary-gold/30 hover:border-primary-gold/30 hover:text-primary-gold/60"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+          {statsTab === "reservas" && (
+            <span className="text-[10px] text-primary-gold/35 ml-auto whitespace-nowrap">
+              {periodTotal} reserva{periodTotal !== 1 ? "s" : ""} no período
+            </span>
+          )}
+        </div>
+        {chartPeriod === "custom" && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <DateInput value={customStart} onChange={setCustomStart} />
+            <span className="text-[10px] text-primary-gold/30">até</span>
+            <DateInput value={customEnd} onChange={setCustomEnd} />
+          </div>
+        )}
+      </div>
+  );
+
   return (
     <section className="flex flex-col gap-5 w-full h-full pb-8 overflow-y-auto outline-none px-1">
       {loading && <LoaderFullscreen />}
@@ -852,6 +900,30 @@ export default function SettingsPage() {
 
       {activeTab === "stats" && (
         <>
+          <div className="flex items-center justify-center gap-1.5 flex-wrap -mt-1">
+            {(
+              [
+                { key: "reservas", label: "Reservas" },
+                { key: "aluguel", label: "Aluguel" },
+                { key: "links", label: "Links" },
+                { key: "banco", label: "Banco de dados" },
+              ] as const
+            ).map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setStatsTab(t.key)}
+                className={`text-[11px] px-3 py-1 rounded-lg border transition-all cursor-pointer ${
+                  statsTab === t.key
+                    ? "border-primary-gold/50 text-primary-gold bg-primary-gold/10 font-semibold"
+                    : "border-primary-gold/15 text-primary-gold/40 hover:border-primary-gold/35 hover:text-primary-gold/70"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          {statsTab === "reservas" && (
+            <>
       {/* ── RESERVE STATS ── */}
       <div className="flex flex-col gap-4">
         <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
@@ -918,47 +990,7 @@ export default function SettingsPage() {
           Estatísticas — por período
         </span>
 
-        {/* Period selector */}
-        <div className="flex flex-col gap-2 bg-secondary-black/40 border border-primary-gold/15 rounded-xl px-4 py-3">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {(
-              [
-                { key: "7d", label: "7 dias" },
-                { key: "30d", label: "30 dias" },
-                { key: "3m", label: "3 meses" },
-                { key: "6m", label: "6 meses" },
-                { key: "1y", label: "1 ano" },
-                { key: "all", label: "Total" },
-                { key: "custom", label: "Personalizado" },
-              ] as {
-                key: "7d" | "30d" | "3m" | "6m" | "1y" | "all" | "custom";
-                label: string;
-              }[]
-            ).map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setChartPeriod(key)}
-                className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                  chartPeriod === key
-                    ? "border-primary-gold/50 text-primary-gold bg-primary-gold/10"
-                    : "border-primary-gold/15 text-primary-gold/30 hover:border-primary-gold/30 hover:text-primary-gold/60"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-            <span className="text-[10px] text-primary-gold/35 ml-auto whitespace-nowrap">
-              {periodTotal} reserva{periodTotal !== 1 ? "s" : ""} no período
-            </span>
-          </div>
-          {chartPeriod === "custom" && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <DateInput value={customStart} onChange={setCustomStart} />
-              <span className="text-[10px] text-primary-gold/30">até</span>
-              <DateInput value={customEnd} onChange={setCustomEnd} />
-            </div>
-          )}
-        </div>
+        {periodSelector}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Bar chart — reservas por dia da semana */}
           <div className="bg-secondary-black/40 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3">
@@ -1290,6 +1322,14 @@ export default function SettingsPage() {
           </ResponsiveContainer>
         </div>
       </div>
+            </>
+          )}
+
+          {statsTab === "aluguel" && <RentalStats />}
+
+          {statsTab === "links" && (
+            <div className="flex flex-col gap-4">
+              {periodSelector}
       {/* ── LINK CLICKS CHART ── */}
       {linkClicksData.length > 0 && (
         <div className="bg-secondary-black/40 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3">
@@ -1363,7 +1403,14 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* ── DATABASE INFO ── */}
+              {linkClicksData.length === 0 && (
+                <p className="text-xs text-primary-gold/40 px-1">Nenhum link cadastrado ainda.</p>
+              )}
+            </div>
+          )}
+
+          {/* ── DATABASE INFO ── */}
+          {statsTab === "banco" && (
       <div className="flex flex-col gap-4">
         <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
           Banco de dados
@@ -1410,6 +1457,7 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+          )}
         </>
       )}
 

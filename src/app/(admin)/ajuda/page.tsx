@@ -613,7 +613,7 @@ const helpCards: HelpCard[] = [
     category: "configuracoes",
     title: "Visão geral da página Configurações",
     description:
-      "Centraliza estatísticas do sistema e as configurações globais do site. Está dividida em seções: estatísticas de reservas do mês atual, gráficos de distribuição de reservas por dia da semana, ranking de cliques nos links, informações do banco de dados, configurações gerais de reservas, efeitos visuais do site, temas sazonais do site (aba 'Temas'), os e-mails enviados pelo site (aba 'E-mails', com o editor do e-mail de reserva) e o editor do painel decorativo (mural).",
+      "Centraliza estatísticas do sistema e as configurações globais do site. Está dividida em seções: a aba 'Estatísticas' (com as subabas 'Reservas', 'Aluguel', 'Links' e 'Banco de dados'), configurações gerais de reservas, efeitos visuais do site, temas sazonais do site (aba 'Temas'), os e-mails enviados pelo site (aba 'E-mails', com o editor do e-mail de reserva) e o editor do painel decorativo (mural).",
   },
   {
     category: "configuracoes",
@@ -625,7 +625,13 @@ const helpCards: HelpCard[] = [
     category: "configuracoes",
     title: "Como ver o ranking de cliques nos links",
     description:
-      "Na seção de estatísticas existe um gráfico de barras com o ranking de cliques em cada link, ordenado do mais clicado para o menos. Cada clique de cliente na página de linktree é registrado automaticamente.",
+      "Em Estatísticas → 'Links' existe um gráfico de barras com o ranking de cliques em cada link, no período escolhido (o mesmo seletor de período das reservas), ordenado do mais clicado para o menos. Cada clique de cliente na página de linktree é registrado automaticamente.",
+  },
+  {
+    category: "configuracoes",
+    title: "Estatísticas do aluguel",
+    description:
+      "Em Estatísticas → 'Aluguel'. O bloco 'Agora' mostra quantas cópias estão fora (alugadas) do total ativo, os atrasados e as retiradas e devoluções de hoje. O bloco 'Por período' (30 dias, 3 meses, 6 meses, 1 ano ou Total, contado pela data de retirada) mostra: aluguéis (sem os cancelados), receita (soma dos aluguéis não cancelados) e quanto foi reembolsado, % de devoluções atrasadas, clientes que alugaram e contas novas; os jogos mais alugados; a situação dos aluguéis (devolvidos, em andamento, cancelados); como pagaram (balcão, Pix, cartão, saldo do Mercado Pago); quem cancelou (cliente, admin ou prazo de pagamento esgotado) e os clientes que mais alugaram. No fim, o gráfico de aluguéis por mês, com troca de ano.",
   },
   {
     category: "configuracoes",
