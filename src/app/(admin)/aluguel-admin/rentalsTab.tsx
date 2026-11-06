@@ -33,12 +33,6 @@ const ACTIVE: RentalStatus[] = ["awaiting_payment", "reserved", "picked_up"];
 const statusMatches = (r: { status: RentalStatus }, s: StatusFilter) =>
   s === "all" || (s === "active" ? ACTIVE.includes(r.status) : r.status === s);
 
-/** Em andamento: o mais urgente primeiro (atrasado → devolução → retirada → pagamento). */
-function urgency(r: { status: RentalStatus; startDate: string; dueDate: string }, today: string): [number, string] {
-  if (r.status === "picked_up") return [r.dueDate < today ? 0 : 1, r.dueDate];
-  if (r.status === "reserved") return [2, r.startDate];
-  return [3, r.startDate];
-}
 
 type AgendaGroup = { key: string; title: string; tone: string; rentals: Rental[]; note?: (r: Rental) => string };
 
@@ -393,13 +387,8 @@ export default function RentalsTab() {
   );
   const paymentOk = (r: Rental) => matchesPaymentFilter(orderById.get(r.orderId), payment, now);
   const filtered = searched.filter((r) => statusMatches(r, status) && paymentOk(r));
-  if (status === "active") {
-    filtered.sort((a, b) => {
-      const [ua, da] = urgency(a, today);
-      const [ub, db] = urgency(b, today);
-      return ua - ub || (da < db ? -1 : da > db ? 1 : 0);
-    });
-  }
+  // Ordem do banco: os mais recentes primeiro (a urgência fica no quadro "Hoje").
+
   const count = (s: StatusFilter) => searched.filter((r) => statusMatches(r, s) && paymentOk(r)).length;
   const countPayment = (p: PaymentFilter) =>
     searched.filter(
