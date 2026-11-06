@@ -27,6 +27,7 @@ import {
   type OrderInput,
 } from "@/rental/orders";
 import {
+  archiveDecidedReview,
   cancelPreview,
   conflictingPendingRefund,
   countActiveGames,
@@ -485,8 +486,11 @@ export async function cancelRental(
     } else {
       const preview = cancelPreview(order, rentalId, policy);
       if (preview.kind === "review") {
+        // A análise anterior já decidida não se perde: vai para o histórico.
+        const history = archiveDecidedReview(order.cancellationReview, order.cancellationReviewHistory);
         tx.update(orderRef, {
           cancellationReview: openCancellationReview(order.cancellationReview, rentalId, now),
+          ...(history ? { cancellationReviewHistory: history } : {}),
         });
         return cancelNow({ kind: "review" });
       }

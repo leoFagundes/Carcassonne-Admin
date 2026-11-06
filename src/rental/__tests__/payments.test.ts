@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { RentalBooking, RentalOrderPayment, RentalOrderType, RentalPendingRefund, RentalRefund } from "@/types";
 import {
+  archiveDecidedReview,
   beginRefund,
   cancelPreview,
   clampFeePercent,
@@ -447,6 +448,22 @@ describe("openCancellationReview", () => {
   it("análise já decidida: começa outra", () => {
     const closed = { status: "denied" as const, requestedAt: 3, rentalIds: ["r1"], decidedBy: "a", reason: "x" };
     expect(openCancellationReview(closed, "r2", 7)).toEqual({ status: "pending", requestedAt: 7, rentalIds: ["r2"] });
+  });
+});
+
+describe("archiveDecidedReview", () => {
+  const denied = { status: "denied" as const, requestedAt: 3, rentalIds: ["r1"], decidedBy: "a", decidedAt: 5, reason: "fora do prazo" };
+  it("análise decidida vai para o fim do histórico (com o motivo)", () => {
+    expect(archiveDecidedReview(denied, undefined)).toEqual([denied]);
+    const older = { status: "approved" as const, requestedAt: 1, rentalIds: ["r0"], amount: 100 };
+    expect(archiveDecidedReview(denied, [older])).toEqual([older, denied]);
+  });
+  it("sem análise ou com análise aberta → nada a guardar", () => {
+    expect(archiveDecidedReview(undefined, undefined)).toBeNull();
+    expect(archiveDecidedReview({ status: "pending", requestedAt: 3, rentalIds: ["r1"] }, [denied])).toBeNull();
+  });
+  it("histórico inválido no documento é tratado como vazio", () => {
+    expect(archiveDecidedReview(denied, "x" as never)).toEqual([denied]);
   });
 });
 

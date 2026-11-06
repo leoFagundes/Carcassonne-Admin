@@ -298,6 +298,19 @@ export function openCancellationReview(
 }
 
 /**
+ * Nova análise sobre uma já decidida: a decidida (com o motivo da recusa, se
+ * houver) vai para o fim do histórico. null = nada a guardar (sem análise ou
+ * análise aberta, que só recebe o novo aluguel).
+ */
+export function archiveDecidedReview(
+  current: RentalCancellationReview | undefined,
+  history: RentalCancellationReview[] | undefined,
+): RentalCancellationReview[] | null {
+  if (!current || current.status === "pending") return null;
+  return [...(Array.isArray(history) ? history : []), current];
+}
+
+/**
  * Decide os aluguéis `decidedIds` da análise. Se outro cancelamento entrou na
  * análise nesse meio-tempo, ela continua pendente só com os não decididos.
  */

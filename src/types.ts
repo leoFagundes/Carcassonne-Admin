@@ -609,5 +609,7 @@ export interface RentalOrderType {
   paymentMode: "counter" | "online";
   payment?: RentalOrderPayment;
   cancellationReview?: RentalCancellationReview;
+  /** Análises já decididas que deram lugar a uma nova (mais antiga primeiro). */
+  cancellationReviewHistory?: RentalCancellationReview[];
   createdAt?: Timestamp;
 }
