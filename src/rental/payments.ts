@@ -4,7 +4,10 @@ import type {
   RentalOrderPayment,
   RentalOrderType,
   RentalStatus,
+  RentalType,
+  RentalUnit,
 } from "@/types";
+import { isUnitFree } from "./availability";
 
 /** Remove reservas temporárias (held) vencidas; as demais permanecem. */
 export function liveBookings(bookings: RentalBooking[], nowMs: number): RentalBooking[] {
@@ -34,7 +37,7 @@ export type OrderPaymentView =
   | { state: "expired" }
   | { state: "canceled" }
   | { state: "rejected"; msLeft: number }
-  | { state: "paid"; method?: "pix" | "card" }
+  | { state: "paid"; method?: "pix" | "card" | "other" }
   | { state: "refunded"; amount: number }
   | { state: "partially_refunded"; amount: number }
   | { state: "review" };
@@ -135,4 +138,108 @@ export function formatCountdown(ms: number): string {
   const mm = String(Math.floor(total / 60)).padStart(2, "0");
   const ss = String(total % 60).padStart(2, "0");
   return `${mm}:${ss}`;
+}
+
+// ---------- Confirmação do pagamento ----------
+
+/** Aluguel do pedido como a confirmação precisa dele. */
+export type ApprovalRental = Pick<
+  RentalType,
+  "gameId" | "unitId" | "startDate" | "dueDate" | "status"
+> & { id: string };
+
+export interface ApprovalContext {
+  /** Id do pagamento aprovado no provedor. */
+  paymentId: string;
+  /** "YYYY-MM-DD" (America/Sao_Paulo). */
+  today: string;
+  /** Aluguéis do pedido que ainda existem. */
+  rentals: ApprovalRental[];
+  /** Jogos do pedido que ainda existem (bookings como estão gravados). */
+  games: Record<string, { units: RentalUnit[]; bookings: RentalBooking[] }>;
+}
+
+export type ApprovalDecision =
+  /** Reserva: rentals → reserved e bookings finais de cada jogo (sem holds vencidos). */
+  | { kind: "confirm"; rentalIds: string[]; bookingsByGame: Record<string, RentalBooking[]> }
+  /** Não dá para entregar (cópia pega por outro / pedido cancelado pelo cliente): reembolso integral. */
+  | { kind: "late_refund"; reason: "expired" | "canceled" }
+  /** Reembolso tardio deste pagamento já decidido, mas ainda não concluído. */
+  | { kind: "retry_late_refund" }
+  /** Este pagamento já foi processado. */
+  | { kind: "already" }
+  /** O pedido já tem outro pagamento: devolver este integralmente. */
+  | { kind: "duplicate" }
+  | { kind: "ignored" };
+
+type ApprovalOrder = Pick<RentalOrderType, "paymentMode"> & {
+  payment?: Pick<
+    RentalOrderPayment,
+    | "status"
+    | "providerPaymentId"
+    | "closedBy"
+    | "lateApprovalRefunded"
+    | "lateApprovalRefundPending"
+  >;
+};
+
+/**
+ * Decide o que fazer com um pagamento aprovado do pedido. Só confirma se TODAS
+ * as cópias do pedido continuam garantidas: o hold do aluguel ainda vale ou a
+ * mesma cópia está livre e ativa para as datas (descontados os holds vencidos).
+ * Nunca confirma duas vezes nem um pedido que o cliente cancelou.
+ */
+export function decideApproval(
+  order: ApprovalOrder,
+  ctx: ApprovalContext,
+  nowMs: number,
+): ApprovalDecision {
+  const p = order.payment;
+  if (order.paymentMode !== "online" || !p) return { kind: "ignored" };
+
+  if (p.providerPaymentId) {
+    if (p.providerPaymentId !== ctx.paymentId) return { kind: "duplicate" };
+    return p.lateApprovalRefundPending && !p.lateApprovalRefunded
+      ? { kind: "retry_late_refund" }
+      : { kind: "already" };
+  }
+  // Pago/reembolsado sem id registrado não deveria existir: nunca confirmar de novo.
+  if (p.status !== "pending" && p.status !== "rejected" && p.status !== "expired") {
+    return { kind: "duplicate" };
+  }
+  if (p.closedBy === "customer") return { kind: "late_refund", reason: "canceled" };
+
+  const bookingsByGame: Record<string, RentalBooking[]> = {};
+  const rentalIds: string[] = [];
+  for (const r of ctx.rentals) {
+    if (r.status !== "awaiting_payment" && r.status !== "canceled") continue;
+    const game = ctx.games[r.gameId];
+    if (!game) return { kind: "late_refund", reason: "expired" };
+
+    const list = bookingsByGame[r.gameId] ?? liveBookings(game.bookings, nowMs);
+    const own = list.find((b) => b.rentalId === r.id);
+    let next: RentalBooking[];
+    if (own) {
+      next = list.map((b) => {
+        if (b.rentalId !== r.id) return b;
+        const kept = { ...b, status: "reserved" as const };
+        delete kept.holdUntil;
+        return kept;
+      });
+    } else {
+      const unitActive = game.units.some((u) => u.id === r.unitId && u.status === "active");
+      if (!unitActive || !isUnitFree(r.unitId, list, r.startDate, r.dueDate, ctx.today)) {
+        return { kind: "late_refund", reason: "expired" };
+      }
+      next = [
+        ...list,
+        { rentalId: r.id, unitId: r.unitId, startDate: r.startDate, dueDate: r.dueDate, status: "reserved" },
+      ];
+    }
+    bookingsByGame[r.gameId] = next;
+    rentalIds.push(r.id);
+  }
+  // Nada a entregar (aluguéis apagados): não fica com o dinheiro.
+  if (rentalIds.length === 0) return { kind: "late_refund", reason: "expired" };
+  return { kind: "confirm", rentalIds, bookingsByGame };
 }

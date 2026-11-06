@@ -33,6 +33,14 @@ export type RentalOrderEmailProps = {
   /** Centavos. */
   total: number;
   rulesUrl: string;
+  /** Pago online (forma do pagamento); ausente = pagamento no balcão. */
+  paidOnline?: "pix" | "card" | "other";
+};
+
+const PAID_ONLINE_LABEL: Record<NonNullable<RentalOrderEmailProps["paidOnline"]>, string> = {
+  pix: "Pago online via Pix.",
+  card: "Pago online via cartão.",
+  other: "Pago online via Mercado Pago.",
 };
 
 // Mesma paleta clara do e-mail de reserva (clientResponseTemplate): fundo
@@ -208,6 +216,7 @@ export const RentalOrderEmail = ({
   items,
   total,
   rulesUrl,
+  paidOnline,
 }: RentalOrderEmailProps) => {
   const count = items.length;
   return (
@@ -255,7 +264,12 @@ export const RentalOrderEmail = ({
 
               <Section style={paymentBox}>
                 <Text style={paymentText}>
-                  💳 <strong>Pagamento no balcão, na retirada.</strong>
+                  💳{" "}
+                  <strong>
+                    {paidOnline
+                      ? PAID_ONLINE_LABEL[paidOnline]
+                      : "Pagamento no balcão, na retirada."}
+                  </strong>
                 </Text>
               </Section>
 

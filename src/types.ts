@@ -532,18 +532,33 @@ export interface RentalRefund {
   reason?: string;
 }
 
+/** Pagamento a mais no mesmo pedido (cliente pagou duas vezes), devolvido integralmente. */
+export interface RentalDuplicatePayment {
+  paymentId: string;
+  amount: number;
+  at: number;
+  providerRefundId?: string;
+  refundFailed?: boolean;
+}
+
 export interface RentalOrderPayment {
   status: OrderPaymentStatus;
   provider: "mercadopago";
   checkoutUrl: string;
   providerCheckoutId: string;
   providerPaymentId?: string;
-  method?: "pix" | "card";
+  /** "other": saldo da conta Mercado Pago. */
+  method?: "pix" | "card" | "other";
   paidAt?: number;
   holdUntil: number;
   refunds: RentalRefund[];
   refundedTotal: number;
   lateApprovalRefunded?: boolean;
+  /** Pago depois de o pedido fechar; o reembolso integral ainda não foi concluído. */
+  lateApprovalRefundPending?: boolean;
+  /** A última tentativa do reembolso tardio falhou no provedor (precisa de atenção). */
+  lateApprovalRefundFailed?: boolean;
+  duplicatePayments?: RentalDuplicatePayment[];
   /** Quem encerrou o pedido não pago (status "expired"): cliente cancelou × sistema expirou. */
   closedBy?: "customer" | "system";
 }
