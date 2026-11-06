@@ -585,3 +585,13 @@ describe("rentalRefundInfo", () => {
     expect(rentalRefundInfo(base({ status: "refunded", refundedTotal: 1000 }), "r2")).toEqual({ state: "refunded" });
   });
 });
+
+describe("mergeRentalSettings: folga entre aluguéis", () => {
+  it("1 a 14 dias; ausente ou inválida = 1", async () => {
+    const { mergeRentalSettings } = await import("@/rental/defaults");
+    expect(mergeRentalSettings({}).queueGapDays).toBe(1);
+    expect(mergeRentalSettings({ queueGapDays: 3 }).queueGapDays).toBe(3);
+    expect(mergeRentalSettings({ queueGapDays: 40 }).queueGapDays).toBe(14);
+    expect(mergeRentalSettings({ queueGapDays: "x" as never }).queueGapDays).toBe(1);
+  });
+});

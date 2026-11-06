@@ -75,6 +75,11 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
       addAlert("Os limites de jogos devem ser números inteiros de 1 a 10.");
       return;
     }
+    const gap = local.queueGapDays ?? 1;
+    if (!intIn(gap, 1, 14)) {
+      addAlert("A folga entre aluguéis deve ser de 1 a 14 dias.");
+      return;
+    }
     const pay = local.onlinePayment;
     if (!intIn(pay.holdMinutes, 15, 60)) {
       addAlert("O tempo para pagar deve ser de 15 a 60 minutos.");
@@ -99,6 +104,7 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
       requireCpf: local.requireCpf,
       onlinePayment: local.onlinePayment,
       allowQueue: local.allowQueue !== false,
+      queueGapDays: local.queueGapDays ?? 1,
       ...(email ? { staffEmail: email } : {}),
     };
 
@@ -176,6 +182,22 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
           {local.allowQueue !== false
             ? "Ligado: o cliente pode reservar para depois da devolução de quem está com o jogo (se essa pessoa atrasar, a retirada atrasa junto)."
             : "Desligado: com todas as cópias fora, o jogo aparece como “Alugado” e só pode ser alugado depois que uma cópia voltar. Ninguém fica na fila atrás de outro cliente."}
+        </p>
+        <Input
+          labelSpace
+          label="Folga entre aluguéis da mesma cópia (dias)"
+          type="number"
+          placeholder="Folga entre aluguéis da mesma cópia (1 a 14 dias)"
+          value={String(local.queueGapDays ?? 1)}
+          setValue={(e) => set("queueGapDays", Number(e.target.value))}
+          variant
+          width="!w-full sm:!w-[320px] !min-w-0"
+        />
+        <p className="-mt-1 text-[11px] text-primary-gold/45 leading-relaxed">
+          Margem de segurança caso alguém atrase. Ex.: se a cópia volta dia 23, o próximo cliente pode retirar a partir do
+          dia {23 + Math.min(14, Math.max(1, Math.round(local.queueGapDays ?? 1) || 1))}
+          {(local.queueGapDays ?? 1) <= 1 ? " (dia seguinte, sem margem extra)" : ""}. Vale também para quem pega a cópia
+          antes de uma reserva já marcada: precisa devolver com essa folga.
         </p>
       </Group>
 

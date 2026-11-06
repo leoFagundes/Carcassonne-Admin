@@ -30,6 +30,8 @@ export function mergeRentalSettings(saved?: Partial<RentalSettingsType>): Rental
   return {
     ...DEFAULT_RENTAL_SETTINGS,
     ...saved,
+    // Folga entre aluguéis da mesma cópia: 1 a 14 dias (inválida → 1).
+    queueGapDays: clampNumber(Math.round(Number(saved?.queueGapDays ?? 1)), 1, 14, 1),
     onlinePayment: {
       ...onlinePayment,
       feePercent: clampFeePercent(onlinePayment.feePercent),

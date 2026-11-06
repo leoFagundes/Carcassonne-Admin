@@ -11,7 +11,7 @@ import type { RentalGameType, RentalRulesType, RentalSettingsType } from "@/type
 import RentalGameRepository from "@/services/repositories/RentalGameRepository";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import { accountApi, rentalApi } from "@/services/rentalApi";
-import { availabilityFor } from "@/rental/availability";
+import { availabilityFor, availabilityOptions } from "@/rental/availability";
 import { withLiveBookings } from "@/rental/payments";
 import { addDays, formatDateBR, todaySP, weekdayOf } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
@@ -291,9 +291,7 @@ export default function PedidoPage() {
               {items.map(({ id, game }) => {
                 const av =
                   game && startDate
-                    ? availabilityFor(withLiveBookings(game, Date.now()), startDate, today, {
-                        allowQueue: settings.allowQueue,
-                      })
+                    ? availabilityFor(withLiveBookings(game, Date.now()), startDate, today, availabilityOptions(settings))
                     : null;
                 const next = av && !av.ok ? av.nextStart : null;
                 const canUseNext = !!next && dates.some((d) => d.date === next && d.enabled);

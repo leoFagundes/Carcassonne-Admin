@@ -1,4 +1,4 @@
-import { bookingEnd, pickUnit, type GameLike } from "./availability";
+import { availabilityOptions, bookingEnd, pickUnit, type GameLike } from "./availability";
 import { isValidCpf } from "./cpf";
 import { addDays, weekdayOf } from "./dates";
 import type {
@@ -111,7 +111,7 @@ export function planOrder(input: OrderInput, ctx: OrderContext): PlanResult {
     const game = Object.prototype.hasOwnProperty.call(ctx.games, gameId) ? ctx.games[gameId] : undefined;
     if (!game) return fail("game_not_found", gameId);
     if (!game.isActive) return fail("game_inactive", gameId);
-    const unitId = pickUnit(game, startDate, today, { allowQueue: settings.allowQueue });
+    const unitId = pickUnit(game, startDate, today, availabilityOptions(settings));
     if (unitId === null) return fail("game_unavailable", gameId);
     const unitLabel = game.units.find((u) => u.id === unitId)?.label ?? unitId;
     items.push({

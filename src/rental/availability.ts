@@ -1,5 +1,5 @@
 import { addDays, diffDays } from "./dates";
-import type { RentalBooking, RentalGameType } from "@/types";
+import type { RentalBooking, RentalGameType, RentalSettingsType } from "@/types";
 
 export type GameLike = Pick<RentalGameType, "units" | "bookings" | "rentalDays">;
 
@@ -11,25 +11,52 @@ export type GameAvailability =
   | { state: "rented"; returnDate?: string; daysUntilReturn?: number }
   | { state: "unavailable" };
 
-export type AvailabilityOptions = { allowQueue?: boolean };
+export type AvailabilityOptions = {
+  allowQueue?: boolean;
+  /** Folga mínima entre a devolução e a próxima retirada da mesma cópia (1 = dia seguinte). */
+  gapDays?: number;
+};
+
+export const MAX_GAP_DAYS = 14;
 
 const noQueue = (opts?: AvailabilityOptions) => opts?.allowQueue === false;
+
+/** Folga válida: inteiro de 1 a 14; ausente ou inválido = 1 (dia seguinte, como sempre). */
+export function gapDaysOf(opts?: AvailabilityOptions): number {
+  const g = opts?.gapDays;
+  return typeof g === "number" && Number.isInteger(g) && g >= 1 && g <= MAX_GAP_DAYS ? g : 1;
+}
+
+/** Opções de disponibilidade a partir das configurações do aluguel. */
+export const availabilityOptions = (s?: Pick<RentalSettingsType, "allowQueue" | "queueGapDays"> | null): AvailabilityOptions => ({
+  allowQueue: s?.allowQueue,
+  gapDays: s?.queueGapDays,
+});
 
 /** Último dia em que a reserva ocupa a unidade (retirado e vencido conta até hoje). */
 export function bookingEnd(b: RentalBooking, today: string): string {
   return b.status === "picked_up" && b.dueDate < today ? today : b.dueDate;
 }
 
-/** Intervalos fechados: livre se nenhum booking da unidade compartilha data com [start, end]. */
+/**
+ * Intervalos fechados: livre se nenhum booking da unidade chega perto de
+ * [start, end]. Com folga G, entre a devolução de um e a retirada do outro
+ * precisa haver G dias (G = 1: retirada no dia seguinte à devolução).
+ */
 export function isUnitFree(
   unitId: string,
   bookings: RentalBooking[],
   start: string,
   end: string,
-  today: string
+  today: string,
+  gapDays = 1,
 ): boolean {
+  const extra = gapDays - 1;
   return !bookings.some(
-    (b) => b.unitId === unitId && b.startDate <= end && bookingEnd(b, today) >= start
+    (b) =>
+      b.unitId === unitId &&
+      b.startDate <= addDays(end, extra) &&
+      addDays(bookingEnd(b, today), extra) >= start,
   );
 }
 
@@ -45,7 +72,7 @@ export function unitAccepts(
   today: string,
   opts?: AvailabilityOptions,
 ): boolean {
-  if (!isUnitFree(unitId, bookings, start, end, today)) return false;
+  if (!isUnitFree(unitId, bookings, start, end, today, gapDaysOf(opts))) return false;
   return !noQueue(opts) || !bookings.some((b) => b.unitId === unitId && b.startDate < start);
 }
 
@@ -66,7 +93,8 @@ export function earliestStartForUnit(
   bookings: RentalBooking[],
   rentalDays: number,
   today: string,
-  lowerBound: string = today
+  lowerBound: string = today,
+  gapDays = 1,
 ): { start: string; blocking: RentalBooking | null } {
   const min = lowerBound < today ? today : lowerBound;
   const candidates: { start: string; blocking: RentalBooking | null }[] = [
@@ -74,12 +102,12 @@ export function earliestStartForUnit(
   ];
   for (const b of bookings) {
     if (b.unitId !== unitId) continue;
-    const c = addDays(bookingEnd(b, today), 1);
+    const c = addDays(bookingEnd(b, today), gapDays);
     if (c >= min) candidates.push({ start: c, blocking: b });
   }
   candidates.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
   for (const c of candidates) {
-    if (isUnitFree(unitId, bookings, c.start, addDays(c.start, rentalDays), today)) return c;
+    if (isUnitFree(unitId, bookings, c.start, addDays(c.start, rentalDays), today, gapDays)) return c;
   }
   // Inalcançável: o dia após o fim da última reserva sempre está livre.
   return candidates[candidates.length - 1];
@@ -104,7 +132,7 @@ export function gameAvailability(game: GameLike, today: string, opts?: Availabil
 
   let best: { start: string; blocking: RentalBooking | null } | null = null;
   for (const u of active) {
-    const e = earliestStartForUnit(u.id, game.bookings, game.rentalDays, today);
+    const e = earliestStartForUnit(u.id, game.bookings, game.rentalDays, today, today, gapDaysOf(opts));
     if (e.start === today) return { state: "available" };
     if (!best || e.start < best.start) best = e;
   }
@@ -134,7 +162,7 @@ export function availabilityFor(
   if (noQueue(opts)) return { ok: false, nextStart: firstAcceptedStart(game, today, today, opts) };
   let next: string | null = null;
   for (const u of active) {
-    const e = earliestStartForUnit(u.id, game.bookings, game.rentalDays, today, start);
+    const e = earliestStartForUnit(u.id, game.bookings, game.rentalDays, today, start, gapDaysOf(opts));
     if (next === null || e.start < next) next = e.start;
   }
   return { ok: false, nextStart: next };

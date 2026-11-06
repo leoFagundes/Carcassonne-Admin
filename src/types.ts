@@ -577,6 +577,11 @@ export interface RentalSettingsType {
    * na frente. Ausente = ligado.
    */
   allowQueue?: boolean;
+  /**
+   * Folga mínima, em dias, entre a devolução de um aluguel e a retirada do
+   * próximo na mesma cópia (1 = no dia seguinte). Ausente = 1.
+   */
+  queueGapDays?: number;
 }
 
 export interface RentalRuleSection {

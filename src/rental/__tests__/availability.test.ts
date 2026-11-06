@@ -145,3 +145,38 @@ describe("sem fila (allowQueue: false)", () => {
     expect(gameAvailability(out, today, { allowQueue: true })).toEqual(gameAvailability(out, today));
   });
 });
+
+describe("folga entre aluguéis (gapDays)", () => {
+  const today = "2026-11-05";
+  // cópia volta dia 23
+  const back23 = { units: [unit("u1")], bookings: [bk("u1", "2026-11-16", "2026-11-23", "reserved")], rentalDays: 7 };
+  const G2 = { gapDays: 2 };
+
+  it("sem folga extra (padrão): retira no dia seguinte", () => {
+    expect(availabilityFor(back23, "2026-11-24", today)).toEqual({ ok: true });
+  });
+
+  it("folga de 2 dias: volta dia 23, próximo só a partir do 25", () => {
+    expect(availabilityFor(back23, "2026-11-24", today, G2)).toEqual({ ok: false, nextStart: "2026-11-25" });
+    expect(availabilityFor(back23, "2026-11-25", today, G2)).toEqual({ ok: true });
+    expect(pickUnit(back23, "2026-11-24", today, G2)).toBeNull();
+    expect(pickUnit(back23, "2026-11-25", today, G2)).toBe("u1");
+  });
+
+  it("vale também antes de uma reserva marcada (precisa devolver com folga)", () => {
+    // reserva de outro cliente começa dia 16; quem pega dia 7 devolve dia 14 (+7)
+    expect(availabilityFor(back23, "2026-11-07", today)).toEqual({ ok: true }); // 14 < 16
+    expect(availabilityFor(back23, "2026-11-08", today, G2)).toMatchObject({ ok: false }); // 15 + 2 > 16
+    expect(availabilityFor(back23, "2026-11-07", today, G2)).toEqual({ ok: true }); // 14 + 2 = 16
+  });
+
+  it("selo do catálogo usa a folga", () => {
+    const out = { units: [unit("u1")], bookings: [bk("u1", "2026-11-01", "2026-11-08", "picked_up")], rentalDays: 7 };
+    expect(gameAvailability(out, today, { gapDays: 3 })).toMatchObject({ state: "from", start: "2026-11-11" });
+  });
+
+  it("folga inválida vira 1", () => {
+    expect(availabilityFor(back23, "2026-11-24", today, { gapDays: 0 })).toEqual({ ok: true });
+    expect(availabilityFor(back23, "2026-11-24", today, { gapDays: 99 })).toEqual({ ok: true });
+  });
+});
