@@ -5,6 +5,7 @@ import type {
   RentalBooking,
   RentalCustomerType,
   RentalGameType,
+  RentalOrderType,
   RentalSettingsType,
   RentalType,
 } from "@/types";
@@ -135,6 +136,10 @@ export type OrderRecordsMeta = {
   customer: RentalType["customer"];
   gameNames: Record<string, string>;
   rulesVersion: number;
+  /** "reserved" (balcão, padrão) ou "awaiting_payment" (pagamento online). */
+  initialStatus?: "reserved" | "awaiting_payment";
+  /** Fim da reserva temporária (ms); obrigatório com "awaiting_payment". */
+  holdUntil?: number;
 };
 
 export type OrderRecords = {
@@ -147,6 +152,11 @@ export type OrderRecords = {
 export function buildOrderRecords(items: PlannedItem[], meta: OrderRecordsMeta): OrderRecords {
   if (meta.rentalIds.length !== items.length) {
     throw new Error("buildOrderRecords: rentalIds e itens com tamanhos diferentes.");
+  }
+  const online = meta.initialStatus === "awaiting_payment";
+  const holdUntil = meta.holdUntil;
+  if (online && typeof holdUntil !== "number") {
+    throw new Error("buildOrderRecords: awaiting_payment exige holdUntil.");
   }
   const rentals: OrderRecords["rentals"] = [];
   const bookingsByGame: OrderRecords["bookingsByGame"] = {};
@@ -166,7 +176,7 @@ export function buildOrderRecords(items: PlannedItem[], meta: OrderRecordsMeta):
       rentalDays: item.rentalDays,
       startDate: item.startDate,
       dueDate: item.dueDate,
-      status: "reserved",
+      status: online ? "awaiting_payment" : "reserved",
       rulesVersion: meta.rulesVersion,
     });
     (bookingsByGame[item.gameId] ??= []).push({
@@ -174,10 +184,63 @@ export function buildOrderRecords(items: PlannedItem[], meta: OrderRecordsMeta):
       unitId: item.unitId,
       startDate: item.startDate,
       dueDate: item.dueDate,
-      status: "reserved",
+      ...(online ? { status: "held" as const, holdUntil } : { status: "reserved" as const }),
     });
   });
   return { rentals, bookingsByGame };
+}
+
+export type RentalOrderDocMeta = {
+  code: string;
+  customerUid: string;
+  customer: RentalOrderType["customer"];
+  /** Um id por rental, na mesma ordem. */
+  rentalIds: string[];
+};
+
+/**
+ * Doc de `rentalOrders/{orderId}` a partir dos rentals do pedido. Sem `online`
+ * → pagamento no balcão (sem `payment`); com `online` → pagamento pendente, com
+ * o checkout preenchido depois da transação.
+ */
+export function buildRentalOrderDoc(
+  rentals: OrderRecords["rentals"],
+  meta: RentalOrderDocMeta,
+  online?: { holdUntil: number },
+): Omit<RentalOrderType, "id" | "createdAt"> {
+  if (meta.rentalIds.length !== rentals.length) {
+    throw new Error("buildRentalOrderDoc: rentalIds e rentals com tamanhos diferentes.");
+  }
+  const items = rentals.map((r, i) => ({
+    rentalId: meta.rentalIds[i],
+    gameId: r.gameId,
+    gameName: r.gameName,
+    price: r.price,
+  }));
+  const base = {
+    code: meta.code,
+    customerUid: meta.customerUid,
+    customer: meta.customer,
+    rentalIds: [...meta.rentalIds],
+    gameIds: rentals.map((r) => r.gameId),
+    items,
+    total: items.reduce((sum, item) => sum + item.price, 0),
+    startDate: rentals[0]?.startDate ?? "",
+  };
+  if (!online) return { ...base, paymentMode: "counter" };
+  return {
+    ...base,
+    paymentMode: "online",
+    payment: {
+      status: "pending",
+      provider: "mercadopago",
+      checkoutUrl: "",
+      providerCheckoutId: "",
+      holdUntil: online.holdUntil,
+      refunds: [],
+      refundedTotal: 0,
+    },
+  };
 }
 
 /** Nova devolução ≥ início e sem cruzar outro booking da mesma unidade. */

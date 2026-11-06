@@ -19,21 +19,26 @@ import { DEFAULT_RENTAL_RULES, mergeRentalSettings } from "@/rental/defaults";
 import {
   ORDER_ERROR_MESSAGES,
   buildOrderRecords,
+  buildRentalOrderDoc,
   canChangeDueDate,
   generateOrderCode,
   planOrder,
   type OrderInput,
 } from "@/rental/orders";
+import { countActiveGames, holdUntilFor, liveBookings, withLiveBookings } from "@/rental/payments";
 import type {
   RentalCustomerType,
   RentalGameType,
+  RentalOrderType,
   RentalReturnCondition,
   RentalSettingsType,
   RentalType,
 } from "@/types";
 import { ApiError } from "./apiHelpers";
 import { getAdminDb } from "./firebaseAdmin";
+import { paymentsStatus } from "./payments";
 import { rentalRulesUrl, sendOrderConfirmation } from "./rentalEmails";
+import { abortUnpaidOrder, checkoutFailed, createOrderCheckout } from "./rentalOrderService";
 
 type ProfileBody = { name: string; phone: string; cpf: string; acceptTerms: boolean };
 
@@ -119,23 +124,29 @@ export async function saveCustomerProfile(
   });
 }
 
-const ACTIVE_STATUSES: RentalType["status"][] = ["reserved", "picked_up"];
 const MAX_CODE_ATTEMPTS = 5;
 
 /**
  * Cria o pedido inteiro (tudo ou nada) numa transação: relê tudo do banco,
- * replaneja com `planOrder` e só então grava os `rentals` e os bookings dos
- * jogos. Em conflito (ex.: dois clientes pegando a última cópia) o Firestore
- * repete a função com leituras novas, e o perdedor recebe `game_unavailable`.
+ * replaneja com `planOrder` e só então grava os `rentals`, os bookings dos
+ * jogos e o doc `rentalOrders/{orderId}`. Em conflito (ex.: dois clientes
+ * pegando a última cópia) o Firestore repete a função com leituras novas, e o
+ * perdedor recebe `game_unavailable`.
+ *
+ * Pagamento online ligado: rentals `awaiting_payment` e bookings `held` até
+ * `holdUntil`; depois da transação cria o checkout e devolve o link (sem
+ * e-mail — ele vai na confirmação do pagamento). Desligado: reserva na hora e
+ * envia a confirmação, como sempre.
  */
 export async function createOrder(
   token: DecodedIdToken,
   input: OrderInput,
-): Promise<{ orderId: string; code: string }> {
+): Promise<{ orderId: string; code: string; checkoutUrl?: string }> {
   const db = getAdminDb();
   const uid = token.uid;
   const rentalsCol = db.collection("rentals");
   const gamesCol = db.collection("rentalGames");
+  const ordersCol = db.collection("rentalOrders");
   // Repetidos são recusados pelo planOrder (duplicate_game); aqui só não lê duas vezes.
   const gameIds = [...new Set(input.gameIds)];
 
@@ -150,25 +161,36 @@ export async function createOrder(
         ...gameIds.map((id) => tx.get(gamesCol.doc(id))),
       ]);
 
+    const now = Date.now();
     const settings = readSettings(settingsSnap);
     const rulesVersion = readRulesVersion(rulesSnap);
     const customer = customerSnap.exists
       ? (customerSnap.data() as RentalCustomerType)
       : null;
-    const activeGamesCount = rentalsSnap.docs.filter((d) =>
-      ACTIVE_STATUSES.includes(d.data().status),
-    ).length;
+    const customerRentals = rentalsSnap.docs.map((d) => d.data() as RentalType);
+    // Pedidos do cliente só quando há aluguel aguardando pagamento: ele conta
+    // no limite enquanto a reserva temporária do pedido vale.
+    const ordersById: Record<string, RentalOrderType> = {};
+    if (customerRentals.some((r) => r.status === "awaiting_payment")) {
+      const ordersSnap = await tx.get(ordersCol.where("customerUid", "==", uid));
+      for (const d of ordersSnap.docs) ordersById[d.id] = d.data() as RentalOrderType;
+    }
+    const activeGamesCount = countActiveGames(customerRentals, ordersById, now);
 
+    // Holds vencidos não contam como ocupados (e somem do jogo ao gravar).
     const games: Record<string, RentalGameType & { id: string }> = {};
     for (const snap of gameSnaps) {
       if (!snap.exists) continue;
       const data = snap.data() as RentalGameType;
-      games[snap.id] = {
-        ...data,
-        id: snap.id,
-        units: Array.isArray(data.units) ? data.units : [],
-        bookings: Array.isArray(data.bookings) ? data.bookings : [],
-      };
+      games[snap.id] = withLiveBookings(
+        {
+          ...data,
+          id: snap.id,
+          units: Array.isArray(data.units) ? data.units : [],
+          bookings: Array.isArray(data.bookings) ? data.bookings : [],
+        },
+        now,
+      );
     }
 
     // 2) Planejamento (puro, tudo ou nada).
@@ -192,6 +214,17 @@ export async function createOrder(
     // planOrder já recusa cliente ausente (profile_incomplete).
     if (!customer) throw new Error("Pedido aprovado sem cadastro do cliente.");
 
+    // Pagamento online ligado sem credenciais: recusa antes de reservar nada.
+    const online = settings.onlinePayment.enabled === true;
+    if (online && !paymentsStatus().configured) {
+      throw new ApiError(
+        503,
+        "payment_unavailable",
+        "O pagamento online está indisponível no momento. Tente novamente mais tarde.",
+      );
+    }
+    const holdUntil = online ? holdUntilFor(now, settings.onlinePayment.holdMinutes) : undefined;
+
     // Código curto do balcão: não repete o de outro pedido (ainda é leitura).
     let code = "";
     for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS && !code; attempt++) {
@@ -209,15 +242,24 @@ export async function createOrder(
       email: token.email ?? customer.email,
       phone: customer.phone,
     };
+    const rentalIds = rentalRefs.map((ref) => ref.id);
     const { rentals, bookingsByGame } = buildOrderRecords(plan.items, {
       orderId,
       code,
-      rentalIds: rentalRefs.map((ref) => ref.id),
+      rentalIds,
       customerUid: uid,
       customer: customerInfo,
       gameNames: Object.fromEntries(Object.values(games).map((g) => [g.id, g.name])),
       rulesVersion,
+      ...(holdUntil !== undefined
+        ? { initialStatus: "awaiting_payment" as const, holdUntil }
+        : {}),
     });
+    const orderDoc = buildRentalOrderDoc(
+      rentals,
+      { code, customerUid: uid, customer: customerInfo, rentalIds },
+      holdUntil !== undefined ? { holdUntil } : undefined,
+    );
 
     rentals.forEach((rental, i) => {
       tx.set(rentalRefs[i], { ...rental, createdAt: FieldValue.serverTimestamp() });
@@ -228,9 +270,37 @@ export async function createOrder(
         updatedAt: FieldValue.serverTimestamp(),
       });
     }
+    tx.set(ordersCol.doc(orderId), { ...orderDoc, createdAt: FieldValue.serverTimestamp() });
 
-    return { orderId, code, rentals, customer: customerInfo, staffEmail: settings.staffEmail };
+    return {
+      orderId,
+      code,
+      rentals,
+      orderDoc,
+      customer: customerInfo,
+      staffEmail: settings.staffEmail,
+    };
   });
+
+  // Online: checkout depois da transação; se falhar, libera as cópias na hora.
+  const payment = order.orderDoc.payment;
+  if (payment) {
+    try {
+      const checkoutUrl = await createOrderCheckout(order.orderId, {
+        ...order.orderDoc,
+        payment,
+      });
+      return { orderId: order.orderId, code: order.code, checkoutUrl };
+    } catch (error) {
+      console.error(`Erro ao criar o checkout do pedido ${order.orderId}:`, error);
+      try {
+        await abortUnpaidOrder(order.orderId, "Não foi possível iniciar o pagamento");
+      } catch (releaseError) {
+        console.error(`Erro ao liberar o pedido ${order.orderId}:`, releaseError);
+      }
+      throw checkoutFailed();
+    }
+  }
 
   // Fora da transação: falha no e-mail não desfaz o pedido.
   try {
@@ -331,6 +401,9 @@ export async function pickupRental(rentalId: string, adminUid: string): Promise<
   const db = getAdminDb();
   await db.runTransaction(async (tx) => {
     const { rentalRef, rental, gameRef, gameSnap } = await readRentalAndGame(db, tx, rentalId);
+    if (rental.status === "awaiting_payment") {
+      throw new ApiError(409, "awaiting_payment", "Este pedido ainda não foi pago.");
+    }
     if (rental.status !== "reserved") throw invalidStatus();
     if (rental.startDate > todaySP()) {
       throw new ApiError(
@@ -347,9 +420,11 @@ export async function pickupRental(rentalId: string, adminUid: string): Promise<
     });
     if (gameSnap.exists) {
       tx.update(gameRef, {
-        bookings: updateBooking(asBookings(gameSnap.data()?.bookings), rentalId, {
-          status: "picked_up",
-        }),
+        bookings: updateBooking(
+          liveBookings(asBookings(gameSnap.data()?.bookings), Date.now()),
+          rentalId,
+          { status: "picked_up" },
+        ),
         updatedAt: FieldValue.serverTimestamp(),
       });
     }
