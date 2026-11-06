@@ -259,15 +259,19 @@ export async function sweepExpiredOrders(): Promise<SweepResult> {
       continue;
     }
     try {
+      let handled = false;
       if (approved.length > 0) {
         console.warn(
           `Varredura: pedido ${doc.id} tem pagamento aprovado sem aviso do webhook; aplicando em vez de expirar.`,
         );
-        result.paid++;
-        for (const p of approved) await applyPayment(doc.id, p);
-      } else if (await expireOrder(doc.id)) {
-        result.expired++;
+        for (const p of approved) {
+          const outcome = await applyPayment(doc.id, p);
+          if (outcome === "confirmed" || outcome === "late_refunded" || outcome === "already") handled = true;
+        }
+        if (handled) result.paid++;
       }
+      // Pagamento que não bate com o pedido ("ignored") não segura a expiração para sempre.
+      if (!handled && (await expireOrder(doc.id))) result.expired++;
     } catch (error) {
       console.error(`Varredura: erro ao processar o pedido ${doc.id}:`, error);
     }
