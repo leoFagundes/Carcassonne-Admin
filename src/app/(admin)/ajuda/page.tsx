@@ -226,7 +226,7 @@ const helpCards: HelpCard[] = [
     category: "aluguel",
     title: "Como funciona um aluguel, do pedido à devolução",
     description:
-      "O cliente escolhe os jogos e a data de retirada (dentro dos dias e da antecedência configurados) e confirma — se houver cópia livre para o período, o aluguel é confirmado na hora, sem aprovação. A devolução é a data de retirada + o prazo do jogo (cada jogo do pedido tem o seu prazo). Entre um aluguel e o próximo da mesma cópia o sistema deixa um dia de folga para conferir o jogo. Um pedido com vários jogos é tudo ou nada: se um deles ficar indisponível no meio do caminho, nada é reservado. O pagamento é feito no balcão, na retirada. O cliente recebe um e-mail com o código do pedido, os jogos, as datas e o endereço. Depois, no balcão, você registra a retirada e a devolução na aba 'Aluguéis'.",
+      "O cliente escolhe os jogos e a data de retirada (dentro dos dias e da antecedência configurados) e confirma — se houver cópia livre para o período, o aluguel é confirmado na hora, sem aprovação. A devolução é a data de retirada + o prazo do jogo (cada jogo do pedido tem o seu prazo). Entre um aluguel e o próximo da mesma cópia o sistema deixa um dia de folga para conferir o jogo. Um pedido com vários jogos é tudo ou nada: se um deles ficar indisponível no meio do caminho, nada é reservado. Se o pagamento online estiver desligado, o pagamento é feito no balcão, na retirada; se estiver ligado, o cliente paga pelo site (Pix ou cartão) e o aluguel só é confirmado depois do pagamento aprovado (veja 'Como ligar o pagamento online'). O cliente recebe um e-mail com o código do pedido, os jogos, as datas e o endereço. Depois, no balcão, você registra a retirada e a devolução na aba 'Aluguéis'.",
   },
   {
     category: "aluguel",
@@ -275,6 +275,55 @@ const helpCards: HelpCard[] = [
     title: "O que o cliente vê no aluguel",
     description:
       "Em /aluguel o cliente vê o catálogo no mesmo estilo da ludoteca, com o preço e um selo em cada jogo: 'Disponível', 'Volta em N dias' (quando todas as cópias estão alugadas — ex.: prazo de 7 dias retirado há 4 dias = volta em 3 dias), 'Disponível a partir de dd/mm' (há reserva marcada), 'Retorno atrasado' ou 'Indisponível'. Para alugar ele cria uma conta (nome, WhatsApp, CPF, e-mail e senha), confirma o e-mail e aceita as regras. As regras abrem num painel sem sair da página, pelo botão 'Regras' ou pelo link no aceite. Em 'Minha conta' ele acompanha os pedidos (Reservado, Retirado com os dias que faltam, Atrasado, Devolvido, Cancelado) e pode cancelar os que ainda não retirou.",
+  },
+
+  {
+    category: "aluguel",
+    title: "Como ligar o pagamento online (Mercado Pago)",
+    description:
+      "Em Aluguel → aba 'Regras', na seção 'Pagamento online', veja primeiro a 'Situação da integração (Mercado Pago)': 'Não configurado' significa que as credenciais ainda não foram colocadas no servidor (o interruptor fica desabilitado — peça a quem cuida do sistema); 'Modo de teste' significa que os pagamentos não são reais, ótimo para experimentar, mas troque pela credencial de produção antes de abrir ao público; 'Produção' significa que está valendo dinheiro de verdade. Com a integração pronta, ligue 'Exigir pagamento online nos pedidos'. A partir daí todo pedido novo precisa ser pago pelo site (Pix ou cartão, à vista — não há boleto nem pagamento no balcão). Ao ligar, o sistema lembra de revisar a seção de pagamento no texto das regras, com o atalho 'Ir para as regras'; o texto não é trocado sozinho. Desligar o interruptor faz os pedidos novos voltarem ao pagamento no balcão; pedidos que já aguardam pagamento seguem até vencer.",
+  },
+  {
+    category: "aluguel",
+    title: "Reserva de 30 minutos: o que acontece se o cliente não pagar",
+    description:
+      "Com o pagamento online ligado, ao clicar em 'Ir para o pagamento' o cliente tem as cópias reservadas por um tempo (padrão 30 minutos; ajuste em 'Tempo para pagar (minutos)', de 15 a 60). Nesse período ninguém mais consegue alugar aquelas cópias. Se o pagamento for aprovado, o aluguel vira 'Reservado' e o cliente recebe o e-mail de confirmação. Se o tempo acabar sem pagamento, as cópias voltam sozinhas para o catálogo, o pedido fica 'Pagamento expirado' e o aluguel é cancelado pelo sistema ('Pagamento não concluído'). Nenhum e-mail é enviado nesse caso; a página do pedido já avisa o cliente. Se alguém pagar só depois de o tempo vencer e a cópia já tiver sido pega por outra pessoa, o sistema devolve o valor inteiro automaticamente (pedido 'Reembolsado · tempo esgotado').",
+  },
+  {
+    category: "aluguel",
+    title: "Política de cancelamento e reembolso automático",
+    description:
+      "Em Aluguel → 'Regras' → 'Pagamento online' você escolhe o que acontece quando o cliente cancela um aluguel já pago, antes da retirada: 'Reembolso integral automático' (o cliente recebe tudo de volta na hora), 'Reembolso com taxa' (recebe o valor menos a taxa; informe a 'Taxa de cancelamento (%)', de 0 a 50) ou 'Análise manual' (o cancelamento fica pendente até você decidir quanto devolver). Uma prévia embaixo mostra um exemplo com valores. Antes de confirmar o cancelamento, em 'Minha conta', o cliente lê o resultado: 'Você vai receber R$ X de volta', 'Você vai receber R$ X de volta (taxa de cancelamento de N%)' ou 'Seu cancelamento vai para análise do Carcassonne Pub, que decide o reembolso'. Se o pedido tem vários jogos e o cliente cancela um só, o reembolso é só do valor daquele jogo, e a soma devolvida nunca passa do que foi pago.",
+  },
+  {
+    category: "aluguel",
+    title: "Como reembolsar um pedido pelo detalhe do pedido",
+    description:
+      "Na aba 'Aluguéis', clique no código do pedido para abrir o detalhe: jogos, cliente, pagamento (forma, data, valor e número no Mercado Pago) e histórico de reembolsos. Na seção 'Reembolsar', informe o 'Valor a devolver' (já vem preenchido com o que falta devolver), um motivo opcional e clique em 'Reembolsar'. Se aparecer um erro, o botão vira 'Tentar de novo' — pode clicar com tranquilidade, o reembolso não sai em dobro. Ao cancelar pelo admin um aluguel pago, o diálogo também pergunta quanto devolver (padrão: integral). O cliente recebe um e-mail avisando do reembolso: no Pix costuma cair na hora; no cartão depende da operadora.",
+  },
+  {
+    category: "aluguel",
+    title: "Reembolsos a decidir (análise manual)",
+    description:
+      "Quando a política é 'Análise manual', os cancelamentos de aluguéis pagos aparecem na faixa 'Reembolsos a decidir' no topo da aba 'Aluguéis' (e entram no contador da sidebar). Abra o pedido e escolha: 'Aprovar reembolso' (informe o valor a devolver) ou 'Recusar reembolso' (o motivo é obrigatório; o cancelamento segue, mas sem devolução). O cliente vê 'Cancelamento em análise' em 'Minha conta' até você decidir. Se a decisão falhar por um erro de conexão, o botão vira 'Tentar de novo'.",
+  },
+  {
+    category: "aluguel",
+    title: "Avisos de atenção nos pedidos (reembolsos que falharam)",
+    description:
+      "No detalhe do pedido podem aparecer avisos que pedem sua ajuda. 'Pagamento chegou tarde e a devolução falhou': o cliente pagou depois do tempo e o reembolso automático não foi concluído — clique em 'Tentar de novo'; se continuar falhando, devolva pelo painel do Mercado Pago. 'Pagamento em duplicidade ... sem devolução': o cliente pagou duas vezes e a devolução automática do pagamento extra falhou; o Mercado Pago tenta de novo quando reenvia o aviso, mas se demorar devolva esse pagamento pelo painel do Mercado Pago. 'Reembolso de R$ X sem confirmação': o Mercado Pago não respondeu a tempo e o dinheiro pode ou não ter saído — 'Tentar de novo' é seguro quando o botão aparece; sem o botão, confira no painel do Mercado Pago antes de devolver de novo. Esses avisos também aparecem na faixa 'Reembolsos a decidir'.",
+  },
+  {
+    category: "aluguel",
+    title: "Retirada bloqueada enquanto o pedido não está pago",
+    description:
+      "Em pedidos com pagamento online, o botão 'Registrar retirada' fica desabilitado e mostra 'Aguardando pagamento' até o pagamento ser aprovado. Assim ninguém leva um jogo sem ter pago. Na aba 'Aluguéis' há também um selo de pagamento em cada aluguel (Pago online, Aguardando pagamento, Pagamento expirado, Reembolsado, Cancelamento em análise) e o filtro 'Pagamento' (Todos, Pagos online, Aguardando, Expirados, Reembolsados). Pedidos feitos com o pagamento no balcão aparecem como 'Pagamento no balcão' e só entram no filtro 'Todos'.",
+  },
+  {
+    category: "aluguel",
+    title: "O que o cliente vê com o pagamento online",
+    description:
+      "No pedido, o resumo mostra 'Pagamento online · Pix ou cartão', o botão 'Ir para o pagamento' e o aviso de que as cópias ficam reservadas por alguns minutos. Ele é levado ao Mercado Pago, paga e volta para a página do pedido, que se atualiza sozinha: 'Aguardando seu pagamento' (com contagem regressiva e os botões 'Pagar agora' e 'Cancelar pedido'), 'Confirmando seu pagamento…' (alguns segundos, até o aviso chegar), 'Pagamento aprovado!', 'Pagamento não aprovado' (com 'Tentar novamente' enquanto a reserva vale), 'Pagamento expirado' (com 'Fazer o pedido de novo', que devolve os jogos ao carrinho) e reembolsos. Em 'Minha conta' cada pedido tem um selo de pagamento, e pedidos aguardando mostram 'Pagar agora'.",
   },
 
   // ── CARDÁPIO ──────────────────────────────────────────────────
