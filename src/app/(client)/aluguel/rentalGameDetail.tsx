@@ -23,6 +23,7 @@ import {
 } from "@/app/(client)/clientCollection/collectionUtils";
 import type { GameAvailability } from "@/rental/availability";
 import { formatBRL } from "@/rental/money";
+import { formatDateBR } from "@/rental/dates";
 import AvailabilityBadge from "./availabilityBadge";
 import { asBoardgame, type RentalGameWithId } from "./rentalGameCard";
 
@@ -56,6 +57,17 @@ export default function RentalGameDetail({
   const board = asBoardgame(game);
   const copies = game.units.filter((unit) => unit.status === "active").length;
   const unavailable = availability.state === "unavailable";
+  // Aviso logo acima do botão quando o jogo não está livre agora.
+  const notice =
+    availability.state === "from"
+      ? `Todas as cópias estão alugadas agora. Disponível a partir de ${formatDateBR(availability.start)}${
+          availability.daysUntilReturn ? ` (em ${availability.daysUntilReturn} ${availability.daysUntilReturn === 1 ? "dia" : "dias"})` : ""
+        }: você pode adicionar ao pedido e escolher essa data para retirar.`
+      : availability.state === "overdue"
+        ? "A cópia está com um cliente e a devolução está atrasada, então ainda não sabemos quando volta. Você pode adicionar e ver no pedido as datas livres."
+        : unavailable
+          ? "Este jogo está indisponível no momento."
+          : null;
 
   return (
     <DetailSheet
@@ -71,6 +83,19 @@ export default function RentalGameDetail({
       origin={origin}
       onClosed={onClosed}
       footer={(close) => (
+        <div className="flex flex-col gap-2">
+          {notice && (
+            <p
+              role="status"
+              className={`rounded-lg border px-3 py-2 text-xs leading-relaxed ${
+                unavailable
+                  ? "border-red-400/40 bg-red-500/10 text-red-200"
+                  : "border-primary-gold/35 bg-primary-gold/10 text-primary-gold/90"
+              }`}
+            >
+              {notice}
+            </p>
+          )}
         <div className="flex gap-2">
           {inCart ? (
             // Já está no pedido: o próximo passo natural é revisar.
@@ -101,6 +126,7 @@ export default function RentalGameDetail({
           >
             Voltar
           </button>
+        </div>
         </div>
       )}
     >

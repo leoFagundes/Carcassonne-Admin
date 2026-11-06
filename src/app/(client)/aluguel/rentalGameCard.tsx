@@ -67,7 +67,7 @@ export default function RentalGameCard({
             </span>
           </span>
           <span className="flex items-center gap-2 flex-wrap">
-            <AvailabilityBadge availability={availability} />
+            <AvailabilityBadge availability={availability} short />
             <DifficultyMeter difficulty={game.difficulty} />
           </span>
         </div>
@@ -91,7 +91,7 @@ export default function RentalGameCard({
           className="w-full aspect-[4/3] rounded-t-[11px]"
         />
         <div className="absolute inset-0 rounded-t-[11px] bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-        <AvailabilityBadge availability={availability} className="absolute top-2 left-2" />
+        <AvailabilityBadge availability={availability} short className="absolute top-2 left-2 max-w-[calc(100%-1rem)]" />
         <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-lg bg-primary-gold text-primary-black text-xs font-bold shadow-card">
           {formatBRL(game.price)}
         </span>
