@@ -456,6 +456,39 @@ export function formatCountdown(ms: number): string {
 
 // ---------- Confirmação do pagamento ----------
 
+/** Pagamento consultado no provedor, como a escolha abaixo precisa dele. */
+type FoundPayment = { id: string; status: string; approvedAt?: number };
+
+/** Ordem dos ids numéricos do Mercado Pago (maior = mais recente). */
+export function compareProviderIds(a: string, b: string): number {
+  if (a.length !== b.length) return a.length - b.length;
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/** Ainda sem desfecho (nada a registrar além de "recusado"). */
+const NOT_SETTLED = ["pending", "in_process", "rejected", "cancelled"];
+
+/**
+ * O que aplicar dos pagamentos do pedido encontrados no provedor (consulta
+ * manual ou varredura, quando o aviso do webhook não chegou): os aprovados,
+ * do mais antigo ao mais novo (o primeiro confirma; os outros são devolvidos),
+ * ou, sem aprovado, só o mais recente ainda sem desfecho. Depois, os já
+ * reembolsados no provedor (terminam de registrar um reembolso nosso que
+ * ficou sem registro, ex.: reembolso tardio que falhou aqui mas saiu lá).
+ */
+export function paymentsToApply<T extends FoundPayment>(payments: T[]): T[] {
+  const approved = payments
+    .filter((p) => p.status === "approved")
+    .sort((a, b) => (a.approvedAt ?? 0) - (b.approvedAt ?? 0) || compareProviderIds(a.id, b.id));
+  const latest = payments
+    .filter((p) => NOT_SETTLED.includes(p.status))
+    .sort((a, b) => compareProviderIds(b.id, a.id))[0];
+  const refunded = payments
+    .filter((p) => p.status === "refunded")
+    .sort((a, b) => compareProviderIds(a.id, b.id));
+  return [...(approved.length > 0 ? approved : latest ? [latest] : []), ...refunded];
+}
+
 /** Aluguel do pedido como a confirmação precisa dele. */
 export type ApprovalRental = Pick<
   RentalType,

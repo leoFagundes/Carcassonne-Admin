@@ -20,6 +20,7 @@ import {
   isValidRefundAmount,
   markPendingRefundFailed,
   orderPaymentView,
+  paymentsToApply,
   refundableLeft,
   releaseHeldBookings,
   reviewRefundCap,
@@ -220,22 +221,58 @@ export async function reopenCheckout(orderId: string, uid: string): Promise<{ ch
   }
 }
 
-/** Expira todos os pedidos online com a reserva vencida; devolve quantos expirou. */
-export async function sweepExpiredOrders(): Promise<number> {
-  // Igualdade num campo só (sem índice composto); status e holdUntil filtrados aqui.
-  const snap = await ordersCol().where("paymentMode", "==", "online").get();
+export interface SweepResult {
+  /** Pedidos expirados nesta rodada. */
+  expired: number;
+  /** Pedidos com pagamento aprovado sem aviso do webhook, aplicados em vez de expirar. */
+  paid: number;
+  /** Pedidos não expirados porque o provedor não respondeu (ficam para a próxima rodada). */
+  skipped: number;
+}
+
+/**
+ * Expira os pedidos online com a reserva vencida. Antes de expirar cada um,
+ * pergunta ao provedor: se há pagamento aprovado (o aviso do webhook se
+ * perdeu), aplica pelo caminho normal (`applyPayment`: confirma, ou reembolso
+ * integral se as cópias já foram) em vez de expirar. Erro do provedor num
+ * pedido → não expira esse nesta rodada (nada de expirar às cegas) e segue
+ * para os outros.
+ */
+export async function sweepExpiredOrders(): Promise<SweepResult> {
+  // "in" num campo só (sem índice composto): só os status que ainda podem expirar;
+  // modo online e holdUntil filtrados aqui.
+  const snap = await ordersCol().where("payment.status", "in", ["pending", "rejected"]).get();
   const now = Date.now();
   const due = snap.docs.filter((doc) => isOrderExpirable(doc.data() as RentalOrderType, now));
 
-  let expired = 0;
+  const result: SweepResult = { expired: 0, paid: 0, skipped: 0 };
   for (const doc of due) {
+    let approved: ProviderPayment[];
     try {
-      if (await expireOrder(doc.id)) expired++;
+      approved = paymentsToApply(await findOrderPayments(doc.id)).filter((p) => p.status === "approved");
     } catch (error) {
-      console.error(`Erro ao expirar o pedido ${doc.id}:`, error);
+      console.error(
+        `Varredura: não foi possível consultar o pedido ${doc.id} no provedor; não expirado nesta rodada:`,
+        error,
+      );
+      result.skipped++;
+      continue;
+    }
+    try {
+      if (approved.length > 0) {
+        console.warn(
+          `Varredura: pedido ${doc.id} tem pagamento aprovado sem aviso do webhook; aplicando em vez de expirar.`,
+        );
+        result.paid++;
+        for (const p of approved) await applyPayment(doc.id, p);
+      } else if (await expireOrder(doc.id)) {
+        result.expired++;
+      }
+    } catch (error) {
+      console.error(`Varredura: erro ao processar o pedido ${doc.id}:`, error);
     }
   }
-  return expired;
+  return result;
 }
 
 // ---------- Confirmação do pagamento ----------
@@ -701,18 +738,19 @@ async function refundDuplicate(
   }
 }
 
-/** Ordem dos ids numéricos do Mercado Pago (maior = mais recente). */
-function compareIds(a: string, b: string): number {
-  if (a.length !== b.length) return a.length - b.length;
-  return a < b ? -1 : a > b ? 1 : 0;
+/** Pagamentos do pedido no provedor (só os desta referência). Lança o erro do provedor. */
+async function findOrderPayments(orderId: string): Promise<ProviderPayment[]> {
+  const found = await getPaymentProvider().findPaymentsByReference(orderId);
+  return found.filter((p) => p.externalReference === orderId);
 }
-
-const NOT_SETTLED: ProviderPayment["status"][] = ["pending", "in_process", "rejected", "cancelled"];
 
 /**
  * Consulta no provedor os pagamentos do pedido e aplica o resultado (para
- * quando o aviso do webhook atrasa). Dono ou admin. Aplica os aprovados (o
- * primeiro confirma; os outros são devolvidos) ou, sem aprovado, o mais recente.
+ * quando o aviso do webhook atrasa ou se perdeu). Dono ou admin. Vale também
+ * para pedido expirado: aprovado depois do prazo segue a confirmação tardia
+ * (confirma se as cópias estão livres; senão reembolso integral). Aplica os
+ * aprovados (o primeiro confirma; os outros são devolvidos) ou, sem aprovado,
+ * o mais recente; e os já reembolsados no provedor (`paymentsToApply`).
  */
 export async function verifyOrderPayment(
   orderId: string,
@@ -729,9 +767,7 @@ export async function verifyOrderPayment(
   if (order.paymentMode === "online" && open) {
     let payments: ProviderPayment[];
     try {
-      payments = (await getPaymentProvider().findPaymentsByReference(orderId)).filter(
-        (p) => p.externalReference === orderId,
-      );
+      payments = await findOrderPayments(orderId);
     } catch (error) {
       console.error(`Erro ao consultar os pagamentos do pedido ${orderId}:`, error);
       throw new ApiError(
@@ -740,15 +776,8 @@ export async function verifyOrderPayment(
         "Não foi possível consultar o pagamento agora. Tente novamente em instantes.",
       );
     }
-    const approved = payments
-      .filter((p) => p.status === "approved")
-      .sort((a, b) => (a.approvedAt ?? 0) - (b.approvedAt ?? 0) || compareIds(a.id, b.id));
-    const latest = payments
-      .filter((p) => NOT_SETTLED.includes(p.status))
-      .sort((a, b) => compareIds(b.id, a.id))[0];
-    const toApply = approved.length > 0 ? approved : latest ? [latest] : [];
     try {
-      for (const p of toApply) await applyPayment(orderId, p);
+      for (const p of paymentsToApply(payments)) await applyPayment(orderId, p);
     } catch (error) {
       // Reembolso que falhou já ficou registrado no pedido; mostra o estado atual.
       if (!(error instanceof ProviderError)) throw error;

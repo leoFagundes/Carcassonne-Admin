@@ -6,6 +6,7 @@ import {
   cancelPreview,
   clampFeePercent,
   closeCancellationReview,
+  compareProviderIds,
   conflictingPendingRefund,
   decideRefundedRedelivery,
   dropPendingRefund,
@@ -19,6 +20,7 @@ import {
   liveBookings,
   openCancellationReview,
   orderPaymentView,
+  paymentsToApply,
   refundFor,
   refundForRental,
   refundableLeft,
@@ -503,5 +505,35 @@ describe("decideRefundedRedelivery (M1)", () => {
     expect(decideRefundedRedelivery(paidOrder(), "p9")).toBe("ignored");
     expect(decideRefundedRedelivery(paidOrder({ status: "refunded", refundedTotal: 7500 }), "p1")).toBe("ignored");
     expect(decideRefundedRedelivery(paidOrder({}, { paymentMode: "counter", payment: undefined }), "p1")).toBe("ignored");
+  });
+});
+
+describe("paymentsToApply", () => {
+  const mp = (id: string, status: string, approvedAt?: number) => ({ id, status, ...(approvedAt !== undefined ? { approvedAt } : {}) });
+  it("aprovados do mais antigo ao mais novo (desempate pelo id numérico)", () => {
+    const list = [mp("100", "approved", 9), mp("99", "approved", 5), mp("101", "rejected"), mp("98", "approved", 5)];
+    expect(paymentsToApply(list).map((p) => p.id)).toEqual(["98", "99", "100"]);
+  });
+  it("sem aprovado → só o mais recente sem desfecho", () => {
+    const list = [mp("9", "rejected"), mp("10", "pending"), mp("8", "in_process")];
+    expect(paymentsToApply(list).map((p) => p.id)).toEqual(["10"]);
+  });
+  it("reembolsados no provedor entram depois (registrar reembolso tardio que saiu lá)", () => {
+    expect(paymentsToApply([mp("7", "refunded")]).map((p) => p.id)).toEqual(["7"]);
+    const list = [mp("7", "refunded"), mp("8", "approved", 1), mp("9", "rejected")];
+    expect(paymentsToApply(list).map((p) => p.id)).toEqual(["8", "7"]);
+    expect(paymentsToApply([mp("7", "refunded"), mp("9", "rejected")]).map((p) => p.id)).toEqual(["9", "7"]);
+  });
+  it("estorno (charged_back) e lista vazia → nada", () => {
+    expect(paymentsToApply([mp("7", "charged_back")])).toEqual([]);
+    expect(paymentsToApply([])).toEqual([]);
+  });
+});
+
+describe("compareProviderIds", () => {
+  it("compara ids numéricos como números", () => {
+    expect(compareProviderIds("99", "100")).toBeLessThan(0);
+    expect(compareProviderIds("100", "99")).toBeGreaterThan(0);
+    expect(compareProviderIds("5", "5")).toBe(0);
   });
 });

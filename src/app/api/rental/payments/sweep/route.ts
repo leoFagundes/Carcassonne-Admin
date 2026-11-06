@@ -13,7 +13,7 @@ function hasCronSecret(req: Request): boolean {
 
 const sweep = withApi(async (req) => {
   if (!hasCronSecret(req)) await requireAdmin(req);
-  return { expired: await sweepExpiredOrders() };
+  return await sweepExpiredOrders();
 });
 
 export const POST = sweep;

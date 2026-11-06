@@ -299,7 +299,7 @@ const helpCards: HelpCard[] = [
     category: "aluguel",
     title: "Como reembolsar um pedido pelo detalhe do pedido",
     description:
-      "Na aba 'Aluguéis', clique no código do pedido para abrir o detalhe: jogos, cliente, pagamento (forma, data, valor e número no Mercado Pago) e histórico de reembolsos. Na seção 'Reembolsar', informe o 'Valor a devolver' (já vem preenchido com o que falta devolver), um motivo opcional e clique em 'Reembolsar'. Se aparecer um erro, o botão vira 'Tentar de novo' — pode clicar com tranquilidade, o reembolso não sai em dobro. Ao cancelar pelo admin um aluguel pago, o diálogo também pergunta quanto devolver (padrão: integral). O cliente recebe um e-mail avisando do reembolso: no Pix costuma cair na hora; no cartão depende da operadora.",
+      "Na aba 'Aluguéis', clique no código do pedido para abrir o detalhe: jogos, cliente, pagamento (forma, data, valor e número no Mercado Pago) e histórico de reembolsos. Em pedidos aguardando pagamento, recusados ou expirados, o botão 'Consultar no Mercado Pago' busca o pagamento lá e, se houver um aprovado (o aviso automático pode se perder), confirma o pedido — ou devolve o valor, se as cópias já tiverem sido liberadas. Na seção 'Reembolsar', informe o 'Valor a devolver' (já vem preenchido com o que falta devolver), um motivo opcional e clique em 'Reembolsar'. Se aparecer um erro, o botão vira 'Tentar de novo' — pode clicar com tranquilidade, o reembolso não sai em dobro. Ao cancelar pelo admin um aluguel pago, o diálogo também pergunta quanto devolver (padrão: integral). O cliente recebe um e-mail avisando do reembolso: no Pix costuma cair na hora; no cartão depende da operadora.",
   },
   {
     category: "aluguel",

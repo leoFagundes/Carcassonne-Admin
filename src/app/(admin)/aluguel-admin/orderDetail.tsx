@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { LuReceipt } from "react-icons/lu";
-import type { RentalOrderType, RentalType } from "@/types";
+import type { OrderPaymentStatus, RentalOrderType, RentalType } from "@/types";
+import { useAlert } from "@/contexts/alertProvider";
+import { rentalApi } from "@/services/rentalApi";
 import FormCard from "@/components/formCard";
 import PaymentBadge from "@/app/(client)/aluguel/paymentBadge";
 import { formatBRL } from "@/rental/money";
@@ -42,6 +45,47 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+/** Mensagem do resultado da consulta no Mercado Pago, pelo status gravado depois dela. */
+function verifyMessage(status: OrderPaymentStatus | null | undefined): string {
+  if (status === "approved") return "Pagamento aprovado encontrado no Mercado Pago: pedido confirmado.";
+  if (status === "refunded" || status === "partially_refunded") {
+    return "Pagamento encontrado depois do prazo: o valor foi devolvido ao cliente.";
+  }
+  return "Consulta feita: nenhum pagamento foi confirmado neste pedido. Confira os avisos acima, se houver.";
+}
+
+/**
+ * Consulta os pagamentos do pedido no Mercado Pago e aplica o que achar (para
+ * quando o aviso do webhook não chegou): mesmo caminho da confirmação normal.
+ */
+function CheckProviderButton({ orderId }: { orderId: string }) {
+  const { addAlert } = useAlert();
+  const [loading, setLoading] = useState(false);
+
+  const run = async () => {
+    if (loading) return;
+    setLoading(true);
+    const result = await rentalApi.verifyOrder(orderId);
+    setLoading(false);
+    if (!result.ok) {
+      addAlert(result.message);
+      return;
+    }
+    addAlert(verifyMessage((result.data as { status?: OrderPaymentStatus | null } | null)?.status));
+  };
+
+  return (
+    <button
+      type="button"
+      disabled={loading}
+      onClick={run}
+      className="self-start h-8 px-3 rounded-lg border border-primary-gold/30 text-xs font-medium text-primary-gold/80 hover:border-primary-gold/60 cursor-pointer disabled:opacity-50"
+    >
+      {loading ? "Consultando..." : "Consultar no Mercado Pago"}
+    </button>
+  );
+}
+
 export default function OrderDetail({
   order,
   rentals,
@@ -58,6 +102,10 @@ export default function OrderDetail({
   const paid = isPaidOnline(order);
   const reviewIds = order.cancellationReview?.status === "pending" ? order.cancellationReview.rentalIds : [];
   const pendingRefunds = (p?.pendingRefunds ?? []).filter((r) => !r.failed);
+  // Aguardando, recusado ou expirado/cancelado: o pagamento pode ter saído sem o aviso chegar.
+  const canCheckProvider =
+    order.paymentMode === "online" &&
+    (p?.status === "pending" || p?.status === "rejected" || p?.status === "expired");
   const statusOf = (rentalId: string) => rentals.find((r) => r.id === rentalId)?.status;
 
   return (
@@ -140,6 +188,15 @@ export default function OrderDetail({
                     ? ` A reserva vale até ${dateTime(p.holdUntil)}.`
                     : ""}
                 </p>
+              )}
+              {canCheckProvider && (
+                <>
+                  <p className="text-[11px] text-primary-gold/50">
+                    O cliente diz que pagou? Consulte no Mercado Pago: se houver pagamento aprovado, o
+                    pedido é confirmado (ou, se as cópias já foram liberadas, o valor é devolvido).
+                  </p>
+                  <CheckProviderButton orderId={order.id} />
+                </>
               )}
             </>
           )}
