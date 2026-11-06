@@ -21,18 +21,27 @@ export default function RegrasPage() {
       {rules && (
         <p className="-mt-2 text-center text-xs text-primary-gold/45">
           Versão {rules.version}
-          {updated ? ` · atualizada em ${updated.toLocaleDateString("pt-BR")}` : ""}
+          {updated
+            ? ` · atualizada em ${updated.toLocaleDateString("pt-BR")}`
+            : ""}
         </p>
       )}
       {!rules ? (
-        <p className="text-sm text-primary-gold/55 text-center">Carregando regras...</p>
+        <p className="text-sm text-primary-gold/55 text-center">
+          Carregando regras...
+        </p>
       ) : rules.sections.length === 0 ? (
-        <p className="text-sm text-primary-gold/55 text-center">As regras ainda não foram publicadas.</p>
+        <p className="text-sm text-primary-gold/55 text-center">
+          As regras ainda não foram publicadas.
+        </p>
       ) : (
         <>
           {/* Índice: pular direto para uma seção */}
           {rules.sections.length > 3 && (
-            <nav aria-label="Seções" className="flex flex-wrap justify-center gap-1.5">
+            <nav
+              aria-label="Seções"
+              className="flex flex-wrap justify-center gap-1.5"
+            >
               {rules.sections.map((section) => (
                 <a
                   key={section.id}

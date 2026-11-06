@@ -15,6 +15,11 @@ export function availabilityLabel(availability: GameAvailability, short = false)
       return `${short ? "A partir de" : "Disponível a partir de"} ${formatDateBR(availability.start)}`;
     case "overdue":
       return "Retorno atrasado";
+    case "rented": {
+      const days = availability.daysUntilReturn;
+      if (short || days === undefined) return "Alugado";
+      return days === 0 ? "Alugado · volta hoje" : `Alugado · volta em ${days} ${days === 1 ? "dia" : "dias"}`;
+    }
     default:
       return "Indisponível";
   }
@@ -27,6 +32,7 @@ const TONE: Record<GameAvailability["state"], { text: string; dot: string }> = {
   available: { text: "text-emerald-300 border-emerald-400/60", dot: "bg-emerald-400" },
   from: { text: "text-primary-gold border-primary-gold/60", dot: "bg-primary-gold" },
   overdue: { text: "text-orange-300 border-orange-400/60", dot: "bg-orange-400" },
+  rented: { text: "text-orange-300 border-orange-400/60", dot: "bg-orange-400" },
   unavailable: { text: "text-red-300 border-red-400/60", dot: "bg-red-400" },
 };
 

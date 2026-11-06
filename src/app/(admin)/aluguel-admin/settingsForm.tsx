@@ -98,6 +98,7 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
       maxActiveGamesPerCustomer: local.maxActiveGamesPerCustomer,
       requireCpf: local.requireCpf,
       onlinePayment: local.onlinePayment,
+      allowQueue: local.allowQueue !== false,
       ...(email ? { staffEmail: email } : {}),
     };
 
@@ -164,6 +165,18 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
           variant
           width="!w-full sm:!w-[250px] !min-w-0"
         />
+        <Checkbox
+          checked={local.allowQueue !== false}
+          setChecked={() => set("allowQueue", local.allowQueue === false)}
+          variant
+          width="!max-w-none"
+          label="Permitir reservar um jogo que está com outro cliente"
+        />
+        <p className="-mt-1 text-[11px] text-primary-gold/45 leading-relaxed">
+          {local.allowQueue !== false
+            ? "Ligado: o cliente pode reservar para depois da devolução de quem está com o jogo (se essa pessoa atrasar, a retirada atrasa junto)."
+            : "Desligado: com todas as cópias fora, o jogo aparece como “Alugado” e só pode ser alugado depois que uma cópia voltar. Ninguém fica na fila atrás de outro cliente."}
+        </p>
       </Group>
 
       <Group title="Limites" hint="Evitam que um cliente leve jogos demais de uma vez: quantos jogos cabem num pedido e quantos o mesmo cliente pode ter ao mesmo tempo (pedidos ainda não pagos também contam).">

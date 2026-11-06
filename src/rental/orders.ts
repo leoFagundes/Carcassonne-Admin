@@ -111,7 +111,7 @@ export function planOrder(input: OrderInput, ctx: OrderContext): PlanResult {
     const game = Object.prototype.hasOwnProperty.call(ctx.games, gameId) ? ctx.games[gameId] : undefined;
     if (!game) return fail("game_not_found", gameId);
     if (!game.isActive) return fail("game_inactive", gameId);
-    const unitId = pickUnit(game, startDate, today);
+    const unitId = pickUnit(game, startDate, today, { allowQueue: settings.allowQueue });
     if (unitId === null) return fail("game_unavailable", gameId);
     const unitLabel = game.units.find((u) => u.id === unitId)?.label ?? unitId;
     items.push({

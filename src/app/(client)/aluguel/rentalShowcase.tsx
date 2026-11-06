@@ -465,7 +465,9 @@ export default function RentalShowcase() {
                       game={game}
                       view={view}
                       words={words}
-                      availability={gameAvailability(withLiveBookings(game, Date.now()), today)}
+                      availability={gameAvailability(withLiveBookings(game, Date.now()), today, {
+                        allowQueue: settings?.allowQueue,
+                      })}
                       onOpen={(item, origin) => setDetail({ game: item, origin })}
                     />
                   ))}
@@ -498,6 +500,7 @@ export default function RentalShowcase() {
                 Date.now(),
               ),
               today,
+              { allowQueue: settings?.allowQueue },
             )}
             inCart={cart.has(detail.game.id)}
             onAdd={() => cart.add(detail.game.id)}

@@ -290,7 +290,11 @@ export default function PedidoPage() {
             <ul className="flex flex-col gap-2">
               {items.map(({ id, game }) => {
                 const av =
-                  game && startDate ? availabilityFor(withLiveBookings(game, Date.now()), startDate, today) : null;
+                  game && startDate
+                    ? availabilityFor(withLiveBookings(game, Date.now()), startDate, today, {
+                        allowQueue: settings.allowQueue,
+                      })
+                    : null;
                 const next = av && !av.ok ? av.nextStart : null;
                 const canUseNext = !!next && dates.some((d) => d.date === next && d.enabled);
                 const flagged = flaggedId === id || (av !== null && !av.ok) || !game;

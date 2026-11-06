@@ -571,6 +571,12 @@ export interface RentalSettingsType {
   requireCpf: boolean;
   staffEmail?: string;
   onlinePayment: OnlinePaymentSettings;
+  /**
+   * Deixa reservar uma cópia que está com outro cliente (ou que alguém vai
+   * retirar antes), para quando ela voltar. Desligado: só cópias sem ninguém
+   * na frente. Ausente = ligado.
+   */
+  allowQueue?: boolean;
 }
 
 export interface RentalRuleSection {

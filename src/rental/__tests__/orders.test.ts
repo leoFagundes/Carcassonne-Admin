@@ -130,3 +130,17 @@ describe("defaults", () => {
     for (const m of Object.values(ORDER_ERROR_MESSAGES)) expect(m.length).toBeGreaterThan(10);
   });
 });
+
+describe("planOrder sem fila", () => {
+  it("recusa reservar depois de quem está com a cópia; permite com a fila ligada", () => {
+    // makeGame tem 1 cópia; prazo do jogo de exemplo
+    const rented = withBooking(makeCtx(), "g1", bk(makeCtx().games.g1.units[0].id, "2026-11-01", "2026-11-08", "picked_up"));
+    const later = input(["g1"], "2026-11-20");
+    expect(planOrder(later, rented)).toMatchObject({ ok: true });
+    expect(planOrder(later, withSettings(rented, { allowQueue: false }))).toMatchObject({
+      ok: false,
+      code: "game_unavailable",
+      gameId: "g1",
+    });
+  });
+});

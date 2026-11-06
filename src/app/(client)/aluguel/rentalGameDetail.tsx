@@ -56,7 +56,8 @@ export default function RentalGameDetail({
 }) {
   const board = asBoardgame(game);
   const copies = game.units.filter((unit) => unit.status === "active").length;
-  const unavailable = availability.state === "unavailable";
+  // "rented": todas as cópias com alguém e o pub não deixa entrar na fila.
+  const unavailable = availability.state === "unavailable" || availability.state === "rented";
   // Aviso logo acima do botão quando o jogo não está livre agora.
   const notice =
     availability.state === "from"
@@ -65,7 +66,11 @@ export default function RentalGameDetail({
         }: você pode adicionar ao pedido e escolher essa data para retirar.`
       : availability.state === "overdue"
         ? "A cópia está com um cliente e a devolução está atrasada, então ainda não sabemos quando volta. Você pode adicionar e ver no pedido as datas livres."
-        : unavailable
+        : availability.state === "rented"
+          ? `Todas as cópias estão com clientes agora. Este jogo só pode ser alugado depois que uma delas voltar${
+              availability.returnDate ? ` (previsão: ${formatDateBR(availability.returnDate)})` : ""
+            }.`
+          : unavailable
           ? "Este jogo está indisponível no momento."
           : null;
 

@@ -109,3 +109,39 @@ describe("availability", () => {
     });
   });
 });
+
+describe("sem fila (allowQueue: false)", () => {
+  const today = "2026-11-05";
+  const NQ = { allowQueue: false };
+  const out = { units: [unit("u1")], bookings: [bk("u1", "2026-11-01", "2026-11-08", "picked_up")], rentalDays: 7 };
+  const late = { units: [unit("u1")], bookings: [bk("u1", "2026-10-28", "2026-11-04", "picked_up")], rentalDays: 7 };
+  const future = { units: [unit("u1")], bookings: [bk("u1", "2026-11-20", "2026-11-27", "reserved")], rentalDays: 7 };
+
+  it("cópia com alguém: 'alugado' com a previsão, sem data para reservar", () => {
+    expect(gameAvailability(out, today, NQ)).toEqual({ state: "rented", returnDate: "2026-11-08", daysUntilReturn: 3 });
+    expect(availabilityFor(out, "2026-11-09", today, NQ)).toEqual({ ok: false, nextStart: null });
+    expect(pickUnit(out, "2026-11-09", today, NQ)).toBeNull();
+  });
+
+  it("devolução atrasada continua 'atrasado'", () => {
+    expect(gameAvailability(late, today, NQ)).toEqual({ state: "overdue" });
+  });
+
+  it("dá para pegar antes de quem reservou, nunca depois", () => {
+    expect(gameAvailability(future, today, NQ)).toEqual({ state: "available" });
+    expect(availabilityFor(future, today, today, NQ)).toEqual({ ok: true });
+    expect(availabilityFor(future, "2026-11-28", today, NQ)).toEqual({ ok: false, nextStart: today });
+    expect(pickUnit(future, "2026-11-28", today, NQ)).toBeNull();
+    // ligado (padrão), depois da reserva pode
+    expect(pickUnit(future, "2026-11-28", today)).toBe("u1");
+  });
+
+  it("outra cópia livre resolve", () => {
+    expect(gameAvailability({ ...out, units: [unit("u1"), unit("u2")] }, today, NQ)).toEqual({ state: "available" });
+    expect(pickUnit({ ...out, units: [unit("u1"), unit("u2")] }, "2026-11-09", today, NQ)).toBe("u2");
+  });
+
+  it("allowQueue ausente ou true mantém o comportamento de sempre", () => {
+    expect(gameAvailability(out, today, { allowQueue: true })).toEqual(gameAvailability(out, today));
+  });
+});
