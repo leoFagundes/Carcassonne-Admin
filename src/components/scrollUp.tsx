@@ -52,8 +52,11 @@ const SEARCH_HINT_KEY = "carcassonne-menu-search-hint";
 export default function ScrollUp({
   onSearch,
   searchHintReady = true,
+  onlyScrollTop = false,
 }: {
   onSearch?: () => void;
+  /** Só o "voltar ao topo" (ex.: aluguel, que não precisa de avaliação, regulamento, música nem eventos). */
+  onlyScrollTop?: boolean;
   /** A dica da busca espera a página ficar livre (carregada, sem popup aberto). */
   searchHintReady?: boolean;
 }) {
@@ -127,7 +130,7 @@ export default function ScrollUp({
         <FaArrowUp size={16} />
       </FloatingButton>
 
-      {isMusicRecommendationEnable && (
+      {!onlyScrollTop && isMusicRecommendationEnable && (
         <FloatingButton
           onClick={() => router.push("/clientMusicRecommendation")}
           tooltip="Recomende uma música"
@@ -136,7 +139,7 @@ export default function ScrollUp({
         </FloatingButton>
       )}
 
-      {activeEvents.map((event) => {
+      {!onlyScrollTop && activeEvents.map((event) => {
         const Icon = getLucideIcon(event.icon);
         return (
           <FloatingButton
@@ -149,19 +152,23 @@ export default function ScrollUp({
         );
       })}
 
-      <FloatingButton
-        onClick={() => window.open("https://search.google.com/local/writereview?placeid=ChIJ534KOao7WpMRZ6NS_UuEtY4", "_blank")}
-        tooltip="Avalie-nos no Google"
-      >
-        <FaStar size={16} />
-      </FloatingButton>
+      {!onlyScrollTop && (
+        <>
+          <FloatingButton
+            onClick={() => window.open("https://search.google.com/local/writereview?placeid=ChIJ534KOao7WpMRZ6NS_UuEtY4", "_blank")}
+            tooltip="Avalie-nos no Google"
+          >
+            <FaStar size={16} />
+          </FloatingButton>
 
-      <FloatingButton
-        onClick={() => router.push("/rulesAndRegulations")}
-        tooltip="Contato e regulamentos"
-      >
-        <FaInfoCircle size={16} />
-      </FloatingButton>
+          <FloatingButton
+            onClick={() => router.push("/rulesAndRegulations")}
+            tooltip="Contato e regulamentos"
+          >
+            <FaInfoCircle size={16} />
+          </FloatingButton>
+        </>
+      )}
 
       {/* Busca (só no cardápio): por último, mais perto do polegar */}
       {onSearch && (

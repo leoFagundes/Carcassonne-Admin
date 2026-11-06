@@ -383,8 +383,21 @@ export default function RentalShowcase() {
                 </div>
               </div>
 
-              {/* Como funciona, em uma linha */}
-              <ol className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 w-full max-w-6xl pt-5 text-[11px] sm:text-xs text-primary-gold/70">
+              {/* Como funciona — celular: 3 colunas ligadas por uma linha */}
+              <ol aria-label="Como funciona" className="sm:hidden relative grid grid-cols-3 w-full max-w-sm pt-5 text-[11px] text-primary-gold/75">
+                <span aria-hidden="true" className="absolute top-[calc(1.25rem+0.75rem)] left-[16.66%] right-[16.66%] h-px bg-primary-gold/25" />
+                {["Escolha os jogos", "Retire no Carcassonne", "Devolva no prazo"].map((step, i) => (
+                  <li key={step} className="relative flex flex-col items-center gap-1.5 px-1 text-center leading-tight">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full border border-primary-gold/40 bg-primary-black text-[11px] font-bold text-primary-gold">
+                      {i + 1}
+                    </span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
+
+              {/* Como funciona — computador: pílulas em linha */}
+              <ol className="hidden sm:flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 w-full max-w-6xl pt-5 text-xs text-primary-gold/70">
                 {[
                   "Escolha os jogos",
                   "Retire no Carcassonne",
@@ -511,7 +524,7 @@ export default function RentalShowcase() {
           total={cart.gameIds.reduce((sum, id) => sum + (active.find((g) => g.id === id)?.price ?? 0), 0)}
         />
 
-        <ScrollUp />
+        <ScrollUp onlyScrollTop />
       </div>
     </>
   );
