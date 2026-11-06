@@ -12,10 +12,12 @@ import {
   decideRefundedRedelivery,
   dropPendingRefund,
   finishRefund,
+  hasPendingReviewRefund,
   isAwaitingPayment,
   isOrderExpirable,
   isPaidOnline,
   isValidRefundAmount,
+  markPendingRefundFailed,
   orderPaymentView,
   refundableLeft,
   releaseHeldBookings,
@@ -777,6 +779,12 @@ export const refundFailed = () =>
     "refund_failed",
     "Não foi possível processar o reembolso agora. Tente novamente.",
   );
+export const refundInProgress = () =>
+  new ApiError(
+    409,
+    "refund_in_progress",
+    "Há um reembolso em andamento para este aluguel. Tente novamente em instantes.",
+  );
 const notPaid = () =>
   new ApiError(409, "not_paid", "Este pedido não tem pagamento online aprovado.");
 export const invalidRefundAmount = (cap: number) =>
@@ -820,6 +828,9 @@ export function stageRefund(
           "Já há um reembolso desta operação em andamento. Atualize a página.",
         );
       }
+      if (step.pendingRefunds) {
+        tx.update(orderRef, { "payment.pendingRefunds": step.pendingRefunds });
+      }
       return { kind: "go", intent: step.pending, paymentId };
     case "done":
       return { kind: "done", refund: step.refund };
@@ -830,7 +841,26 @@ export function stageRefund(
   }
 }
 
-/** Etapa 2: reembolso no provedor. Falha → tira a intenção e lança `refund_failed`. */
+/**
+ * Recusa definitiva do provedor (4xx): o reembolso com certeza não saiu.
+ * 408/409 (tempo esgotado, operação concorrente), 5xx e erros de rede são
+ * ambíguos — o reembolso pode ter saído.
+ */
+function isDefinitiveRefusal(error: unknown): boolean {
+  return (
+    error instanceof ProviderError &&
+    error.status >= 400 &&
+    error.status < 500 &&
+    error.status !== 408 &&
+    error.status !== 409
+  );
+}
+
+/**
+ * Etapa 2: reembolso no provedor. Recusa definitiva → tira a intenção; falha
+ * ambígua → mantém a intenção marcada `failed` (conta no limite; repetir a
+ * mesma operação retoma). Nos dois casos lança `refund_failed`.
+ */
 export async function sendProviderRefund(
   orderId: string,
   paymentId: string,
@@ -839,17 +869,27 @@ export async function sendProviderRefund(
   try {
     return await getPaymentProvider().refund(paymentId, intent.amount, intent.key);
   } catch (error) {
-    console.error(`Reembolso ${intent.key} do pedido ${orderId} falhou no provedor:`, error);
+    const definitive = isDefinitiveRefusal(error);
+    console.error(
+      `Reembolso ${intent.key} do pedido ${orderId} falhou no provedor (${
+        definitive ? "recusado" : "sem resposta definitiva; intenção mantida"
+      }):`,
+      error,
+    );
     const orderRef = ordersCol().doc(orderId);
     try {
       await getAdminDb().runTransaction(async (tx) => {
         const snap = await tx.get(orderRef);
         const p = (snap.data() as RentalOrderType | undefined)?.payment;
         if (!p || !(p.pendingRefunds ?? []).some((x) => x.key === intent.key)) return;
-        tx.update(orderRef, { "payment.pendingRefunds": dropPendingRefund(p, intent.key) });
+        tx.update(orderRef, {
+          "payment.pendingRefunds": definitive
+            ? dropPendingRefund(p, intent.key)
+            : markPendingRefundFailed(p, intent.key),
+        });
       });
-    } catch (dropError) {
-      console.error(`Erro ao desfazer a intenção de reembolso ${intent.key}:`, dropError);
+    } catch (markError) {
+      console.error(`Erro ao atualizar a intenção de reembolso ${intent.key}:`, markError);
     }
     throw refundFailed();
   }
@@ -883,7 +923,8 @@ export function commitRefund(
 const ADMIN_REFUND_EMAIL = "O Carcassonne Pub fez um reembolso do seu pedido.";
 const REVIEW_APPROVED_EMAIL =
   "Analisamos o seu pedido de cancelamento e aprovamos o reembolso abaixo.";
-const REQUEST_ID = /^[A-Za-z0-9-]{8,64}$/;
+/** Até 36 caracteres (um UUID). */
+const REQUEST_ID = /^[A-Za-z0-9-]{8,36}$/;
 
 /**
  * Reembolso pelo admin, com valor (centavos, > 0, até o que falta devolver).
@@ -912,6 +953,15 @@ export async function refundOrder(
     const snap = await tx.get(orderRef);
     if (!snap.exists) throw notFound();
     const order = snap.data() as RentalOrderType;
+    // Repetição de um reembolso já concluído (mesmo requestId): devolve o resultado.
+    const done = (order.payment?.refunds ?? []).find((r) => r.key === key);
+    if (done) {
+      return {
+        step: { kind: "done" as const, refund: done },
+        status: order.payment?.status ?? "refunded",
+        summary: { code: order.code, customer: order.customer },
+      };
+    }
     if (!isPaidOnline(order)) throw notPaid();
     const cap = refundableLeft(order, key);
     if (!isValidRefundAmount(amount, cap)) throw invalidRefundAmount(cap);
@@ -974,8 +1024,17 @@ export async function reviewCancellation(
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(orderRef);
       if (!snap.exists) throw notFound();
-      const review = (snap.data() as RentalOrderType).cancellationReview;
+      const order = snap.data() as RentalOrderType;
+      const review = order.cancellationReview;
       if (review?.status !== "pending") throw noReview();
+      // Aprovação com reembolso em andamento: recusar agora deixaria dinheiro sem análise.
+      if (hasPendingReviewRefund(order, orderId)) {
+        throw new ApiError(
+          409,
+          "refund_in_progress",
+          "Há um reembolso em andamento para este pedido. Tente novamente em instantes.",
+        );
+      }
       tx.update(orderRef, {
         cancellationReview: closeCancellationReview(review, review.rentalIds, {
           status: "denied",

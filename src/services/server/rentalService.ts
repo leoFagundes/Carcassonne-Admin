@@ -29,6 +29,7 @@ import {
 import {
   cancelPreview,
   countActiveGames,
+  hasRecentRefundFor,
   holdUntilFor,
   isPaidOnline,
   isValidRefundAmount,
@@ -59,6 +60,7 @@ import {
   commitRefund,
   createOrderCheckout,
   invalidRefundAmount,
+  refundInProgress,
   sendProviderRefund,
   sendRefundNotice,
   stageRefund,
@@ -571,6 +573,14 @@ export async function pickupRental(rentalId: string, adminUid: string): Promise<
       throw new ApiError(409, "awaiting_payment", "Este pedido ainda não foi pago.");
     }
     if (rental.status !== "reserved") throw invalidStatus();
+    // Cancelamento com reembolso no meio: não entregar a cópia de um aluguel sendo reembolsado.
+    if (isDocId(rental.orderId)) {
+      const orderSnap = await tx.get(db.collection("rentalOrders").doc(rental.orderId));
+      const order = orderSnap.exists ? (orderSnap.data() as RentalOrderType) : undefined;
+      if (order?.paymentMode === "online" && hasRecentRefundFor(order, rentalId, Date.now())) {
+        throw refundInProgress();
+      }
+    }
     if (rental.startDate > todaySP()) {
       throw new ApiError(
         409,

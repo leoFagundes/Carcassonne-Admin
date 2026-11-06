@@ -545,6 +545,12 @@ export interface RentalPendingRefund {
   rentalId?: string;
   rentalIds?: string[];
   reason?: string;
+  /**
+   * A última chamada ao provedor falhou sem resposta definitiva (5xx, rede):
+   * o reembolso pode ter saído. Continua contando no limite; repetir a mesma
+   * operação (mesma chave) retoma.
+   */
+  failed?: boolean;
 }
 
 /** Pagamento a mais no mesmo pedido (cliente pagou duas vezes), devolvido integralmente. */

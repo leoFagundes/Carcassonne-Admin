@@ -8,7 +8,10 @@ import {
   dropPendingRefund,
   finishRefund,
   formatCountdown,
+  hasPendingReviewRefund,
+  hasRecentRefundFor,
   isPaidOnline,
+  markPendingRefundFailed,
   isValidRefundAmount,
   liveBookings,
   openCancellationReview,
@@ -257,6 +260,55 @@ describe("beginRefund", () => {
   it("invalid: valor não positivo ou não inteiro", () => {
     expect(beginRefund(paidOrder(), intent(0))).toEqual({ kind: "invalid" });
     expect(beginRefund(paidOrder(), intent(10.5))).toEqual({ kind: "invalid" });
+  });
+});
+
+describe("reembolso com falha ambígua (fix round 1)", () => {
+  const intent = (amount: number, key = "o:r1:cancel"): RentalPendingRefund => ({ key, amount, at: 5, by: "customer", rentalId: "r1" });
+  it("markPendingRefundFailed marca só a chave pedida", () => {
+    expect(markPendingRefundFailed({ pendingRefunds: [pending(1, "a"), pending(2, "b")] }, "a")).toEqual([
+      pending(1, "a", { failed: true }),
+      pending(2, "b"),
+    ]);
+  });
+  it("intenção com falha continua contando no que falta devolver", () => {
+    expect(refundableLeft(paidOrder({ pendingRefunds: [pending(4500, "k", { failed: true })] }))).toBe(3000);
+  });
+  it("repetir a mesma chave retoma a intenção com falha e limpa a marca", () => {
+    const o = paidOrder({ pendingRefunds: [pending(100, "x"), pending(4500, "o:r1:cancel", { failed: true })] });
+    expect(beginRefund(o, intent(4500))).toEqual({
+      kind: "resume",
+      pending: pending(4500, "o:r1:cancel"),
+      pendingRefunds: [pending(100, "x"), pending(4500, "o:r1:cancel")],
+    });
+  });
+  it("retomar intenção em andamento (sem falha) não regrava", () => {
+    const o = paidOrder({ pendingRefunds: [pending(4500, "o:r1:cancel")] });
+    expect(beginRefund(o, intent(4500))).toEqual({ kind: "resume", pending: pending(4500, "o:r1:cancel") });
+  });
+});
+
+describe("hasRecentRefundFor", () => {
+  const MIN = 60_000;
+  it("intenção recente deste aluguel (direta ou numa análise) bloqueia", () => {
+    expect(hasRecentRefundFor(paidOrder({ pendingRefunds: [pending(1, "k", { rentalId: "r1", at: NOW - 9 * MIN })] }), "r1", NOW)).toBe(true);
+    expect(hasRecentRefundFor(paidOrder({ pendingRefunds: [pending(1, "k", { rentalIds: ["r2", "r1"], at: NOW })] }), "r1", NOW)).toBe(true);
+    expect(hasRecentRefundFor(paidOrder({ pendingRefunds: [pending(1, "k", { rentalId: "r1", at: NOW, failed: true })] }), "r1", NOW)).toBe(true);
+  });
+  it("antiga (10 min ou mais), de outro aluguel ou sem pedido → não bloqueia", () => {
+    expect(hasRecentRefundFor(paidOrder({ pendingRefunds: [pending(1, "k", { rentalId: "r1", at: NOW - 10 * MIN })] }), "r1", NOW)).toBe(false);
+    expect(hasRecentRefundFor(paidOrder({ pendingRefunds: [pending(1, "k", { rentalId: "r2", at: NOW })] }), "r1", NOW)).toBe(false);
+    expect(hasRecentRefundFor(paidOrder(), "r1", NOW)).toBe(false);
+    expect(hasRecentRefundFor(undefined, "r1", NOW)).toBe(false);
+  });
+});
+
+describe("hasPendingReviewRefund", () => {
+  it("só intenções de aprovação de análise", () => {
+    expect(hasPendingReviewRefund(paidOrder({ pendingRefunds: [pending(1, "o1:review:r1")] }), "o1")).toBe(true);
+    expect(hasPendingReviewRefund(paidOrder({ pendingRefunds: [pending(1, "o1:review:r1", { failed: true })] }), "o1")).toBe(true);
+    expect(hasPendingReviewRefund(paidOrder({ pendingRefunds: [pending(1, "o1:r1:cancel")] }), "o1")).toBe(false);
+    expect(hasPendingReviewRefund(paidOrder(), "o1")).toBe(false);
   });
 });
 

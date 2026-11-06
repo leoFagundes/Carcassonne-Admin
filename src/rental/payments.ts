@@ -122,8 +122,11 @@ export function isValidRefundAmount(amount: unknown, cap: number): amount is num
 export type BeginRefund =
   /** Grava a intenção (lista nova de pendentes) e chama o provedor. */
   | { kind: "start"; pendingRefunds: RentalPendingRefund[] }
-  /** Mesma operação já em andamento: chama o provedor de novo com a mesma chave. */
-  | { kind: "resume"; pending: RentalPendingRefund }
+  /**
+   * Mesma operação já em andamento: chama o provedor de novo com a mesma chave.
+   * Com `pendingRefunds`, a intenção estava marcada com falha: gravar a lista limpa.
+   */
+  | { kind: "resume"; pending: RentalPendingRefund; pendingRefunds?: RentalPendingRefund[] }
   /** Mesma operação já concluída. */
   | { kind: "done"; refund: RentalRefund }
   | { kind: "exceeds"; left: number }
@@ -139,6 +142,16 @@ export function beginRefund(order: RefundBook, intent: RentalPendingRefund): Beg
   if (done) return { kind: "done", refund: done };
   const pendingList = order.payment?.pendingRefunds ?? [];
   const same = pendingList.find((p) => p.key === intent.key);
+  if (same?.failed) {
+    // Nova tentativa de uma chamada que falhou sem resposta definitiva: volta a "em andamento".
+    const retry = { ...same };
+    delete retry.failed;
+    return {
+      kind: "resume",
+      pending: retry,
+      pendingRefunds: pendingList.map((p) => (p === same ? retry : p)),
+    };
+  }
   if (same) return { kind: "resume", pending: same };
   if (!Number.isInteger(intent.amount) || intent.amount <= 0) return { kind: "invalid" };
   const left = refundableLeft(order);
@@ -152,6 +165,41 @@ export function dropPendingRefund(
   key: string,
 ): RentalPendingRefund[] {
   return (payment?.pendingRefunds ?? []).filter((p) => p.key !== key);
+}
+
+/**
+ * Falha sem resposta definitiva (5xx, rede, tempo esgotado): o reembolso pode
+ * ter saído, então a intenção fica (contando no limite), marcada `failed`.
+ */
+export function markPendingRefundFailed(
+  payment: Partial<Pick<RentalOrderPayment, "pendingRefunds">> | undefined,
+  key: string,
+): RentalPendingRefund[] {
+  return (payment?.pendingRefunds ?? []).map((p) => (p.key === key ? { ...p, failed: true } : p));
+}
+
+const RECENT_REFUND_MS = 10 * 60_000;
+
+/** Há reembolso em andamento (ou com falha) deste aluguel há menos de 10 min. */
+export function hasRecentRefundFor(
+  order: { payment?: Partial<Pick<RentalOrderPayment, "pendingRefunds">> } | undefined,
+  rentalId: string,
+  nowMs: number,
+): boolean {
+  return (order?.payment?.pendingRefunds ?? []).some(
+    (p) =>
+      (p.rentalId === rentalId || (p.rentalIds ?? []).includes(rentalId)) &&
+      nowMs - p.at < RECENT_REFUND_MS,
+  );
+}
+
+/** Há reembolso de aprovação de análise em andamento (ou com falha) no pedido. */
+export function hasPendingReviewRefund(
+  order: { payment?: Partial<Pick<RentalOrderPayment, "pendingRefunds">> } | undefined,
+  orderId: string,
+): boolean {
+  const prefix = `${orderId}:review:`;
+  return (order?.payment?.pendingRefunds ?? []).some((p) => p.key.startsWith(prefix));
 }
 
 /**

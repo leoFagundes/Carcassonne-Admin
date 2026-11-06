@@ -4,6 +4,7 @@ import type {
   PaymentProvider,
   ProviderPayment,
 } from "./provider";
+import { idempotencyHeader } from "./idempotency";
 
 export class ProviderError extends Error {
   constructor(
@@ -177,7 +178,7 @@ export function createMercadoPagoProvider(token: string): PaymentProvider {
         `/v1/payments/${encodeURIComponent(paymentId)}/refunds`,
         {
           method: "POST",
-          headers: { "X-Idempotency-Key": idempotencyKey },
+          headers: { "X-Idempotency-Key": idempotencyHeader(idempotencyKey) },
           body: amount === undefined ? {} : { amount: toReais(amount) },
         },
       );
