@@ -50,9 +50,18 @@ async function call<T>(
 const rentalPath = (id: string, action: string) =>
   `/api/rental/rentals/${encodeURIComponent(id)}/${action}`;
 
+const orderPath = (id: string, action: string) =>
+  `/api/rental/orders/${encodeURIComponent(id)}/${action}`;
+
 export const rentalApi = {
   createOrder: (input: OrderInput) =>
-    call<{ orderId: string; code: string }>("/api/rental/orders", input),
+    call<{ orderId: string; code: string; checkoutUrl?: string }>("/api/rental/orders", input),
+
+  reopenCheckout: (id: string) => call<{ checkoutUrl: string }>(orderPath(id, "checkout"), {}),
+
+  verifyOrder: (id: string) => call<unknown>(orderPath(id, "verify"), {}),
+
+  cancelPendingOrder: (id: string) => call<null>(orderPath(id, "cancel"), {}),
 
   cancel: (id: string, reason?: string) => call<null>(rentalPath(id, "cancel"), { reason }),
 

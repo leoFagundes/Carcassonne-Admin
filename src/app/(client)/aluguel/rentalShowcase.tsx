@@ -12,6 +12,7 @@ import AdminRepository from "@/services/repositories/AdminRepository";
 import RentalGameRepository from "@/services/repositories/RentalGameRepository";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import { gameAvailability } from "@/rental/availability";
+import { withLiveBookings } from "@/rental/payments";
 import { todaySP } from "@/rental/dates";
 import ScrollUp from "@/components/scrollUp";
 import ThemeBand from "@/components/siteTheme/ThemeBand";
@@ -438,7 +439,7 @@ export default function RentalShowcase() {
                       game={game}
                       view={view}
                       words={words}
-                      availability={gameAvailability(game, today)}
+                      availability={gameAvailability(withLiveBookings(game, Date.now()), today)}
                       onOpen={(item, origin) => setDetail({ game: item, origin })}
                     />
                   ))}
@@ -466,7 +467,10 @@ export default function RentalShowcase() {
             game={active.find((game) => game.id === detail.game.id) ?? detail.game}
             origin={detail.origin}
             availability={gameAvailability(
-              active.find((game) => game.id === detail.game.id) ?? detail.game,
+              withLiveBookings(
+                active.find((game) => game.id === detail.game.id) ?? detail.game,
+                Date.now(),
+              ),
               today,
             )}
             inCart={cart.has(detail.game.id)}

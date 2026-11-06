@@ -177,7 +177,12 @@ export async function reopenCheckout(orderId: string, uid: string): Promise<{ ch
     throw new ApiError(409, "not_online", "Este pedido é pago no balcão, na retirada.");
   }
   if (!isAwaitingPayment(order)) {
-    if (payment.status === "expired") throw orderExpired();
+    if (payment.status === "expired") {
+      if (payment.closedBy === "customer") {
+        throw new ApiError(409, "order_canceled", "Este pedido foi cancelado.");
+      }
+      throw orderExpired();
+    }
     throw alreadyPaid();
   }
   if (isOrderExpirable(order, Date.now())) {

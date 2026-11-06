@@ -9,6 +9,7 @@ import RentalGameRepository from "@/services/repositories/RentalGameRepository";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import { accountApi, rentalApi } from "@/services/rentalApi";
 import { availabilityFor } from "@/rental/availability";
+import { withLiveBookings } from "@/rental/payments";
 import { addDays, formatDateBR, todaySP, weekdayOf } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
 import { isProfileComplete, ORDER_ERROR_MESSAGES, type OrderErrorCode } from "@/rental/orders";
@@ -42,6 +43,7 @@ export default function PedidoPage() {
   const [flaggedId, setFlaggedId] = useState<string | null>(null);
   const [verifyMsg, setVerifyMsg] = useState<string | null>(null);
   const [verifyBusy, setVerifyBusy] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [done, setDone] = useState<{ code: string } | null>(null);
 
   useEffect(() => RentalGameRepository.subscribeToAll(setGames), []);
@@ -103,6 +105,8 @@ export default function PedidoPage() {
     setVerifyBusy(false);
   }
 
+  const online = settings?.onlinePayment?.enabled === true;
+
   async function submit() {
     if (!settings || !rules || !startDate || sending) return;
     if (!user) {
@@ -122,9 +126,20 @@ export default function PedidoPage() {
       startDate,
       rulesVersion: rules.version,
     });
-    setSending(false);
+    if (!result.ok || !online) setSending(false);
     if (result.ok) {
       cart.clear();
+      if (online) {
+        setRedirecting(true);
+        if (result.data.checkoutUrl) {
+          // Segue para o Mercado Pago na mesma aba.
+          window.location.assign(result.data.checkoutUrl);
+        } else {
+          // Pedido criado, mas sem link de pagamento: a página do pedido reabre o checkout.
+          router.push(`/aluguel/pedido/${encodeURIComponent(result.data.orderId)}`);
+        }
+        return;
+      }
       setDone({ code: result.data.code });
       return;
     }
@@ -149,8 +164,8 @@ export default function PedidoPage() {
     settings?.isEnabled === false ||
     (!needsLogin && !needsProfile && (!accepted || needsVerify));
 
-  let buttonLabel = "Confirmar aluguel";
-  if (sending) buttonLabel = "Enviando...";
+  let buttonLabel = online ? "Ir para o pagamento" : "Confirmar aluguel";
+  if (sending) buttonLabel = online ? "Abrindo o pagamento..." : "Enviando...";
   else if (needsLogin) buttonLabel = "Entrar para confirmar";
   else if (needsProfile) buttonLabel = "Completar cadastro";
 
@@ -174,7 +189,18 @@ export default function PedidoPage() {
             Seu pedido
           </h1>
 
-          {done ? (
+          {redirecting ? (
+            <section className={`${card} items-center text-center`} role="status">
+              <span
+                aria-hidden="true"
+                className="w-8 h-8 rounded-full border-2 border-primary-gold/25 border-t-primary-gold animate-spin"
+              />
+              <h2 className="font-cinzel text-lg">Levando você ao pagamento…</h2>
+              <p className="text-sm text-primary-gold/70">
+                Suas cópias já estão reservadas. Não feche esta página.
+              </p>
+            </section>
+          ) : done ? (
             <section className={`${card} items-center text-center`}>
               <FiCheckCircle size={36} className="text-green-400" />
               <h2 className="font-cinzel text-lg">Aluguel confirmado!</h2>
@@ -211,7 +237,10 @@ export default function PedidoPage() {
                 <h2 className={heading}>Jogos</h2>
                 <ul className="flex flex-col gap-2">
                   {items.map(({ id, game }) => {
-                    const av = game && startDate ? availabilityFor(game, startDate, today) : null;
+                    const av =
+                      game && startDate
+                        ? availabilityFor(withLiveBookings(game, Date.now()), startDate, today)
+                        : null;
                     const next = av && !av.ok ? av.nextStart : null;
                     const canUseNext = !!next && dates.some((d) => d.date === next && d.enabled);
                     const flagged = flaggedId === id || (av !== null && !av.ok);
@@ -341,7 +370,11 @@ export default function PedidoPage() {
                   <span>Total</span>
                   <span>{formatBRL(total)}</span>
                 </div>
-                <p className="text-xs text-primary-gold/60">Pagamento no balcão, na retirada.</p>
+                {online ? (
+                  <p className="text-xs text-primary-gold/60">Pagamento online · Pix ou cartão</p>
+                ) : (
+                  <p className="text-xs text-primary-gold/60">Pagamento no balcão, na retirada.</p>
+                )}
               </section>
 
               <label className="flex items-start gap-2.5 text-sm text-primary-gold/85 cursor-pointer">
@@ -403,6 +436,12 @@ export default function PedidoPage() {
               >
                 {buttonLabel}
               </button>
+              {online && (
+                <p className="text-xs text-primary-gold/60 text-center">
+                  Suas cópias ficam reservadas por {settings.onlinePayment.holdMinutes} minutos
+                  enquanto você paga.
+                </p>
+              )}
             </>
           )}
         </main>

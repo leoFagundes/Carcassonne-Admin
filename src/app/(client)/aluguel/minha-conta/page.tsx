@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebaseConfig";
-import type { RentalSettingsType, RentalType } from "@/types";
+import type { RentalOrderType, RentalSettingsType, RentalType } from "@/types";
+import RentalOrderRepository from "@/services/repositories/RentalOrderRepository";
+import { orderPaymentView } from "@/rental/payments";
 import RentalRepository from "@/services/repositories/RentalRepository";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import { accountApi, rentalApi } from "@/services/rentalApi";
@@ -18,8 +20,10 @@ import { useRentalCart } from "../useRentalCart";
 import { useRentalCustomer } from "../useRentalCustomer";
 import RentalHeader from "../rentalHeader";
 import ProfileForm, { maskPhone } from "../profileForm";
+import PaymentBadge from "../paymentBadge";
 
 type Rental = RentalType & { id: string };
+type Order = RentalOrderType & { id: string };
 
 const card = "bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3";
 const heading = "text-[11px] font-semibold uppercase tracking-widest text-primary-gold/60";
@@ -81,6 +85,10 @@ function MinhaContaContent() {
   const { user, customer, loading, emailVerified, reloadUser } = useRentalCustomer();
   const [settings, setSettings] = useState<RentalSettingsType | null>(null);
   const [rentals, setRentals] = useState<Rental[] | null>(null);
+  const [orderDocs, setOrderDocs] = useState<Order[]>([]);
+  const [now, setNow] = useState(() => Date.now());
+  const [payingId, setPayingId] = useState<string | null>(null);
+  const [payError, setPayError] = useState<{ id: string; message: string } | null>(null);
   const [today, setToday] = useState(() => todaySP());
   const [editing, setEditing] = useState(false);
   const [cancelingId, setCancelingId] = useState<string | null>(null);
@@ -105,6 +113,37 @@ function MinhaContaContent() {
     if (!uid) return;
     return RentalRepository.subscribeToCustomer(uid, setRentals);
   }, [uid]);
+
+  useEffect(() => {
+    if (!uid) return;
+    return RentalOrderRepository.subscribeToCustomer(uid, setOrderDocs);
+  }, [uid]);
+
+  const orderById = useMemo(() => new Map(orderDocs.map((o) => [o.id, o])), [orderDocs]);
+  const anyOpen = orderDocs.some(
+    (o) =>
+      o.paymentMode === "online" &&
+      (o.payment?.status === "pending" || o.payment?.status === "rejected"),
+  );
+  useEffect(() => {
+    if (!anyOpen) return;
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [anyOpen]);
+
+  async function payNow(orderId: string) {
+    if (payingId) return;
+    setPayingId(orderId);
+    setPayError(null);
+    const result = await rentalApi.reopenCheckout(orderId);
+    if (result.ok) {
+      window.location.assign(result.data.checkoutUrl);
+      return;
+    }
+    setPayingId(null);
+    setPayError({ id: orderId, message: result.message });
+  }
 
   const orders = useMemo(() => {
     const groups = new Map<string, Rental[]>();
@@ -254,15 +293,43 @@ function MinhaContaContent() {
               </Link>
             </div>
           ) : (
-            orders.map((order) => (
-              <article key={order[0].orderId} className={card}>
+            orders.map((order) => {
+              const orderId = order[0].orderId;
+              const orderDoc = orderById.get(orderId);
+              const view = orderDoc ? orderPaymentView(orderDoc, now) : null;
+              const awaiting = view?.state === "awaiting" || view?.state === "rejected";
+              return (
+              <article key={orderId} className={card}>
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-xs text-primary-gold/60">Pedido</span>
                   <span className="font-mono text-lg tracking-widest">{order[0].code}</span>
                 </div>
+                {view && view.state !== "counter" && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <PaymentBadge view={view} />
+                    {awaiting && (
+                      <button
+                        type="button"
+                        disabled={payingId !== null}
+                        onClick={() => payNow(orderId)}
+                        className={smallBtn}
+                      >
+                        {payingId === orderId ? "Abrindo..." : "Pagar agora"}
+                      </button>
+                    )}
+                  </div>
+                )}
+                {payError?.id === orderId && (
+                  <p role="alert" className="text-xs text-red-300">
+                    {payError.message}
+                  </p>
+                )}
                 <ul className="flex flex-col gap-2">
                   {order.map((rental) => {
-                    const info = statusInfo(rental, today);
+                    const info =
+                      rental.status === "awaiting_payment" && view?.state === "expired"
+                        ? { label: "Expirado", detail: "", tone: "text-red-300" }
+                        : statusInfo(rental, today);
                     return (
                       <li
                         key={rental.id}
@@ -295,8 +362,15 @@ function MinhaContaContent() {
                     );
                   })}
                 </ul>
+                <Link
+                  href={`/aluguel/pedido/${encodeURIComponent(orderId)}`}
+                  className="self-start text-xs text-primary-gold underline"
+                >
+                  Ver pedido
+                </Link>
               </article>
-            ))
+              );
+            })
           )}
         </section>
 
