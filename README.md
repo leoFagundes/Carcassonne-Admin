@@ -155,11 +155,11 @@ Executa a suíte do [Vitest](https://vitest.dev/) (regras de negócio do aluguel
 
 Os arquivos `firestore.rules` e `storage.rules`, na raiz do repositório, são a **fonte da verdade**. Para publicar, cole o conteúdo no console do Firebase (Firestore → Regras e Storage → Regras) e clique em **Publicar**.
 
-> As regras **devem ser publicadas antes de existir qualquer dado de aluguel**. Elas impedem a leitura anônima de `rentals` e `rentalCustomers` e bloqueiam escrita direta do navegador nessas coleções.
+> As regras **devem ser publicadas antes de existir qualquer dado de aluguel**. Elas impedem a leitura anônima de `rentals`, `rentalOrders` e `rentalCustomers` e bloqueiam escrita direta do navegador nessas coleções.
 
 ### Primeira configuração
 
-1. **Publique `firestore.rules` e `storage.rules` no console ANTES de fazer o deploy deste branch** (veja acima). Sem isso, `rentalCustomers` (CPF) e `rentals` ficam expostos pela regra antiga de leitura pública. As novas regras são compatíveis com o código atual de produção, então publicar primeiro é seguro.
+1. **Publique `firestore.rules` e `storage.rules` no console ANTES de fazer o deploy deste branch** (veja acima). Sem isso, `rentalCustomers` (CPF), `rentals` e `rentalOrders` (nome, e-mail e WhatsApp) ficam expostos pela regra antiga de leitura pública. As novas regras são compatíveis com o código atual de produção, então publicar primeiro é seguro.
 2. Crie a chave da conta de serviço: Console do Firebase → Configurações do projeto → Contas de serviço → **Gerar nova chave privada**.
 3. Copie `project_id`, `client_email` e `private_key` do JSON para `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL` e `FIREBASE_ADMIN_PRIVATE_KEY`, no `.env` local e no provedor de hospedagem (a chave privada entre aspas, com `\n`). Defina também `SITE_URL` e confirme que `RESEND_API_KEY` (já na [tabela de variáveis](#variáveis-de-ambiente)) está configurada, também no provedor de hospedagem. **Nunca** commite o JSON e apague-o depois de copiar os valores.
 4. Em `/aluguel-admin` → **Regras**, configure e publique a página de regras e ative o serviço.
@@ -167,13 +167,22 @@ Os arquivos `firestore.rules` e `storage.rules`, na raiz do repositório, são a
 ### Checklist de validação manual (dono)
 
 - No Playground de regras do Firebase, confirme que a leitura anônima de `rentals/*` e `rentalCustomers/*` é **negada**.
+- Ainda no Playground, em `rentalOrders/{id}` (use o id de um pedido real): o **dono** do pedido (uid igual a `customerUid`) **consegue ler**; **outro usuário** logado é **negado**; leitura **anônima** é **negada**; **escrita** (criar, alterar, apagar) é **negada** para todos, inclusive admin.
 - Entre com uma conta de cliente e confirme que ela não acessa as páginas do admin.
 - Confirme que `/clientCollection` não exibe nada do aluguel.
 - Faça um pedido de ponta a ponta: criar, retirar, alterar prazo, devolver e cancelar.
 
 ## Pagamento online (Mercado Pago)
 
+> **Antes do deploy:** publique o `firestore.rules` antes de fazer o deploy deste branch (mesmo com o pagamento online desligado). A partir dele, todo pedido grava um documento em `rentalOrders` (nome, e-mail e WhatsApp do cliente), inclusive no pagamento no balcão; com as regras antigas no ar, a regra geral de leitura pública deixa esses dados abertos. Depois de publicar, confira `rentalOrders/*` no Playground (veja o [checklist](#checklist-de-validação-manual-dono)).
+
 Quando o admin liga **Pagamento online** em `/aluguel-admin` → **Regras**, todo pedido de aluguel passa a ser pago pelo site (Pix ou cartão, à vista; sem boleto) via Checkout Pro do [Mercado Pago](https://www.mercadopago.com.br/developers). As cópias ficam reservadas por 15–60 min (padrão 30) enquanto o cliente paga; o pedido só é confirmado depois que o servidor consulta o pagamento no Mercado Pago e confere pedido, valor e moeda. Desligado, tudo continua como antes (pagamento no balcão). O admin também escolhe a política de cancelamento (reembolso integral, com taxa ou análise manual); o passo a passo de uso está na Central de Ajuda (`/ajuda`, categoria Aluguel) e o desenho completo em `docs/superpowers/specs/2026-11-06-pagamento-online-design.md`.
+
+### Deploy
+
+1. **Publique o `firestore.rules` antes de fazer o deploy deste branch (mesmo com o pagamento online desligado)** e confira `rentalOrders/*` no Playground (dono lê; outro usuário, anônimo e qualquer escrita são negados).
+2. Configure as variáveis abaixo no provedor de hospedagem e cadastre o webhook.
+3. Faça o deploy e só então ligue o pagamento online em `/aluguel-admin` → **Regras**.
 
 ### Variáveis de ambiente
 
@@ -211,7 +220,7 @@ No painel de desenvolvedor do Mercado Pago → sua aplicação → **Webhooks**,
 
 ### Rotina agendada (opcional)
 
-`GET /api/rental/payments/sweep` marca como expirados os pedidos cujo prazo venceu. É opcional — a disponibilidade não depende dela —, mas deixa o admin e o histórico em dia. A rota aceita o cabeçalho `Authorization: Bearer $CRON_SECRET` (quando `CRON_SECRET` está definido; a Vercel o envia sozinha nos crons) ou o token de ID de um admin (usado pelo próprio app, não é algo que se faça pelo navegador). Exemplo de `vercel.json` (não incluído no repositório; decisão do dono):
+`GET /api/rental/payments/sweep` marca como expirados os pedidos cujo prazo venceu. Antes de expirar cada um, consulta o Mercado Pago: se o pagamento foi aprovado e o aviso do webhook se perdeu, o pedido é confirmado (ou reembolsado, se as cópias já foram liberadas) em vez de expirar; se o Mercado Pago não responder, aquele pedido fica para a próxima rodada. A resposta traz `expired`, `paid` e `skipped`. O admin também pode fazer essa consulta num pedido específico pelo botão **Consultar no Mercado Pago**, no detalhe do pedido. A rotina é opcional — a disponibilidade não depende dela —, mas deixa o admin e o histórico em dia. A rota aceita o cabeçalho `Authorization: Bearer $CRON_SECRET` (quando `CRON_SECRET` está definido; a Vercel o envia sozinha nos crons) ou o token de ID de um admin (usado pelo próprio app, não é algo que se faça pelo navegador). Exemplo de `vercel.json` (não incluído no repositório; decisão do dono):
 
 ```json
 {
