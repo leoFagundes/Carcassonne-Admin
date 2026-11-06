@@ -155,6 +155,7 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
           ))}
         </div>
         <Input
+          labelSpace
           label="Antecedência máxima (dias)"
           type="number"
           placeholder="Antecedência máxima (0 a 90 dias)"
@@ -165,9 +166,10 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
         />
       </Group>
 
-      <Group title="Limites" hint="Evitam que um cliente leve jogos demais de uma vez. Pedidos não pagos também contam.">
-        <div className="flex flex-wrap gap-6">
+      <Group title="Limites" hint="Evitam que um cliente leve jogos demais de uma vez: quantos jogos cabem num pedido e quantos o mesmo cliente pode ter ao mesmo tempo (pedidos ainda não pagos também contam).">
+        <div className="flex flex-wrap gap-x-6 gap-y-1">
           <Input
+            labelSpace
             label="Máx. de jogos por pedido"
             type="number"
             placeholder="Máx. de jogos por pedido (1 a 10)"
@@ -177,7 +179,8 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
             width="!w-full sm:!w-[250px] !min-w-0"
           />
           <Input
-            label="Máx. de jogos ao mesmo tempo por cliente"
+            labelSpace
+            label="Máx. de jogos por cliente"
             type="number"
             placeholder="Máx. de jogos ativos por cliente (1 a 10)"
             value={String(local.maxActiveGamesPerCustomer)}
@@ -199,6 +202,7 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
           label="Exigir CPF no cadastro"
         />
         <Input
+          labelSpace
           label="E-mail da equipe (opcional)"
           type="email"
           placeholder="E-mail da equipe (opcional)"

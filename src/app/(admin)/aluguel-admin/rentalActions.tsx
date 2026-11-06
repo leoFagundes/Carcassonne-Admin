@@ -202,6 +202,7 @@ function ActionModal({
             ))}
           </div>
           <Input
+            labelSpace
             value={note}
             setValue={(e) => setNote(e.target.value)}
             placeholder="Observação (opcional)"
@@ -225,6 +226,7 @@ function ActionModal({
             {formatDateBR(rental.dueDate, true)}
           </p>
           <Input
+            labelSpace
             type="date"
             min={rental.startDate}
             value={dueDate}
@@ -267,6 +269,7 @@ function ActionModal({
             </p>
           )}
           <Input
+            labelSpace
             value={reason}
             setValue={(e) => setReason(e.target.value)}
             placeholder="Motivo do cancelamento (obrigatório)"

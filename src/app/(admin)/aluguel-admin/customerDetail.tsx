@@ -126,6 +126,7 @@ export function CustomerDetail({
         )}
         {!customer.isBlocked && (
           <Input
+            labelSpace
             value={reason}
             setValue={(e) => setReason(e.target.value)}
             placeholder="Motivo do bloqueio (obrigatório)"

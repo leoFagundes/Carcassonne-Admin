@@ -180,6 +180,7 @@ export default function OnlinePaymentSection({
       )}
 
       <Input
+        labelSpace
         label="Tempo para pagar (minutos)"
         type="number"
         placeholder="Tempo para pagar (15 a 60 minutos)"
@@ -228,6 +229,7 @@ export default function OnlinePaymentSection({
 
       {value.cancellationPolicy === "fee" && (
         <Input
+          labelSpace
           label="Taxa de cancelamento (%)"
           type="number"
           placeholder="Taxa de cancelamento (0 a 50%)"

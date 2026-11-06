@@ -17,6 +17,11 @@ interface InputProps extends ComponentProps<"input"> {
   rows?: number;
   width?: string;
   smallInput?: boolean;
+  /**
+   * Reserva acima do campo o espaço do rótulo flutuante (que aparece quando há
+   * valor), para ele não encostar no que vem antes nem nos campos da linha de cima.
+   */
+  labelSpace?: boolean;
 }
 
 export default function Input({
@@ -32,6 +37,7 @@ export default function Input({
   rows = 5,
   width = "w-auto",
   smallInput = false,
+  labelSpace = false,
   ...props
 }: InputProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -64,7 +70,7 @@ export default function Input({
 
   return (
     <div
-      className={`mt-2 group relative flex gap-2.5 w-full max-w-[400px] ${width} rounded-xl border text-sm bg-primary-black/55 transition-[border-color,background-color,box-shadow] duration-200 hover:border-primary-gold/40 focus-within:border-primary-gold/70 focus-within:bg-primary-black/80 focus-within:shadow-[0_0_0_3px_rgba(230,197,107,0.12)] ${
+      className={`${labelSpace && label ? "mt-7" : "mt-2"} group relative flex gap-2.5 w-full max-w-[400px] ${width} rounded-xl border text-sm bg-primary-black/55 transition-[border-color,background-color,box-shadow] duration-200 hover:border-primary-gold/40 focus-within:border-primary-gold/70 focus-within:bg-primary-black/80 focus-within:shadow-[0_0_0_3px_rgba(230,197,107,0.12)] ${
         variant ? "border-primary-gold/30" : "border-primary-gold/15"
       } ${
         smallInput
@@ -73,7 +79,7 @@ export default function Input({
       } ${multiline ? "items-start" : "items-center"}`}
     >
       {label && value && (
-        <span className="ui-float-label absolute bottom-[calc(100%+5px)] left-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-gold/70 pointer-events-none">
+        <span className={`ui-float-label absolute bottom-[calc(100%+5px)] left-1 ${labelSpace ? "right-1 truncate" : ""} text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-gold/70 pointer-events-none`}>
           {label}
         </span>
       )}

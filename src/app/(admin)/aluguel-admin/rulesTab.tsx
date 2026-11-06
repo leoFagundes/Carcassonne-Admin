@@ -126,6 +126,7 @@ export default function RulesTab() {
             </button>
           </div>
           <Input
+            labelSpace
             label="Título"
             placeholder="Título da seção"
             value={section.title}
@@ -134,6 +135,7 @@ export default function RulesTab() {
             width="!max-w-none !min-w-0"
           />
           <Input
+            labelSpace
             label="Texto"
             placeholder="Texto da seção (use **negrito** e quebras de linha)"
             value={section.body}

@@ -37,6 +37,7 @@ export function AmountField({
   return (
     <div className="flex flex-col gap-1 min-w-0">
       <Input
+        labelSpace
         label={label}
         placeholder={label}
         inputMode="decimal"
@@ -106,6 +107,7 @@ export function RefundForm({ order }: { order: Order }) {
     <div className="flex flex-col gap-2.5">
       <AmountField label="Valor a devolver" value={text} onChange={changeAmount} cap={left} />
       <Input
+        labelSpace
         label="Motivo (opcional)"
         placeholder="Motivo (opcional)"
         value={reason}
@@ -209,6 +211,7 @@ export function ReviewForm({ order }: { order: Order }) {
       ) : (
         <>
           <Input
+            labelSpace
             label="Motivo da recusa"
             placeholder="Motivo da recusa (obrigatório)"
             value={denyReason}
