@@ -2,6 +2,7 @@
 
 import RulesTab from "./rulesTab";
 import SettingsForm from "./settingsForm";
+import { AlsoInNote } from "../carcassonne/settings-ui";
 
 export default function RulesAndSettingsTab() {
   // Configurações e regras ficam na mesma aba: "ir para as regras" rola até o editor.
@@ -10,7 +11,8 @@ export default function RulesAndSettingsTab() {
 
   return (
     <div className="flex flex-col gap-4 w-full max-w-4xl mx-auto">
-      <div className="rounded-2xl border border-primary-gold/15 bg-secondary-black/50 p-4 sm:p-5">
+      <div className="flex flex-col gap-4 rounded-2xl border border-primary-gold/15 bg-secondary-black/50 p-4 sm:p-5">
+        <AlsoInNote alsoIn={{ label: "Configurações → Aluguel", href: "/carcassonne?tab=configuracoes&section=aluguel" }} />
         <SettingsForm onOpenRules={openRules} />
       </div>
       <div

@@ -53,6 +53,7 @@ import Input from "@/components/input";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import Modal from "@/components/modal";
+import ReserveSettings from "../carcassonne/reserve-settings";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import ReserveAdminForms from "@/components/reserveAdminForms";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -126,6 +127,17 @@ const TODAY = today(getLocalTimeZone());
 export default function Rerserve() {
   const themed = useSiteTheme() !== "default";
   const [date, setDate] = useState(TODAY);
+  // Configurações de reserva (o mesmo painel de Configurações → Reservas).
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  useEffect(() => {
+    // Vindo do aviso "Também disponível em Reservas" (?config=1): já abre o painel.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("config") !== "1") return;
+    setSettingsOpen(true);
+    params.delete("config");
+    const rest = params.toString();
+    window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
+  }, []);
   const [fullCalendarDate, setFullCalendarDate] = useState(
     today(getLocalTimeZone()),
   );
@@ -829,6 +841,15 @@ export default function Rerserve() {
                 className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
               >
                 <LuCalendarPlus size={16} />
+              </button>
+            </Tooltip>
+            <Tooltip direction="bottom" content="Configurações de reserva">
+              <button
+                onClick={() => setSettingsOpen(true)}
+                aria-label="Configurações de reserva"
+                className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+              >
+                <LuSettings size={16} />
               </button>
             </Tooltip>
             <Tooltip direction="bottom" content="Gerenciar freelancers">
@@ -1888,6 +1909,22 @@ Equipe Carcassonne Pub`,
           </div>
         </div>
       )}
+
+      <Modal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} noPadding isFixed patternCloseButton={false}>
+        <div className="relative w-[min(100%-2rem,820px)] max-h-[90vh] overflow-y-auto rounded-2xl border border-primary-gold/20 bg-primary-black shadow-2xl">
+          <button
+            onClick={() => setSettingsOpen(false)}
+            aria-label="Fechar"
+            className="absolute top-3 right-3 z-10 p-1.5 rounded-lg text-primary-gold/50 hover:text-primary-gold hover:bg-primary-gold/10 transition-all cursor-pointer"
+          >
+            <LuX size={16} />
+          </button>
+          <ReserveSettings
+            alsoIn={{ label: "Configurações → Reservas", href: "/carcassonne?tab=configuracoes&section=reservas" }}
+            className="border-0 rounded-none"
+          />
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -613,7 +613,7 @@ const helpCards: HelpCard[] = [
     category: "configuracoes",
     title: "Visão geral da página Configurações",
     description:
-      "Centraliza estatísticas do sistema e as configurações globais do site. Está dividida em seções: a aba 'Estatísticas' (com as subabas 'Reservas', 'Aluguel', 'Links' e 'Banco de dados'), configurações gerais de reservas, efeitos visuais do site, temas sazonais do site (aba 'Temas'), os e-mails enviados pelo site (aba 'E-mails', com o editor do e-mail de reserva) e o editor do painel decorativo (mural).",
+      "Centraliza estatísticas do sistema e as configurações globais do site. Está dividida em seções: a aba 'Estatísticas' (com as subabas 'Reservas', 'Aluguel', 'Links' e 'Banco de dados'), a aba 'Configurações' (com as subabas 'Reservas', 'Aluguel' e 'Geral', onde ficam os efeitos de mouse), temas sazonais do site (aba 'Temas'), os e-mails enviados pelo site (aba 'E-mails', com o editor do e-mail de reserva) e o editor do painel decorativo (mural).",
   },
   {
     category: "configuracoes",
@@ -638,6 +638,12 @@ const helpCards: HelpCard[] = [
     title: "Estatísticas do aluguel",
     description:
       "Em Estatísticas → 'Aluguel'. O bloco 'Agora' mostra quantas cópias estão fora (alugadas) do total ativo, os atrasados e as retiradas e devoluções de hoje. O bloco 'Por período' (30 dias, 3 meses, 6 meses, 1 ano ou Total, contado pela data de retirada) mostra: aluguéis (sem os cancelados), receita (soma dos aluguéis não cancelados) e quanto foi reembolsado, % de devoluções atrasadas, clientes que alugaram e contas novas; os jogos mais alugados; a situação dos aluguéis (devolvidos, em andamento, cancelados); como pagaram (balcão, Pix, cartão, saldo do Mercado Pago); quem cancelou (cliente, admin ou prazo de pagamento esgotado) e os clientes que mais alugaram. No fim, o gráfico de aluguéis por mês, com troca de ano.",
+  },
+  {
+    category: "configuracoes",
+    title: "Onde ficam as configurações de reserva e de aluguel",
+    description:
+      "Em Configurações → aba 'Configurações' há três subabas: 'Reservas' (horários, dias sem reserva, capacidade, antecedência, lotação no calendário, datas bloqueadas e especiais), 'Aluguel' (o mesmo quadro de Aluguel → Regras: serviço ativo, dias de retirada, limites, CPF e pagamento online; enquanto o aluguel estiver em teste, pede a senha) e 'Geral' (efeitos de mouse e o que vier no futuro). As mesmas configurações também abrem na página de cada área: em Reservas, pelo botão de engrenagem no topo; no Aluguel, na aba 'Regras'. É a mesma configuração nos dois lugares — salvar em um muda no outro. Cada quadro tem o próprio botão 'Salvar' e só grava os próprios campos.",
   },
   {
     category: "configuracoes",
@@ -673,7 +679,7 @@ const helpCards: HelpCard[] = [
     category: "configuracoes",
     title: "Como controlar os efeitos visuais do site",
     description:
-      "Na seção de efeitos visuais há três toggles: 'Efeito de clique' (faíscas ao clicar), 'Seguir cursor' (elemento que acompanha o mouse) e 'Canvas cursor' (efeito canvas no cursor). As mudanças entram em vigor para todos os visitantes após salvar.",
+      "Em Configurações → aba 'Configurações' → subaba 'Geral' há três toggles: 'Efeito de clique' (faíscas ao clicar), 'Seguir cursor' (elemento que acompanha o mouse) e 'Canvas cursor' (efeito canvas no cursor). As mudanças entram em vigor para todos os visitantes após salvar.",
   },
   {
     category: "temas",

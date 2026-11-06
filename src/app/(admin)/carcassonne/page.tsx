@@ -1,16 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import Checkbox from "@/components/checkbox";
 import { useAlert } from "@/contexts/alertProvider";
-import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
-import { GeneralConfigsType, LinkType, ReserveType } from "@/types";
-import {
-  daysArray,
-  daysMap,
-  patternGeneralConfigs,
-} from "@/utils/patternValues";
+import { LinkType, ReserveType } from "@/types";
 import { auth } from "@/services/firebaseConfig";
 
 import React, { Suspense, useEffect, useState } from "react";
@@ -23,19 +16,11 @@ import {
   LuClock,
   LuCalendarDays,
   LuExternalLink,
-  LuCheck,
-  LuTrash,
-  LuPlus,
-  LuCalendarOff,
-  LuTriangleAlert,
-  LuPartyPopper,
 } from "react-icons/lu";
 import { onAuthStateChanged } from "firebase/auth";
 import LinksRepository from "@/services/repositories/LinksRepository";
 import Counter from "@/components/mage-ui/text/counter";
 import LoaderFullscreen from "@/components/loaderFullscreen";
-import Input from "@/components/input";
-import OptionsInput from "@/components/optionsInput";
 import {
   BarChart,
   Bar,
@@ -52,17 +37,32 @@ import SiteThemeSettings from "./site-theme-settings";
 import EmailsTab from "./emails-tab";
 import RentalStats from "./rental-stats";
 import DatabaseStats from "./database-stats";
+import ReserveSettings from "./reserve-settings";
+import EffectsSettings from "./effects-settings";
+import RentalSettingsPanel from "./rental-settings-panel";
 import { useSiteThemeReminders } from "@/components/siteTheme/siteThemeContext";
 
 /**
  * Abre uma aba pela URL — o aviso do menu lateral usa ?tab=temas e a página
  * Adicionar usa ?tab=emails — inclusive quando a página já está aberta.
  */
-function TabFromQuery({ onTab }: { onTab: (tab: "temas" | "emails") => void }) {
-  const tab = useSearchParams().get("tab");
+type SettingsSection = "reservas" | "aluguel" | "geral";
+
+function TabFromQuery({
+  onTab,
+  onSettings,
+}: {
+  onTab: (tab: "temas" | "emails") => void;
+  onSettings: (section: SettingsSection) => void;
+}) {
+  const params = useSearchParams();
+  const tab = params.get("tab");
+  const section = params.get("section");
   useEffect(() => {
     if (tab === "temas" || tab === "emails") onTab(tab);
-  }, [tab, onTab]);
+    else if (tab === "configuracoes")
+      onSettings(section === "aluguel" || section === "geral" ? section : "reservas");
+  }, [tab, section, onTab, onSettings]);
   return null;
 }
 
@@ -129,39 +129,6 @@ function DateInput({
   );
 }
 
-function SaveButton({
-  saving,
-  saved,
-  onClick,
-}: {
-  saving: boolean;
-  saved: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={saving}
-      className={`flex items-center gap-2 px-4 py-1.5 rounded-lg border text-sm font-medium transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
-        saved
-          ? "border-green-600/50 text-green-500 bg-green-600/10"
-          : "border-primary-gold/30 text-primary-gold/80 hover:border-primary-gold/60 hover:text-primary-gold hover:bg-primary-gold/5"
-      }`}
-    >
-      {saving ? (
-        <span className="animate-pulse">Salvando...</span>
-      ) : saved ? (
-        <>
-          <LuCheck size={14} />
-          Salvo
-        </>
-      ) : (
-        "Salvar"
-      )}
-    </button>
-  );
-}
-
 const GOLD = "#e6c56b";
 const RED = "#cc5826";
 const GOLD_DIM = "#d4af37";
@@ -215,8 +182,6 @@ function CustomPieTooltip({
 }
 
 export default function SettingsPage() {
-  const [localGeneralConfigs, setLocalGeneralConfigs] =
-    useState<GeneralConfigsType>(patternGeneralConfigs);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
     "stats" | "settings" | "temas" | "emails" | "mural"
@@ -230,12 +195,11 @@ export default function SettingsPage() {
     if (tab === "emails") setOpenEmailEditor(true);
   }, []);
   const emailEditorOpened = React.useCallback(() => setOpenEmailEditor(false), []);
-  const [newBlockedDate, setNewBlockedDate] = useState("");
-  const [newBlockedReason, setNewBlockedReason] = useState("");
-  const [newSpecialDate, setNewSpecialDate] = useState("");
-  const [newSpecialDescription, setNewSpecialDescription] = useState("");
-  const [savedConfigsSnapshot, setSavedConfigsSnapshot] =
-    useState<GeneralConfigsType>(patternGeneralConfigs);
+  const [settingsTab, setSettingsTab] = useState<SettingsSection>("reservas");
+  const openSettings = React.useCallback((section: SettingsSection) => {
+    setActiveTab("settings");
+    setSettingsTab(section);
+  }, []);
 
   const [currentUserEmail, setCurrentUserEmail] = useState("");
 
@@ -426,156 +390,8 @@ export default function SettingsPage() {
       }
     };
 
-    const fetchGeneralConfigs = async () => {
-      try {
-        const generalConfigs = await GeneralConfigsRepository.get();
-        if (!generalConfigs || !generalConfigs._id) {
-          addAlert("ID Inválido.");
-          return;
-        }
-        setLocalGeneralConfigs(generalConfigs);
-        setSavedConfigsSnapshot(generalConfigs);
-      } catch (error) {
-        addAlert(`Erro ao buscar configurações: ${error}`);
-      }
-    };
-
     fetchAll();
-    fetchGeneralConfigs();
   }, []);
-
-  const [savingSection, setSavingSection] = useState<
-    "reserva" | "efeitos" | null
-  >(null);
-  const [savedSection, setSavedSection] = useState<
-    "reserva" | "efeitos" | null
-  >(null);
-
-  const addBlockedDate = () => {
-    if (!newBlockedDate) {
-      addAlert("Selecione uma data.");
-      return;
-    }
-    const existing = localGeneralConfigs.blockedDates ?? [];
-    if (existing.some((b) => b.date === newBlockedDate)) {
-      addAlert("Essa data já está bloqueada.");
-      return;
-    }
-    const updated = [
-      ...existing,
-      {
-        date: newBlockedDate,
-        ...(newBlockedReason.trim() && { reason: newBlockedReason.trim() }),
-      },
-    ].sort((a, b) => a.date.localeCompare(b.date));
-    setLocalGeneralConfigs({ ...localGeneralConfigs, blockedDates: updated });
-    setNewBlockedDate("");
-    setNewBlockedReason("");
-  };
-
-  const removeBlockedDate = (date: string) => {
-    setLocalGeneralConfigs({
-      ...localGeneralConfigs,
-      blockedDates: (localGeneralConfigs.blockedDates ?? []).filter(
-        (b) => b.date !== date,
-      ),
-    });
-  };
-
-  const addSpecialDate = () => {
-    if (!newSpecialDate) {
-      addAlert("Selecione uma data.");
-      return;
-    }
-    const existing = localGeneralConfigs.specialDates ?? [];
-    if (existing.some((s) => s.date === newSpecialDate)) {
-      addAlert("Essa data já está marcada como especial.");
-      return;
-    }
-    const updated = [
-      ...existing,
-      {
-        date: newSpecialDate,
-        ...(newSpecialDescription.trim() && {
-          description: newSpecialDescription.trim(),
-        }),
-      },
-    ].sort((a, b) => a.date.localeCompare(b.date));
-    setLocalGeneralConfigs({ ...localGeneralConfigs, specialDates: updated });
-    setNewSpecialDate("");
-    setNewSpecialDescription("");
-  };
-
-  const removeSpecialDate = (date: string) => {
-    setLocalGeneralConfigs({
-      ...localGeneralConfigs,
-      specialDates: (localGeneralConfigs.specialDates ?? []).filter(
-        (s) => s.date !== date,
-      ),
-    });
-  };
-
-  const saveSection = async (section: "reserva" | "efeitos") => {
-    if (!localGeneralConfigs?._id) {
-      addAlert("ID Inválido.");
-      return;
-    }
-    setSavingSection(section);
-    try {
-      // O tema e os avisos de tema têm a aba própria e podem mudar em tempo
-      // real (outro aparelho): não regrava aqui para não desfazer uma troca
-      // feita depois que a página carregou.
-      const configsToSave = { ...localGeneralConfigs };
-      delete configsToSave.siteTheme;
-      delete configsToSave.siteThemeReminders;
-      delete configsToSave.siteThemeStyles;
-      await GeneralConfigsRepository.update(configsToSave);
-      // O documento inteiro é salvo a cada clique em "Salvar", então o snapshot
-      // de referência para detectar alterações pendentes vale para as duas seções.
-      setSavedConfigsSnapshot(localGeneralConfigs);
-      setSavedSection(section);
-      addAlert("Configurações salvas com sucesso!");
-      setTimeout(() => setSavedSection(null), 2500);
-    } catch (error) {
-      addAlert(`Erro ao salvar configurações: ${error}`);
-    } finally {
-      setSavingSection(null);
-    }
-  };
-
-  const RESERVA_CONFIG_FIELDS: (keyof GeneralConfigsType)[] = [
-    "enabledTimes",
-    "disabledDays",
-    "maxCapacityInDay",
-    "maxCapacityInReserve",
-    "maxMonthsInAdvance",
-    "hoursToCloseReserve",
-    "blockedDates",
-    "specialDates",
-    "showDayOccupancy",
-  ];
-
-  // Opções liga/desliga que ainda não existem no banco valem como desligadas
-  const sameConfig = (a: unknown, b: unknown) =>
-    typeof a === "boolean" || typeof b === "boolean"
-      ? !!a === !!b
-      : JSON.stringify(a) === JSON.stringify(b);
-
-  const isReservaDirty = RESERVA_CONFIG_FIELDS.some(
-    (field) => !sameConfig(localGeneralConfigs[field], savedConfigsSnapshot[field]),
-  );
-
-  const EFEITOS_CONFIG_FIELDS: (keyof GeneralConfigsType)[] = [
-    "clickEffect",
-    "followCursor",
-    "canvasCursor",
-  ];
-
-  const isEfeitosDirty = EFEITOS_CONFIG_FIELDS.some(
-    (field) =>
-      JSON.stringify(localGeneralConfigs[field]) !==
-      JSON.stringify(savedConfigsSnapshot[field]),
-  );
 
   function computeChartData(
     reserves: ReserveType[],
@@ -822,7 +638,7 @@ export default function SettingsPage() {
     <section className="flex flex-col gap-5 w-full h-full pb-8 overflow-y-auto outline-none px-1">
       {loading && <LoaderFullscreen />}
       <Suspense fallback={null}>
-        <TabFromQuery onTab={openTab} />
+        <TabFromQuery onTab={openTab} onSettings={openSettings} />
       </Suspense>
       {/* Header */}
       <div className="flex flex-col gap-2">
@@ -1389,355 +1205,34 @@ export default function SettingsPage() {
       )}
 
       {activeTab === "settings" && (
-      <div className="flex flex-col md:flex-row gap-4 items-start">
-        {/* Configurações de reserva */}
-        <div className="flex flex-col rounded-xl border border-primary-gold/15 bg-secondary-black/40 overflow-hidden flex-1 w-full">
-          <div className="flex flex-col gap-6 p-4">
-            <span className="text-[14px] font-semibold uppercase tracking-widest text-primary-gold/45">
-              Configurações de reserva
-            </span>
-            {/* Horários e disponibilidade */}
-            <div className="flex flex-col gap-3">
-              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
-                <LuClock size={13} />
-                Horários e disponibilidade
-              </span>
-              <p className="text-xs text-primary-gold/40 -mt-1">
-                Horários que os clientes podem escolher ao reservar e os dias da
-                semana em que o Carcassonne Pub não aceita reservas.
-              </p>
-              <div className="flex gap-8 text-primary-gold mt-6 flex-wrap">
-                <OptionsInput
-                  label="Horários disponíveis"
-                  placeholder="Horários disponíveis"
-                  values={localGeneralConfigs.enabledTimes}
-                  setValues={(values) =>
-                    setLocalGeneralConfigs({
-                      ...localGeneralConfigs,
-                      enabledTimes: values,
-                    })
-                  }
-                  withIndex={false}
-                  variant
-                  width="!w-[min(280px,100%)] sm:!w-[300px]"
-                />
-                <OptionsInput
-                  label="Dias da semana inválidos"
-                  placeholder="Dias da semana inválidos"
-                  values={localGeneralConfigs.disabledDays.map(
-                    (day) => daysArray[day],
-                  )}
-                  options={daysArray}
-                  setValues={(values) => {
-                    const validNumbers = values
-                      .map((v) => {
-                        if (typeof v === "string") {
-                          const lower = v.toLowerCase();
-                          if (daysMap.hasOwnProperty(lower)) {
-                            return daysMap[lower];
-                          } else {
-                            addAlert(`Dia digitado é inválido: "${v}"`);
-                            return null;
-                          }
-                        }
-                        if (typeof v === "number" && v >= 0 && v <= 6) return v;
-                        return null;
-                      })
-                      .filter((v): v is number => v !== null);
-
-                    setLocalGeneralConfigs({
-                      ...localGeneralConfigs,
-                      disabledDays: validNumbers,
-                    });
-                  }}
-                  withIndex={false}
-                  variant
-                  width="!w-[min(280px,100%)] sm:!w-[300px]"
-                />
-              </div>
-            </div>
-
-            {/* Capacidade e antecedência */}
-            <div className="flex flex-col gap-3 pt-2 border-t border-primary-gold/10">
-              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
-                <LuUsers size={13} />
-                Capacidade e antecedência
-              </span>
-              <p className="text-xs text-primary-gold/40 -mt-1">
-                Limites de pessoas por dia e por reserva, e até quando os
-                clientes podem agendar.
-              </p>
-              <div className="flex flex-wrap gap-6 mt-6 text-primary-gold">
-                <Input
-                  placeholder="Capacidade máxima em um dia"
-                  label="Capacidade máxima em um dia"
-                  value={localGeneralConfigs.maxCapacityInDay.toString()}
-                  setValue={(e) =>
-                    setLocalGeneralConfigs({
-                      ...localGeneralConfigs,
-                      maxCapacityInDay: Number(e.target.value),
-                    })
-                  }
-                  variant
-                  width="!w-[min(280px,100%)] sm:!w-[300px]"
-                />
-                <Input
-                  placeholder="Capacidade máxima em uma reserva"
-                  label="Capacidade máxima em uma reserva"
-                  value={localGeneralConfigs.maxCapacityInReserve.toString()}
-                  setValue={(e) =>
-                    setLocalGeneralConfigs({
-                      ...localGeneralConfigs,
-                      maxCapacityInReserve: Number(e.target.value),
-                    })
-                  }
-                  variant
-                  width="!w-[min(280px,100%)] sm:!w-[300px]"
-                />
-                <Input
-                  placeholder="Permitido fazer reserva em até (meses)"
-                  label="Permitido fazer reserva em até (meses)"
-                  value={localGeneralConfigs.maxMonthsInAdvance.toString()}
-                  setValue={(e) =>
-                    setLocalGeneralConfigs({
-                      ...localGeneralConfigs,
-                      maxMonthsInAdvance: Number(e.target.value),
-                    })
-                  }
-                  variant
-                  width="!w-[min(280px,100%)] sm:!w-[300px]"
-                />
-                <Input
-                  placeholder="Aceitar reservas até (hora cheia)"
-                  label="Aceitar reservas até (hora cheia)"
-                  value={localGeneralConfigs.hoursToCloseReserve.toString()}
-                  setValue={(e) =>
-                    setLocalGeneralConfigs({
-                      ...localGeneralConfigs,
-                      hoursToCloseReserve: Number(e.target.value),
-                    })
-                  }
-                  variant
-                  width="!w-[min(280px,100%)] sm:!w-[300px]"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5 mt-1">
-                <Checkbox
-                  checked={!!localGeneralConfigs.showDayOccupancy}
-                  setChecked={(e) =>
-                    setLocalGeneralConfigs({
-                      ...localGeneralConfigs,
-                      showDayOccupancy: e.target.checked,
-                    })
-                  }
-                  label="Mostrar a lotação de cada dia no calendário"
-                  variant
-                />
-                <p className="text-[11px] text-primary-gold/40 leading-relaxed">
-                  O cliente vê, embaixo de cada dia, quantos lugares já foram
-                  reservados do total do dia (ex: 45/{localGeneralConfigs.maxCapacityInDay || 75}).
-                  A contagem fica laranja quando o dia está quase cheio e
-                  vermelha quando lota.
-                </p>
-              </div>
-            </div>
-
-            {/* Datas bloqueadas */}
-            <div className="flex flex-col gap-3 pt-2 border-t border-primary-gold/10">
-              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
-                <LuCalendarOff size={13} />
-                Datas bloqueadas
-              </span>
-              <p className="text-xs text-primary-gold/40 -mt-1">
-                Datas específicas em que o Carcassonne Pub não vai aceitar
-                reservas. O cliente ainda pode clicar na data, mas verá o motivo
-                e não conseguirá continuar.
-              </p>
-
-              <div className="flex items-end gap-2 flex-wrap">
-                <input
-                  type="date"
-                  value={newBlockedDate}
-                  onChange={(e) => setNewBlockedDate(e.target.value)}
-                  className="bg-primary-black/50 border border-primary-gold/20 rounded-lg px-3 py-1.5 text-xs text-primary-gold outline-none focus:border-primary-gold/40 transition-colors"
-                />
-                <input
-                  type="text"
-                  placeholder="Motivo (opcional)"
-                  value={newBlockedReason}
-                  onChange={(e) => setNewBlockedReason(e.target.value)}
-                  className="flex-1 min-w-[160px] bg-primary-black/50 border border-primary-gold/20 rounded-lg px-3 py-1.5 text-xs text-primary-gold placeholder:text-primary-gold/30 outline-none focus:border-primary-gold/40 transition-colors"
-                />
-                <button
-                  onClick={addBlockedDate}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary-gold/30 text-primary-gold/80 text-xs font-medium hover:border-primary-gold/60 hover:text-primary-gold hover:bg-primary-gold/5 transition-all cursor-pointer shrink-0"
-                >
-                  <LuPlus size={13} /> Adicionar
-                </button>
-              </div>
-
-              {(localGeneralConfigs.blockedDates ?? []).length > 0 && (
-                <div className="flex flex-col gap-1.5 mt-1">
-                  {(localGeneralConfigs.blockedDates ?? []).map((b) => {
-                    const [y, m, d] = b.date.split("-");
-                    return (
-                      <div
-                        key={b.date}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary-black/30 border border-primary-gold/10"
-                      >
-                        <span className="text-xs font-mono text-primary-gold/70 shrink-0">
-                          {d}/{m}/{y}
-                        </span>
-                        <span className="text-xs text-primary-gold/45 flex-1 truncate italic">
-                          {b.reason || "Sem motivo especificado"}
-                        </span>
-                        <button
-                          onClick={() => removeBlockedDate(b.date)}
-                          className="p-1 rounded-md hover:bg-invalid-color/10 text-primary-gold/30 hover:text-invalid-color transition-all cursor-pointer shrink-0"
-                        >
-                          <LuTrash size={13} />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Datas especiais */}
-            <div className="flex flex-col gap-3 pt-2 border-t border-primary-gold/10">
-              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
-                <LuPartyPopper size={13} />
-                Datas especiais
-              </span>
-              <p className="text-xs text-primary-gold/40 -mt-1">
-                Datas de eventos ou ocasiões especiais. Elas continuam abertas
-                para reservas — o cliente só vê a data destacada em verde e a
-                descrição do evento.
-              </p>
-
-              <div className="flex items-end gap-2 flex-wrap">
-                <input
-                  type="date"
-                  value={newSpecialDate}
-                  onChange={(e) => setNewSpecialDate(e.target.value)}
-                  className="bg-primary-black/50 border border-primary-gold/20 rounded-lg px-3 py-1.5 text-xs text-primary-gold outline-none focus:border-primary-gold/40 transition-colors"
-                />
-                <input
-                  type="text"
-                  placeholder="Descrição do evento (opcional)"
-                  value={newSpecialDescription}
-                  onChange={(e) => setNewSpecialDescription(e.target.value)}
-                  className="flex-1 min-w-[160px] bg-primary-black/50 border border-primary-gold/20 rounded-lg px-3 py-1.5 text-xs text-primary-gold placeholder:text-primary-gold/30 outline-none focus:border-primary-gold/40 transition-colors"
-                />
-                <button
-                  onClick={addSpecialDate}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary-gold/30 text-primary-gold/80 text-xs font-medium hover:border-primary-gold/60 hover:text-primary-gold hover:bg-primary-gold/5 transition-all cursor-pointer shrink-0"
-                >
-                  <LuPlus size={13} /> Adicionar
-                </button>
-              </div>
-
-              {(localGeneralConfigs.specialDates ?? []).length > 0 && (
-                <div className="flex flex-col gap-1.5 mt-1">
-                  {(localGeneralConfigs.specialDates ?? []).map((s) => {
-                    const [y, m, d] = s.date.split("-");
-                    return (
-                      <div
-                        key={s.date}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary-black/30 border border-primary-gold/10"
-                      >
-                        <span className="text-xs font-mono text-primary-gold/70 shrink-0">
-                          {d}/{m}/{y}
-                        </span>
-                        <span className="text-xs text-primary-gold/45 flex-1 truncate italic">
-                          {s.description || "Sem descrição especificada"}
-                        </span>
-                        <button
-                          onClick={() => removeSpecialDate(s.date)}
-                          className="p-1 rounded-md hover:bg-invalid-color/10 text-primary-gold/30 hover:text-invalid-color transition-all cursor-pointer shrink-0"
-                        >
-                          <LuTrash size={13} />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-center gap-1.5 flex-wrap -mt-1">
+            {(
+              [
+                { key: "reservas", label: "Reservas" },
+                { key: "aluguel", label: "Aluguel" },
+                { key: "geral", label: "Geral" },
+              ] as const
+            ).map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setSettingsTab(t.key)}
+                className={`text-[11px] px-3 py-1 rounded-lg border transition-all cursor-pointer ${
+                  settingsTab === t.key
+                    ? "border-primary-gold/50 text-primary-gold bg-primary-gold/10 font-semibold"
+                    : "border-primary-gold/15 text-primary-gold/40 hover:border-primary-gold/35 hover:text-primary-gold/70"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
-          <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-primary-gold/10 bg-primary-black/20">
-            {isReservaDirty && savingSection !== "reserva" && (
-              <span className="flex items-center gap-1.5 text-xs text-yellow-400/90">
-                <LuTriangleAlert size={13} className="shrink-0" />
-                Você tem alterações não salvas
-              </span>
-            )}
-            <SaveButton
-              saving={savingSection === "reserva"}
-              saved={savedSection === "reserva"}
-              onClick={() => saveSection("reserva")}
-            />
-          </div>
+          {settingsTab === "reservas" && (
+            <ReserveSettings alsoIn={{ label: "Reservas (botão de engrenagem)", href: "/myreserves?config=1" }} />
+          )}
+          {settingsTab === "aluguel" && <RentalSettingsPanel />}
+          {settingsTab === "geral" && <EffectsSettings className="w-full max-w-md" />}
         </div>
-
-        {/* Efeitos de mouse */}
-        <div className="rounded-xl border border-primary-gold/15 bg-secondary-black/40 overflow-hidden w-full md:w-auto md:shrink-0">
-          <div className="p-4 flex flex-col gap-3">
-            <span className="text-[14px] font-semibold uppercase tracking-widest text-primary-gold/45">
-              Efeitos de mouse
-            </span>
-            <div className="flex flex-col gap-2">
-              <Checkbox
-                checked={localGeneralConfigs?.clickEffect}
-                setChecked={(e) =>
-                  setLocalGeneralConfigs({
-                    ...localGeneralConfigs,
-                    clickEffect: e.target.checked,
-                  })
-                }
-                label="Ativar efeito de clique"
-                variant
-              />
-              <Checkbox
-                checked={localGeneralConfigs?.followCursor}
-                setChecked={(e) =>
-                  setLocalGeneralConfigs({
-                    ...localGeneralConfigs,
-                    followCursor: e.target.checked,
-                  })
-                }
-                label="Ativar destaque de cursor"
-                variant
-              />
-              <Checkbox
-                checked={localGeneralConfigs?.canvasCursor}
-                setChecked={(e) =>
-                  setLocalGeneralConfigs({
-                    ...localGeneralConfigs,
-                    canvasCursor: e.target.checked,
-                  })
-                }
-                label="Ativar efeito de cursor"
-                variant
-              />
-            </div>
-          </div>
-          <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-primary-gold/10 bg-primary-black/20">
-            {isEfeitosDirty && savingSection !== "efeitos" && (
-              <span className="flex items-center gap-1.5 text-xs text-yellow-400/90">
-                <LuTriangleAlert size={13} className="shrink-0" />
-                Você tem alterações não salvas
-              </span>
-            )}
-            <SaveButton
-              saving={savingSection === "efeitos"}
-              saved={savedSection === "efeitos"}
-              onClick={() => saveSection("efeitos")}
-            />
-          </div>
-        </div>
-      </div>
       )}
 
       {activeTab === "temas" && <SiteThemeSettings />}
