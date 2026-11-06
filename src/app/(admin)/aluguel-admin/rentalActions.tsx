@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LuCalendarClock, LuPackageCheck, LuPackageOpen, LuX } from "react-icons/lu";
+import { LuCalendarClock, LuPackageCheck, LuPackageOpen, LuTrash2, LuX } from "react-icons/lu";
 import type { RentalOrderType, RentalReturnCondition, RentalType } from "@/types";
 import Modal from "@/components/modal";
 import FormCard from "@/components/formCard";
@@ -13,10 +13,11 @@ import { formatDateBR, todaySP } from "@/rental/dates";
 import { canPickUp } from "@/rental/bookings";
 import { formatBRL, parseBRL } from "@/rental/money";
 import { isPaidOnline, refundableLeft, rentalPrice } from "@/rental/payments";
+import { isRentalFinished, rentalDeletionBlock } from "@/rental/deletion";
 import { AmountField, centsToInput } from "./refundForms";
 
 type Order = RentalOrderType & { id: string };
-type ActionKind = "pickup" | "return" | "dueDate" | "cancel";
+type ActionKind = "pickup" | "return" | "dueDate" | "cancel" | "delete";
 
 const CONDITIONS: { value: RentalReturnCondition; label: string }[] = [
   { value: "ok", label: "OK" },
@@ -83,6 +84,25 @@ function ActionModal({
     onClose();
   };
 
+  // Exclusão: a mesma regra do servidor, para explicar antes de tentar.
+  const deleteBlock = kind === "delete" ? rentalDeletionBlock(rental, order, Date.now()) : null;
+  const removeRental = async () => {
+    if (loading) return;
+    setLoading(true);
+    const result = await rentalApi.deleteRentals([rental.id]);
+    setLoading(false);
+    if (!result.ok) {
+      addAlert(result.message);
+      return;
+    }
+    if (result.data.deleted === 0) {
+      addAlert(result.data.skipped[0]?.message ?? "Não foi possível excluir este aluguel.");
+      return;
+    }
+    addAlert(`Aluguel ${rental.code} excluído`);
+    onClose();
+  };
+
   const pickChoice = (value: RentalReturnCondition) => {
     setCondition(value);
     setMarkUnavailable(value !== "ok");
@@ -134,6 +154,13 @@ function ActionModal({
           () => rentalApi.cancel(rental.id, reason.trim(), refundAmount),
           paid && refundAmount ? `Aluguel cancelado e ${formatBRL(refundAmount)} devolvidos` : "Aluguel cancelado",
         ),
+    },
+    delete: {
+      title: "Excluir aluguel",
+      icon: <LuTrash2 size={18} />,
+      disabled: !!deleteBlock,
+      submitLabel: "Excluir de vez",
+      submit: removeRental,
     },
   }[kind];
 
@@ -207,6 +234,29 @@ function ActionModal({
           />
         </>
       )}
+
+      {kind === "delete" &&
+        (deleteBlock ? (
+          <p className="text-sm text-orange-300">{deleteBlock}</p>
+        ) : (
+          <div className="flex flex-col gap-2 text-sm text-primary-gold/70">
+            <p>
+              O aluguel de {rental.gameName} para {rental.customer.name} sai da lista e do histórico do
+              cliente. <strong className="text-primary-gold">Não dá para desfazer.</strong>
+            </p>
+            {order && order.rentalIds.length > 1 && (
+              <p className="text-xs text-primary-gold/50">
+                Os outros jogos do pedido {order.code} continuam. O pedido só é apagado junto com o
+                último deles.
+              </p>
+            )}
+            {order?.paymentMode === "online" && (
+              <p className="text-xs text-primary-gold/50">
+                O registro do pagamento continua no painel do Mercado Pago.
+              </p>
+            )}
+          </div>
+        ))}
 
       {kind === "cancel" && (
         <>
@@ -287,7 +337,8 @@ export default function RentalActions({
   const pickedUp = rental.status === "picked_up";
   const awaiting = rental.status === "awaiting_payment";
   const today = todaySP();
-  if (!reserved && !pickedUp && !awaiting) return null;
+  const finished = isRentalFinished(rental);
+  if (!reserved && !pickedUp && !awaiting && !finished) return null;
 
   const gold = `${buttonClass} border-primary-gold/50 bg-primary-gold/10 text-primary-gold hover:bg-primary-gold/20`;
   const neutral = `${buttonClass} border-primary-gold/15 text-primary-gold/60 hover:text-primary-gold hover:border-primary-gold/40`;
@@ -326,7 +377,12 @@ export default function RentalActions({
             Registrar devolução
           </button>
         )}
-        {!awaiting && (
+        {finished && (
+          <button type="button" className={danger} onClick={() => setKind("delete")}>
+            <LuTrash2 size={13} /> Excluir
+          </button>
+        )}
+        {!awaiting && !finished && (
           <>
             <button type="button" className={neutral} onClick={() => setKind("dueDate")}>
               Alterar devolução

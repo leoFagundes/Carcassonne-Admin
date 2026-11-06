@@ -4,6 +4,7 @@ import LoaderFullscreen from "@/components/loaderFullscreen";
 import { useAlert } from "@/contexts/alertProvider";
 import { auth } from "@/services/firebaseConfig";
 import AdminRepository from "@/services/repositories/AdminRepository";
+import { adminApi } from "@/services/rentalApi";
 import { AdminRequestType, AdminType } from "@/types";
 import { onAuthStateChanged } from "firebase/auth";
 import { Timestamp } from "firebase/firestore";
@@ -13,6 +14,7 @@ import {
   LuClock,
   LuInfo,
   LuShieldCheck,
+  LuTrash2,
   LuUserMinus,
   LuUsers,
   LuX,
@@ -98,6 +100,33 @@ export default function UsuariosPage() {
     );
   }
 
+  async function handleDelete(uid: string, label: string) {
+    if (
+      !confirm(
+        `Excluir de vez a conta de ${label}?
+
+Apaga o login e todos os dados da conta (inclusive aluguéis encerrados, se ela também alugou jogos). Não dá para desfazer.`,
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    const result = await adminApi.deleteAccount(uid);
+    setBusy(false);
+    addAlert(result.ok ? `Conta de ${label} excluída.` : result.message);
+  }
+
+  const deleteButton = (uid: string, label: string) => (
+    <button
+      onClick={() => handleDelete(uid, label)}
+      aria-label={`Excluir a conta de ${label}`}
+      title="Excluir conta"
+      className="flex items-center justify-center p-2 rounded-lg border border-primary-gold/15 text-primary-gold/50 hover:border-invalid-color/40 hover:text-invalid-color transition-all cursor-pointer shrink-0"
+    >
+      <LuTrash2 size={13} />
+    </button>
+  );
+
   const loading = !adminsLoaded || !requestsLoaded;
 
   return (
@@ -140,6 +169,7 @@ export default function UsuariosPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  {deleteButton(request.id, request.email)}
                   <button
                     onClick={() => handleReject(request)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary-gold/15 text-xs text-primary-gold/50 hover:border-invalid-color/40 hover:text-invalid-color transition-all cursor-pointer"
@@ -191,12 +221,15 @@ export default function UsuariosPage() {
                 </div>
                 {/* Ninguém remove o próprio acesso — evita ficar sem nenhum admin */}
                 {!isSelf && (
-                  <button
-                    onClick={() => handleRevoke(admin)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary-gold/15 text-xs text-primary-gold/50 hover:border-invalid-color/40 hover:text-invalid-color transition-all cursor-pointer shrink-0"
-                  >
-                    <LuUserMinus size={13} /> Remover acesso
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => handleRevoke(admin)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary-gold/15 text-xs text-primary-gold/50 hover:border-invalid-color/40 hover:text-invalid-color transition-all cursor-pointer shrink-0"
+                    >
+                      <LuUserMinus size={13} /> Remover acesso
+                    </button>
+                    {deleteButton(admin.id, admin.email ?? admin.id)}
+                  </div>
                 )}
               </div>
             );
@@ -207,8 +240,8 @@ export default function UsuariosPage() {
           <LuInfo size={14} className="shrink-0 mt-0.5" />
           <span>
             Remover o acesso ou recusar um pedido não apaga a conta — a pessoa só deixa de
-            entrar no admin. Para excluir a conta de vez, use o console do Firebase
-            (Authentication).
+            entrar no admin. Para apagar a conta de vez (login e dados), use o botão de lixeira.
+            Ninguém exclui a própria conta.
           </span>
         </div>
       </div>

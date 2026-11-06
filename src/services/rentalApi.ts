@@ -101,6 +101,18 @@ export const rentalApi = {
 
   setBlocked: (uid: string, blocked: boolean, reason?: string) =>
     call<null>(`/api/rental/customers/${encodeURIComponent(uid)}/block`, { blocked, reason }),
+
+  /** Admin: exclui de vez aluguéis encerrados (até 200 por chamada). */
+  deleteRentals: (ids: string[]) =>
+    call<{ deleted: number; skipped: { id: string; message: string }[] }>("/api/rental/rentals/delete", {
+      ids,
+    }),
+};
+
+export const adminApi = {
+  /** Exclui de vez a conta (login, cadastro, acesso de admin e histórico de aluguéis). */
+  deleteAccount: (uid: string) =>
+    call<{ rentals: number }>(`/api/accounts/${encodeURIComponent(uid)}/delete`, {}),
 };
 
 export const accountApi = {

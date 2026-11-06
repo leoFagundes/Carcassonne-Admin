@@ -272,6 +272,12 @@ const helpCards: HelpCard[] = [
   },
   {
     category: "aluguel",
+    title: "Como excluir aluguéis e contas de cliente",
+    description:
+      "Só sai o que já terminou. Aluguéis devolvidos ou cancelados têm o botão 'Excluir' na aba 'Aluguéis', e 'Excluir encerrados…' (abaixo dos filtros) apaga vários de uma vez — todos, ou só os encerrados há mais de 30 ou 90 dias. Aluguéis em andamento (aguardando pagamento, reservado, retirado) nunca podem ser excluídos: cancele ou registre a devolução antes. Se o pedido foi pago online, a exclusão espera o dinheiro se resolver: reembolso pendente ou análise de cancelamento travam até serem concluídos, e um pedido online não pago fica 7 dias depois do fim do prazo para pagar (o Mercado Pago ainda pode confirmar um pagamento em análise). O pedido só é apagado junto com o último jogo dele. Para apagar um cliente, abra o detalhe dele e use 'Excluir conta': sai o login, o cadastro e todo o histórico de aluguéis — só é possível sem nenhum aluguel em andamento. Para apenas impedir novos aluguéis, prefira 'Bloquear'. Nada disso pode ser desfeito.",
+  },
+  {
+    category: "aluguel",
     title: "O que o cliente vê no aluguel",
     description:
       "Em /aluguel o cliente vê o catálogo no mesmo estilo da ludoteca, com o preço e um selo em cada jogo: 'Disponível', 'Volta em N dias' (quando todas as cópias estão alugadas — ex.: prazo de 7 dias retirado há 4 dias = volta em 3 dias), 'Disponível a partir de dd/mm' (há reserva marcada), 'Retorno atrasado' ou 'Indisponível'. Para alugar ele cria uma conta (nome, WhatsApp, CPF, e-mail e senha), confirma o e-mail e aceita as regras. As regras abrem num painel sem sair da página, pelo botão 'Regras' ou pelo link no aceite. Em 'Minha conta' ele acompanha os pedidos (Reservado, Retirado com os dias que faltam, Atrasado, Devolvido, Cancelado) e pode cancelar os que ainda não retirou.",
@@ -581,7 +587,13 @@ const helpCards: HelpCard[] = [
     category: "usuarios",
     title: "Como remover o acesso de um administrador",
     description:
-      "Em Usuários → 'Administradores', clique em 'Remover acesso' ao lado da pessoa. Ninguém consegue remover o próprio acesso (para nunca ficar sem administradores). Remover o acesso ou recusar um pedido não apaga a conta — a pessoa só deixa de entrar no admin. Para excluir a conta de vez, use o console do Firebase (Authentication).",
+      "Em Usuários → 'Administradores', clique em 'Remover acesso' ao lado da pessoa. Ninguém consegue remover o próprio acesso (para nunca ficar sem administradores). Remover o acesso ou recusar um pedido não apaga a conta — a pessoa só deixa de entrar no admin.",
+  },
+  {
+    category: "usuarios",
+    title: "Como excluir uma conta de vez",
+    description:
+      "Em Usuários, o botão de lixeira ao lado de um administrador ou de um pedido de acesso apaga a conta de vez: o login e todos os dados dela. Se a pessoa também alugou jogos, o histórico de aluguéis encerrados sai junto; com aluguel em andamento ou reembolso pendente a exclusão é recusada com o motivo. Ninguém exclui a própria conta. Não pode ser desfeito.",
   },
   {
     category: "usuarios",

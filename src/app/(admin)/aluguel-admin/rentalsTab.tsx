@@ -21,6 +21,7 @@ import { CustomerModal } from "./customerDetail";
 import { STATUS_LABEL, plural, useNow, useToday, whatsappLink } from "./rentalShared";
 import OrderDetail from "./orderDetail";
 import RefundBand from "./refundBand";
+import BulkDelete from "./bulkDelete";
 import { matchesPaymentFilter, type PaymentFilter } from "./paymentFilters";
 
 export { rentalAttention };
@@ -303,6 +304,7 @@ export default function RentalsTab() {
           ]}
         />
         )}
+        <BulkDelete rentals={rentals} orderById={orderById} />
       </div>
 
       {loading ? (

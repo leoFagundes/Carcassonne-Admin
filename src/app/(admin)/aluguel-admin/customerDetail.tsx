@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { LuBan, LuUser } from "react-icons/lu";
+import { LuBan, LuTrash2, LuUser } from "react-icons/lu";
 import type { RentalCustomerType, RentalType } from "@/types";
 import Modal from "@/components/modal";
 import FormCard from "@/components/formCard";
 import Input from "@/components/input";
 import { useAlert } from "@/contexts/alertProvider";
 import RentalCustomerRepository from "@/services/repositories/RentalCustomerRepository";
-import { rentalApi } from "@/services/rentalApi";
+import { adminApi, rentalApi } from "@/services/rentalApi";
+import { customerDeletionBlock } from "@/rental/deletion";
 import { formatCpf } from "@/rental/cpf";
 import { formatDateBR } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
@@ -59,6 +60,22 @@ export function CustomerDetail({
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
   const since = sinceText(customer);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  // Pedidos com dinheiro em aberto o servidor confere; aqui já avisa dos aluguéis em andamento.
+  const deleteBlock = customerDeletionBlock(rentals, [], Date.now());
+
+  const removeAccount = async () => {
+    if (loading) return;
+    setLoading(true);
+    const result = await adminApi.deleteAccount(customer.id);
+    setLoading(false);
+    if (!result.ok) {
+      addAlert(result.message);
+      return;
+    }
+    addAlert(`Conta de ${customer.name} excluída`);
+    onClose();
+  };
 
   const toggleBlock = async () => {
     if (loading) return;
@@ -151,6 +168,53 @@ export function CustomerDetail({
               </span>
             </div>
           ))
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-xl border border-invalid-color/20 p-3">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-invalid-color/70">
+          Excluir conta
+        </span>
+        {deleteBlock ? (
+          <p className="text-xs text-primary-gold/60">{deleteBlock}</p>
+        ) : !confirmDelete ? (
+          <>
+            <p className="text-xs text-primary-gold/60">
+              Apaga o login, o cadastro e o histórico de {plural(rentals.length, "aluguel", "aluguéis")} deste
+              cliente. Para só impedir novos aluguéis, use Bloquear.
+            </p>
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center justify-center gap-1.5 h-9 px-4 rounded-xl border border-invalid-color/40 text-xs font-semibold text-invalid-color hover:bg-invalid-color/10 cursor-pointer"
+            >
+              <LuTrash2 size={13} /> Excluir conta
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="text-xs text-invalid-color">
+              Excluir de vez a conta de {customer.name}? Não dá para desfazer.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                disabled={loading}
+                className="flex-1 h-9 px-4 rounded-xl border border-primary-gold/20 text-xs text-primary-gold/70 hover:border-primary-gold/50 cursor-pointer disabled:opacity-40"
+              >
+                Voltar
+              </button>
+              <button
+                type="button"
+                onClick={removeAccount}
+                disabled={loading}
+                className="flex-1 flex items-center justify-center gap-1.5 h-9 px-4 rounded-xl bg-invalid-color/90 text-xs font-semibold text-primary-black hover:bg-invalid-color cursor-pointer disabled:opacity-40"
+              >
+                <LuTrash2 size={13} /> {loading ? "Excluindo..." : "Sim, excluir"}
+              </button>
+            </div>
+          </>
         )}
       </div>
     </FormCard>
