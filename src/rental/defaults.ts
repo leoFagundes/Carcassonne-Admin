@@ -11,8 +11,8 @@ export const DEFAULT_RENTAL_SETTINGS: RentalSettingsType = {
   onlinePayment: { enabled: false, holdMinutes: 30, cancellationPolicy: "full", feePercent: 10 },
 };
 
-const MIN_HOLD_MINUTES = 10;
-const MAX_HOLD_MINUTES = 120;
+const MIN_HOLD_MINUTES = 15;
+const MAX_HOLD_MINUTES = 60;
 
 /** Número finito limitado a [min, max]; inválido (NaN, texto) → `fallback`. */
 function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
@@ -23,7 +23,7 @@ function clampNumber(value: unknown, min: number, max: number, fallback: number)
 /**
  * Mescla configurações salvas (doc ausente/parcial) com os padrões, inclusive
  * `onlinePayment`. Taxa limitada a 0–50% (inválida → 0) e tempo para pagar a
- * 10–120 min (inválido → 30), mesmo com o documento editado à mão.
+ * 15–60 min, como no formulário (inválido → 30), mesmo com o documento editado à mão.
  */
 export function mergeRentalSettings(saved?: Partial<RentalSettingsType>): RentalSettingsType {
   const onlinePayment = { ...DEFAULT_RENTAL_SETTINGS.onlinePayment, ...saved?.onlinePayment };

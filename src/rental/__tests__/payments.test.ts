@@ -128,11 +128,11 @@ describe("mergeRentalSettings", () => {
       ...DEFAULT_RENTAL_SETTINGS.onlinePayment, enabled: true,
     });
   });
-  it("limita taxa (0–50, NaN → 0) e tempo para pagar (10–120, NaN → 30)", () => {
+  it("limita taxa (0–50, NaN → 0) e tempo para pagar (15–60, NaN → 30)", () => {
     const merged = (onlinePayment: Record<string, unknown>) =>
       mergeRentalSettings({ onlinePayment: onlinePayment as never }).onlinePayment;
-    expect(merged({ feePercent: 90, holdMinutes: 500 })).toMatchObject({ feePercent: 50, holdMinutes: 120 });
-    expect(merged({ feePercent: -5, holdMinutes: 2 })).toMatchObject({ feePercent: 0, holdMinutes: 10 });
+    expect(merged({ feePercent: 90, holdMinutes: 500 })).toMatchObject({ feePercent: 50, holdMinutes: 60 });
+    expect(merged({ feePercent: -5, holdMinutes: 2 })).toMatchObject({ feePercent: 0, holdMinutes: 15 });
     expect(merged({ feePercent: NaN, holdMinutes: NaN })).toMatchObject({ feePercent: 0, holdMinutes: 30 });
     expect(merged({ feePercent: "15", holdMinutes: "45" })).toMatchObject({ feePercent: 0, holdMinutes: 30 });
     expect(merged({ feePercent: 25, holdMinutes: 45 })).toMatchObject({ feePercent: 25, holdMinutes: 45 });
