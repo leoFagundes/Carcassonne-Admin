@@ -1,4 +1,5 @@
 import type { RentalRulesType, RentalSettingsType } from "@/types";
+import { clampFeePercent } from "./payments";
 
 export const DEFAULT_RENTAL_SETTINGS: RentalSettingsType = {
   isEnabled: false,
@@ -10,12 +11,35 @@ export const DEFAULT_RENTAL_SETTINGS: RentalSettingsType = {
   onlinePayment: { enabled: false, holdMinutes: 30, cancellationPolicy: "full", feePercent: 10 },
 };
 
-/** Mescla configurações salvas (doc ausente/parcial) com os padrões, inclusive `onlinePayment`. */
+const MIN_HOLD_MINUTES = 10;
+const MAX_HOLD_MINUTES = 120;
+
+/** Número finito limitado a [min, max]; inválido (NaN, texto) → `fallback`. */
+function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, value));
+}
+
+/**
+ * Mescla configurações salvas (doc ausente/parcial) com os padrões, inclusive
+ * `onlinePayment`. Taxa limitada a 0–50% (inválida → 0) e tempo para pagar a
+ * 10–120 min (inválido → 30), mesmo com o documento editado à mão.
+ */
 export function mergeRentalSettings(saved?: Partial<RentalSettingsType>): RentalSettingsType {
+  const onlinePayment = { ...DEFAULT_RENTAL_SETTINGS.onlinePayment, ...saved?.onlinePayment };
   return {
     ...DEFAULT_RENTAL_SETTINGS,
     ...saved,
-    onlinePayment: { ...DEFAULT_RENTAL_SETTINGS.onlinePayment, ...saved?.onlinePayment },
+    onlinePayment: {
+      ...onlinePayment,
+      feePercent: clampFeePercent(onlinePayment.feePercent),
+      holdMinutes: clampNumber(
+        onlinePayment.holdMinutes,
+        MIN_HOLD_MINUTES,
+        MAX_HOLD_MINUTES,
+        DEFAULT_RENTAL_SETTINGS.onlinePayment.holdMinutes,
+      ),
+    },
   };
 }
 

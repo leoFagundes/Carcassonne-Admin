@@ -3,6 +3,7 @@ import type { RentalBooking, RentalOrderPayment, RentalOrderType, RentalPendingR
 import {
   beginRefund,
   cancelPreview,
+  clampFeePercent,
   closeCancellationReview,
   decideRefundedRedelivery,
   dropPendingRefund,
@@ -63,6 +64,24 @@ describe("refundFor", () => {
     expect(refundFor("fee", 10, 999)).toBe(899);
     expect(refundFor("manual", 10, 4500)).toBeNull();
   });
+  it("taxa limitada a 0–50%; NaN → sem taxa", () => {
+    expect(refundFor("fee", 80, 4500)).toBe(2250);
+    expect(refundFor("fee", -20, 4500)).toBe(4500);
+    expect(refundFor("fee", NaN, 4500)).toBe(4500);
+    expect(refundFor("fee", Infinity, 4500)).toBe(2250);
+  });
+});
+
+describe("clampFeePercent", () => {
+  it("limita e trata inválidos como 0", () => {
+    expect(clampFeePercent(10)).toBe(10);
+    expect(clampFeePercent(50)).toBe(50);
+    expect(clampFeePercent(51)).toBe(50);
+    expect(clampFeePercent(-1)).toBe(0);
+    expect(clampFeePercent(NaN)).toBe(0);
+    expect(clampFeePercent("10")).toBe(0);
+    expect(clampFeePercent(undefined)).toBe(0);
+  });
 });
 
 describe("refundableLeft", () => {
@@ -102,6 +121,27 @@ describe("mergeRentalSettings", () => {
     expect(mergeRentalSettings({ maxAdvanceDays: 10 }).onlinePayment).toEqual(DEFAULT_RENTAL_SETTINGS.onlinePayment);
     expect(mergeRentalSettings({ onlinePayment: { enabled: true } as never }).onlinePayment).toEqual({
       ...DEFAULT_RENTAL_SETTINGS.onlinePayment, enabled: true,
+    });
+  });
+  it("limita taxa (0–50, NaN → 0) e tempo para pagar (10–120, NaN → 30)", () => {
+    const merged = (onlinePayment: Record<string, unknown>) =>
+      mergeRentalSettings({ onlinePayment: onlinePayment as never }).onlinePayment;
+    expect(merged({ feePercent: 90, holdMinutes: 500 })).toMatchObject({ feePercent: 50, holdMinutes: 120 });
+    expect(merged({ feePercent: -5, holdMinutes: 2 })).toMatchObject({ feePercent: 0, holdMinutes: 10 });
+    expect(merged({ feePercent: NaN, holdMinutes: NaN })).toMatchObject({ feePercent: 0, holdMinutes: 30 });
+    expect(merged({ feePercent: "15", holdMinutes: "45" })).toMatchObject({ feePercent: 0, holdMinutes: 30 });
+    expect(merged({ feePercent: 25, holdMinutes: 45 })).toMatchObject({ feePercent: 25, holdMinutes: 45 });
+  });
+});
+
+describe("cancelPreview com taxa fora do limite", () => {
+  it("mostra a taxa já limitada", () => {
+    const o = order({
+      items: [{ rentalId: "r1", gameId: "g", gameName: "G", price: 4500 }],
+      payment: pay({ status: "approved", providerPaymentId: "p1" }),
+    });
+    expect(cancelPreview(o, "r1", { cancellationPolicy: "fee", feePercent: 90 })).toEqual({
+      kind: "refund", amount: 2250, feePercent: 50,
     });
   });
 });
@@ -192,7 +232,7 @@ describe("refundForRental (Review Focus #3)", () => {
     expect(refundForRental(afterAdmin, "r2", "full", 0)).toBe(2500);
   });
   it("aluguel que não é do pedido → 0", () => expect(refundForRental(paidOrder(), "zz", "full", 10)).toBe(0));
-  it("taxa nunca deixa negativo", () => expect(refundForRental(paidOrder(), "r1", "fee", 150)).toBe(0));
+  it("taxa acima de 50% vale 50% (nunca negativo)", () => expect(refundForRental(paidOrder(), "r1", "fee", 150)).toBe(2250));
 });
 
 describe("cancelPreview", () => {

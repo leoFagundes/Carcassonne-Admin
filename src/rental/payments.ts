@@ -23,10 +23,18 @@ export function withLiveBookings<T extends { bookings: RentalBooking[] }>(game: 
   return { ...game, bookings: liveBookings(game.bookings, nowMs) };
 }
 
+const MAX_FEE_PERCENT = 50;
+
+/** Taxa de cancelamento entre 0 e 50%; inválida (NaN, texto) → 0, a favor do cliente. */
+export function clampFeePercent(feePercent: unknown): number {
+  if (typeof feePercent !== "number" || Number.isNaN(feePercent)) return 0;
+  return Math.min(MAX_FEE_PERCENT, Math.max(0, feePercent));
+}
+
 /** Valor a devolver segundo a política; null = decisão manual do admin. */
 export function refundFor(policy: CancellationPolicy, feePercent: number, amount: number): number | null {
   if (policy === "full") return amount;
-  if (policy === "fee") return amount - Math.round((amount * feePercent) / 100);
+  if (policy === "fee") return amount - Math.round((amount * clampFeePercent(feePercent)) / 100);
   return null;
 }
 
@@ -92,7 +100,8 @@ export function cancelPreview(
   if (!order || !isPaidOnline(order)) return { kind: "none" };
   // Nada mais a devolver: não há o que analisar.
   if (refundableLeft(order) === 0) return { kind: "refund", amount: 0 };
-  const { cancellationPolicy: policy, feePercent } = onlinePayment;
+  const policy = onlinePayment.cancellationPolicy;
+  const feePercent = clampFeePercent(onlinePayment.feePercent);
   const amount = refundForRental(order, rentalId, policy, feePercent);
   if (amount === null) return { kind: "review" };
   return policy === "fee" && feePercent > 0 ? { kind: "refund", amount, feePercent } : { kind: "refund", amount };
