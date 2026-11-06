@@ -21,6 +21,31 @@ import { RulesLink } from "../rulesSheet";
 
 type Game = RentalGameType & { id: string };
 
+const PENDING_ORDER_KEY = "carcassonne-rental-pending-order";
+const PENDING_ORDER_TTL_MS = 2 * 60 * 60 * 1000;
+
+function rememberPendingOrder(orderId: string) {
+  try {
+    sessionStorage.setItem(PENDING_ORDER_KEY, JSON.stringify({ orderId, at: Date.now() }));
+  } catch {
+    // segue sem guardar
+  }
+}
+
+function takePendingOrder(): string | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_ORDER_KEY);
+    sessionStorage.removeItem(PENDING_ORDER_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (parsed && typeof parsed.orderId === "string" && Date.now() - parsed.at < PENDING_ORDER_TTL_MS) {
+      return parsed.orderId;
+    }
+  } catch {
+    // ignora
+  }
+  return null;
+}
+
 const WEEKDAYS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
 const card = "bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3";
 const heading = "text-[11px] font-semibold uppercase tracking-widest text-primary-gold/60";
@@ -44,7 +69,30 @@ export default function PedidoPage() {
   const [verifyMsg, setVerifyMsg] = useState<string | null>(null);
   const [verifyBusy, setVerifyBusy] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const [done, setDone] = useState<{ code: string } | null>(null);
+
+  // Voltou do Mercado Pago (botão voltar, página recarregada ou restaurada do cache):
+  // o pedido já existe, então a tela certa é a página dele, não um checkout travado.
+  useEffect(() => {
+    const pending = takePendingOrder();
+    if (pending) router.replace(`/aluguel/pedido/${encodeURIComponent(pending)}`);
+  }, [router]);
+  useEffect(() => {
+    if (!createdOrderId) return;
+    const onShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      try {
+        sessionStorage.removeItem(PENDING_ORDER_KEY);
+      } catch {
+        // ignora
+      }
+      setRedirecting(false);
+      router.replace(`/aluguel/pedido/${encodeURIComponent(createdOrderId)}`);
+    };
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, [createdOrderId, router]);
 
   useEffect(() => RentalGameRepository.subscribeToAll(setGames), []);
   useEffect(() => RentalConfigRepository.subscribeSettings(setSettings), []);
@@ -130,6 +178,8 @@ export default function PedidoPage() {
     if (result.ok) {
       cart.clear();
       if (online) {
+        rememberPendingOrder(result.data.orderId);
+        setCreatedOrderId(result.data.orderId);
         setRedirecting(true);
         if (result.data.checkoutUrl) {
           // Segue para o Mercado Pago na mesma aba.

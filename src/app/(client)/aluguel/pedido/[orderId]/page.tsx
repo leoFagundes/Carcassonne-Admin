@@ -51,14 +51,12 @@ interface Banner {
   text: string;
 }
 
-function bannerFor(view: OrderPaymentView, order: Order, confirming: boolean, slow: boolean): Banner {
+function bannerFor(view: OrderPaymentView, order: Order, confirming: boolean): Banner {
   if (confirming) {
     return {
       icon: "spin",
       title: "Confirmando seu pagamento…",
-      text: slow
-        ? "Ainda estamos aguardando a confirmação do Mercado Pago. Se você já pagou, não precisa fazer nada: esta página atualiza sozinha."
-        : "Você voltou do Mercado Pago. Isso leva só alguns segundos.",
+      text: "Você voltou do Mercado Pago. Isso leva só alguns segundos.",
     };
   }
   switch (view.state) {
@@ -123,7 +121,9 @@ function OrderContent() {
   const [now, setNow] = useState(() => Date.now());
   const [busy, setBusy] = useState<"pay" | "cancel" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [slow, setSlow] = useState(false);
+  const [stalled, setStalled] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyNote, setVerifyNote] = useState<string | null>(null);
   const verified = useRef(false);
 
   const returned = checkoutReturnFlag(params);
@@ -160,17 +160,37 @@ function OrderContent() {
   }, [ticking]);
 
   // Voltou aprovado do Mercado Pago e o aviso ainda não chegou.
-  const confirming = view?.state === "awaiting" && returned === "approved";
+  const confirming = view?.state === "awaiting" && returned === "approved" && !stalled;
+  const waiting = view?.state === "awaiting" && returned === "approved";
+
+  async function verify() {
+    setVerifying(true);
+    const result = await rentalApi.verifyOrder(orderId);
+    setVerifying(false);
+    // Se o pagamento foi confirmado, a assinatura em tempo real troca a tela sozinha.
+    setVerifyNote(
+      result.ok ? null : result.message || "Não foi possível verificar agora. Tente de novo.",
+    );
+    setStalled(true);
+  }
+
   useEffect(() => {
-    if (!confirming) return;
-    const t = setTimeout(async () => {
-      setSlow(true);
-      if (verified.current) return;
+    if (!waiting || verified.current) return;
+    const t = setTimeout(() => {
       verified.current = true;
-      await rentalApi.verifyOrder(orderId); // o resultado chega pela assinatura em tempo real
+      void verify();
     }, CONFIRM_WAIT_MS);
     return () => clearTimeout(t);
-  }, [confirming, orderId]);
+  }, [waiting, orderId]);
+
+  // Voltar do Mercado Pago pelo histórico restaura a página com os botões travados.
+  useEffect(() => {
+    const onShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setBusy(null);
+    };
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, []);
 
   async function pay() {
     if (busy) return;
@@ -225,7 +245,7 @@ function OrderContent() {
       view.state === "awaiting" && returned === "rejected"
         ? { state: "rejected", msLeft: view.msLeft }
         : view;
-    const banner = bannerFor(shown, order, confirming, slow);
+    const banner = bannerFor(shown, order, confirming);
     const Icon = { ok: FiCheckCircle, wait: FiClock, bad: FiXCircle, info: FiInfo, spin: null }[
       banner.icon
     ];
@@ -237,13 +257,14 @@ function OrderContent() {
           : "text-primary-gold";
     const open = shown.state === "awaiting" || shown.state === "rejected";
     const canPay = open && !confirming;
+    const unconfirmed = stalled && returned === "approved" && shown.state === "awaiting";
     body = (
       <>
         <section className={`${card} items-center text-center`} role="status" aria-live="polite">
           {Icon ? <Icon size={36} className={tone} /> : <Spinner />}
           <h2 className="font-cinzel text-lg">{banner.title}</h2>
           <p className="text-sm text-primary-gold/75 break-words">{banner.text}</p>
-          {shown.state === "awaiting" && !confirming && (
+          {shown.state === "awaiting" && (
             <p className="text-sm text-primary-gold/75">
               Reserva válida por{" "}
               <span className="font-mono text-2xl tracking-widest text-primary-gold block">
@@ -254,6 +275,26 @@ function OrderContent() {
           <p className="text-xs text-primary-gold/60">Código do pedido</p>
           <p className="font-mono text-2xl tracking-widest">{order.code}</p>
         </section>
+
+        {unconfirmed && (
+          <div
+            role="status"
+            className="flex flex-col gap-2 px-3 py-2.5 rounded-xl border border-orange-400/40 bg-orange-500/10 text-xs text-orange-200"
+          >
+            <p>
+              Ainda não recebemos a confirmação do pagamento.
+              {verifyNote ? ` ${verifyNote}` : " Se você já pagou, é só aguardar: esta página atualiza sozinha."}
+            </p>
+            <button
+              type="button"
+              onClick={() => void verify()}
+              disabled={verifying}
+              className={`${smallBtn} self-start`}
+            >
+              {verifying ? "Verificando..." : "Verificar de novo"}
+            </button>
+          </div>
+        )}
 
         {error && (
           <p

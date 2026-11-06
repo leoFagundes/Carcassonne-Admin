@@ -132,6 +132,15 @@ function MinhaContaContent() {
     return () => clearInterval(id);
   }, [anyOpen]);
 
+  // Voltar do Mercado Pago pelo histórico restaura a página com o botão travado.
+  useEffect(() => {
+    const onShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setPayingId(null);
+    };
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, []);
+
   async function payNow(orderId: string) {
     if (payingId) return;
     setPayingId(orderId);

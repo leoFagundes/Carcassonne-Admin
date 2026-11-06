@@ -56,6 +56,12 @@ export default function RentalShowcase() {
   const [settings, setSettings] = useState<RentalSettingsType | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [today, setToday] = useState(() => todaySP());
+  // Reservas temporárias vencidas passam a contar como livres: reavalia a cada 30 s.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
   const [rawFilters, setFilters] = useState<GameFilters>(EMPTY_FILTERS);
   // Aluguel não tem destaques: esse filtro nunca vale
   const filters = useMemo(() => ({ ...rawFilters, featured: false }), [rawFilters]);
