@@ -287,7 +287,7 @@ const helpCards: HelpCard[] = [
     category: "aluguel",
     title: "Reserva de 30 minutos: o que acontece se o cliente não pagar",
     description:
-      "Com o pagamento online ligado, ao clicar em 'Ir para o pagamento' o cliente tem as cópias reservadas por um tempo (padrão 30 minutos; ajuste em 'Tempo para pagar (minutos)', de 15 a 60). Nesse período ninguém mais consegue alugar aquelas cópias. Se o pagamento for aprovado, o aluguel vira 'Reservado' e o cliente recebe o e-mail de confirmação. Se o tempo acabar sem pagamento, as cópias voltam sozinhas para o catálogo, o pedido fica 'Pagamento expirado' e o aluguel é cancelado pelo sistema ('Pagamento não concluído'). Nenhum e-mail é enviado nesse caso; a página do pedido já avisa o cliente. Se alguém pagar só depois de o tempo vencer e a cópia já tiver sido pega por outra pessoa, o sistema devolve o valor inteiro automaticamente (pedido 'Reembolsado · tempo esgotado').",
+      "Com o pagamento online ligado, ao clicar em 'Ir para o pagamento' o cliente tem as cópias reservadas por um tempo (padrão 30 minutos; ajuste em 'Tempo para pagar (minutos)', de 15 a 60). Nesse período ninguém mais consegue alugar aquelas cópias. Se o pagamento for aprovado, o aluguel vira 'Reservado' e o cliente recebe o e-mail de confirmação. Se o tempo acabar sem pagamento, as cópias voltam para o catálogo na mesma hora e o cliente já vê 'Pagamento expirado' na página do pedido. Já no painel, o pedido só é marcado como expirado e o aluguel cancelado pelo sistema ('Pagamento não concluído') quando a limpeza automática roda ou quando o cliente tenta pagar de novo — até lá ele ainda pode aparecer como 'Aguardando pagamento'. Nenhum e-mail é enviado nesse caso; a página do pedido já avisa o cliente. Se alguém pagar só depois de o tempo vencer e a cópia já tiver sido pega por outra pessoa, o sistema devolve o valor inteiro automaticamente (pedido 'Reembolsado · tempo esgotado').",
   },
   {
     category: "aluguel",
@@ -317,7 +317,7 @@ const helpCards: HelpCard[] = [
     category: "aluguel",
     title: "Retirada bloqueada enquanto o pedido não está pago",
     description:
-      "Em pedidos com pagamento online, o botão 'Registrar retirada' fica desabilitado e mostra 'Aguardando pagamento' até o pagamento ser aprovado. Assim ninguém leva um jogo sem ter pago. Na aba 'Aluguéis' há também um selo de pagamento em cada aluguel (Pago online, Aguardando pagamento, Pagamento expirado, Reembolsado, Cancelamento em análise) e o filtro 'Pagamento' (Todos, Pagos online, Aguardando, Expirados, Reembolsados). Pedidos feitos com o pagamento no balcão aparecem como 'Pagamento no balcão' e só entram no filtro 'Todos'.",
+      "Em pedidos com pagamento online, o botão 'Registrar retirada' fica desabilitado, com o aviso 'Aguardando pagamento' ao lado, até o pagamento ser aprovado. Assim ninguém leva um jogo sem ter pago. Na aba 'Aluguéis' há também um selo de pagamento em cada aluguel (Pago online, Aguardando pagamento, Pagamento expirado, Reembolsado, Cancelamento em análise) e o filtro 'Pagamento' (Todos, Pagos online, Aguardando, Expirados, Reembolsados). Pedidos feitos com o pagamento no balcão aparecem como 'Pagamento no balcão' e só entram no filtro 'Todos'.",
   },
   {
     category: "aluguel",

@@ -191,26 +191,27 @@ No painel de desenvolvedor do Mercado Pago → sua aplicação → **Webhooks**,
 
 1. **Credenciais de teste.** No painel do Mercado Pago, abra as credenciais de teste da aplicação e coloque no `.env` o `MERCADOPAGO_ACCESS_TOKEN` (começa com `TEST-`) e o `MERCADOPAGO_WEBHOOK_SECRET`.
 2. **Túnel público.** O Mercado Pago não alcança o `localhost`. Em outro terminal, com o `npm run dev` rodando:
+   Instale o [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) e rode:
    ```bash
-   npx cloudflared tunnel --url http://localhost:3000
+   cloudflared tunnel --url http://localhost:3000
    ```
-   Ele imprime uma URL `https://….trycloudflare.com`.
+   (o `ngrok http 3000` é uma alternativa). Ele imprime uma URL `https://….trycloudflare.com`.
 3. **`SITE_URL`.** Coloque essa URL do túnel em `SITE_URL` no `.env` e **reinicie** o `npm run dev` (a variável só é lida na subida). A URL muda a cada vez que o túnel é reaberto.
 4. **Webhook de teste.** No painel do Mercado Pago → Webhooks, em **URL de teste**, informe `<url-do-túnel>/api/payments/mercadopago/webhook`, evento `Pagamentos`, e use a assinatura secreta de teste no `.env`.
 5. **Ligar.** Entre no admin → Aluguel → **Regras** → *Pagamento online*; a situação deve mostrar **Modo de teste**. Ligue **Exigir pagamento online nos pedidos** e escolha a política de cancelamento.
-6. **Fazer um pedido** como cliente (acessando pela URL do túnel ou `localhost`), clicar em **Ir para o pagamento** e pagar logado com uma **conta de comprador de teste** (crie o par vendedor/comprador de teste no painel; não use a conta real do vendedor).
-7. **Cartões de teste** (nome do titular define o resultado; use os números de cartão de teste da documentação do Mercado Pago e qualquer CVV/validade futura):
+6. **Fazer um pedido** como cliente (acessando pela URL do túnel ou `localhost`), clicar em **Ir para o pagamento** e pagar com os cartões de teste abaixo. Entrar numa conta de comprador de teste é opcional; se o Mercado Pago reclamar que você está pagando para si mesmo ou pedir um e-mail do comprador, use o e-mail do usuário comprador de teste (crie o par vendedor/comprador no painel).
+7. **Cartões de teste** (nome do titular define o resultado; use os números da página "Cartões de teste" na documentação do Checkout Pro, em Mercado Pago Developers, e qualquer CVV/validade futura):
    | Nome do titular | Resultado |
    | --------------- | --------- |
    | `APRO` | pagamento aprovado |
    | `OTHE` | recusado por erro geral |
    | `CONT` | pendente de pagamento |
-8. **Expiração.** Deixe o pedido sem pagar até o fim da reserva (ou reduza *Tempo para pagar* para 15 min) e confira que o pedido vira *Pagamento expirado* e as cópias voltam ao catálogo. Sem o cron abaixo, isso acontece na próxima operação que mexer no jogo.
+8. **Expiração.** Deixe o pedido sem pagar até o fim da reserva (ou reduza *Tempo para pagar* para 15 min) e confira que o pedido vira *Pagamento expirado* e as cópias voltam ao catálogo. O cliente vê na hora *Pagamento expirado* na página do pedido (calculado a partir do prazo) e as cópias já ficam livres no catálogo. O que fica atrasado sem o cron abaixo é o status gravado: o pedido e o aluguel continuam como *Aguardando pagamento* no admin até a varredura rodar ou até o cliente tentar pagar de novo. Para forçar a varredura à mão, chame `GET` ou `POST /api/rental/payments/sweep` logado como admin ou com o cabeçalho `Authorization: Bearer <CRON_SECRET>`.
 9. **Cancelamento e reembolso.** Com um pedido pago, teste o cancelamento em *Minha conta* com cada política (integral, com taxa, análise manual) e confira a mensagem mostrada antes de confirmar. No admin, abra o pedido (clique no código) e teste **Reembolsar** (valor parcial e total) e, na análise manual, **Aprovar reembolso** / **Recusar reembolso** na faixa *Reembolsos a decidir*.
 
 ### Rotina agendada (opcional)
 
-`GET /api/rental/payments/sweep` marca como expirados os pedidos cujo prazo venceu. É opcional — a disponibilidade não depende dela —, mas deixa o admin e o histórico em dia. Com `CRON_SECRET` definido, a rota exige `Authorization: Bearer $CRON_SECRET` (a Vercel envia esse cabeçalho sozinha nos crons). Exemplo de `vercel.json` (não incluído no repositório; decisão do dono):
+`GET /api/rental/payments/sweep` marca como expirados os pedidos cujo prazo venceu. É opcional — a disponibilidade não depende dela —, mas deixa o admin e o histórico em dia. A rota aceita o cabeçalho `Authorization: Bearer $CRON_SECRET` (quando `CRON_SECRET` está definido; a Vercel o envia sozinha nos crons) ou uma sessão de admin. Exemplo de `vercel.json` (não incluído no repositório; decisão do dono):
 
 ```json
 {
