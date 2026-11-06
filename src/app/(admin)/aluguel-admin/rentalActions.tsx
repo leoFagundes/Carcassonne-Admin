@@ -40,7 +40,7 @@ function ActionModal({
   const [dueDate, setDueDate] = useState(rental.dueDate);
   const [reason, setReason] = useState("");
 
-  const run = async (request: () => Promise<ApiResult<null>>, success: string) => {
+  const run = async (request: () => Promise<ApiResult<unknown>>, success: string) => {
     if (loading) return;
     setLoading(true);
     const result = await request();

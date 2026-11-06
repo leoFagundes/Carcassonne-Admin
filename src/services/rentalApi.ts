@@ -1,6 +1,7 @@
 import { auth } from "@/services/firebaseConfig";
-import type { RentalReturnCondition } from "@/types";
+import type { OrderPaymentStatus, RentalReturnCondition } from "@/types";
 import type { OrderInput } from "@/rental/orders";
+import type { CancelOutcome } from "@/rental/payments";
 
 export type ApiResult<T> =
   | { ok: true; data: T }
@@ -63,7 +64,20 @@ export const rentalApi = {
 
   cancelPendingOrder: (id: string) => call<null>(orderPath(id, "cancel"), {}),
 
-  cancel: (id: string, reason?: string) => call<null>(rentalPath(id, "cancel"), { reason }),
+  /** Admin, em pedido pago online: `refundAmount` em centavos (0 = sem reembolso). */
+  cancel: (id: string, reason?: string, refundAmount?: number) =>
+    call<CancelOutcome>(rentalPath(id, "cancel"), { reason, refundAmount }),
+
+  /** Admin. `requestId`: um por pedido de reembolso (repetir o mesmo não reembolsa duas vezes). */
+  refundOrder: (id: string, body: { amount: number; requestId: string; reason?: string }) =>
+    call<{ amount: number; status: OrderPaymentStatus }>(orderPath(id, "refund"), body),
+
+  /** Admin: decide um cancelamento em análise. */
+  reviewCancellation: (
+    id: string,
+    body: { decision: "approve"; amount: number; reason?: string } | { decision: "deny"; reason: string }
+  ) =>
+    call<{ kind: "approved"; amount: number } | { kind: "denied" }>(orderPath(id, "review"), body),
 
   pickup: (id: string) => call<null>(rentalPath(id, "pickup"), {}),
 

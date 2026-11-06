@@ -529,6 +529,21 @@ export interface RentalRefund {
   by: string;
   providerRefundId: string;
   rentalId?: string;
+  /** Aluguéis cobertos (aprovação de um cancelamento em análise). */
+  rentalIds?: string[];
+  /** Chave de idempotência do reembolso (uma por operação lógica). */
+  key?: string;
+  reason?: string;
+}
+
+/** Reembolso gravado antes da chamada ao provedor; ao concluir vira um `RentalRefund`. */
+export interface RentalPendingRefund {
+  key: string;
+  amount: number;
+  at: number;
+  by: string;
+  rentalId?: string;
+  rentalIds?: string[];
   reason?: string;
 }
 
@@ -553,6 +568,8 @@ export interface RentalOrderPayment {
   holdUntil: number;
   refunds: RentalRefund[];
   refundedTotal: number;
+  /** Reembolsos em andamento: já contam no limite do que ainda pode ser devolvido. */
+  pendingRefunds?: RentalPendingRefund[];
   lateApprovalRefunded?: boolean;
   /** Pago depois de o pedido fechar; o reembolso integral ainda não foi concluído. */
   lateApprovalRefundPending?: boolean;
@@ -568,6 +585,7 @@ export interface RentalCancellationReview {
   requestedAt: number;
   rentalIds: string[];
   decidedBy?: string;
+  decidedAt?: number;
   amount?: number;
   reason?: string;
 }

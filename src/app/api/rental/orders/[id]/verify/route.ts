@@ -5,8 +5,6 @@ import { verifyOrderPayment } from "@/services/server/rentalOrderService";
 export const POST = withApi(async (req, ctx) => {
   const token = await requireUser(req);
   const { id } = await ctx.params;
-  if (!isDocId(id)) {
-    throw new ApiError(400, "invalid_body", "Corpo da requisição inválido.");
-  }
+  if (!isDocId(id)) throw new ApiError(404, "not_found", "Pedido não encontrado.");
   return verifyOrderPayment(id, token.uid);
 });

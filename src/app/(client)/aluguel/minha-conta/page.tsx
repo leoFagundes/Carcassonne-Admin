@@ -7,7 +7,12 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebaseConfig";
 import type { RentalOrderType, RentalSettingsType, RentalType } from "@/types";
 import RentalOrderRepository from "@/services/repositories/RentalOrderRepository";
-import { orderPaymentView } from "@/rental/payments";
+import {
+  cancelPreview,
+  orderPaymentView,
+  type CancelOutcome,
+  type CancelPreview,
+} from "@/rental/payments";
 import RentalRepository from "@/services/repositories/RentalRepository";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import { accountApi, rentalApi } from "@/services/rentalApi";
@@ -35,6 +40,32 @@ function maskedCpf(cpf: string): string {
   const digits = normalizeCpf(cpf);
   if (digits.length !== 11) return "";
   return `***.***.${formatCpf(digits).slice(8)}`;
+}
+
+/** O que o cliente recebe se cancelar (spec §4.3), antes de confirmar. */
+function cancelPreviewText(preview: CancelPreview): string {
+  switch (preview.kind) {
+    case "none":
+      return "A cópia será liberada para outros clientes.";
+    case "review":
+      return "Seu cancelamento vai para análise do Carcassonne Pub, que decide o reembolso.";
+    case "refund":
+      if (preview.amount === 0) return "Este pedido não tem mais valor a devolver.";
+      return preview.feePercent
+        ? `Você vai receber ${formatBRL(preview.amount)} de volta (taxa de cancelamento de ${preview.feePercent}%).`
+        : `Você vai receber ${formatBRL(preview.amount)} de volta.`;
+  }
+}
+
+function cancelDoneText(outcome: CancelOutcome): string {
+  switch (outcome.kind) {
+    case "refunded":
+      return `Reembolso de ${formatBRL(outcome.amount)} solicitado. Pix: na hora · cartão: conforme a operadora.`;
+    case "review":
+      return "Cancelamento enviado para análise. Avisaremos por e-mail se houver reembolso.";
+    case "canceled":
+      return "Aluguel cancelado.";
+  }
 }
 
 function plural(n: number, one: string, many: string): string {
@@ -93,6 +124,8 @@ function MinhaContaContent() {
   const [editing, setEditing] = useState(false);
   const [cancelingId, setCancelingId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<{ id: string; message: string } | null>(null);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [cancelDone, setCancelDone] = useState<{ id: string; message: string } | null>(null);
   const [verifyMsg, setVerifyMsg] = useState<string | null>(null);
   const [verifyBusy, setVerifyBusy] = useState(false);
 
@@ -164,14 +197,25 @@ function MinhaContaContent() {
     return [...groups.values()];
   }, [rentals]);
 
-  async function cancel(rental: Rental) {
+  function askCancel(rental: Rental) {
     if (cancelingId) return;
-    if (!window.confirm(`Cancelar o aluguel de "${rental.gameName}"?`)) return;
+    setCancelError(null);
+    setCancelDone(null);
+    setConfirmingId(rental.id);
+  }
+
+  async function confirmCancel(rental: Rental) {
+    if (cancelingId) return;
     setCancelingId(rental.id);
     setCancelError(null);
     const result = await rentalApi.cancel(rental.id);
     setCancelingId(null);
-    if (!result.ok) setCancelError({ id: rental.id, message: result.message });
+    if (!result.ok) {
+      setCancelError({ id: rental.id, message: result.message });
+      return;
+    }
+    setConfirmingId(null);
+    setCancelDone({ id: rental.id, message: cancelDoneText(result.data) });
   }
 
   async function resend() {
@@ -352,19 +396,61 @@ function MinhaContaContent() {
                           <span className="font-semibold">{info.label}</span>
                           {info.detail && ` · ${info.detail}`}
                         </p>
-                        {rental.status === "reserved" && (
+                        {rental.status === "reserved" && confirmingId !== rental.id && (
                           <button
                             type="button"
                             disabled={cancelingId !== null}
-                            onClick={() => cancel(rental)}
+                            onClick={() => askCancel(rental)}
                             className={`${smallBtn} self-start`}
                           >
-                            {cancelingId === rental.id ? "Cancelando..." : "Cancelar"}
+                            Cancelar
                           </button>
+                        )}
+                        {rental.status === "reserved" && confirmingId === rental.id && (
+                          <div
+                            role="group"
+                            aria-label={`Confirmar o cancelamento de ${rental.gameName}`}
+                            className="flex flex-col gap-2 mt-1 p-2.5 rounded-lg border border-orange-400/40 bg-orange-500/10"
+                          >
+                            <p className="text-xs font-semibold text-orange-200 break-words">
+                              Cancelar o aluguel de &ldquo;{rental.gameName}&rdquo;?
+                            </p>
+                            <p className="text-xs text-orange-100/90">
+                              {cancelPreviewText(
+                                cancelPreview(orderDoc, rental.id, settings.onlinePayment),
+                              )}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                disabled={cancelingId !== null}
+                                onClick={() => confirmCancel(rental)}
+                                className={smallBtn}
+                              >
+                                {cancelingId === rental.id ? "Cancelando..." : "Confirmar cancelamento"}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={cancelingId !== null}
+                                onClick={() => {
+                                  setConfirmingId(null);
+                                  setCancelError(null);
+                                }}
+                                className={smallBtn}
+                              >
+                                Manter aluguel
+                              </button>
+                            </div>
+                          </div>
                         )}
                         {cancelError?.id === rental.id && (
                           <p role="alert" className="text-xs text-red-300">
                             {cancelError.message}
+                          </p>
+                        )}
+                        {cancelDone?.id === rental.id && (
+                          <p role="status" className="text-xs text-emerald-300">
+                            {cancelDone.message}
                           </p>
                         )}
                       </li>

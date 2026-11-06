@@ -1,15 +1,25 @@
 import "server-only";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, type DocumentReference, type Transaction } from "firebase-admin/firestore";
 import { asBookings, asUnits } from "@/rental/bookings";
 import { todaySP } from "@/rental/dates";
 import { mergeRentalSettings } from "@/rental/defaults";
+import { formatBRL } from "@/rental/money";
 import {
+  beginRefund,
   checkoutItemsFor,
+  closeCancellationReview,
   decideApproval,
+  decideRefundedRedelivery,
+  dropPendingRefund,
+  finishRefund,
   isAwaitingPayment,
   isOrderExpirable,
+  isPaidOnline,
+  isValidRefundAmount,
   orderPaymentView,
+  refundableLeft,
   releaseHeldBookings,
+  reviewRefundCap,
   type ApprovalContext,
   type OrderPaymentView,
 } from "@/rental/payments";
@@ -17,6 +27,7 @@ import type {
   OrderPaymentStatus,
   RentalDuplicatePayment,
   RentalOrderType,
+  RentalPendingRefund,
   RentalRefund,
   RentalSettingsType,
   RentalType,
@@ -298,7 +309,57 @@ export async function applyPayment(
   if (payment.status === "rejected" || payment.status === "cancelled") {
     return applyRejected(orderId, payment);
   }
+  if (payment.status === "refunded") return applyRefunded(orderId, payment);
   return "ignored";
+}
+
+/**
+ * Pagamento reapresentado já reembolsado no provedor: se o reembolso foi nosso
+ * (tardio ou pagamento a mais) e ficou sem registro, termina de registrar — a
+ * chamada repete a mesma chave (o provedor devolve o mesmo reembolso).
+ */
+async function applyRefunded(orderId: string, payment: ProviderPayment): Promise<ApplyPaymentResult> {
+  const snap = await ordersCol().doc(orderId).get();
+  if (!snap.exists) return "ignored";
+  const order = snap.data() as RentalOrderType;
+  if (!paymentMatchesOrder(orderId, order, payment)) return "ignored";
+  const summary: OrderSummary = {
+    code: order.code,
+    customer: order.customer,
+    total: order.total,
+    closedBy: order.payment?.closedBy,
+    duplicatePayments: order.payment?.duplicatePayments ?? [],
+  };
+  switch (decideRefundedRedelivery(order, payment.id)) {
+    case "late":
+      await finishLateRefund(orderId, payment, summary);
+      return "late_refunded";
+    case "duplicate":
+      await refundDuplicate(orderId, payment, summary);
+      return "already";
+    case "ignored":
+      return "ignored";
+  }
+}
+
+/**
+ * Pede ao provedor um reembolso integral que pode já ter sido feito (pagamento
+ * com status "refunded"): se a repetição falhar, registra pelo próprio pagamento.
+ */
+async function refundWholePayment(
+  payment: ProviderPayment,
+  key: string,
+): Promise<{ refundId: string; amount: number }> {
+  try {
+    return await getPaymentProvider().refund(payment.id, undefined, key);
+  } catch (error) {
+    if (payment.status !== "refunded") throw error;
+    console.error(
+      `Reembolso do pagamento ${payment.id} já feito no provedor; repetição falhou, registrando pelo pagamento:`,
+      error,
+    );
+    return { refundId: `payment:${payment.id}`, amount: payment.amount };
+  }
 }
 
 async function applyRejected(orderId: string, payment: ProviderPayment): Promise<ApplyPaymentResult> {
@@ -497,9 +558,9 @@ async function sendPaidConfirmation(
 }
 
 /** E-mail de reembolso (falha só vai para o log). */
-async function sendRefundNotice(
+export async function sendRefundNotice(
   orderId: string,
-  summary: OrderSummary,
+  summary: Pick<RentalOrderType, "code" | "customer">,
   amount: number,
   reason: string,
 ): Promise<void> {
@@ -530,14 +591,20 @@ async function finishLateRefund(
 
   let refund: { refundId: string; amount: number };
   try {
-    refund = await getPaymentProvider().refund(payment.id, undefined, LATE_REFUND_KEY(orderId));
+    refund = await refundWholePayment(payment, LATE_REFUND_KEY(orderId));
   } catch (error) {
     console.error(
       `ATENÇÃO: pagamento ${payment.id} do pedido ${orderId} aprovado depois do prazo e o reembolso falhou:`,
       error,
     );
     try {
-      await orderRef.update({ "payment.lateApprovalRefundFailed": true });
+      // Não marca falha se outra tentativa já concluiu o reembolso.
+      await getAdminDb().runTransaction(async (tx) => {
+        const snap = await tx.get(orderRef);
+        const p = (snap.data() as RentalOrderType | undefined)?.payment;
+        if (!p || p.lateApprovalRefunded) return;
+        tx.update(orderRef, { "payment.lateApprovalRefundFailed": true });
+      });
     } catch (markError) {
       console.error(`Erro ao marcar o reembolso pendente do pedido ${orderId}:`, markError);
     }
@@ -581,28 +648,31 @@ async function refundDuplicate(
   console.warn(`Pedido ${orderId}: pagamento a mais ${payment.id}; devolvendo integralmente.`);
   const orderRef = ordersCol().doc(orderId);
 
-  /** Grava/atualiza a entrada deste pagamento; true se o reembolso foi registrado agora. */
+  /**
+   * Grava/atualiza a entrada deste pagamento. "refunded" = já tinha reembolso
+   * registrado (nada gravado); "written" = gravou.
+   */
   const record = (entry: RentalDuplicatePayment) =>
-    getAdminDb().runTransaction(async (tx) => {
+    getAdminDb().runTransaction(async (tx): Promise<"refunded" | "written" | "missing"> => {
       const snap = await tx.get(orderRef);
       const p = (snap.data() as RentalOrderType | undefined)?.payment;
-      if (!p) return false;
+      if (!p) return "missing";
       const list = Array.isArray(p.duplicatePayments) ? p.duplicatePayments : [];
       const prev = list.find((d) => d.paymentId === entry.paymentId);
-      if (prev?.providerRefundId) return false;
+      if (prev?.providerRefundId) return "refunded";
       tx.update(orderRef, {
         "payment.duplicatePayments": [...list.filter((d) => d !== prev), entry],
       });
-      return entry.providerRefundId !== undefined;
+      return "written";
     });
+
+  // Registra o pagamento a mais (pendente) antes de devolver: nunca some do pedido.
+  const pre = await record({ paymentId: payment.id, amount: payment.amount, at: Date.now() });
+  if (pre !== "written") return;
 
   let refund: { refundId: string; amount: number };
   try {
-    refund = await getPaymentProvider().refund(
-      payment.id,
-      undefined,
-      DUPLICATE_REFUND_KEY(orderId, payment.id),
-    );
+    refund = await refundWholePayment(payment, DUPLICATE_REFUND_KEY(orderId, payment.id));
   } catch (error) {
     console.error(
       `ATENÇÃO: reembolso do pagamento a mais ${payment.id} do pedido ${orderId} falhou:`,
@@ -622,7 +692,9 @@ async function refundDuplicate(
     at: Date.now(),
     providerRefundId: refund.refundId,
   });
-  if (first) await sendRefundNotice(orderId, summary, refund.amount, DUPLICATE_REFUND_EMAIL);
+  if (first === "written") {
+    await sendRefundNotice(orderId, summary, refund.amount, DUPLICATE_REFUND_EMAIL);
+  }
 }
 
 /** Ordem dos ids numéricos do Mercado Pago (maior = mais recente). */
@@ -682,4 +754,308 @@ export async function verifyOrderPayment(
 
   const fresh = (await orderRef.get()).data() as RentalOrderType;
   return { status: fresh.payment?.status ?? null, view: orderPaymentView(fresh, Date.now()) };
+}
+
+// ---------- Reembolsos (cancelamento, admin, análise) ----------
+//
+// Ordem de todo reembolso: (1) transação grava a intenção em
+// payment.pendingRefunds conferindo o limite; (2) chamada ao provedor fora da
+// transação, com chave de idempotência estável por operação; (3) transação
+// registra o reembolso (uma vez só por chave) junto com o efeito da operação.
+// Falha no provedor → tira a intenção e responde refund_failed.
+
+/** Chave do reembolso do cancelamento de um aluguel (cliente ou admin). */
+export const cancelRefundKey = (orderId: string, rentalId: string) =>
+  `${orderId}:${rentalId}:cancel`;
+const adminRefundKey = (orderId: string, requestId: string) => `${orderId}:admin:${requestId}`;
+const reviewRefundKey = (orderId: string, rentalIds: string[]) =>
+  `${orderId}:review:${rentalIds.join(",")}`;
+
+export const refundFailed = () =>
+  new ApiError(
+    502,
+    "refund_failed",
+    "Não foi possível processar o reembolso agora. Tente novamente.",
+  );
+const notPaid = () =>
+  new ApiError(409, "not_paid", "Este pedido não tem pagamento online aprovado.");
+export const invalidRefundAmount = (cap: number) =>
+  new ApiError(
+    400,
+    "invalid_refund_amount",
+    `O reembolso deve ficar entre ${formatBRL(0)} e ${formatBRL(cap)}.`,
+  );
+const MAX_REASON = 500;
+const cleanText = (value: unknown) =>
+  typeof value === "string" ? value.trim().slice(0, MAX_REASON) : "";
+
+export type StagedRefund =
+  | { kind: "go"; intent: RentalPendingRefund; paymentId: string }
+  | { kind: "done"; refund: RentalRefund };
+
+/**
+ * Etapa 1, dentro da transação do chamador (depois das leituras): grava a
+ * intenção. Repetição da mesma operação retoma a intenção gravada; `strict`
+ * recusa retomar com outro valor.
+ */
+export function stageRefund(
+  tx: Transaction,
+  orderRef: DocumentReference,
+  order: RentalOrderType,
+  intent: RentalPendingRefund,
+  options: { strict?: boolean } = {},
+): StagedRefund {
+  const paymentId = order.payment?.providerPaymentId;
+  if (!isPaidOnline(order) || !paymentId) throw notPaid();
+  const step = beginRefund(order, intent);
+  switch (step.kind) {
+    case "start":
+      tx.update(orderRef, { "payment.pendingRefunds": step.pendingRefunds });
+      return { kind: "go", intent, paymentId };
+    case "resume":
+      if (options.strict && step.pending.amount !== intent.amount) {
+        throw new ApiError(
+          409,
+          "refund_in_progress",
+          "Já há um reembolso desta operação em andamento. Atualize a página.",
+        );
+      }
+      return { kind: "go", intent: step.pending, paymentId };
+    case "done":
+      return { kind: "done", refund: step.refund };
+    case "exceeds":
+      throw invalidRefundAmount(step.left);
+    case "invalid":
+      throw invalidRefundAmount(refundableLeft(order));
+  }
+}
+
+/** Etapa 2: reembolso no provedor. Falha → tira a intenção e lança `refund_failed`. */
+export async function sendProviderRefund(
+  orderId: string,
+  paymentId: string,
+  intent: RentalPendingRefund,
+): Promise<{ refundId: string; amount: number }> {
+  try {
+    return await getPaymentProvider().refund(paymentId, intent.amount, intent.key);
+  } catch (error) {
+    console.error(`Reembolso ${intent.key} do pedido ${orderId} falhou no provedor:`, error);
+    const orderRef = ordersCol().doc(orderId);
+    try {
+      await getAdminDb().runTransaction(async (tx) => {
+        const snap = await tx.get(orderRef);
+        const p = (snap.data() as RentalOrderType | undefined)?.payment;
+        if (!p || !(p.pendingRefunds ?? []).some((x) => x.key === intent.key)) return;
+        tx.update(orderRef, { "payment.pendingRefunds": dropPendingRefund(p, intent.key) });
+      });
+    } catch (dropError) {
+      console.error(`Erro ao desfazer a intenção de reembolso ${intent.key}:`, dropError);
+    }
+    throw refundFailed();
+  }
+}
+
+/**
+ * Etapa 3, dentro da transação do chamador (depois das leituras): registra o
+ * reembolso. null = esta operação já estava registrada (não refaça o efeito).
+ */
+export function commitRefund(
+  tx: Transaction,
+  orderRef: DocumentReference,
+  order: RentalOrderType,
+  intent: RentalPendingRefund,
+  result: { refundId: string; amount: number },
+  /** Outros campos do pedido gravados junto (uma escrita só no documento). */
+  extra: Record<string, unknown> = {},
+): OrderPaymentStatus | null {
+  const next = finishRefund(order, intent, result, Date.now());
+  if (!next) return null;
+  tx.update(orderRef, {
+    "payment.refunds": next.refunds,
+    "payment.refundedTotal": next.refundedTotal,
+    "payment.status": next.status,
+    "payment.pendingRefunds": next.pendingRefunds,
+    ...extra,
+  });
+  return next.status;
+}
+
+const ADMIN_REFUND_EMAIL = "O Carcassonne Pub fez um reembolso do seu pedido.";
+const REVIEW_APPROVED_EMAIL =
+  "Analisamos o seu pedido de cancelamento e aprovamos o reembolso abaixo.";
+const REQUEST_ID = /^[A-Za-z0-9-]{8,64}$/;
+
+/**
+ * Reembolso pelo admin, com valor (centavos, > 0, até o que falta devolver).
+ * `requestId` vem do navegador (um por pedido de reembolso): repetir o mesmo
+ * requestId (duplo clique, nova tentativa) não reembolsa duas vezes.
+ */
+export async function refundOrder(
+  orderId: string,
+  adminUid: string,
+  amount: unknown,
+  requestId: unknown,
+  reason?: unknown,
+): Promise<{ amount: number; status: OrderPaymentStatus }> {
+  if (typeof requestId !== "string" || !REQUEST_ID.test(requestId)) {
+    throw new ApiError(400, "invalid_body", "Corpo da requisição inválido.");
+  }
+  if (typeof amount !== "number" || !Number.isInteger(amount) || amount <= 0) {
+    throw new ApiError(400, "invalid_refund_amount", "Informe um valor de reembolso maior que zero.");
+  }
+  const key = adminRefundKey(orderId, requestId);
+  const note = cleanText(reason);
+  const orderRef = ordersCol().doc(orderId);
+  const db = getAdminDb();
+
+  const staged = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(orderRef);
+    if (!snap.exists) throw notFound();
+    const order = snap.data() as RentalOrderType;
+    if (!isPaidOnline(order)) throw notPaid();
+    const cap = refundableLeft(order, key);
+    if (!isValidRefundAmount(amount, cap)) throw invalidRefundAmount(cap);
+    const intent: RentalPendingRefund = {
+      key,
+      amount,
+      at: Date.now(),
+      by: adminUid,
+      reason: note || "Reembolso pelo Carcassonne Pub",
+    };
+    return {
+      step: stageRefund(tx, orderRef, order, intent, { strict: true }),
+      status: order.payment?.status ?? "approved",
+      summary: { code: order.code, customer: order.customer },
+    };
+  });
+  if (staged.step.kind === "done") {
+    return { amount: staged.step.refund.amount, status: staged.status };
+  }
+
+  const { intent, paymentId } = staged.step;
+  const result = await sendProviderRefund(orderId, paymentId, intent);
+  const done = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(orderRef);
+    const order = snap.data() as RentalOrderType;
+    const status = commitRefund(tx, orderRef, order, intent, result);
+    return { first: status !== null, status: status ?? order.payment?.status ?? "refunded" };
+  });
+  if (done.first) await sendRefundNotice(orderId, staged.summary, result.amount, ADMIN_REFUND_EMAIL);
+  return { amount: result.amount, status: done.status };
+}
+
+export type ReviewResult = { kind: "approved"; amount: number } | { kind: "denied" };
+
+const noReview = () =>
+  new ApiError(409, "no_review", "Não há cancelamento em análise neste pedido.");
+
+/**
+ * Decide um cancelamento em análise (política manual). Aprovar: devolve
+ * `amount` (0 até a soma dos jogos analisados, limitado ao que falta devolver)
+ * e fecha a análise; recusar: fecha com o motivo, sem devolução (o
+ * cancelamento segue).
+ */
+export async function reviewCancellation(
+  orderId: string,
+  adminUid: string,
+  decision: unknown,
+  amount?: unknown,
+  reason?: unknown,
+): Promise<ReviewResult> {
+  if (decision !== "approve" && decision !== "deny") {
+    throw new ApiError(400, "invalid_body", "Corpo da requisição inválido.");
+  }
+  const note = cleanText(reason);
+  const orderRef = ordersCol().doc(orderId);
+  const db = getAdminDb();
+
+  if (decision === "deny") {
+    if (!note) throw new ApiError(400, "reason_required", "Informe o motivo da recusa.");
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(orderRef);
+      if (!snap.exists) throw notFound();
+      const review = (snap.data() as RentalOrderType).cancellationReview;
+      if (review?.status !== "pending") throw noReview();
+      tx.update(orderRef, {
+        cancellationReview: closeCancellationReview(review, review.rentalIds, {
+          status: "denied",
+          decidedBy: adminUid,
+          decidedAt: Date.now(),
+          reason: note,
+        }),
+      });
+    });
+    return { kind: "denied" };
+  }
+
+  const staged = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(orderRef);
+    if (!snap.exists) throw notFound();
+    const order = snap.data() as RentalOrderType;
+    const review = order.cancellationReview;
+    if (review?.status !== "pending") throw noReview();
+    const rentalIds = Array.isArray(review.rentalIds) ? review.rentalIds : [];
+    const key = reviewRefundKey(orderId, rentalIds);
+    const cap = reviewRefundCap(order, rentalIds, key);
+    if (!isValidRefundAmount(amount, cap)) throw invalidRefundAmount(cap);
+
+    const close = (value: number) =>
+      tx.update(orderRef, {
+        cancellationReview: closeCancellationReview(review, rentalIds, {
+          status: "approved",
+          decidedBy: adminUid,
+          decidedAt: Date.now(),
+          amount: value,
+          ...(note ? { reason: note } : {}),
+        }),
+      });
+    if (amount === 0) {
+      close(0);
+      return { kind: "closed" as const, amount: 0 };
+    }
+    const intent: RentalPendingRefund = {
+      key,
+      amount,
+      at: Date.now(),
+      by: adminUid,
+      rentalIds,
+      reason: note || "Cancelamento aprovado na análise",
+    };
+    const step = stageRefund(tx, orderRef, order, intent, { strict: true });
+    if (step.kind === "done") {
+      close(step.refund.amount);
+      return { kind: "closed" as const, amount: step.refund.amount };
+    }
+    return { ...step, summary: { code: order.code, customer: order.customer } };
+  });
+  if (staged.kind === "closed") return { kind: "approved", amount: staged.amount };
+
+  const { intent, paymentId } = staged;
+  const result = await sendProviderRefund(orderId, paymentId, intent);
+  const first = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(orderRef);
+    const order = snap.data() as RentalOrderType;
+    const review = order.cancellationReview;
+    const status = commitRefund(
+      tx,
+      orderRef,
+      order,
+      intent,
+      result,
+      review?.status === "pending"
+        ? {
+            cancellationReview: closeCancellationReview(review, intent.rentalIds ?? [], {
+              status: "approved",
+              decidedBy: adminUid,
+              decidedAt: Date.now(),
+              amount: result.amount,
+              ...(note ? { reason: note } : {}),
+            }),
+          }
+        : {},
+    );
+    return status !== null;
+  });
+  if (first) await sendRefundNotice(orderId, staged.summary, result.amount, REVIEW_APPROVED_EMAIL);
+  return { kind: "approved", amount: result.amount };
 }
