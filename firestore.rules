@@ -91,6 +91,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Pagamento online: o dono (ou admin) lê; escrita só pelo servidor.
+    match /rentalOrders/{orderId} {
+      allow read: if isAdmin() || (request.auth != null && resource.data.customerUid == request.auth.uid);
+      allow write: if false;
+    }
+
     match /rentalCustomers/{uid} {
       allow read: if isSelf(uid) || isAdmin();
       allow write: if false;
@@ -102,8 +108,8 @@ service cloud.firestore {
     // Leitura pública em tudo, menos nas coleções com dados pessoais.
     // Escrita de admin vale em tudo, exceto nas coleções protegidas/só-servidor.
     match /{collection}/{document=**} {
-      allow read: if !(collection in ['admins', 'adminRequests', 'rentals', 'rentalCustomers', 'rentalCpfIndex', 'authEmailThrottle']);
-      allow write: if isAdmin() && !(collection in ['rentalGames', 'rentals', 'rentalCustomers', 'rentalCpfIndex', 'authEmailThrottle']);
+      allow read: if !(collection in ['admins', 'adminRequests', 'rentals', 'rentalOrders', 'rentalCustomers', 'rentalCpfIndex', 'authEmailThrottle']);
+      allow write: if isAdmin() && !(collection in ['rentalGames', 'rentals', 'rentalOrders', 'rentalCustomers', 'rentalCpfIndex', 'authEmailThrottle']);
     }
 
   }

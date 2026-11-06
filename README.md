@@ -111,8 +111,11 @@ A aplicação estará disponível em [http://localhost:3000](http://localhost:30
 | `FIREBASE_ADMIN_CLIENT_EMAIL`              | `client_email` da conta de serviço. Somente servidor                     |
 | `FIREBASE_ADMIN_PRIVATE_KEY`               | `private_key` da conta de serviço, entre aspas, com `\n`. Somente servidor |
 | `SITE_URL`                                 | URL pública do site (ex.: `http://localhost:3000`). Somente servidor     |
+| `MERCADOPAGO_ACCESS_TOKEN`                 | Token de acesso do Mercado Pago (`TEST-…` = teste, `APP_USR-…` = produção). Somente servidor |
+| `MERCADOPAGO_WEBHOOK_SECRET`               | Assinatura secreta dos webhooks do Mercado Pago. Somente servidor        |
+| `CRON_SECRET`                              | Segredo (opcional) que autoriza a rotina agendada de limpeza de reservas. Somente servidor |
 
-> As variáveis `FIREBASE_ADMIN_*` e `SITE_URL` são exclusivas do servidor: nunca use o prefixo `NEXT_PUBLIC_` nelas e nunca as commite.
+> As variáveis `FIREBASE_ADMIN_*`, `SITE_URL`, `MERCADOPAGO_*` e `CRON_SECRET` são exclusivas do servidor: nunca use o prefixo `NEXT_PUBLIC_` nelas e nunca as commite.
 
 ## Scripts disponíveis
 
