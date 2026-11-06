@@ -22,8 +22,9 @@ export default function Checkbox({
   icon,
 }: CheckboxType) {
   return (
+    // O <label> envolve o input, então o clique já vai para ESTA caixinha.
+    // (Antes usava id = texto: caixinhas com o mesmo texto marcavam sempre a primeira.)
     <label
-      htmlFor={label}
       className={`group relative flex items-center gap-3 max-w-[400px] min-w-[200px] ${width} w-full cursor-pointer select-none rounded-xl text-sm text-primary-gold transition-[border-color,background-color] duration-200 ${
         withoutBackground
           ? "bg-transparent"
@@ -44,7 +45,6 @@ export default function Checkbox({
     >
       <input
         name={label}
-        id={label}
         className="peer sr-only"
         type="checkbox"
         checked={checked}

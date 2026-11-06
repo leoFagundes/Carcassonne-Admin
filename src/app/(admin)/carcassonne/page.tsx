@@ -61,7 +61,7 @@ function TabFromQuery({
   useEffect(() => {
     if (tab === "temas" || tab === "emails") onTab(tab);
     else if (tab === "configuracoes")
-      onSettings(section === "aluguel" || section === "geral" ? section : "reservas");
+      onSettings(section === "aluguel" || section === "reservas" ? section : "geral");
   }, [tab, section, onTab, onSettings]);
   return null;
 }
@@ -195,7 +195,7 @@ export default function SettingsPage() {
     if (tab === "emails") setOpenEmailEditor(true);
   }, []);
   const emailEditorOpened = React.useCallback(() => setOpenEmailEditor(false), []);
-  const [settingsTab, setSettingsTab] = useState<SettingsSection>("reservas");
+  const [settingsTab, setSettingsTab] = useState<SettingsSection>("geral");
   const openSettings = React.useCallback((section: SettingsSection) => {
     setActiveTab("settings");
     setSettingsTab(section);
@@ -1209,9 +1209,9 @@ export default function SettingsPage() {
           <div className="flex items-center justify-center gap-1.5 flex-wrap -mt-1">
             {(
               [
+                { key: "geral", label: "Geral" },
                 { key: "reservas", label: "Reservas" },
                 { key: "aluguel", label: "Aluguel" },
-                { key: "geral", label: "Geral" },
               ] as const
             ).map((t) => (
               <button

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { LuCheck, LuInfo, LuTriangleAlert } from "react-icons/lu";
+import { LuCheck, LuInfo, LuTriangleAlert, LuX } from "react-icons/lu";
 import { useAlert } from "@/contexts/alertProvider";
 import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 import type { GeneralConfigsType } from "@/types";
@@ -59,8 +59,37 @@ export function AlsoInNote({ alsoIn }: { alsoIn?: AlsoIn }) {
 }
 
 /** Cartão de uma seção de configurações, com o aviso de alterações e o botão Salvar no rodapé. */
+/** Botão "i" ao lado do título: abre a explicação (o que é, onde aparece). */
+function InfoToggle({ title, children }: { title: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-label={open ? "Fechar explicação" : `O que é "${title}"?`}
+        title="O que é isso?"
+        className={`flex items-center justify-center w-6 h-6 rounded-full border transition-colors cursor-pointer ${
+          open
+            ? "border-primary-gold/60 bg-primary-gold/15 text-primary-gold"
+            : "border-primary-gold/25 text-primary-gold/50 hover:border-primary-gold/50 hover:text-primary-gold"
+        }`}
+      >
+        {open ? <LuX size={12} /> : <LuInfo size={13} />}
+      </button>
+      {open && (
+        <div className="basis-full mt-1 flex flex-col gap-1.5 rounded-lg border border-primary-gold/20 bg-primary-gold/[0.05] p-3 text-xs leading-relaxed text-primary-gold/75 [&_strong]:text-primary-gold">
+          {children}
+        </div>
+      )}
+    </>
+  );
+}
+
 export function SettingsPanel({
   title,
+  info,
   alsoIn,
   dirty,
   saving,
@@ -70,6 +99,8 @@ export function SettingsPanel({
   className = "",
 }: {
   title: string;
+  /** Explicação aberta pelo "i" ao lado do título. */
+  info?: ReactNode;
   alsoIn?: AlsoIn;
   dirty: boolean;
   saving: boolean;
@@ -82,7 +113,10 @@ export function SettingsPanel({
     <div className={`flex flex-col rounded-xl border border-primary-gold/15 bg-secondary-black/40 overflow-hidden ${className}`}>
       <div className="flex flex-col gap-6 p-4">
         <div className="flex flex-col gap-1">
-          <span className="text-[14px] font-semibold uppercase tracking-widest text-primary-gold/45">{title}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[14px] font-semibold uppercase tracking-widest text-primary-gold/45">{title}</span>
+            {info && <InfoToggle title={title}>{info}</InfoToggle>}
+          </div>
           <AlsoInNote alsoIn={alsoIn} />
         </div>
         {children}

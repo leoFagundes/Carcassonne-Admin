@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { LuImagePlus, LuInfo } from "react-icons/lu";
+import { LuImagePlus } from "react-icons/lu";
 import Checkbox from "@/components/checkbox";
 import { NoticeBarView } from "@/components/siteNoticeBar";
 import { useAlert } from "@/contexts/alertProvider";
@@ -82,14 +82,115 @@ function Pills<T extends string | number>({
   );
 }
 
-function Note({ children }: { children: ReactNode }) {
-  return (
-    <p className="flex items-start gap-1.5 text-[11px] text-primary-gold/45 leading-relaxed -mt-3">
-      <LuInfo size={12} className="shrink-0 mt-0.5" />
-      <span>{children}</span>
-    </p>
-  );
-}
+const INFO = {
+  pub: (
+    <>
+      <p>
+        <strong>O que é:</strong> os dados de contato e o horário do Carcassonne num lugar só. Mudou o telefone? Muda
+        aqui e vale em todo lugar.
+      </p>
+      <p>
+        <strong>Onde aparece:</strong> o endereço na página de reserva, no regulamento, no PDF do cardápio e no e-mail
+        de confirmação do aluguel; WhatsApp, Instagram, Facebook e mapa nos contatos do regulamento e no botão de
+        WhatsApp das áreas desligadas; Instagram e site no rodapé do PDF do cardápio.
+      </p>
+      <p>
+        <strong>Horário de funcionamento:</strong> serve só para o selo &quot;Aberto agora / Fechado&quot; (linktree e
+        página de reserva). Não muda os horários que o cliente pode reservar — esses ficam em{" "}
+        <Link href="/carcassonne?tab=configuracoes&section=reservas" className="underline underline-offset-2">Configurações → Reservas</Link>.
+      </p>
+      <p>
+        Campo vazio volta ao valor padrão. O e-mail de confirmação de <em>reserva</em> tem o endereço próprio, editável
+        em Configurações → E-mails.
+      </p>
+    </>
+  ),
+  notice: (
+    <>
+      <p>
+        <strong>O que é:</strong> uma faixa no topo de todas as páginas do site do cliente — cardápio, ludoteca,
+        reservas, linktree, eventos e aluguel. Não aparece no admin.
+      </p>
+      <p>
+        <strong>Quando aparece:</strong> com &quot;Mostrar o aviso&quot; marcado, com texto e dentro do período. Sem
+        datas, fica no ar até você desmarcar.
+      </p>
+      <p>
+        <strong>Para o cliente:</strong> ele pode fechar a faixa no X; ela volta numa nova visita ou quando o texto
+        mudar.
+      </p>
+      <p>Exemplos: &quot;Hoje fechado para evento privado&quot;, &quot;Feriado: abrimos às 18h&quot;, &quot;Noite de Halloween no sábado — reserve já!&quot;.</p>
+    </>
+  ),
+  areas: (
+    <>
+      <p>
+        <strong>O que é:</strong> tira uma parte do site do ar sem apagar nada. Ao religar, tudo volta como estava.
+      </p>
+      <p>
+        <strong>O que o cliente vê:</strong> no lugar da página, um cartão &quot;[Área] indisponível&quot; com a
+        mensagem abaixo e botões para o linktree e o WhatsApp.
+      </p>
+      <p>
+        <strong>Páginas:</strong> Reservas (fazer e cancelar reserva), Ludoteca (coleção e jogos à venda), Cardápio e
+        Eventos. &quot;Recomendação de música&quot; desliga a página e o botão flutuante de música.
+      </p>
+      <p>O aluguel tem a própria chave, em <Link href="/carcassonne?tab=configuracoes&section=aluguel" className="underline underline-offset-2">Configurações → Aluguel</Link>.</p>
+    </>
+  ),
+  share: (
+    <>
+      <p>
+        <strong>O que é:</strong> o cartão que aparece quando alguém manda o link do site no WhatsApp, Instagram,
+        Facebook ou Telegram — imagem, título e descrição.
+      </p>
+      <p>
+        <strong>Onde aparece:</strong> só nessas prévias e no nome da aba do navegador. Não muda nada dentro do site.
+      </p>
+      <p>
+        A mudança leva até 5 minutos. O WhatsApp guarda a prévia de um link por um tempo; para testar, mande o link com
+        algo no final, ex.: carcassonnepub.com.br/?v=2.
+      </p>
+    </>
+  ),
+  session: (
+    <>
+      <p>
+        <strong>O que é:</strong> por quanto tempo o login do admin continua valendo sem uso. Cada clique ou tecla no
+        admin renova o prazo; passado o tempo parado, é preciso entrar de novo.
+      </p>
+      <p>
+        Vale para todos os administradores, em todos os aparelhos. Prazo curto é mais seguro em computador
+        compartilhado; prazo longo evita ficar entrando toda hora.
+      </p>
+    </>
+  ),
+  effects: (
+    <>
+      <p>
+        <strong>O que é:</strong> enfeites do mouse nas telas do admin — faíscas ao clicar, um brilho que segue o cursor
+        e um rastro. O cliente não vê.
+      </p>
+      <p>
+        <strong>Celular e &quot;reduzir movimento&quot;:</strong> por padrão os efeitos ficam desligados em telas de
+        toque e para quem ativou &quot;reduzir movimento&quot; nas configurações de acessibilidade do aparelho.
+      </p>
+    </>
+  ),
+  staff: (
+    <>
+      <p>
+        <strong>O que é:</strong> quem da equipe recebe o e-mail &quot;Nova reserva recebida&quot; a cada reserva feita
+        no site.
+      </p>
+      <p>
+        Um e-mail por linha (ou separados por vírgula). Vazio = vai para o e-mail de contato do pub. Quem decide o
+        destino é o servidor, então ninguém de fora consegue mudar.
+      </p>
+      <p>O aviso de novo aluguel usa o e-mail definido em <Link href="/carcassonne?tab=configuracoes&section=aluguel" className="underline underline-offset-2">Configurações → Aluguel</Link>.</p>
+    </>
+  ),
+};
 
 const Loading = () => <p className="text-xs text-primary-gold/50 px-1">Carregando...</p>;
 
@@ -120,11 +221,7 @@ function PubInfoSettings() {
   );
 
   return (
-    <SettingsPanel title="Informações do pub" dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
-      <Note>
-        Usadas no site (página de reserva, regulamento, linktree), no PDF do cardápio e nos e-mails do aluguel. Campo
-        vazio volta ao valor padrão.
-      </Note>
+    <SettingsPanel title="Informações do pub" info={INFO.pub} dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="sm:col-span-2">{text("address", "Endereço", DEFAULT_PUB_INFO.address)}</div>
         <div className="sm:col-span-2">{text("mapsUrl", "Link do mapa", "https://maps.google.com/...")}</div>
@@ -144,8 +241,10 @@ function PubInfoSettings() {
         <span className="text-[11px] font-semibold uppercase tracking-wider text-primary-gold/55">
           Horário de funcionamento
         </span>
-        <p className="text-[11px] text-primary-gold/40 -mt-1">
-          Se fechar depois da meia-noite, coloque o horário da madrugada (ex.: 18:00 às 02:00).
+        <p className="text-[11px] text-primary-gold/45 -mt-1 leading-relaxed">
+          Usado só pelo selo <strong className="text-primary-gold/70">&quot;Aberto agora / Fechado&quot;</strong>, que
+          aparece no linktree e na página de reserva (ligue embaixo). Não muda os horários em que o cliente pode reservar.
+          Se fechar depois da meia-noite, use o horário da madrugada (ex.: 18:00 às 02:00).
         </p>
         <div className="flex flex-col gap-1.5">
           {WEEKDAYS.map((name, day) => {
@@ -186,11 +285,22 @@ function PubInfoSettings() {
           label='Mostrar o selo "Aberto agora / Fechado" no site'
           variant
         />
-        <p className="text-[11px] text-primary-gold/40">
-          {preview.state === "unknown"
-            ? "Preencha pelo menos um dia para o selo aparecer."
-            : `Agora o selo diria: "${preview.text}". Aparece no linktree e na página de reserva.`}
-        </p>
+        {preview.state === "unknown" ? (
+          <p className="text-[11px] text-primary-gold/40">Marque pelo menos um dia como aberto para o selo aparecer.</p>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-primary-gold/45">
+            <span>Prévia do selo agora:</span>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-semibold bg-primary-black/80 ${
+                preview.state === "open" ? "border-emerald-400/50 text-emerald-300" : "border-primary-gold/30 text-primary-gold/70"
+              }`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${preview.state === "open" ? "bg-emerald-400" : "bg-primary-gold/50"}`} />
+              {preview.text}
+            </span>
+            {!s.configs.showOpenNow && <span>(desligado: o cliente não vê)</span>}
+          </div>
+        )}
       </div>
     </SettingsPanel>
   );
@@ -222,8 +332,7 @@ function SiteNoticeSettings() {
   if (!s.loaded) return <Loading />;
 
   return (
-    <SettingsPanel title="Aviso no site" dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
-      <Note>Uma faixa no topo de todas as páginas do site. O cliente pode fechar; um aviso novo aparece de novo.</Note>
+    <SettingsPanel title="Aviso no site" info={INFO.notice} dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
       <Checkbox
         checked={notice.enabled}
         setChecked={(e) => setNotice({ enabled: e.target.checked })}
@@ -268,12 +377,36 @@ function SiteNoticeSettings() {
         </Field>
       </div>
       <div className="flex flex-col gap-1.5">
-        <span className="text-[11px] text-primary-gold/50">{noticeStatus(notice, todaySP())}</span>
-        {notice.text.trim() && (
-          <div className="overflow-hidden rounded-lg border border-primary-gold/10">
-            <NoticeBarView notice={notice} />
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-primary-gold/55">
+          Prévia — como o cliente vê
+        </span>
+        <div
+          className={`overflow-hidden rounded-lg border border-primary-gold/15 bg-primary-black transition-opacity ${
+            noticeActive(notice, todaySP()) ? "" : "opacity-60"
+          }`}
+        >
+          <div className="flex items-center gap-1.5 border-b border-primary-gold/10 bg-secondary-black/70 px-3 py-1.5">
+            <span className="h-2 w-2 rounded-full bg-primary-gold/25" />
+            <span className="h-2 w-2 rounded-full bg-primary-gold/25" />
+            <span className="h-2 w-2 rounded-full bg-primary-gold/25" />
+            <span className="ml-2 text-[10px] text-primary-gold/35">carcassonnepub.com.br</span>
           </div>
-        )}
+          <NoticeBarView
+            notice={{ ...notice, text: notice.text.trim() || "Escreva o texto do aviso acima" }}
+            onClose={() => {}}
+          />
+          <div aria-hidden="true" className="flex flex-col items-center gap-2 px-4 py-5">
+            <span className="h-3 w-28 rounded bg-primary-gold/15" />
+            <span className="h-2 w-44 rounded bg-primary-gold/10" />
+            <span className="h-2 w-36 rounded bg-primary-gold/10" />
+          </div>
+        </div>
+        <span
+          className={`text-[11px] ${noticeActive(notice, todaySP()) ? "text-emerald-300" : "text-primary-gold/50"}`}
+        >
+          {noticeStatus(notice, todaySP())}
+          {!noticeActive(notice, todaySP()) && notice.text.trim() && " — o cliente não vê agora"}
+        </span>
       </div>
     </SettingsPanel>
   );
@@ -294,14 +427,7 @@ function AreasSettings() {
   if (!s.loaded) return <Loading />;
 
   return (
-    <SettingsPanel title="Áreas do site" dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
-      <Note>
-        Área desligada mostra a mensagem abaixo no lugar da página. O aluguel tem a própria chave, em{" "}
-        <Link href="/carcassonne?tab=configuracoes&section=aluguel" className="underline underline-offset-2">
-          Configurações → Aluguel
-        </Link>
-        .
-      </Note>
+    <SettingsPanel title="Áreas do site" info={INFO.areas} dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
       <div className="flex flex-col gap-1.5">
         {AREAS.map((area) => (
           <div key={area.key} className="flex items-center justify-between gap-3 rounded-lg bg-primary-black/30 px-3 py-2">
@@ -369,11 +495,7 @@ function ShareSettings() {
   if (!s.loaded) return <Loading />;
 
   return (
-    <SettingsPanel title="Prévia ao compartilhar" dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
-      <Note>
-        O que aparece quando alguém manda o link do site no WhatsApp, Instagram ou Facebook. Pode levar alguns minutos
-        para atualizar, e o WhatsApp guarda a prévia antiga por um tempo.
-      </Note>
+    <SettingsPanel title="Prévia ao compartilhar" info={INFO.share} dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
       <Field label="Título">
         <input className={fieldClass} maxLength={70} value={meta.title} onChange={(e) => setMeta({ title: e.target.value })} />
       </Field>
@@ -435,8 +557,7 @@ function SessionSettings() {
   const s = useGeneralConfigSection(SESSION_FIELDS);
   if (!s.loaded) return <Loading />;
   return (
-    <SettingsPanel title="Sessão do admin" dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
-      <Note>Depois desse tempo sem usar o admin, é preciso entrar de novo. Vale para todos os administradores.</Note>
+    <SettingsPanel title="Sessão do admin" info={INFO.session} dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
       <Pills
         value={sessionHours(s.configs.adminSessionHours)}
         options={SESSION_HOUR_OPTIONS.map((o) => ({ value: o.hours, label: o.label }))}
@@ -469,8 +590,7 @@ function EffectsSettings() {
   if (!s.loaded) return <Loading />;
 
   return (
-    <SettingsPanel title="Efeitos de mouse" dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
-      <Note>Efeitos visuais do mouse nas telas do admin.</Note>
+    <SettingsPanel title="Efeitos de mouse" info={INFO.effects} dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
       <div className="flex flex-col gap-2">
         <Checkbox checked={!!s.configs.clickEffect} setChecked={(e) => s.set({ clickEffect: e.target.checked })} label="Ativar efeito de clique" variant />
         <Checkbox checked={!!s.configs.followCursor} setChecked={(e) => s.set({ followCursor: e.target.checked })} label="Ativar destaque de cursor" variant />
@@ -515,14 +635,7 @@ function StaffEmailsSettings() {
   const { valid, invalid } = parseEmails(text);
 
   return (
-    <SettingsPanel title="E-mails da equipe" dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
-      <Note>
-        Quem recebe o aviso de nova reserva. O aviso de novo aluguel vai para o e-mail definido em{" "}
-        <Link href="/carcassonne?tab=configuracoes&section=aluguel" className="underline underline-offset-2">
-          Configurações → Aluguel
-        </Link>
-        .
-      </Note>
+    <SettingsPanel title="E-mails da equipe" info={INFO.staff} dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
       <Field
         label="Aviso de nova reserva"
         hint={valid.length ? `${valid.length === 1 ? "1 e-mail" : `${valid.length} e-mails`} vão receber.` : `Vazio: vai para o e-mail de contato do pub (${pubEmail}).`}
