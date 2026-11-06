@@ -9,6 +9,8 @@ import {
   type RentalRefundEmailProps,
 } from "@/components/react-email/rentalRefundEmail";
 import { siteUrl } from "./accountEmails";
+import { loadGeneralConfigs } from "@/services/generalConfigsServer";
+import { mergePubInfo } from "@/utils/generalSettings";
 
 const FROM_ADDRESS = "Carcassonne Pub <aluguel@carcassonnepub.com.br>";
 
@@ -24,12 +26,14 @@ export async function sendOrderConfirmation(
 ): Promise<void> {
   const resend = new Resend(process.env.RESEND_API_KEY);
   const staff = staffEmail?.trim();
+  // Endereço salvo em Configurações → Geral (falha na leitura → o padrão).
+  const address = mergePubInfo((await loadGeneralConfigs())?.pubInfo).address;
   const result = await resend.emails.send({
     from: FROM_ADDRESS,
     to,
     ...(staff && staff.toLowerCase() !== to.toLowerCase() ? { bcc: staff } : {}),
     subject: `🎲 Aluguel confirmado — código ${props.code} · Carcassonne Pub`,
-    react: <RentalOrderEmail {...props} />,
+    react: <RentalOrderEmail {...props} address={address} />,
   });
   if (result.error) {
     throw new Error(`Falha ao enviar e-mail: ${result.error.message}`);

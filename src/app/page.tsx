@@ -22,7 +22,7 @@ import Puzzle from "@/components/puzzle";
 import AuthBackground from "@/components/authBackground";
 import AuthCard, { AuthLink, AuthSubmit } from "@/components/authCard";
 import { AUTH_SCENE } from "@/utils/authScene";
-import { SESSION_DURATION } from "./(admin)/sessionTimer";
+import { sessionDuration } from "./(admin)/sessionTimer";
 
 export default function Home() {
   const [user, setUser] = useState<User>({ email: "", password: " " });
@@ -118,7 +118,7 @@ export default function Home() {
 
       localStorage.setItem(
         "session_expires_at",
-        String(Date.now() + SESSION_DURATION),
+        String(Date.now() + sessionDuration()),
       );
       router.push("/myreserves");
     } catch (error: unknown) {

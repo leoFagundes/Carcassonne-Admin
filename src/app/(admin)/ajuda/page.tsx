@@ -643,7 +643,43 @@ const helpCards: HelpCard[] = [
     category: "configuracoes",
     title: "Onde ficam as configurações de reserva e de aluguel",
     description:
-      "Em Configurações → aba 'Configurações' há três subabas: 'Reservas' (horários, dias sem reserva, capacidade, antecedência, lotação no calendário, datas bloqueadas e especiais), 'Aluguel' (o mesmo quadro de Aluguel → Regras: serviço ativo, dias de retirada, limites, CPF e pagamento online; enquanto o aluguel estiver em teste, pede a senha) e 'Geral' (efeitos de mouse e o que vier no futuro). As mesmas configurações também abrem na página de cada área: em Reservas, pelo botão de engrenagem no topo; no Aluguel, na aba 'Regras'. É a mesma configuração nos dois lugares — salvar em um muda no outro. Cada quadro tem o próprio botão 'Salvar' e só grava os próprios campos.",
+      "Em Configurações → aba 'Configurações' há três subabas: 'Reservas' (horários, dias sem reserva, capacidade, antecedência, lotação no calendário, datas bloqueadas e especiais), 'Aluguel' (o mesmo quadro de Aluguel → Regras: serviço ativo, dias de retirada, limites, CPF e pagamento online; enquanto o aluguel estiver em teste, pede a senha) e 'Geral' (informações do pub, aviso no site, áreas do site, prévia ao compartilhar, e-mails da equipe, sessão do admin e efeitos de mouse). As mesmas configurações também abrem na página de cada área: em Reservas, pelo botão de engrenagem no topo; no Aluguel, na aba 'Regras'. É a mesma configuração nos dois lugares — salvar em um muda no outro. Cada quadro tem o próprio botão 'Salvar' e só grava os próprios campos.",
+  },
+  {
+    category: "configuracoes",
+    title: "Informações do pub e horário de funcionamento",
+    description:
+      "Em Configurações → 'Configurações' → 'Geral' → 'Informações do pub': endereço, link do mapa, WhatsApp, e-mail, Instagram, Facebook e site. Eles aparecem na página de reserva, no regulamento, no PDF do cardápio e no e-mail de confirmação do aluguel — mudou o telefone, muda aqui e vale em todo lugar. Campo vazio volta ao valor padrão. Logo abaixo, o horário de funcionamento de cada dia (se fechar depois da meia-noite, use o horário da madrugada, ex.: 18:00 às 02:00) e a opção de mostrar o selo 'Aberto agora · fecha às 2h' / 'Fechado · abre amanhã às 18h' no linktree e na página de reserva.",
+  },
+  {
+    category: "configuracoes",
+    title: "Aviso no site",
+    description:
+      "Em 'Geral' → 'Aviso no site': escreva o texto, escolha o estilo (Informação, Atenção ou Festa), o período (de/até — vazio = desde já / até desligar) e, se quiser, um link. A faixa aparece no topo de todas as páginas do site enquanto estiver no período; o painel mostra se está 'No ar agora', 'Agendado' ou 'Encerrado', com a prévia. O cliente pode fechar a faixa; um aviso com texto novo aparece de novo.",
+  },
+  {
+    category: "configuracoes",
+    title: "Ligar e desligar áreas do site",
+    description:
+      "Em 'Geral' → 'Áreas do site': desligue Reservas, Ludoteca, Cardápio, Eventos ou a Recomendação de música (que também esconde o botão flutuante). Quem abrir uma área desligada vê a mensagem que você escrever (ou a padrão) com botões para o linktree e o WhatsApp. O aluguel tem a própria chave em Configurações → Aluguel.",
+  },
+  {
+    category: "configuracoes",
+    title: "Prévia ao compartilhar o link",
+    description:
+      "Em 'Geral' → 'Prévia ao compartilhar': título, descrição e imagem (ideal 1200 × 630) que aparecem quando alguém manda o link do site no WhatsApp, Instagram ou Facebook. O painel mostra como fica. A mudança pode levar alguns minutos, e o WhatsApp guarda a prévia antiga por um tempo.",
+  },
+  {
+    category: "configuracoes",
+    title: "E-mails da equipe",
+    description:
+      "Em 'Geral' → 'E-mails da equipe': os e-mails que recebem o aviso de nova reserva (um por linha ou separados por vírgula). Vazio = vai para o e-mail de contato do pub. O destino é decidido pelo servidor. O aviso de novo aluguel usa o e-mail da equipe definido em Configurações → Aluguel.",
+  },
+  {
+    category: "configuracoes",
+    title: "Sessão do admin",
+    description:
+      "Em 'Geral' → 'Sessão do admin': depois de quanto tempo sem usar o admin é preciso entrar de novo — 8 horas, 1 dia, 3 dias ou 7 dias. Vale para todos os administradores.",
   },
   {
     category: "configuracoes",
@@ -679,7 +715,7 @@ const helpCards: HelpCard[] = [
     category: "configuracoes",
     title: "Como controlar os efeitos visuais do site",
     description:
-      "Em Configurações → aba 'Configurações' → subaba 'Geral' há três toggles: 'Efeito de clique' (faíscas ao clicar), 'Seguir cursor' (elemento que acompanha o mouse) e 'Canvas cursor' (efeito canvas no cursor). As mudanças entram em vigor para todos os visitantes após salvar.",
+      "Em Configurações → aba 'Configurações' → subaba 'Geral' → 'Efeitos de mouse' há três toggles: 'Efeito de clique' (faíscas ao clicar), 'Destaque de cursor' (elemento que acompanha o mouse) e 'Efeito de cursor' (rastro no cursor). Eles aparecem nas telas do admin. Dá para escolher a intensidade do clique (Suave, Normal, Forte) e, por padrão, os efeitos ficam desligados no celular/tablet e para quem ativou 'reduzir movimento' no sistema — as duas opções podem ser desmarcadas.",
   },
   {
     category: "temas",

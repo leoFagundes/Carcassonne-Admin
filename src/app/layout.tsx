@@ -4,6 +4,10 @@ import "./globals.css";
 import { AlertProvider } from "@/contexts/alertProvider";
 import { Analytics } from "@vercel/analytics/next";
 import SiteThemeProvider from "@/components/siteTheme/SiteThemeProvider";
+import { SiteConfigProvider } from "@/contexts/siteConfigProvider";
+import { unstable_cache } from "next/cache";
+import { loadGeneralConfigs } from "@/services/generalConfigsServer";
+import { mergeShareMeta } from "@/utils/generalSettings";
 
 // Fontes hospedadas no projeto (antes vinham de next/font/google): o build
 // do Turbopack quebrava ao baixar a Saira do Google Fonts ("next/font/google
@@ -30,10 +34,24 @@ const saira = localFont({
   variable: "--font-saira",
 });
 
-export const metadata: Metadata = {
-  title: "Carcassonne Admin",
-  description: "Área de administrador do Carcassonne Pub",
-};
+// Prévia ao compartilhar o link (Configurações → Geral). Relida a cada 5 minutos;
+// se o banco não responder, usa o texto padrão.
+const loadShareMeta = unstable_cache(
+  async () => mergeShareMeta((await loadGeneralConfigs())?.shareMeta),
+  ["share-meta"],
+  { revalidate: 300 },
+);
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { title, description, image } = await loadShareMeta();
+  const images = image ? [{ url: image }] : undefined;
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: "website", locale: "pt_BR", siteName: "Carcassonne Pub", images },
+    twitter: { card: image ? "summary_large_image" : "summary", title, description, images },
+  };
+}
 
 export default function RootLayout({
   children,
@@ -49,7 +67,9 @@ export default function RootLayout({
         <div className="background-fixed" />
         <AlertProvider>
           {/* Tema sazonal (Configurações → Temas) em todas as páginas */}
-          <SiteThemeProvider>{children}</SiteThemeProvider>
+          <SiteConfigProvider>
+            <SiteThemeProvider>{children}</SiteThemeProvider>
+          </SiteConfigProvider>
         </AlertProvider>
       </body>
     </html>

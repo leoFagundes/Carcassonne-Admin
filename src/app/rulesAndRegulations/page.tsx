@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import React from "react";
 import { motion } from "framer-motion";
+import { usePubInfo } from "@/contexts/siteConfigProvider";
+import { facebookUrl, formatPhoneBR, instagramUrl, whatsappUrl } from "@/utils/generalSettings";
 import { FaWhatsapp, FaSmokingBan } from "react-icons/fa";
 import {
   FiClipboard,
@@ -61,6 +63,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 export default function RulesPage() {
   const router = useRouter();
+  const pub = usePubInfo();
 
   return (
     <>
@@ -140,13 +143,13 @@ export default function RulesPage() {
               variants={itemVariants}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              href="https://wa.me/5561999684186"
+              href={whatsappUrl(pub.whatsapp)}
               target="_blank"
               rel="noopener noreferrer"
               className="contact-link"
             >
               <FaWhatsapp size={16} className="text-primary-gold/70 shrink-0" />
-              <span>(61) 99968-4186</span>
+              <span>{formatPhoneBR(pub.whatsapp)}</span>
             </motion.a>
             <motion.button
               variants={itemVariants}
@@ -165,19 +168,19 @@ export default function RulesPage() {
               variants={itemVariants}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              href="https://www.facebook.com/CARCASSONNEPUB"
+              href={facebookUrl(pub.facebook)}
               target="_blank"
               rel="noopener noreferrer"
               className="contact-link"
             >
               <FiFacebook size={16} className="text-primary-gold/70 shrink-0" />
-              <span>/CARCASSONNEPUB</span>
+              <span>/{pub.facebook}</span>
             </motion.a>
             <motion.a
               variants={itemVariants}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              href="https://www.instagram.com/CARCASSONNEPUB"
+              href={instagramUrl(pub.instagram)}
               target="_blank"
               rel="noopener noreferrer"
               className="contact-link"
@@ -186,19 +189,19 @@ export default function RulesPage() {
                 size={16}
                 className="text-primary-gold/70 shrink-0"
               />
-              <span>@CARCASSONNEPUB</span>
+              <span>@{pub.instagram.toUpperCase()}</span>
             </motion.a>
             <motion.a
               variants={itemVariants}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              href="https://www.google.com/maps/place/CLN+407+Bloco+E+-+Loja+37+-+Asa+Norte,+Brasília+-+DF"
+              href={pub.mapsUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="contact-link"
             >
               <FiMapPin size={16} className="text-primary-gold/70 shrink-0" />
-              <span>CLN 407 BLOCO E LOJA 37 — ASA NORTE</span>
+              <span>{pub.address.toUpperCase()}</span>
             </motion.a>
           </div>
         </motion.div>

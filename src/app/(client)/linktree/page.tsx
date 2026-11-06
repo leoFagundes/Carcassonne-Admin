@@ -2,6 +2,7 @@
 
 import Loader from "@/components/loader";
 import ThemeLogoAccessory from "@/components/siteTheme/ThemeLogoAccessory";
+import OpenNowBadge from "@/components/openNowBadge";
 import { useSiteTheme } from "@/components/siteTheme/siteThemeContext";
 import LinksRepository from "@/services/repositories/LinksRepository";
 import { LinkType } from "@/types";
@@ -377,6 +378,9 @@ export default function LinktreePage() {
             <p className="text-primary-white/40 text-xs text-center tracking-wide max-w-[220px] leading-relaxed">
               Coma, jogue, repita
             </p>
+
+            {/* Aberto agora / Fechado (Configurações → Geral) */}
+            <OpenNowBadge />
 
             {/* Divider */}
             <div className="flex items-center gap-3 w-48">

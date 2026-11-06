@@ -38,7 +38,7 @@ import EmailsTab from "./emails-tab";
 import RentalStats from "./rental-stats";
 import DatabaseStats from "./database-stats";
 import ReserveSettings from "./reserve-settings";
-import EffectsSettings from "./effects-settings";
+import GeneralSettings from "./general-settings";
 import RentalSettingsPanel from "./rental-settings-panel";
 import { useSiteThemeReminders } from "@/components/siteTheme/siteThemeContext";
 
@@ -1231,7 +1231,7 @@ export default function SettingsPage() {
             <ReserveSettings alsoIn={{ label: "Reservas (botão de engrenagem)", href: "/myreserves?config=1" }} />
           )}
           {settingsTab === "aluguel" && <RentalSettingsPanel />}
-          {settingsTab === "geral" && <EffectsSettings className="w-full max-w-md" />}
+          {settingsTab === "geral" && <GeneralSettings />}
         </div>
       )}
 

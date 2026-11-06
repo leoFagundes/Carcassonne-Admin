@@ -35,6 +35,8 @@ export type RentalOrderEmailProps = {
   rulesUrl: string;
   /** Pago online (forma do pagamento); ausente = pagamento no balcão. */
   paidOnline?: "pix" | "card" | "other";
+  /** Endereço do pub (Configurações → Geral); ausente = o padrão. */
+  address?: string;
 };
 
 const PAID_ONLINE_LABEL: Record<NonNullable<RentalOrderEmailProps["paidOnline"]>, string> = {
@@ -217,6 +219,7 @@ export const RentalOrderEmail = ({
   total,
   rulesUrl,
   paidOnline,
+  address = "CLN 407 Bloco E Loja 37 — Asa Norte, Brasília/DF",
 }: RentalOrderEmailProps) => {
   const count = items.length;
   return (
@@ -274,7 +277,7 @@ export const RentalOrderEmail = ({
               </Section>
 
               <Text style={addressText}>
-                📍 CLN 407 Bloco E Loja 37 — Asa Norte, Brasília/DF
+                📍 {address}
               </Text>
 
               <Hr style={divider} />

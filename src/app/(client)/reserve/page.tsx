@@ -31,6 +31,8 @@ import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepo
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import Loader from "@/components/loader";
 import ThemeLogoAccessory from "@/components/siteTheme/ThemeLogoAccessory";
+import OpenNowBadge from "@/components/openNowBadge";
+import { usePubInfo } from "@/contexts/siteConfigProvider";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
@@ -50,6 +52,7 @@ const STAR = (
 );
 
 export default function Reserve() {
+  const pub = usePubInfo();
   const [page, setPage] = useState(1);
   const [adults, setAdults] = useState(2);
   // Distinção adultos/crianças removida da reserva — agora é só "pessoas".
@@ -333,7 +336,7 @@ export default function Reserve() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          to: "carcassonnepub@gmail.com",
+          // Destinatários: definidos no servidor (Configurações → Geral → E-mails da equipe).
           subject: `Nova reserva recebida - Carcassonne Pub`,
           props: {
             name: reserveToSave.name,
@@ -425,11 +428,10 @@ export default function Reserve() {
               <span className="font-cinzel text-base sm:text-lg font-semibold text-shimmer-gold tracking-wide">
                 Carcassonne Pub
               </span>
-              <span className="text-[10px] text-primary-gold/45 italic leading-relaxed">
-                CLN 407 BLOCO E LOJA 37
-                <br />
-                ASA NORTE, BRASÍLIA - DF
+              <span className="text-[10px] text-primary-gold/45 italic leading-relaxed uppercase">
+                {pub.address}
               </span>
+              <OpenNowBadge className="self-start mt-1" />
             </div>
           </div>
 

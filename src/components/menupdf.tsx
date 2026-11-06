@@ -9,6 +9,7 @@ import {
   TypeOrderType,
 } from "@/types";
 import { LuVegan, LuStar } from "react-icons/lu";
+import { usePubInfo } from "@/contexts/siteConfigProvider";
 
 export type PDFTheme = "black" | "white";
 
@@ -52,6 +53,7 @@ export default function MenuPDF({
   theme = "black",
 }: Props) {
   const { G, G2, BG, BG2, TEXT } = PDF_PALETTES[theme];
+  const pub = usePubInfo();
   const visibleItems = items.filter((i) => i.isVisible);
 
   const orderedTypes = [...new Set(visibleItems.map((i) => i.type))].sort(
@@ -169,7 +171,7 @@ export default function MenuPDF({
             marginTop: "4px",
           }}
         >
-          CLN 407 Bloco E Loja 37 — Asa Norte, Brasília – DF
+          {pub.address}
         </div>
       </header>
 
@@ -420,7 +422,7 @@ export default function MenuPDF({
             letterSpacing: "1px",
           }}
         >
-          CARCASSONNE PUB · carcassonnepub.com.br · @carcassonnepub
+          CARCASSONNE PUB · {pub.website} · @{pub.instagram}
         </div>
       </footer>
     </div>

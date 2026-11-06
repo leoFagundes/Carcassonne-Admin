@@ -99,6 +99,78 @@ export interface GeneralConfigsType {
   siteThemeReminders?: Partial<Record<SiteThemeId, SiteThemeReminder>>;
   /** Versão de cada tema (completa ou minimalista). Ausente = "full". */
   siteThemeStyles?: Partial<Record<SiteThemeId, SiteThemeStyle>>;
+
+  // ---------- Configurações → Geral ----------
+  /** Endereço, contatos e horário de funcionamento (usados no site e nos e-mails). */
+  pubInfo?: Partial<PubInfo>;
+  /** Mostra o selo "Aberto agora / Fechado" (precisa do horário de funcionamento). */
+  showOpenNow?: boolean;
+  /** Faixa de aviso no topo das páginas do site. */
+  siteNotice?: SiteNotice;
+  /** Áreas do site desligadas (true = desligada; o cliente vê uma mensagem). */
+  disabledAreas?: Partial<Record<SiteArea, boolean>>;
+  /** Mensagem mostrada nas áreas desligadas (vazia = texto padrão). */
+  disabledAreaMessage?: string;
+  /** Título, descrição e imagem da prévia ao compartilhar o link do site. */
+  shareMeta?: Partial<ShareMeta>;
+  /** Por quanto tempo sem uso o login do admin continua valendo (horas). */
+  adminSessionHours?: number;
+  /** Como os efeitos de mouse se comportam. */
+  effectsPrefs?: Partial<EffectsPrefs>;
+  /** E-mails que recebem o aviso de nova reserva. */
+  staffReserveEmails?: string[];
+}
+
+/** Horário de um dia ("HH:MM"); `close` menor ou igual a `open` = fecha depois da meia-noite. */
+export interface OpeningHours {
+  open: string;
+  close: string;
+}
+
+export interface PubInfo {
+  address: string;
+  mapsUrl: string;
+  /** Só dígitos, com DDI e DDD (ex.: 5561999684186). */
+  whatsapp: string;
+  /** Usuário do Instagram, sem @. */
+  instagram: string;
+  /** Página do Facebook, sem a URL (ex.: CARCASSONNEPUB). */
+  facebook: string;
+  email: string;
+  website: string;
+  /** Domingo (0) a sábado (6); null = fechado. */
+  hours: (OpeningHours | null)[];
+}
+
+export type SiteNoticeTone = "info" | "warning" | "celebration";
+
+export interface SiteNotice {
+  enabled: boolean;
+  text: string;
+  tone: SiteNoticeTone;
+  /** "YYYY-MM-DD", inclusive. Vazio = desde já / sem fim. */
+  from?: string;
+  to?: string;
+  linkUrl?: string;
+  linkLabel?: string;
+}
+
+export type SiteArea = "reservas" | "ludoteca" | "cardapio" | "eventos";
+
+export interface ShareMeta {
+  title: string;
+  description: string;
+  image: string;
+}
+
+export type EffectsIntensity = "soft" | "normal" | "strong";
+
+export interface EffectsPrefs {
+  /** Desliga os efeitos para quem pediu "reduzir movimento" no sistema. */
+  respectReducedMotion: boolean;
+  /** Desliga os efeitos em telas de toque (celular e tablet). */
+  disableOnTouch: boolean;
+  intensity: EffectsIntensity;
 }
 
 /**

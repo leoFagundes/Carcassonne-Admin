@@ -1,41 +1,41 @@
 "use client";
 
-import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 import React, { ReactNode, useEffect, useState } from "react";
+import { useSiteConfig } from "@/contexts/siteConfigProvider";
+import { effectsAllowed, mergeEffectsPrefs, sparkSettings } from "@/utils/generalSettings";
 import ClickSpark from "./mage-ui/cursor-effects/click-spark";
 import FollowCursor from "./mage-ui/cursor-effects/follow-cursor";
 import CanvasCursor from "./mage-ui/cursor-effects/canvas-cursor-effect";
 
-export default function ConfigGroup({ children }: { children: ReactNode }) {
-  const [isClickSparkActive, setIsClickSparkActive] = useState(false);
-  const [isFollowCursorActive, setIsFollowCursorActive] = useState(false);
-  const [isCanvasCursorActive, setIsCanvasCursorActive] = useState(false);
-
+/** Este aparelho pediu menos movimento / é tela de toque? (atualiza se mudar) */
+function useDevice() {
+  const [device, setDevice] = useState({ reducedMotion: false, touch: false });
   useEffect(() => {
-    const fetchGeneralConfigs = async () => {
-      try {
-        const generalConfigs = await GeneralConfigsRepository.get();
-
-        if (!generalConfigs || !generalConfigs._id) {
-          console.error("ID Inválido.");
-          return;
-        }
-
-        setIsClickSparkActive(generalConfigs.clickEffect);
-        setIsFollowCursorActive(generalConfigs.followCursor);
-        setIsCanvasCursorActive(generalConfigs.canvasCursor);
-      } catch (error) {
-        console.error(`Erro ao alterar configurações: ${error}`);
-      }
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const coarse = window.matchMedia("(pointer: coarse)");
+    const update = () => setDevice({ reducedMotion: reduced.matches, touch: coarse.matches });
+    update();
+    reduced.addEventListener("change", update);
+    coarse.addEventListener("change", update);
+    return () => {
+      reduced.removeEventListener("change", update);
+      coarse.removeEventListener("change", update);
     };
+  }, []);
+  return device;
+}
 
-    fetchGeneralConfigs();
-  }, [isClickSparkActive]);
+/** Efeitos de mouse do admin (Configurações → Geral → Efeitos de mouse). */
+export default function ConfigGroup({ children }: { children: ReactNode }) {
+  const configs = useSiteConfig();
+  const device = useDevice();
+  const prefs = mergeEffectsPrefs(configs?.effectsPrefs);
+  const allowed = effectsAllowed(prefs, device);
 
   return (
-    <ClickSpark isActive={isClickSparkActive}>
-      {isFollowCursorActive && <FollowCursor color="#e6c56b9d" />}
-      {isCanvasCursorActive && <CanvasCursor />}
+    <ClickSpark isActive={allowed && !!configs?.clickEffect} {...sparkSettings(prefs.intensity)}>
+      {allowed && configs?.followCursor && <FollowCursor color="#e6c56b9d" />}
+      {allowed && configs?.canvasCursor && <CanvasCursor />}
 
       {children}
     </ClickSpark>
