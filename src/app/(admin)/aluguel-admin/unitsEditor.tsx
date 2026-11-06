@@ -1,6 +1,7 @@
 "use client";
 
-import { LuPlus, LuTrash } from "react-icons/lu";
+import { LuInfo, LuPlus, LuTrash } from "react-icons/lu";
+import Tooltip from "@/components/Tooltip";
 import type { RentalBooking, RentalUnit } from "@/types";
 import { useAlert } from "@/contexts/alertProvider";
 import { formatDateBR } from "@/rental/dates";
@@ -95,8 +96,21 @@ export default function UnitsEditor({
   return (
     <div className="flex flex-col gap-2 w-full">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/60">
+        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-primary-gold/60">
           Cópias ({units.length})
+          <Tooltip
+            portal
+            textWrap
+            direction="top"
+            content="Cada cópia é um exemplar físico do jogo na prateleira. Com 2 cópias, dois clientes podem alugar o mesmo jogo ao mesmo tempo. Marque uma cópia como Indisponível (ex.: peça faltando, caixa danificada) para ela não ser alugada até voltar. A observação é só para a equipe. Cópia com aluguel em aberto não pode ser removida."
+          >
+            <span
+              aria-label="O que são as cópias?"
+              className="flex items-center justify-center w-4 h-4 rounded-full border border-primary-gold/40 text-primary-gold/70 cursor-help normal-case tracking-normal"
+            >
+              <LuInfo size={10} />
+            </span>
+          </Tooltip>
         </span>
         <button
           type="button"

@@ -192,136 +192,81 @@ export default function RentalGameForm({
   const set = <K extends keyof RentalGameType>(key: K, value: RentalGameType[K]) =>
     setLocal((prev) => ({ ...prev, [key]: value }));
 
+  const full = "!w-full !max-w-none !min-w-0";
+  const pricePreview = parseBRL(priceText);
+  const activeCopies = local.units.filter((u) => u.status === "active").length;
+
   return (
     <FormCard
-      title={local.name || "Novo Jogo"}
+      title={local.name || "Novo jogo"}
       subtitle={isEdit ? "Editar jogo de aluguel" : "Adicionar jogo para aluguel"}
       icon={<LuPackage size={18} />}
       onClose={closeForms}
-      maxWidth="sm:max-w-[620px]"
+      maxWidth="sm:max-w-[680px]"
       onSubmit={handleSubmit}
       submitLabel={isEdit ? "Salvar alterações" : "Criar jogo"}
       submitDisabled={uploading}
       onDelete={isEdit ? handleDelete : undefined}
       loading={loading}
     >
-      <div className="flex flex-col gap-6 items-center py-2 text-primary-gold w-full">
-        <Dropdown
-          label="Importar do acervo do pub"
-          options={pubLabels}
-          firstLabel="Importar do acervo do pub"
-          value={importId}
-          setValue={(e) => importFromPub(e.target.value)}
-          variant
-        />
-        <div className="flex flex-wrap justify-center gap-6 w-full">
-          <div className="flex flex-col gap-6">
-            <Input
-              label="Nome"
-              placeholder="Nome"
-              value={local.name}
-              setValue={(e) => set("name", e.target.value)}
-              variant
-              icon={<LuDices size={"20px"} />}
-              width="!w-[250px]"
-            />
-            <Input
-              label="Descrição"
-              placeholder="Descrição"
-              value={local.description}
-              setValue={(e) => set("description", e.target.value)}
-              variant
-              multiline
-              icon={<LuBookOpenText size={"20px"} />}
-              width="!w-[250px]"
-            />
-            <Dropdown
-              label="Dificuldade"
-              options={difficultiesOptions}
-              firstLabel="Dificuldade do Jogo"
-              value={local.difficulty}
-              setValue={(e) => set("difficulty", e.target.value)}
-              variant
-            />
-            <Input
-              label="Mínimo de jogadores"
-              type="number"
-              placeholder="Ex: 2"
-              value={String(local.minPlayers)}
-              setValue={(e) => set("minPlayers", Number(e.target.value))}
-              variant
-              icon={<LuUserRoundMinus size={"18px"} />}
-              width="!w-[250px]"
-            />
-            <Input
-              label="Máximo de jogadores"
-              type="number"
-              placeholder="Ex: 4"
-              value={String(local.maxPlayers)}
-              setValue={(e) => set("maxPlayers", Number(e.target.value))}
-              variant
-              icon={<LuUserRoundPlus size={"18px"} />}
-              width="!w-[250px]"
-            />
-          </div>
-          <div className="flex flex-col gap-6">
-            <Input
-              label="Tempo de jogo (min)"
-              type="number"
-              placeholder="Ex: 60"
-              value={String(local.playTime)}
-              setValue={(e) => set("playTime", Number(e.target.value))}
-              variant
-              icon={<LuClock size={"18px"} />}
-              width="!w-[250px]"
-            />
-            <OptionsInput
-              values={local.types}
-              setValues={(values) => set("types", values)}
-              placeholder="Ex: Estratégia, Cooperativo..."
-              label="Tipo"
-              variant
-              width="!w-[250px]"
-              options={typeOptions}
-            />
-            <Input
-              label="Preço do aluguel"
-              placeholder="Ex: 45,00"
-              value={priceText}
-              setValue={(e) => setPriceText(e.target.value)}
-              variant
-              icon={<LuDollarSign size={"18px"} />}
-              width="!w-[250px]"
-            />
-            <Input
-              label="Prazo: dias com o cliente"
-              type="number"
-              placeholder="Ex: 7"
-              value={String(local.rentalDays)}
-              setValue={(e) => set("rentalDays", Number(e.target.value))}
-              variant
-              icon={<LuCalendarDays size={"18px"} />}
-              width="!w-[250px]"
-            />
-            <div className="relative">
-              <Checkbox
-                checked={local.isActive}
-                setChecked={() => set("isActive", !local.isActive)}
+      <div className="flex flex-col gap-4 text-primary-gold w-full">
+        {!isEdit && (
+          <Section
+            title="Começar pelo acervo"
+            hint="Escolha um jogo da ludoteca para preencher nome, descrição, imagem, jogadores e tipo. Depois é só ajustar o que quiser."
+          >
+            <div className="pt-5">
+              <Dropdown
+                label="Importar do acervo do pub"
+                options={pubLabels}
+                firstLabel="Importar do acervo do pub (opcional)"
+                value={importId}
+                setValue={(e) => importFromPub(e.target.value)}
                 variant
-                label={local.isActive ? "Ativo para aluguel" : "Inativo"}
-                icon={local.isActive ? <LuEye size={"16px"} /> : <LuEyeClosed size={"16px"} />}
+                width={full}
               />
             </div>
-            <div className="flex flex-col gap-2 w-[250px]">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-gold/70">
-                Imagem
-              </span>
-              {local.image && (
+          </Section>
+        )}
+
+        <Section title="Sobre o jogo">
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_180px] gap-x-4 gap-y-1">
+            <div className="flex flex-col gap-1 min-w-0">
+              <Input
+                labelSpace
+                label="Nome"
+                placeholder="Nome"
+                value={local.name}
+                setValue={(e) => set("name", e.target.value)}
+                variant
+                icon={<LuDices size={"20px"} />}
+                width={full}
+              />
+              <Input
+                labelSpace
+                label="Descrição"
+                placeholder="Descrição (o que o cliente lê no detalhe do jogo)"
+                value={local.description}
+                setValue={(e) => set("description", e.target.value)}
+                variant
+                multiline
+                rows={4}
+                icon={<LuBookOpenText size={"20px"} />}
+                width={full}
+              />
+            </div>
+            {/* Capa ao lado do nome: o que o cliente vê no card */}
+            <div className="flex flex-col gap-2 pt-7">
+              {local.image ? (
                 <img
                   src={local.image}
                   alt={local.name}
                   className="w-full aspect-[4/3] object-cover rounded-xl border border-primary-gold/20"
                 />
+              ) : (
+                <div className="flex w-full aspect-[4/3] items-center justify-center rounded-xl border border-dashed border-primary-gold/25 text-primary-gold/35">
+                  <LuImage size={28} />
+                </div>
               )}
               <label className="flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-xl border border-primary-gold/25 text-primary-gold/80 hover:text-primary-gold hover:border-primary-gold/60 cursor-pointer">
                 <LuImage size={14} />
@@ -339,14 +284,137 @@ export default function RentalGameForm({
               </label>
             </div>
           </div>
-        </div>
-        <UnitsEditor
-          units={local.units}
-          setUnits={(units) => set("units", units)}
-          bookings={local.bookings}
-          today={todaySP()}
-        />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+            <div className="pt-5">
+              <Dropdown
+                label="Dificuldade"
+                options={difficultiesOptions}
+                firstLabel="Dificuldade do jogo"
+                value={local.difficulty}
+                setValue={(e) => set("difficulty", e.target.value)}
+                variant
+                width={full}
+              />
+            </div>
+            <Input
+              labelSpace
+              label="Tempo de jogo (min)"
+              type="number"
+              placeholder="Tempo de jogo (min)"
+              value={String(local.playTime)}
+              setValue={(e) => set("playTime", Number(e.target.value))}
+              variant
+              icon={<LuClock size={"18px"} />}
+              width={full}
+            />
+            <Input
+              labelSpace
+              label="Mínimo de jogadores"
+              type="number"
+              placeholder="Mínimo de jogadores"
+              value={String(local.minPlayers)}
+              setValue={(e) => set("minPlayers", Number(e.target.value))}
+              variant
+              icon={<LuUserRoundMinus size={"18px"} />}
+              width={full}
+            />
+            <Input
+              labelSpace
+              label="Máximo de jogadores"
+              type="number"
+              placeholder="Máximo de jogadores"
+              value={String(local.maxPlayers)}
+              setValue={(e) => set("maxPlayers", Number(e.target.value))}
+              variant
+              icon={<LuUserRoundPlus size={"18px"} />}
+              width={full}
+            />
+          </div>
+          <div className="pt-4">
+            <OptionsInput
+              values={local.types}
+              setValues={(values) => set("types", values)}
+              placeholder="Categorias (ex.: Estratégia, Cooperativo...)"
+              label="Categorias"
+              variant
+              width={full}
+              options={typeOptions}
+            />
+          </div>
+        </Section>
+
+        <Section title="Aluguel" hint="Quanto o cliente paga e por quantos dias fica com o jogo.">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+            <Input
+              labelSpace
+              label="Preço do aluguel"
+              placeholder="Preço do aluguel (ex.: 45,00)"
+              value={priceText}
+              setValue={(e) => setPriceText(e.target.value)}
+              variant
+              icon={<LuDollarSign size={"18px"} />}
+              width={full}
+            />
+            <Input
+              labelSpace
+              label="Prazo: dias com o cliente"
+              type="number"
+              placeholder="Prazo (dias com o cliente)"
+              value={String(local.rentalDays)}
+              setValue={(e) => set("rentalDays", Number(e.target.value))}
+              variant
+              icon={<LuCalendarDays size={"18px"} />}
+              width={full}
+            />
+          </div>
+          {pricePreview !== null && pricePreview > 0 && local.rentalDays > 0 && (
+            <p className="text-xs text-primary-gold/60">
+              O cliente paga <strong className="text-primary-gold">{formatBRL(pricePreview)}</strong> e fica{" "}
+              <strong className="text-primary-gold">
+                {local.rentalDays} {local.rentalDays === 1 ? "dia" : "dias"}
+              </strong>{" "}
+              com o jogo.
+            </p>
+          )}
+          <Checkbox
+            checked={local.isActive}
+            setChecked={() => set("isActive", !local.isActive)}
+            variant
+            width="!max-w-none"
+            label={local.isActive ? "Aparece no catálogo de aluguel" : "Escondido do catálogo (inativo)"}
+            icon={local.isActive ? <LuEye size={"16px"} /> : <LuEyeClosed size={"16px"} />}
+          />
+          {local.isActive && activeCopies === 0 && (
+            <p className="text-xs text-orange-300">
+              Sem nenhuma cópia ativa, o jogo aparece como indisponível para o cliente.
+            </p>
+          )}
+        </Section>
+
+        <Section>
+          <UnitsEditor
+            units={local.units}
+            setUnits={(units) => set("units", units)}
+            bookings={local.bookings}
+            today={todaySP()}
+          />
+        </Section>
       </div>
     </FormCard>
+  );
+}
+
+/** Bloco do formulário, com título e explicação curta. */
+function Section({ title, hint, children }: { title?: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <section className="flex flex-col gap-2 rounded-xl border border-primary-gold/15 bg-primary-black/25 p-3.5">
+      {title && (
+        <div className="flex flex-col gap-0.5">
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-gold/75">{title}</h3>
+          {hint && <p className="text-[11px] text-primary-gold/45 leading-relaxed">{hint}</p>}
+        </div>
+      )}
+      {children}
+    </section>
   );
 }
