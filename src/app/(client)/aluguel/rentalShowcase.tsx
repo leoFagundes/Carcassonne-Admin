@@ -34,6 +34,7 @@ import RentalGameCard, { type RentalGameWithId, rentalAnchor } from "./rentalGam
 import RentalGameDetail from "./rentalGameDetail";
 import RentalHeader from "./rentalHeader";
 import { useRentalCart } from "./useRentalCart";
+import CartBar from "./cartBar";
 
 function Star() {
   return (
@@ -382,7 +383,26 @@ export default function RentalShowcase() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-0.5 w-full max-w-6xl pt-5 pb-5">
+              {/* Como funciona, em uma linha */}
+              <ol className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 w-full max-w-6xl pt-5 text-[11px] sm:text-xs text-primary-gold/70">
+                {[
+                  "Escolha os jogos",
+                  "Retire no Carcassonne",
+                  "Devolva no prazo",
+                ].map((step, i) => (
+                  <li key={step} className="flex items-center gap-2">
+                    {i > 0 && <span aria-hidden="true" className="text-primary-gold/30">→</span>}
+                    <span className="flex items-center gap-1.5 rounded-full border border-primary-gold/20 bg-secondary-black/60 px-2.5 py-1">
+                      <span className="flex items-center justify-center w-4 h-4 rounded-full bg-primary-gold/20 text-[10px] font-bold text-primary-gold">
+                        {i + 1}
+                      </span>
+                      {step}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+
+              <div className="flex flex-col gap-0.5 w-full max-w-6xl pt-4 pb-5">
                 <span className="text-xs text-primary-gold/50">
                   Leve um jogo para casa e jogue com quem você quiser!
                 </span>
@@ -484,6 +504,11 @@ export default function RentalShowcase() {
             onClosed={() => setDetail(null)}
           />
         )}
+
+        <CartBar
+          count={cart.gameIds.length}
+          total={cart.gameIds.reduce((sum, id) => sum + (active.find((g) => g.id === id)?.price ?? 0), 0)}
+        />
 
         <ScrollUp />
       </div>

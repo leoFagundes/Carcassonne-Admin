@@ -35,6 +35,7 @@ export default function RentalHeader({ cartCount }: { cartCount: number }) {
           className={`${link} relative gap-1.5 !px-2.5`}
         >
           <LuShoppingBag size={14} />
+          <span className="hidden sm:inline">Pedido</span>
           {cartCount > 0 && (
             <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary-gold text-primary-black text-[10px] font-bold">
               {cartCount}

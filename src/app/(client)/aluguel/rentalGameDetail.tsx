@@ -1,10 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import type { IconType } from "react-icons";
 import {
+  LuArrowRight,
   LuCalendarDays,
-  LuCheck,
   LuClock,
   LuCopy,
   LuGauge,
@@ -71,28 +72,28 @@ export default function RentalGameDetail({
       onClosed={onClosed}
       footer={(close) => (
         <div className="flex gap-2">
-          <button
-            type="button"
-            disabled={unavailable || inCart}
-            onClick={onAdd}
-            className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-lg border text-sm font-semibold transition-colors ${
-              inCart
-                ? "border-primary-gold/50 bg-primary-gold/10 text-primary-gold"
-                : unavailable
+          {inCart ? (
+            // Já está no pedido: o próximo passo natural é revisar.
+            <Link
+              href="/aluguel/pedido"
+              className="flex-1 flex items-center justify-center gap-2 h-10 rounded-lg border border-primary-gold bg-primary-gold text-primary-black text-sm font-semibold hover:bg-primary-gold/90"
+            >
+              No pedido · Ver pedido <LuArrowRight size={16} />
+            </Link>
+          ) : (
+            <button
+              type="button"
+              disabled={unavailable}
+              onClick={onAdd}
+              className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-lg border text-sm font-semibold transition-colors ${
+                unavailable
                   ? "border-primary-gold/15 bg-primary-gold/5 text-primary-gold/35 cursor-not-allowed"
                   : "border-primary-gold bg-primary-gold text-primary-black hover:bg-primary-gold/90 cursor-pointer"
-            }`}
-          >
-            {inCart ? (
-              <>
-                <LuCheck size={16} strokeWidth={3} /> No pedido ✓
-              </>
-            ) : (
-              <>
-                <LuPlus size={16} /> Adicionar ao pedido
-              </>
-            )}
-          </button>
+              }`}
+            >
+              <LuPlus size={16} /> {unavailable ? "Indisponível" : "Adicionar ao pedido"}
+            </button>
+          )}
           <button
             type="button"
             onClick={close}
@@ -121,7 +122,7 @@ export default function RentalGameDetail({
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <Stat icon={LuCalendarDays} label="Prazo">
+        <Stat icon={LuCalendarDays} label="Fica com você">
           {game.rentalDays} {game.rentalDays === 1 ? "dia" : "dias"}
         </Stat>
         <Stat icon={LuCopy} label="Cópias">

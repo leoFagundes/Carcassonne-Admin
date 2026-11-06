@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { FiArrowLeft, FiCheckCircle, FiClock, FiInfo, FiXCircle } from "react-icons/fi";
+import { FiCheckCircle, FiClock, FiInfo, FiXCircle } from "react-icons/fi";
 import type { RentalOrderType, RentalType } from "@/types";
 import RentalOrderRepository from "@/services/repositories/RentalOrderRepository";
 import RentalRepository from "@/services/repositories/RentalRepository";
@@ -16,7 +16,9 @@ import { clearPendingOrder, clearPendingOrderIf } from "@/rental/pendingOrder";
 import { formatCountdown, orderPaymentView, type OrderPaymentView } from "@/rental/payments";
 import { useRentalCart } from "../../useRentalCart";
 import { useRentalCustomer } from "../../useRentalCustomer";
-import RentalHeader from "../../rentalHeader";
+import RentalPageShell from "../../rentalPageShell";
+import RentalSteps, { type RentalStep } from "../../rentalSteps";
+import { CopyCode, NextSteps } from "../../orderBits";
 
 type Order = RentalOrderType & { id: string };
 type Rental = RentalType & { id: string };
@@ -28,6 +30,8 @@ const smallBtn =
   "h-8 px-3 rounded-full border border-primary-gold/40 text-xs text-primary-gold hover:bg-primary-gold/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center";
 const mainBtn =
   "h-11 px-4 rounded-xl bg-primary-gold text-primary-black font-semibold hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center";
+const ghostBtn =
+  "h-11 px-4 rounded-xl border border-primary-gold/40 text-primary-gold text-sm font-semibold hover:bg-primary-gold/10 transition-colors inline-flex items-center justify-center";
 
 function dayMonth(ms: number): string {
   return new Date(ms).toLocaleDateString("pt-BR", {
@@ -125,6 +129,7 @@ function OrderContent() {
   const [stalled, setStalled] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [verifyNote, setVerifyNote] = useState<string | null>(null);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
   const verified = useRef(false);
 
   const returned = checkoutReturnFlag(params);
@@ -211,11 +216,11 @@ function OrderContent() {
 
   async function cancelOrder() {
     if (busy) return;
-    if (!window.confirm("Cancelar este pedido? As cópias reservadas serão liberadas.")) return;
     setBusy("cancel");
     setError(null);
     const result = await rentalApi.cancelPendingOrder(orderId);
     setBusy(null);
+    setConfirmingCancel(false);
     if (!result.ok) setError(result.message);
   }
 
@@ -226,20 +231,21 @@ function OrderContent() {
     router.push("/aluguel/pedido");
   }
 
-  const dueByRental = new Map(rentals.map((r) => [r.id, r.dueDate]));
+  const rentalById = new Map(rentals.map((r) => [r.id, r]));
 
   let body;
+  let step: RentalStep | null = null;
   if (loading || !user || order === undefined) {
     body = <p className="text-sm text-primary-gold/55 text-center">Carregando...</p>;
   } else if (order === null || !view) {
     body = (
-      <section className={`${card} items-center text-center`}>
+      <section className={`${card} items-center text-center py-8`}>
         <FiInfo size={32} className="text-primary-gold/70" />
         <h2 className="font-cinzel text-lg">Pedido não encontrado</h2>
         <p className="text-sm text-primary-gold/70">
           Não encontramos este pedido na sua conta. Confira o link ou veja seus aluguéis.
         </p>
-        <Link href="/aluguel/minha-conta" className={smallBtn}>
+        <Link href="/aluguel/minha-conta" className={mainBtn}>
           Ver meus aluguéis
         </Link>
       </section>
@@ -247,38 +253,44 @@ function OrderContent() {
   } else {
     // Retorno recusado com a reserva ainda válida: mostra a tela de recusa já.
     const shown: OrderPaymentView =
-      view.state === "awaiting" && returned === "rejected"
-        ? { state: "rejected", msLeft: view.msLeft }
-        : view;
+      view.state === "awaiting" && returned === "rejected" ? { state: "rejected", msLeft: view.msLeft } : view;
     const banner = bannerFor(shown, order, confirming);
-    const Icon = { ok: FiCheckCircle, wait: FiClock, bad: FiXCircle, info: FiInfo, spin: null }[
-      banner.icon
-    ];
+    const Icon = { ok: FiCheckCircle, wait: FiClock, bad: FiXCircle, info: FiInfo, spin: null }[banner.icon];
     const tone =
-      banner.icon === "ok"
-        ? "text-green-400"
-        : banner.icon === "bad"
-          ? "text-red-300"
-          : "text-primary-gold";
+      banner.icon === "ok" ? "text-emerald-400" : banner.icon === "bad" ? "text-red-300" : "text-primary-gold";
     const open = shown.state === "awaiting" || shown.state === "rejected";
     const canPay = open && !confirming;
     const unconfirmed = stalled && returned === "approved" && shown.state === "awaiting";
+
+    // Etapa e próximos passos (só para pedido confirmado: pago ou no balcão).
+    const live = rentals.filter((r) => r.status !== "canceled");
+    const confirmed = shown.state === "paid" || shown.state === "counter";
+    const pickedUp = live.filter((r) => r.status === "picked_up");
+    const allReturned = live.length > 0 && live.every((r) => r.status === "returned");
+    const dues = live.map((r) => r.dueDate).sort();
+    if (open || confirming) step = "pagamento";
+    else if (confirmed) step = allReturned ? "concluido" : pickedUp.length ? "devolucao" : "retirada";
+    const payAtCounter = live.reduce((sum, r) => sum + r.price, 0);
+
     body = (
       <>
-        <section className={`${card} items-center text-center`} role="status" aria-live="polite">
-          {Icon ? <Icon size={36} className={tone} /> : <Spinner />}
-          <h2 className="font-cinzel text-lg">{banner.title}</h2>
-          <p className="text-sm text-primary-gold/75 break-words">{banner.text}</p>
-          {shown.state === "awaiting" && (
-            <p className="text-sm text-primary-gold/75">
-              Reserva válida por{" "}
-              <span className="font-mono text-2xl tracking-widest text-primary-gold block">
-                {formatCountdown(shown.msLeft)}
-              </span>
-            </p>
+        <section
+          className={`${card} items-center text-center py-6 ${
+            banner.icon === "bad" ? "border-red-400/30" : banner.icon === "ok" ? "border-emerald-400/25" : ""
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          {Icon ? <Icon size={44} className={tone} /> : <Spinner />}
+          <h2 className="font-cinzel text-xl">{banner.title}</h2>
+          <p className="text-sm text-primary-gold/75 break-words max-w-md">{banner.text}</p>
+          {shown.state === "awaiting" && !confirming && (
+            <div className="flex flex-col items-center gap-1 rounded-xl border border-orange-400/40 bg-orange-500/10 px-5 py-2">
+              <span className="text-[11px] uppercase tracking-widest text-orange-200/80">Tempo para pagar</span>
+              <span className="font-mono text-3xl tracking-widest text-orange-100">{formatCountdown(shown.msLeft)}</span>
+            </div>
           )}
-          <p className="text-xs text-primary-gold/60">Código do pedido</p>
-          <p className="font-mono text-2xl tracking-widest">{order.code}</p>
+          <CopyCode code={order.code} />
         </section>
 
         {unconfirmed && (
@@ -290,42 +302,73 @@ function OrderContent() {
               Ainda não recebemos a confirmação do pagamento.
               {verifyNote ? ` ${verifyNote}` : " Se você já pagou, é só aguardar: esta página atualiza sozinha."}
             </p>
-            <button
-              type="button"
-              onClick={() => void verify()}
-              disabled={verifying}
-              className={`${smallBtn} self-start`}
-            >
+            <button type="button" onClick={() => void verify()} disabled={verifying} className={`${smallBtn} self-start`}>
               {verifying ? "Verificando..." : "Verificar de novo"}
             </button>
           </div>
         )}
 
         {error && (
-          <p
-            role="alert"
-            className="px-3 py-2 rounded-xl border border-red-400/40 bg-red-500/10 text-sm text-red-200"
-          >
+          <p role="alert" className="px-3 py-2 rounded-xl border border-red-400/40 bg-red-500/10 text-sm text-red-200">
             {error}
           </p>
         )}
 
+        {/* Ação principal logo abaixo do aviso */}
+        {(canPay || shown.state === "expired" || shown.state === "canceled") && (
+          <div className="flex flex-col gap-2">
+            {canPay && (
+              <button type="button" onClick={pay} disabled={busy !== null} className={mainBtn}>
+                {busy === "pay"
+                  ? "Abrindo o pagamento..."
+                  : shown.state === "rejected"
+                    ? `Tentar de novo · ${formatBRL(order.total)}`
+                    : `Pagar ${formatBRL(order.total)} agora`}
+              </button>
+            )}
+            {(shown.state === "expired" || shown.state === "canceled") && (
+              <button type="button" onClick={orderAgain} className={mainBtn}>
+                Fazer o pedido de novo
+              </button>
+            )}
+          </div>
+        )}
+
+        {confirmed && !allReturned && live.length > 0 && (
+          <NextSteps
+            mode={pickedUp.length ? "return" : "pickup"}
+            startDate={order.startDate}
+            dueDate={dues[0]}
+            code={order.code}
+            payAtCounter={shown.state === "counter" ? payAtCounter : undefined}
+          />
+        )}
+
         <section className={card}>
           <h2 className={heading}>Jogos</h2>
-          <ul className="flex flex-col gap-1.5 text-sm">
+          <ul className="flex flex-col divide-y divide-primary-gold/10">
             {order.items.map((item) => {
-              const due = dueByRental.get(item.rentalId);
+              const rental = rentalById.get(item.rentalId);
+              const canceled = rental?.status === "canceled";
               return (
-                <li key={item.rentalId} className="flex justify-between gap-3">
+                <li key={item.rentalId} className="flex justify-between gap-3 py-2 first:pt-0 last:pb-0">
                   <span className="min-w-0 break-words">
-                    {item.gameName}
-                    {shown.state === "paid" && due && (
+                    <span className={`text-sm ${canceled ? "line-through text-primary-gold/45" : ""}`}>{item.gameName}</span>
+                    {rental && (
                       <span className="block text-xs text-primary-gold/55">
-                        Devolver até {formatDateBR(due, true)}
+                        {canceled
+                          ? "Cancelado"
+                          : rental.status === "returned"
+                            ? "Devolvido"
+                            : rental.status === "picked_up"
+                              ? `Com você · devolver até ${formatDateBR(rental.dueDate)}`
+                              : `Devolução até ${formatDateBR(rental.dueDate)}`}
                       </span>
                     )}
                   </span>
-                  <span className="shrink-0">{formatBRL(item.price)}</span>
+                  <span className={`shrink-0 text-sm ${canceled ? "line-through text-primary-gold/40" : ""}`}>
+                    {formatBRL(item.price)}
+                  </span>
                 </li>
               );
             })}
@@ -334,35 +377,40 @@ function OrderContent() {
             <span>Total</span>
             <span>{formatBRL(order.total)}</span>
           </div>
-          {(shown.state === "paid" || shown.state === "counter" || shown.state === "review") && (
-            <p className="text-xs text-primary-gold/70">
-              Retirada em {formatDateBR(order.startDate, true)}
-            </p>
-          )}
+          <p className="text-xs text-primary-gold/55">
+            Retirada a partir de {formatDateBR(order.startDate, true)} ·{" "}
+            {order.paymentMode === "online" ? "pagamento online" : "pagamento no balcão, na retirada"}
+          </p>
         </section>
 
         <div className="flex flex-col gap-2">
-          {canPay && (
-            <button type="button" onClick={pay} disabled={busy !== null} className={mainBtn}>
-              {busy === "pay"
-                ? "Abrindo o pagamento..."
-                : shown.state === "rejected"
-                  ? "Tentar novamente"
-                  : "Pagar agora"}
-            </button>
-          )}
-          {(shown.state === "expired" || shown.state === "canceled") && (
-            <button type="button" onClick={orderAgain} className={mainBtn}>
-              Fazer o pedido de novo
-            </button>
-          )}
-          {open && (
-            <button type="button" onClick={cancelOrder} disabled={busy !== null} className={smallBtn}>
-              {busy === "cancel" ? "Cancelando..." : "Cancelar pedido"}
-            </button>
-          )}
-          {!open && shown.state !== "expired" && shown.state !== "canceled" && (
-            <Link href="/aluguel/minha-conta" className={smallBtn}>
+          {open &&
+            (confirmingCancel ? (
+              <div className="flex flex-col gap-2 p-3 rounded-xl border border-orange-400/40 bg-orange-500/10">
+                <p className="text-sm text-orange-100">
+                  Cancelar este pedido? As cópias reservadas serão liberadas e nada será cobrado.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={cancelOrder} disabled={busy !== null} className={smallBtn}>
+                    {busy === "cancel" ? "Cancelando..." : "Sim, cancelar"}
+                  </button>
+                  <button type="button" onClick={() => setConfirmingCancel(false)} disabled={busy !== null} className={smallBtn}>
+                    Manter pedido
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmingCancel(true)}
+                disabled={busy !== null}
+                className="self-center text-xs text-primary-gold/55 underline underline-offset-2 hover:text-primary-gold cursor-pointer"
+              >
+                Cancelar pedido
+              </button>
+            ))}
+          {!open && (
+            <Link href="/aluguel/minha-conta" className={ghostBtn}>
               Ver meus aluguéis
             </Link>
           )}
@@ -372,30 +420,21 @@ function OrderContent() {
   }
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap');
-        .font-cinzel { font-family: 'Cinzel', serif; }
-      `}</style>
-      <div className="relative min-h-screen text-primary-gold flex flex-col pb-14 pt-4 gap-5">
-        <RentalHeader cartCount={cart.gameIds.length} />
-        <main className="flex flex-col gap-4 w-full max-w-2xl mx-auto px-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Link href="/aluguel" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/70 hover:text-primary-gold transition-colors">
-              <FiArrowLeft size={15} />
-              <span className="text-sm font-medium">Voltar aos jogos</span>
-            </Link>
-            <Link href="/aluguel/minha-conta" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/70 hover:text-primary-gold transition-colors">
-              <span className="text-sm font-medium">Meus aluguéis</span>
-            </Link>
-          </div>
-          <h1 className="font-cinzel text-xl sm:text-3xl text-center tracking-widest uppercase">
-            Seu pedido
-          </h1>
-          {body}
-        </main>
-      </div>
-    </>
+    <RentalPageShell
+      title="Seu pedido"
+      cartCount={cart.gameIds.length}
+      aside={
+        <Link
+          href="/aluguel/minha-conta"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/70 hover:text-primary-gold transition-colors bg-primary-black/30"
+        >
+          <span className="text-sm font-medium">Meus aluguéis</span>
+        </Link>
+      }
+      top={step ? <RentalSteps current={step} online={order?.paymentMode === "online"} /> : null}
+    >
+      {body}
+    </RentalPageShell>
   );
 }
 

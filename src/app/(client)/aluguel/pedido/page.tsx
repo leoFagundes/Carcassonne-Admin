@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { FiArrowLeft, FiCheckCircle, FiTrash2 } from "react-icons/fi";
+import { FiCheckCircle, FiTrash2 } from "react-icons/fi";
+import { LuShoppingBag } from "react-icons/lu";
+import ShowcaseImage from "@/components/showcase/showcaseImage";
+import { BOARDGAME_PLACEHOLDER } from "@/app/(client)/clientCollection/collectionUtils";
 import type { RentalGameType, RentalRulesType, RentalSettingsType } from "@/types";
 import RentalGameRepository from "@/services/repositories/RentalGameRepository";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
@@ -17,7 +20,9 @@ import { withNext } from "@/rental/navigation";
 import { clearPendingOrder, rememberPendingOrder, takePendingOrder } from "@/rental/pendingOrder";
 import { useRentalCart } from "../useRentalCart";
 import { useRentalCustomer } from "../useRentalCustomer";
-import RentalHeader from "../rentalHeader";
+import RentalPageShell from "../rentalPageShell";
+import RentalSteps from "../rentalSteps";
+import { CopyCode, NextSteps, dayLabel } from "../orderBits";
 import { RulesLink } from "../rulesSheet";
 
 type Game = RentalGameType & { id: string };
@@ -28,6 +33,10 @@ const card = "bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-4
 const heading = "text-[11px] font-semibold uppercase tracking-widest text-primary-gold/60";
 const smallBtn =
   "h-8 px-3 rounded-full border border-primary-gold/40 text-xs text-primary-gold hover:bg-primary-gold/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
+const mainBtn =
+  "h-11 px-4 rounded-xl bg-primary-gold text-primary-black text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center";
+const ghostBtn =
+  "h-11 px-4 rounded-xl border border-primary-gold/40 text-primary-gold text-sm font-semibold hover:bg-primary-gold/10 transition-colors inline-flex items-center justify-center";
 
 /** Checkout do aluguel: revisão do carrinho, data de retirada e confirmação. */
 export default function PedidoPage() {
@@ -47,7 +56,7 @@ export default function PedidoPage() {
   const [verifyBusy, setVerifyBusy] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
-  const [done, setDone] = useState<{ code: string } | null>(null);
+  const [done, setDone] = useState<{ code: string; startDate: string; dueDate?: string; total: number } | null>(null);
 
   // Voltou do Mercado Pago (botão voltar, página recarregada ou restaurada do cache):
   // o pedido já existe, então a tela certa é a página dele, não um checkout travado.
@@ -163,7 +172,8 @@ export default function PedidoPage() {
         }
         return;
       }
-      setDone({ code: result.data.code });
+      const dues = validGames.map((g) => addDays(startDate, g.rentalDays)).sort();
+      setDone({ code: result.data.code, startDate, dueDate: dues[0], total });
       return;
     }
     const known = ORDER_ERROR_MESSAGES[result.code as OrderErrorCode];
@@ -192,283 +202,298 @@ export default function PedidoPage() {
   else if (needsLogin) buttonLabel = "Entrar para confirmar";
   else if (needsProfile) buttonLabel = "Completar cadastro";
 
+  const returnDates = startDate ? validGames.map((g) => addDays(startDate, g.rentalDays)) : [];
+  const firstReturn = returnDates.length ? [...returnDates].sort()[0] : undefined;
+  const showSteps = !redirecting && !done && dataReady && cart.gameIds.length > 0;
+
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap');
-        .font-cinzel { font-family: 'Cinzel', serif; }
-      `}</style>
-      <div className="relative min-h-screen text-primary-gold flex flex-col pb-14 pt-4 gap-5">
-        <RentalHeader cartCount={cart.gameIds.length} />
-        <main className="flex flex-col gap-4 w-full max-w-2xl mx-auto px-4">
-          <Link
-            href="/aluguel"
-            className="self-start flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/70 hover:text-primary-gold transition-colors"
-          >
-            <FiArrowLeft size={15} />
-            <span className="text-sm font-medium">Voltar aos jogos</span>
+    <RentalPageShell
+      title={done ? "Aluguel confirmado" : "Seu pedido"}
+      cartCount={cart.gameIds.length}
+      top={
+        done ? (
+          <RentalSteps current="retirada" online={false} />
+        ) : showSteps ? (
+          <RentalSteps current="pedido" online={online} />
+        ) : null
+      }
+    >
+      {redirecting ? (
+        <section className={`${card} items-center text-center py-8`} role="status">
+          <span
+            aria-hidden="true"
+            className="w-10 h-10 rounded-full border-2 border-primary-gold/25 border-t-primary-gold animate-spin"
+          />
+          <h2 className="font-cinzel text-lg">Levando você ao pagamento…</h2>
+          <p className="text-sm text-primary-gold/70">
+            Suas cópias já estão reservadas. Não feche esta página.
+          </p>
+        </section>
+      ) : done ? (
+        <>
+          <section className={`${card} items-center text-center py-6`}>
+            <FiCheckCircle size={44} className="text-emerald-400" />
+            <h2 className="font-cinzel text-xl">Tudo certo!</h2>
+            <p className="text-sm text-primary-gold/75 max-w-sm">
+              Seus jogos estão reservados. Mandamos os detalhes para o seu e-mail.
+            </p>
+            <CopyCode code={done.code} />
+          </section>
+          <NextSteps
+            mode="pickup"
+            startDate={done.startDate}
+            dueDate={done.dueDate}
+            code={done.code}
+            payAtCounter={done.total}
+          />
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Link href="/aluguel/minha-conta" className={`${mainBtn} flex-1`}>
+              Ver meus aluguéis
+            </Link>
+            <Link href="/aluguel" className={`${ghostBtn} flex-1`}>
+              Continuar vendo jogos
+            </Link>
+          </div>
+        </>
+      ) : !games || !settings || !rules ? (
+        <p className="text-sm text-primary-gold/55 text-center">Carregando...</p>
+      ) : cart.gameIds.length === 0 ? (
+        <section className={`${card} items-center text-center py-8`}>
+          <LuShoppingBag size={36} className="text-primary-gold/50" />
+          <h2 className="font-cinzel text-lg">Seu pedido está vazio</h2>
+          <p className="text-sm text-primary-gold/70">Escolha os jogos que quer levar para casa.</p>
+          <Link href="/aluguel" className={mainBtn}>
+            Escolher jogos
           </Link>
-          <h1 className="font-cinzel text-xl sm:text-3xl text-center tracking-widest uppercase">
-            Seu pedido
-          </h1>
+        </section>
+      ) : (
+        <>
+          {settings.isEnabled === false && (
+            <p
+              role="alert"
+              className="px-3 py-2 rounded-xl border border-orange-400/40 bg-orange-500/10 text-xs text-orange-200"
+            >
+              {ORDER_ERROR_MESSAGES.service_disabled}
+            </p>
+          )}
 
-          {redirecting ? (
-            <section className={`${card} items-center text-center`} role="status">
-              <span
-                aria-hidden="true"
-                className="w-8 h-8 rounded-full border-2 border-primary-gold/25 border-t-primary-gold animate-spin"
-              />
-              <h2 className="font-cinzel text-lg">Levando você ao pagamento…</h2>
-              <p className="text-sm text-primary-gold/70">
-                Suas cópias já estão reservadas. Não feche esta página.
-              </p>
-            </section>
-          ) : done ? (
-            <section className={`${card} items-center text-center`}>
-              <FiCheckCircle size={36} className="text-green-400" />
-              <h2 className="font-cinzel text-lg">Aluguel confirmado!</h2>
-              <p className="text-sm text-primary-gold/80">Código do pedido</p>
-              <p className="font-mono text-2xl tracking-widest text-primary-gold">{done.code}</p>
-              <p className="text-sm text-primary-gold/70">
-                Retire os jogos no balcão do Carcassonne Pub e pague na retirada.
-              </p>
-              <Link href="/aluguel/minha-conta" className={`${smallBtn} flex items-center`}>
-                Ver meus aluguéis
+          {/* 1. Jogos */}
+          <section className={card}>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className={heading}>
+                1. Jogos <span className="text-primary-gold/40">({cart.gameIds.length})</span>
+              </h2>
+              <Link href="/aluguel" className="text-xs text-primary-gold/60 underline underline-offset-2 hover:text-primary-gold">
+                + Adicionar mais
               </Link>
-            </section>
-          ) : !games || !settings || !rules ? (
-            <p className="text-sm text-primary-gold/55 text-center">Carregando...</p>
-          ) : cart.gameIds.length === 0 ? (
-            <section className={`${card} items-center text-center`}>
-              <p className="text-sm text-primary-gold/75">Seu pedido está vazio.</p>
-              <Link href="/aluguel" className={`${smallBtn} flex items-center`}>
-                Escolher jogos
-              </Link>
-            </section>
-          ) : (
-            <>
-              {settings.isEnabled === false && (
-                <p
-                  role="alert"
-                  className="px-3 py-2 rounded-xl border border-orange-400/40 bg-orange-500/10 text-xs text-orange-200"
-                >
-                  {ORDER_ERROR_MESSAGES.service_disabled}
-                </p>
-              )}
+            </div>
+            <ul className="flex flex-col gap-2">
+              {items.map(({ id, game }) => {
+                const av =
+                  game && startDate ? availabilityFor(withLiveBookings(game, Date.now()), startDate, today) : null;
+                const next = av && !av.ok ? av.nextStart : null;
+                const canUseNext = !!next && dates.some((d) => d.date === next && d.enabled);
+                const flagged = flaggedId === id || (av !== null && !av.ok) || !game;
+                return (
+                  <li
+                    key={id}
+                    className={`flex gap-3 p-2.5 rounded-lg border ${
+                      flagged ? "border-orange-400/50 bg-orange-500/10" : "border-primary-gold/10 bg-primary-black/30"
+                    }`}
+                  >
+                    <ShowcaseImage
+                      src={game?.image ?? ""}
+                      placeholder={BOARDGAME_PLACEHOLDER}
+                      className="w-14 h-14 rounded-lg shrink-0"
+                    />
+                    <div className="flex flex-col gap-1 flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className={`text-sm font-medium min-w-0 break-words ${game ? "" : "line-through text-primary-gold/50"}`}>
+                          {game ? game.name : "Jogo removido"}
+                        </span>
+                        {game && <span className="shrink-0 text-sm font-semibold">{formatBRL(game.price)}</span>}
+                      </div>
+                      {!game ? (
+                        <span className="text-xs text-orange-200">Não está mais disponível — remova para continuar.</span>
+                      ) : av && !av.ok ? (
+                        <span className="text-xs text-orange-200">
+                          {av.nextStart
+                            ? `Sem cópia livre nesta data. Disponível a partir de ${formatDateBR(av.nextStart)}.`
+                            : "Indisponível para esta data."}
+                        </span>
+                      ) : (
+                        startDate && (
+                          <span className="text-xs text-primary-gold/55">
+                            Fica com você {game.rentalDays} {game.rentalDays === 1 ? "dia" : "dias"} · devolva até{" "}
+                            {formatDateBR(addDays(startDate, game.rentalDays))}
+                          </span>
+                        )
+                      )}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {canUseNext && next && (
+                          <button type="button" className={smallBtn} onClick={() => changeDate(next)}>
+                            Retirar em {formatDateBR(next)}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => cart.remove(id)}
+                          className="flex items-center gap-1 text-[11px] text-primary-gold/50 hover:text-red-300 cursor-pointer"
+                        >
+                          <FiTrash2 size={12} /> Remover
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            {tooMany && (
+              <p role="alert" className="text-xs text-orange-200">
+                Você pode alugar no máximo {settings.maxGamesPerOrder} jogos por pedido. Remova{" "}
+                {cart.gameIds.length - settings.maxGamesPerOrder} para continuar.
+              </p>
+            )}
+          </section>
 
-              <section className={card}>
-                <h2 className={heading}>Jogos</h2>
-                <ul className="flex flex-col gap-2">
-                  {items.map(({ id, game }) => {
-                    const av =
-                      game && startDate
-                        ? availabilityFor(withLiveBookings(game, Date.now()), startDate, today)
-                        : null;
-                    const next = av && !av.ok ? av.nextStart : null;
-                    const canUseNext = !!next && dates.some((d) => d.date === next && d.enabled);
-                    const flagged = flaggedId === id || (av !== null && !av.ok);
+          {/* 2. Retirada */}
+          <section className={card}>
+            <h2 className={heading}>2. Quando você vai retirar?</h2>
+            {startDate === null ? (
+              <p className="text-sm text-orange-200">Não há datas de retirada disponíveis no momento.</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2" role="radiogroup" aria-label="Data de retirada">
+                  {dates.map(({ date, enabled }) => {
+                    const selected = date === startDate;
                     return (
-                      <li
-                        key={id}
-                        className={`flex flex-col gap-1.5 p-2.5 rounded-lg border ${
-                          flagged
-                            ? "border-orange-400/50 bg-orange-500/10"
-                            : "border-primary-gold/10"
+                      <button
+                        key={date}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        disabled={!enabled}
+                        onClick={() => changeDate(date)}
+                        title={enabled ? undefined : "Sem retirada neste dia"}
+                        className={`flex flex-col items-center py-2 rounded-lg border text-xs transition-colors ${
+                          selected
+                            ? "border-primary-gold bg-primary-gold text-primary-black"
+                            : enabled
+                              ? "border-primary-gold/20 text-primary-gold/80 hover:border-primary-gold/50 cursor-pointer"
+                              : "border-primary-gold/5 text-primary-gold/20 cursor-not-allowed"
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <span
-                            className={`text-sm min-w-0 break-words ${
-                              game ? "" : "line-through text-primary-gold/50"
-                            }`}
-                          >
-                            {game ? game.name : "Jogo removido"}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => cart.remove(id)}
-                            aria-label={`Remover ${game ? game.name : "item"} do pedido`}
-                            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full border border-primary-gold/20 text-primary-gold/70 hover:text-primary-gold hover:border-primary-gold/50 cursor-pointer"
-                          >
-                            <FiTrash2 size={14} />
-                          </button>
-                        </div>
-                        {!game && <p className="text-xs text-orange-200">não está mais disponível</p>}
-                        {av && (
-                          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                            {av.ok ? (
-                              <span className="text-green-400">Disponível</span>
-                            ) : (
-                              <span className="text-orange-200">
-                                {av.nextStart
-                                  ? `Disponível a partir de ${formatDateBR(av.nextStart)}`
-                                  : "Indisponível para esta data"}
-                              </span>
-                            )}
-                            {canUseNext && next && (
-                              <button
-                                type="button"
-                                className={smallBtn}
-                                onClick={() => changeDate(next)}
-                              >
-                                Usar esta data
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </li>
+                        <span className="uppercase text-[10px]">
+                          {date === today ? "hoje" : WEEKDAYS[weekdayOf(date)]}
+                        </span>
+                        <span className="text-sm font-semibold">{formatDateBR(date)}</span>
+                      </button>
                     );
                   })}
-                </ul>
-                {tooMany && (
-                  <p role="alert" className="text-xs text-orange-200">
-                    Você pode alugar no máximo {settings.maxGamesPerOrder} jogos por pedido.
-                    Remova {cart.gameIds.length - settings.maxGamesPerOrder} para continuar.
-                  </p>
-                )}
-                {hasInvalid && (
-                  <p className="text-xs text-orange-200">
-                    Remova os jogos indisponíveis para continuar.
-                  </p>
-                )}
-              </section>
-
-              <section className={card}>
-                <h2 className={heading}>Data de retirada</h2>
-                {startDate === null ? (
-                  <p className="text-sm text-orange-200">
-                    Não há datas de retirada disponíveis no momento.
-                  </p>
-                ) : (
-                  <div
-                    className="grid grid-cols-3 sm:grid-cols-4 gap-2"
-                    role="radiogroup"
-                    aria-label="Data de retirada"
-                  >
-                    {dates.map(({ date, enabled }) => {
-                      const selected = date === startDate;
-                      return (
-                        <button
-                          key={date}
-                          type="button"
-                          role="radio"
-                          aria-checked={selected}
-                          disabled={!enabled}
-                          onClick={() => changeDate(date)}
-                          className={`flex flex-col items-center py-1.5 rounded-lg border text-xs transition-colors ${
-                            selected
-                              ? "border-primary-gold/70 bg-primary-gold/15 text-primary-gold"
-                              : enabled
-                                ? "border-primary-gold/20 text-primary-gold/80 hover:border-primary-gold/50 cursor-pointer"
-                                : "border-primary-gold/10 text-primary-gold/25 line-through cursor-not-allowed"
-                          }`}
-                        >
-                          <span className="uppercase text-[10px]">{WEEKDAYS[weekdayOf(date)]}</span>
-                          <span className="text-sm font-semibold">{formatDateBR(date)}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
-
-              <section className={card}>
-                <h2 className={heading}>Resumo</h2>
-                <ul className="flex flex-col gap-1.5 text-sm">
-                  {validGames.map((g) => (
-                    <li key={g.id} className="flex justify-between gap-3">
-                      <span className="min-w-0 break-words">
-                        {g.name}
-                        {startDate && (
-                          <span className="block text-xs text-primary-gold/55">
-                            Devolução até {formatDateBR(addDays(startDate, g.rentalDays), true)}
-                          </span>
-                        )}
-                      </span>
-                      <span className="shrink-0">{formatBRL(g.price)}</span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="flex justify-between border-t border-primary-gold/15 pt-2 font-semibold">
-                  <span>Total</span>
-                  <span>{formatBRL(total)}</span>
                 </div>
-                {online ? (
-                  <p className="text-xs text-primary-gold/60">Pagamento online · Pix ou cartão</p>
-                ) : (
-                  <p className="text-xs text-primary-gold/60">Pagamento no balcão, na retirada.</p>
-                )}
-              </section>
-
-              <label className="flex items-start gap-2.5 text-sm text-primary-gold/85 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={accepted}
-                  onChange={(e) => setAccepted(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 shrink-0 accent-[#e6c56b]"
-                />
-                <span>
-                  Li e aceito as{" "}
-                  <RulesLink className="underline text-primary-gold cursor-pointer">
-                    regras do aluguel
-                  </RulesLink>{" "}
-                  (versão {rules.version}).
-                </span>
-              </label>
-
-              {needsVerify && (
-                <div
-                  role="status"
-                  className="flex flex-col gap-2 px-3 py-2.5 rounded-xl border border-orange-400/40 bg-orange-500/10 text-xs text-orange-200"
-                >
-                  <p className="break-words">
-                    Confirme seu e-mail para alugar jogos. Enviamos um link de confirmação para{" "}
-                    {user?.email}.
-                  </p>
-                  {verifyMsg && <p>{verifyMsg}</p>}
-                  <div className="flex gap-2">
-                    <button type="button" disabled={verifyBusy} onClick={resend} className={smallBtn}>
-                      Reenviar
-                    </button>
-                    <button
-                      type="button"
-                      disabled={verifyBusy}
-                      onClick={confirmedEmail}
-                      className={smallBtn}
-                    >
-                      Já confirmei
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {error && (
-                <p
-                  role="alert"
-                  className="px-3 py-2 rounded-xl border border-red-400/40 bg-red-500/10 text-sm text-red-200"
-                >
-                  {error}
+                <p className="text-xs text-primary-gold/60">
+                  Retirada no balcão do Carcassonne a partir de <strong className="text-primary-gold">{dayLabel(startDate)}</strong>
+                  {firstReturn && (
+                    <>
+                      {" "}· devolução até <strong className="text-primary-gold">{dayLabel(firstReturn)}</strong>
+                    </>
+                  )}
+                  .
                 </p>
-              )}
+              </>
+            )}
+          </section>
 
-              <button
-                type="button"
-                onClick={submit}
-                disabled={blocked}
-                className="h-11 rounded-xl bg-primary-gold text-primary-black font-semibold hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+          {/* 3. Confirmar: o que falta para concluir */}
+          <section className={card}>
+            <h2 className={heading}>3. Confirmar</h2>
+            {needsLogin ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-sm text-primary-gold/80">Para confirmar, entre na sua conta ou crie uma — leva um minuto.</p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Link href={withNext("/aluguel/entrar", "/aluguel/pedido")} className={`${mainBtn} flex-1`}>
+                    Entrar
+                  </Link>
+                  <Link href={withNext("/aluguel/cadastro", "/aluguel/pedido")} className={`${ghostBtn} flex-1`}>
+                    Criar conta
+                  </Link>
+                </div>
+              </div>
+            ) : needsProfile ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-sm text-primary-gold/80">Falta completar seu cadastro (nome, WhatsApp e CPF).</p>
+                <Link href={withNext("/aluguel/minha-conta", "/aluguel/pedido")} className={mainBtn}>
+                  Completar cadastro
+                </Link>
+              </div>
+            ) : (
+              <>
+                {needsVerify && (
+                  <div
+                    role="status"
+                    className="flex flex-col gap-2 px-3 py-2.5 rounded-xl border border-orange-400/40 bg-orange-500/10 text-xs text-orange-200"
+                  >
+                    <p className="break-words">
+                      Confirme seu e-mail para alugar. Enviamos um link para {user?.email}.
+                    </p>
+                    {verifyMsg && <p>{verifyMsg}</p>}
+                    <div className="flex gap-2">
+                      <button type="button" disabled={verifyBusy} onClick={resend} className={smallBtn}>
+                        Reenviar
+                      </button>
+                      <button type="button" disabled={verifyBusy} onClick={confirmedEmail} className={smallBtn}>
+                        Já confirmei
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <label className="flex items-start gap-2.5 text-sm text-primary-gold/85 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={accepted}
+                    onChange={(e) => setAccepted(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 shrink-0 accent-[#e6c56b]"
+                  />
+                  <span>
+                    Li e aceito as{" "}
+                    <RulesLink className="underline text-primary-gold cursor-pointer">regras do aluguel</RulesLink>{" "}
+                    (versão {rules.version}).
+                  </span>
+                </label>
+              </>
+            )}
+            <p className="text-xs text-primary-gold/55">
+              {online
+                ? `Pagamento online, por Pix ou cartão. Suas cópias ficam reservadas por ${settings.onlinePayment.holdMinutes} minutos enquanto você paga.`
+                : "Pagamento no balcão, na retirada."}
+            </p>
+          </section>
+
+          {error && (
+            <p role="alert" className="px-3 py-2 rounded-xl border border-red-400/40 bg-red-500/10 text-sm text-red-200">
+              {error}
+            </p>
+          )}
+
+          {/* Total e botão sempre à mão */}
+          {!needsLogin && !needsProfile && (
+            <div className="sticky bottom-3 z-30 flex items-center gap-3 rounded-2xl border border-primary-gold/30 bg-primary-black/90 backdrop-blur p-3 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+              <div className="flex flex-col leading-tight">
+                <span className="text-[11px] text-primary-gold/55">Total</span>
+                <span className="text-lg font-bold">{formatBRL(total)}</span>
+              </div>
+              <button type="button" onClick={submit} disabled={blocked} className={`${mainBtn} flex-1`}>
                 {buttonLabel}
               </button>
-              {online && (
-                <p className="text-xs text-primary-gold/60 text-center">
-                  Suas cópias ficam reservadas por {settings.onlinePayment.holdMinutes} minutos
-                  enquanto você paga.
-                </p>
-              )}
-            </>
+            </div>
           )}
-        </main>
-      </div>
-    </>
+          {!needsLogin && !needsProfile && !accepted && (
+            <p className="-mt-2 text-center text-[11px] text-primary-gold/45">
+              Aceite as regras para continuar.
+            </p>
+          )}
+        </>
+      )}
+    </RentalPageShell>
   );
 }

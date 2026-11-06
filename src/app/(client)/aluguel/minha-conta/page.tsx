@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { FiArrowLeft } from "react-icons/fi";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { signOut } from "firebase/auth";
@@ -25,7 +24,7 @@ import { formatCpf, normalizeCpf } from "@/rental/cpf";
 import { safeNextPath, withNext } from "@/rental/navigation";
 import { useRentalCart } from "../useRentalCart";
 import { useRentalCustomer } from "../useRentalCustomer";
-import RentalHeader from "../rentalHeader";
+import RentalPageShell from "../rentalPageShell";
 import ProfileForm, { maskPhone } from "../profileForm";
 import PaymentBadge from "../paymentBadge";
 import { STAGE_ORDER, orderHeadline, type OrderStage } from "@/rental/myAccount";
@@ -560,28 +559,9 @@ function MinhaContaContent() {
   }
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap');
-        .font-cinzel { font-family: 'Cinzel', serif; }
-      `}</style>
-      <div className="relative min-h-screen text-primary-gold flex flex-col pb-14 pt-4 gap-5">
-        <RentalHeader cartCount={cart.gameIds.length} />
-        <main className="flex flex-col gap-4 w-full max-w-2xl mx-auto px-4">
-          <Link
-            href="/aluguel"
-            className="self-start flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/70 hover:text-primary-gold transition-colors"
-          >
-            <FiArrowLeft size={15} />
-            <span className="text-sm font-medium">Voltar aos jogos</span>
-          </Link>
-          <h1 className="font-cinzel text-xl sm:text-3xl text-center tracking-widest uppercase">
-            Minha conta
-          </h1>
-          {body}
-        </main>
-      </div>
-    </>
+    <RentalPageShell title="Minha conta" cartCount={cart.gameIds.length}>
+      {body}
+    </RentalPageShell>
   );
 }
 

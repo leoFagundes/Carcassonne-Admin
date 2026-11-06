@@ -2,7 +2,8 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FiLock, FiMail } from "react-icons/fi";
+import Link from "next/link";
+import { FiArrowLeft, FiLock, FiMail } from "react-icons/fi";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import Input from "@/components/input";
 import AuthBackground from "@/components/authBackground";
@@ -101,6 +102,12 @@ export default function EntrarPage() {
       <Suspense fallback={null}>
         <LoginCard />
       </Suspense>
+      <Link
+        href="/aluguel"
+        className="relative z-10 flex items-center gap-1.5 text-sm text-primary-gold/70 hover:text-primary-gold"
+      >
+        <FiArrowLeft size={15} /> Voltar aos jogos
+      </Link>
     </div>
   );
 }
