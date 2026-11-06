@@ -10,6 +10,7 @@ import type { RentalOrderType, RentalSettingsType, RentalType } from "@/types";
 import RentalOrderRepository from "@/services/repositories/RentalOrderRepository";
 import {
   cancelPreview,
+  formatCountdown,
   orderPaymentView,
   type CancelOutcome,
   type CancelPreview,
@@ -27,6 +28,7 @@ import { useRentalCustomer } from "../useRentalCustomer";
 import RentalHeader from "../rentalHeader";
 import ProfileForm, { maskPhone } from "../profileForm";
 import PaymentBadge from "../paymentBadge";
+import { STAGE_ORDER, orderHeadline, type OrderStage } from "@/rental/myAccount";
 
 type Rental = RentalType & { id: string };
 type Order = RentalOrderType & { id: string };
@@ -68,6 +70,15 @@ function cancelDoneText(outcome: CancelOutcome): string {
       return "Aluguel cancelado.";
   }
 }
+
+/** Cor do cartão do pedido conforme o que falta fazer. */
+const STAGE_TONE: Record<OrderStage, { box: string; title: string }> = {
+  pay: { box: "border-orange-400/45 bg-orange-500/[0.07]", title: "text-orange-200" },
+  late: { box: "border-red-400/50 bg-red-500/[0.07]", title: "text-red-300" },
+  with_you: { box: "border-sky-300/35 bg-sky-400/[0.05]", title: "text-sky-200" },
+  pickup: { box: "border-primary-gold/40 bg-primary-gold/[0.05]", title: "text-primary-gold" },
+  done: { box: "border-primary-gold/15 bg-secondary-black/60", title: "text-primary-gold/70" },
+};
 
 function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
@@ -270,34 +281,233 @@ function MinhaContaContent() {
       </section>
     );
   } else {
+    const firstName = (customer?.name ?? "").trim().split(/\s+/)[0];
+    const groups = orders.map((list) => {
+      const orderId = list[0].orderId;
+      const orderDoc = orderById.get(orderId);
+      const view = orderDoc ? orderPaymentView(orderDoc, now) : null;
+      return { orderId, list, orderDoc, view, headline: orderHeadline(list, view?.state ?? null, today) };
+    });
+    const active = groups
+      .filter((g) => g.headline.stage !== "done")
+      .sort(
+        (a, b) =>
+          STAGE_ORDER[a.headline.stage] - STAGE_ORDER[b.headline.stage] ||
+          (a.list[0].startDate < b.list[0].startDate ? -1 : 1),
+      );
+    const history = groups
+      .filter((g) => g.headline.stage === "done")
+      .sort((a, b) => (a.list[0].startDate > b.list[0].startDate ? -1 : 1));
+
     body = (
       <>
+        {firstName && <p className="-mt-2 text-center text-sm text-primary-gold/60">Olá, {firstName}!</p>}
+
         {!emailVerified && (
           <div
             role="status"
             className="flex flex-col gap-2 px-3 py-2.5 rounded-xl border border-orange-400/40 bg-orange-500/10 text-xs text-orange-200"
           >
             <p className="break-words">
-              Confirme seu e-mail para alugar jogos. Enviamos um link de confirmação para{" "}
-              {user.email}.
+              Confirme seu e-mail para alugar jogos. Enviamos um link de confirmação para {user.email}.
             </p>
             {verifyMsg && <p>{verifyMsg}</p>}
             <div className="flex gap-2">
               <button type="button" disabled={verifyBusy} onClick={resend} className={smallBtn}>
                 Reenviar
               </button>
-              <button
-                type="button"
-                disabled={verifyBusy}
-                onClick={confirmedEmail}
-                className={smallBtn}
-              >
+              <button type="button" disabled={verifyBusy} onClick={confirmedEmail} className={smallBtn}>
                 Já confirmei
               </button>
             </div>
           </div>
         )}
 
+        {/* ── Em andamento: o que fazer agora ── */}
+        <section className="flex flex-col gap-3">
+          <h2 className={heading}>Em andamento</h2>
+          {rentals === null ? (
+            <p className="text-sm text-primary-gold/55">Carregando...</p>
+          ) : active.length === 0 ? (
+            <div className={`${card} items-center text-center`}>
+              <p className="text-sm text-primary-gold/75">Nenhum aluguel em andamento.</p>
+              <Link
+                href="/aluguel"
+                className="h-10 px-5 rounded-full bg-primary-gold text-primary-black text-sm font-semibold flex items-center"
+              >
+                Escolher jogos
+              </Link>
+            </div>
+          ) : (
+            active.map(({ orderId, list, orderDoc, view, headline }) => {
+              const tone = STAGE_TONE[headline.stage];
+              const total = list.filter((r) => r.status !== "canceled").reduce((sum, r) => sum + r.price, 0);
+              const mixed = new Set(list.map((r) => r.status)).size > 1;
+              const counter = !orderDoc || orderDoc.paymentMode !== "online";
+              return (
+                <article key={orderId} className={`rounded-xl border p-4 flex flex-col gap-3 ${tone.box}`}>
+                  {/* Manchete: o que fazer agora */}
+                  <div className="flex flex-col gap-1">
+                    <span className={`text-base font-semibold ${tone.title}`}>{headline.title}</span>
+                    <p className="text-sm text-primary-gold/80">{headline.detail}</p>
+                  </div>
+
+                  {headline.stage === "pay" && (view?.state === "awaiting" || view?.state === "rejected") && (
+                    <div className="flex flex-col gap-1.5">
+                      <button
+                        type="button"
+                        disabled={payingId !== null}
+                        onClick={() => payNow(orderId)}
+                        className="h-11 rounded-xl bg-primary-gold text-primary-black text-sm font-semibold cursor-pointer disabled:opacity-60"
+                      >
+                        {payingId === orderId ? "Abrindo o pagamento..." : `Pagar ${formatBRL(total)} agora`}
+                      </button>
+                      <span className="text-center text-xs text-orange-200">
+                        Tempo restante: {formatCountdown(view.msLeft)}
+                      </span>
+                    </div>
+                  )}
+                  {payError?.id === orderId && (
+                    <p role="alert" className="text-xs text-red-300">
+                      {payError.message}
+                    </p>
+                  )}
+
+                  {/* Jogos do pedido */}
+                  <ul className="flex flex-col divide-y divide-primary-gold/10 rounded-lg border border-primary-gold/10 bg-primary-black/30">
+                    {list.map((rental) => {
+                      const info = statusInfo(rental, today);
+                      const canceled = rental.status === "canceled";
+                      return (
+                        <li key={rental.id} className="flex flex-col gap-1.5 px-3 py-2.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <span className={`text-sm min-w-0 break-words ${canceled ? "line-through text-primary-gold/45" : ""}`}>
+                              {rental.gameName}
+                            </span>
+                            <span className={`shrink-0 text-xs ${canceled ? "line-through text-primary-gold/40" : "text-primary-gold/70"}`}>
+                              {formatBRL(rental.price)}
+                            </span>
+                          </div>
+                          {mixed && <span className={`text-[11px] ${info.tone}`}>{info.label}</span>}
+
+                          {rental.status === "reserved" && confirmingId !== rental.id && (
+                            <button
+                              type="button"
+                              disabled={cancelingId !== null}
+                              onClick={() => askCancel(rental)}
+                              className="self-start text-[11px] text-primary-gold/50 underline underline-offset-2 hover:text-primary-gold cursor-pointer disabled:opacity-50"
+                            >
+                              Cancelar este jogo
+                            </button>
+                          )}
+                          {rental.status === "reserved" && confirmingId === rental.id && (
+                            <div
+                              role="group"
+                              aria-label={`Confirmar o cancelamento de ${rental.gameName}`}
+                              className="flex flex-col gap-2 p-2.5 rounded-lg border border-orange-400/40 bg-orange-500/10"
+                            >
+                              <p className="text-xs font-semibold text-orange-200 break-words">
+                                Cancelar o aluguel de &ldquo;{rental.gameName}&rdquo;?
+                              </p>
+                              <p className="text-xs text-orange-100/90">
+                                {cancelPreviewText(cancelPreview(orderDoc, rental.id, settings.onlinePayment))}
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  disabled={cancelingId !== null}
+                                  onClick={() => confirmCancel(rental)}
+                                  className={smallBtn}
+                                >
+                                  {cancelingId === rental.id ? "Cancelando..." : "Sim, cancelar"}
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={cancelingId !== null}
+                                  onClick={() => {
+                                    setConfirmingId(null);
+                                    setCancelError(null);
+                                  }}
+                                  className={smallBtn}
+                                >
+                                  Manter aluguel
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          {cancelError?.id === rental.id && (
+                            <p role="alert" className="text-xs text-red-300">
+                              {cancelError.message}
+                            </p>
+                          )}
+                          {cancelDone?.id === rental.id && (
+                            <p role="status" className="text-xs text-emerald-300">
+                              {cancelDone.message}
+                            </p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  {/* Rodapé: pagamento e detalhes */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-primary-gold/60">
+                    {counter ? (
+                      <span>Pagamento no balcão, na retirada · {formatBRL(total)}</span>
+                    ) : (
+                      view && headline.stage !== "pay" && <PaymentBadge view={view} />
+                    )}
+                    <Link
+                      href={`/aluguel/pedido/${encodeURIComponent(orderId)}`}
+                      className="ml-auto underline underline-offset-2 hover:text-primary-gold"
+                    >
+                      Pedido {list[0].code} · ver detalhes
+                    </Link>
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </section>
+
+        {/* ── Histórico (recolhido) ── */}
+        {history.length > 0 && (
+          <details className="group rounded-xl border border-primary-gold/15 bg-secondary-black/40">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3">
+              <span className={heading}>Histórico</span>
+              <span className="text-xs text-primary-gold/50">
+                {plural(history.length, "pedido", "pedidos")}
+                <span className="ml-1.5 inline-block transition-transform group-open:rotate-180">▾</span>
+              </span>
+            </summary>
+            <ul className="flex flex-col divide-y divide-primary-gold/10 border-t border-primary-gold/10">
+              {history.map(({ orderId, list, view, headline }) => (
+                <li key={orderId}>
+                  <Link
+                    href={`/aluguel/pedido/${encodeURIComponent(orderId)}`}
+                    className="flex flex-col gap-1 px-4 py-3 hover:bg-primary-gold/[0.04] transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-sm min-w-0 break-words text-primary-gold/85">
+                        {list.map((r) => r.gameName).join(", ")}
+                      </span>
+                      <span className="shrink-0 text-xs text-primary-gold/50">{formatDateBR(list[0].startDate)}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-primary-gold/55">
+                      <span>{headline.title}</span>
+                      {view && view.state !== "counter" && view.state !== "expired" && view.state !== "canceled" && (
+                        <PaymentBadge view={view} />
+                      )}
+                      <span className="ml-auto font-mono">{list[0].code}</span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+
+        {/* ── Meus dados ── */}
         <section className={card}>
           <div className="flex items-center justify-between gap-2">
             <h2 className={heading}>Meus dados</h2>
@@ -320,147 +530,19 @@ function MinhaContaContent() {
               </button>
             </>
           ) : (
-            <div className="flex flex-col gap-1 text-sm">
-              <div className="break-words">{customer?.name}</div>
-              <div className="text-primary-gold/75 break-words">{user.email}</div>
-              <div className="text-primary-gold/75">{maskPhone(customer?.phone ?? "")}</div>
-              {cpfShown && <div className="text-primary-gold/75">CPF {cpfShown}</div>}
-            </div>
-          )}
-        </section>
-
-        <section className="flex flex-col gap-3">
-          <h2 className={heading}>Meus aluguéis</h2>
-          {rentals === null ? (
-            <p className="text-sm text-primary-gold/55">Carregando...</p>
-          ) : orders.length === 0 ? (
-            <div className={`${card} items-center text-center`}>
-              <p className="text-sm text-primary-gold/75">Você ainda não alugou nenhum jogo.</p>
-              <Link href="/aluguel" className={`${smallBtn} flex items-center`}>
-                Escolher jogos
-              </Link>
-            </div>
-          ) : (
-            orders.map((order) => {
-              const orderId = order[0].orderId;
-              const orderDoc = orderById.get(orderId);
-              const view = orderDoc ? orderPaymentView(orderDoc, now) : null;
-              const awaiting = view?.state === "awaiting" || view?.state === "rejected";
-              return (
-              <article key={orderId} className={card}>
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-xs text-primary-gold/60">Pedido</span>
-                  <span className="font-mono text-lg tracking-widest">{order[0].code}</span>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              {[
+                ["Nome", customer?.name],
+                ["E-mail", user.email],
+                ["WhatsApp", maskPhone(customer?.phone ?? "")],
+                ...(cpfShown ? [["CPF", cpfShown]] : []),
+              ].map(([label, value]) => (
+                <div key={label} className="flex flex-col min-w-0">
+                  <dt className="text-[10px] uppercase tracking-wider text-primary-gold/45">{label}</dt>
+                  <dd className="break-words text-primary-gold/85">{value}</dd>
                 </div>
-                {view && view.state !== "counter" && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <PaymentBadge view={view} />
-                    {awaiting && (
-                      <button
-                        type="button"
-                        disabled={payingId !== null}
-                        onClick={() => payNow(orderId)}
-                        className={smallBtn}
-                      >
-                        {payingId === orderId ? "Abrindo..." : "Pagar agora"}
-                      </button>
-                    )}
-                  </div>
-                )}
-                {payError?.id === orderId && (
-                  <p role="alert" className="text-xs text-red-300">
-                    {payError.message}
-                  </p>
-                )}
-                <ul className="flex flex-col gap-2">
-                  {order.map((rental) => {
-                    const info =
-                      rental.status === "awaiting_payment" && view?.state === "expired"
-                        ? { label: "Expirado", detail: "", tone: "text-red-300" }
-                        : statusInfo(rental, today);
-                    return (
-                      <li
-                        key={rental.id}
-                        className="flex flex-col gap-1 p-2.5 rounded-lg border border-primary-gold/10"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-sm min-w-0 break-words">{rental.gameName}</span>
-                          <span className="shrink-0 text-xs">{formatBRL(rental.price)}</span>
-                        </div>
-                        <p className={`text-xs ${info.tone}`}>
-                          <span className="font-semibold">{info.label}</span>
-                          {info.detail && ` · ${info.detail}`}
-                        </p>
-                        {rental.status === "reserved" && confirmingId !== rental.id && (
-                          <button
-                            type="button"
-                            disabled={cancelingId !== null}
-                            onClick={() => askCancel(rental)}
-                            className={`${smallBtn} self-start`}
-                          >
-                            Cancelar
-                          </button>
-                        )}
-                        {rental.status === "reserved" && confirmingId === rental.id && (
-                          <div
-                            role="group"
-                            aria-label={`Confirmar o cancelamento de ${rental.gameName}`}
-                            className="flex flex-col gap-2 mt-1 p-2.5 rounded-lg border border-orange-400/40 bg-orange-500/10"
-                          >
-                            <p className="text-xs font-semibold text-orange-200 break-words">
-                              Cancelar o aluguel de &ldquo;{rental.gameName}&rdquo;?
-                            </p>
-                            <p className="text-xs text-orange-100/90">
-                              {cancelPreviewText(
-                                cancelPreview(orderDoc, rental.id, settings.onlinePayment),
-                              )}
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                disabled={cancelingId !== null}
-                                onClick={() => confirmCancel(rental)}
-                                className={smallBtn}
-                              >
-                                {cancelingId === rental.id ? "Cancelando..." : "Confirmar cancelamento"}
-                              </button>
-                              <button
-                                type="button"
-                                disabled={cancelingId !== null}
-                                onClick={() => {
-                                  setConfirmingId(null);
-                                  setCancelError(null);
-                                }}
-                                className={smallBtn}
-                              >
-                                Manter aluguel
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                        {cancelError?.id === rental.id && (
-                          <p role="alert" className="text-xs text-red-300">
-                            {cancelError.message}
-                          </p>
-                        )}
-                        {cancelDone?.id === rental.id && (
-                          <p role="status" className="text-xs text-emerald-300">
-                            {cancelDone.message}
-                          </p>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-                <Link
-                  href={`/aluguel/pedido/${encodeURIComponent(orderId)}`}
-                  className="self-start text-xs text-primary-gold underline"
-                >
-                  Ver pedido
-                </Link>
-              </article>
-              );
-            })
+              ))}
+            </dl>
           )}
         </section>
 
