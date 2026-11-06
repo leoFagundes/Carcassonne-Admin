@@ -7,7 +7,9 @@ import {
   isAwaitingPayment,
   isOrderExpirable,
   releaseHeldBookings,
+  withLiveBookings,
 } from "../payments";
+import { canChangeDueDate } from "../orders";
 
 const NOW = 10_000_000;
 
@@ -116,5 +118,24 @@ describe("countActiveGames", () => {
       { status: "awaiting_payment", orderId: "missing" },
     ] as const;
     expect(countActiveGames([...rentals], { live, stale }, NOW)).toBe(1);
+  });
+});
+
+describe("canChangeDueDate com holds (regressão)", () => {
+  const own = b("r1", "picked_up");
+  const later = (holdUntil: number): RentalBooking => ({
+    rentalId: "x1", unitId: "u1", startDate: "2026-11-15", dueDate: "2026-11-20", status: "held", holdUntil,
+  });
+  const game = (hold: RentalBooking) => ({ units: [{ id: "u1", label: "u1", status: "active" as const }], bookings: [own, hold], rentalDays: 7 });
+
+  it("hold vencido na mesma cópia não bloqueia a nova devolução depois de liveBookings", () => {
+    const g = game(later(NOW - 1));
+    expect(canChangeDueDate(g, "r1", "2026-11-16", "2026-11-06")).toBe(false);
+    expect(canChangeDueDate(withLiveBookings(g, NOW), "r1", "2026-11-16", "2026-11-06")).toBe(true);
+  });
+
+  it("hold válido continua bloqueando", () => {
+    const g = withLiveBookings(game(later(NOW + 1)), NOW);
+    expect(canChangeDueDate(g, "r1", "2026-11-16", "2026-11-06")).toBe(false);
   });
 });

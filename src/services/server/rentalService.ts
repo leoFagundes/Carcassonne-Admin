@@ -34,7 +34,7 @@ import type {
   RentalSettingsType,
   RentalType,
 } from "@/types";
-import { ApiError } from "./apiHelpers";
+import { ApiError, isDocId } from "./apiHelpers";
 import { getAdminDb } from "./firebaseAdmin";
 import { paymentsStatus } from "./payments";
 import { rentalRulesUrl, sendOrderConfirmation } from "./rentalEmails";
@@ -168,12 +168,21 @@ export async function createOrder(
       ? (customerSnap.data() as RentalCustomerType)
       : null;
     const customerRentals = rentalsSnap.docs.map((d) => d.data() as RentalType);
-    // Pedidos do cliente só quando há aluguel aguardando pagamento: ele conta
-    // no limite enquanto a reserva temporária do pedido vale.
+    // Só os pedidos dos aluguéis aguardando pagamento: eles contam no limite
+    // enquanto a reserva temporária do pedido vale.
     const ordersById: Record<string, RentalOrderType> = {};
-    if (customerRentals.some((r) => r.status === "awaiting_payment")) {
-      const ordersSnap = await tx.get(ordersCol.where("customerUid", "==", uid));
-      for (const d of ordersSnap.docs) ordersById[d.id] = d.data() as RentalOrderType;
+    const pendingOrderIds = [
+      ...new Set(
+        customerRentals
+          .filter((r) => r.status === "awaiting_payment" && isDocId(r.orderId))
+          .map((r) => r.orderId),
+      ),
+    ];
+    if (pendingOrderIds.length > 0) {
+      const orderSnaps = await tx.getAll(...pendingOrderIds.map((id) => ordersCol.doc(id)));
+      for (const snap of orderSnaps) {
+        if (snap.exists) ordersById[snap.id] = snap.data() as RentalOrderType;
+      }
     }
     const activeGamesCount = countActiveGames(customerRentals, ordersById, now);
 
@@ -373,7 +382,7 @@ export async function cancelRental(
 
     if (gameSnap.exists) {
       tx.update(gameRef, {
-        bookings: removeBooking(asBookings(gameSnap.data()?.bookings), rentalId),
+        bookings: removeBooking(liveBookings(asBookings(gameSnap.data()?.bookings), Date.now()), rentalId),
         updatedAt: FieldValue.serverTimestamp(),
       });
     }
@@ -458,7 +467,7 @@ export async function returnRental(
     if (gameSnap.exists) {
       const data = gameSnap.data();
       tx.update(gameRef, {
-        bookings: removeBooking(asBookings(data?.bookings), rentalId),
+        bookings: removeBooking(liveBookings(asBookings(data?.bookings), Date.now()), rentalId),
         ...(input.markUnitUnavailable
           ? {
               units: markUnitUnavailable(
@@ -486,7 +495,8 @@ export async function changeDueDate(rentalId: string, dueDate: string): Promise<
 
     if (gameSnap.exists) {
       const data = gameSnap.data();
-      const bookings = asBookings(data?.bookings);
+      // Holds vencidos não bloqueiam a nova data (e somem do jogo ao gravar).
+      const bookings = liveBookings(asBookings(data?.bookings), Date.now());
       const game = {
         units: asUnits(data?.units),
         bookings,

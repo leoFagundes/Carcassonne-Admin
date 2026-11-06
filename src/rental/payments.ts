@@ -32,6 +32,7 @@ export type OrderPaymentView =
   | { state: "counter" }
   | { state: "awaiting"; msLeft: number }
   | { state: "expired" }
+  | { state: "canceled" }
   | { state: "rejected"; msLeft: number }
   | { state: "paid"; method?: "pix" | "card" }
   | { state: "refunded"; amount: number }
@@ -50,7 +51,7 @@ export function orderPaymentView(order: RentalOrderType, nowMs: number): OrderPa
     case "partially_refunded":
       return { state: "partially_refunded", amount: p.refundedTotal };
     case "expired":
-      return { state: "expired" };
+      return p.closedBy === "customer" ? { state: "canceled" } : { state: "expired" };
     case "pending":
     case "rejected":
       if (p.holdUntil <= nowMs) return { state: "expired" };

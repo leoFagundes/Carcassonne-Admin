@@ -84,3 +84,12 @@ describe("mergeRentalSettings", () => {
     });
   });
 });
+
+describe("orderPaymentView: cancelado pelo cliente", () => {
+  it("expired + closedBy customer → canceled", () =>
+    expect(orderPaymentView(order({ payment: pay({ status: "expired", closedBy: "customer" }) }), NOW)).toEqual({ state: "canceled" }));
+  it("expired + closedBy system (ou ausente) → expired", () => {
+    expect(orderPaymentView(order({ payment: pay({ status: "expired", closedBy: "system" }) }), NOW)).toEqual({ state: "expired" });
+    expect(orderPaymentView(order({ payment: pay({ status: "expired" }) }), NOW)).toEqual({ state: "expired" });
+  });
+});

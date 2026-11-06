@@ -544,6 +544,8 @@ export interface RentalOrderPayment {
   refunds: RentalRefund[];
   refundedTotal: number;
   lateApprovalRefunded?: boolean;
+  /** Quem encerrou o pedido não pago (status "expired"): cliente cancelou × sistema expirou. */
+  closedBy?: "customer" | "system";
 }
 
 export interface RentalCancellationReview {

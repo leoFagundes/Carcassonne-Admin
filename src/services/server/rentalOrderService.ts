@@ -17,6 +17,7 @@ const EXPIRED_REASON = "Pagamento não concluído";
 const CUSTOMER_CANCEL_REASON = "Cancelado pelo cliente antes do pagamento";
 
 const notFound = () => new ApiError(404, "not_found", "Pedido não encontrado.");
+const alreadyPaid = () => new ApiError(409, "already_paid", "Este pedido já foi pago.");
 const orderExpired = () =>
   new ApiError(409, "order_expired", "O tempo para pagar acabou e as cópias foram liberadas.");
 /** Erro padrão quando o checkout não pôde ser criado. */
@@ -78,7 +79,10 @@ async function releaseOrder(orderId: string, mode: ReleaseMode): Promise<boolean
       Promise.all(gameRefs.map((ref) => tx.get(ref))),
     ]);
 
-    tx.update(orderRef, { "payment.status": "expired" });
+    tx.update(orderRef, {
+      "payment.status": "expired",
+      "payment.closedBy": isCustomer ? "customer" : "system",
+    });
 
     const cancelReason = isCustomer ? CUSTOMER_CANCEL_REASON : mode.reason;
     for (const snap of rentalSnaps) {
@@ -158,10 +162,16 @@ export async function reopenCheckout(orderId: string, uid: string): Promise<{ ch
   }
   if (!isAwaitingPayment(order)) {
     if (payment.status === "expired") throw orderExpired();
-    throw new ApiError(409, "already_paid", "O pagamento deste pedido já foi aprovado.");
+    throw alreadyPaid();
   }
   if (isOrderExpirable(order, Date.now())) {
-    await expireOrder(orderId);
+    if (!(await expireOrder(orderId))) {
+      // Não expirou: o pedido mudou no meio (ex.: pagamento aprovado agora).
+      const fresh = await ordersCol().doc(orderId).get();
+      if ((fresh.data() as RentalOrderType | undefined)?.payment?.status === "approved") {
+        throw alreadyPaid();
+      }
+    }
     throw orderExpired();
   }
   if (payment.checkoutUrl) return { checkoutUrl: payment.checkoutUrl };
