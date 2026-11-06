@@ -12,6 +12,7 @@ import { checkoutReturnFlag } from "@/rental/checkoutReturn";
 import { formatDateBR } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
 import { withNext } from "@/rental/navigation";
+import { clearPendingOrder, clearPendingOrderIf } from "@/rental/pendingOrder";
 import { formatCountdown, orderPaymentView, type OrderPaymentView } from "@/rental/payments";
 import { useRentalCart } from "../../useRentalCart";
 import { useRentalCustomer } from "../../useRentalCustomer";
@@ -192,6 +193,9 @@ function OrderContent() {
     return () => window.removeEventListener("pageshow", onShow);
   }, []);
 
+  // Chegou à página do pedido: o ponteiro guardado no checkout já cumpriu o papel.
+  useEffect(() => clearPendingOrderIf(orderId), [orderId]);
+
   async function pay() {
     if (busy) return;
     setBusy("pay");
@@ -218,6 +222,7 @@ function OrderContent() {
   function orderAgain() {
     if (!order) return;
     for (const id of order.gameIds) if (!cart.has(id)) cart.add(id);
+    clearPendingOrder();
     router.push("/aluguel/pedido");
   }
 

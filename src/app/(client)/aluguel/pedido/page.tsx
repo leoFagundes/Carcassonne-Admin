@@ -14,6 +14,7 @@ import { addDays, formatDateBR, todaySP, weekdayOf } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
 import { isProfileComplete, ORDER_ERROR_MESSAGES, type OrderErrorCode } from "@/rental/orders";
 import { withNext } from "@/rental/navigation";
+import { clearPendingOrder, rememberPendingOrder, takePendingOrder } from "@/rental/pendingOrder";
 import { useRentalCart } from "../useRentalCart";
 import { useRentalCustomer } from "../useRentalCustomer";
 import RentalHeader from "../rentalHeader";
@@ -21,30 +22,6 @@ import { RulesLink } from "../rulesSheet";
 
 type Game = RentalGameType & { id: string };
 
-const PENDING_ORDER_KEY = "carcassonne-rental-pending-order";
-const PENDING_ORDER_TTL_MS = 2 * 60 * 60 * 1000;
-
-function rememberPendingOrder(orderId: string) {
-  try {
-    sessionStorage.setItem(PENDING_ORDER_KEY, JSON.stringify({ orderId, at: Date.now() }));
-  } catch {
-    // segue sem guardar
-  }
-}
-
-function takePendingOrder(): string | null {
-  try {
-    const raw = sessionStorage.getItem(PENDING_ORDER_KEY);
-    sessionStorage.removeItem(PENDING_ORDER_KEY);
-    const parsed = raw ? JSON.parse(raw) : null;
-    if (parsed && typeof parsed.orderId === "string" && Date.now() - parsed.at < PENDING_ORDER_TTL_MS) {
-      return parsed.orderId;
-    }
-  } catch {
-    // ignora
-  }
-  return null;
-}
 
 const WEEKDAYS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
 const card = "bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3";
@@ -82,11 +59,7 @@ export default function PedidoPage() {
     if (!createdOrderId) return;
     const onShow = (event: PageTransitionEvent) => {
       if (!event.persisted) return;
-      try {
-        sessionStorage.removeItem(PENDING_ORDER_KEY);
-      } catch {
-        // ignora
-      }
+      clearPendingOrder();
       setRedirecting(false);
       router.replace(`/aluguel/pedido/${encodeURIComponent(createdOrderId)}`);
     };
