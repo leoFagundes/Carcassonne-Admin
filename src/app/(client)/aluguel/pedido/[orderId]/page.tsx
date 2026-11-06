@@ -380,13 +380,15 @@ function OrderContent() {
       <div className="relative min-h-screen text-primary-gold flex flex-col pb-14 pt-4 gap-5">
         <RentalHeader cartCount={cart.gameIds.length} />
         <main className="flex flex-col gap-4 w-full max-w-2xl mx-auto px-4">
-          <Link
-            href="/aluguel/minha-conta"
-            className="self-start flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/70 hover:text-primary-gold transition-colors"
-          >
-            <FiArrowLeft size={15} />
-            <span className="text-sm font-medium">Meus aluguéis</span>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/aluguel" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/70 hover:text-primary-gold transition-colors">
+              <FiArrowLeft size={15} />
+              <span className="text-sm font-medium">Voltar aos jogos</span>
+            </Link>
+            <Link href="/aluguel/minha-conta" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/70 hover:text-primary-gold transition-colors">
+              <span className="text-sm font-medium">Meus aluguéis</span>
+            </Link>
+          </div>
           <h1 className="font-cinzel text-xl sm:text-3xl text-center tracking-widest uppercase">
             Seu pedido
           </h1>

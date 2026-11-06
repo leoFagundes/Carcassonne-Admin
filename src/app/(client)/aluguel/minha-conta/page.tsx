@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { FiArrowLeft } from "react-icons/fi";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { signOut } from "firebase/auth";
@@ -241,12 +242,6 @@ function MinhaContaContent() {
     router.replace("/aluguel");
   }
 
-  // Aberta direto (sem página anterior no histórico), volta para o catálogo.
-  function goBack() {
-    if (window.history.length > 1) router.back();
-    else router.push("/aluguel");
-  }
-
   const cpfShown = customer ? maskedCpf(customer.cpf ?? "") : "";
   const initial = { name: customer?.name, phone: customer?.phone, cpf: customer?.cpf };
 
@@ -470,9 +465,10 @@ function MinhaContaContent() {
         </section>
 
         <div className="flex items-center justify-center gap-2">
-          <button type="button" onClick={goBack} className={smallBtn}>
-            Voltar
-          </button>
+          {/* Link fixo: o histórico pode apontar para o Mercado Pago ou para um pedido. */}
+          <Link href="/aluguel" className={`${smallBtn} flex items-center`}>
+            Voltar aos jogos
+          </Link>
           <button type="button" onClick={logout} className={smallBtn}>
             Sair da conta
           </button>
@@ -490,6 +486,13 @@ function MinhaContaContent() {
       <div className="relative min-h-screen text-primary-gold flex flex-col pb-14 pt-4 gap-5">
         <RentalHeader cartCount={cart.gameIds.length} />
         <main className="flex flex-col gap-4 w-full max-w-2xl mx-auto px-4">
+          <Link
+            href="/aluguel"
+            className="self-start flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/70 hover:text-primary-gold transition-colors"
+          >
+            <FiArrowLeft size={15} />
+            <span className="text-sm font-medium">Voltar aos jogos</span>
+          </Link>
           <h1 className="font-cinzel text-xl sm:text-3xl text-center tracking-widest uppercase">
             Minha conta
           </h1>
