@@ -212,6 +212,43 @@ export function hasPendingReviewRefund(
 }
 
 /**
+ * Intenção já gravada com a chave `key` e valor diferente de `amount`
+ * (inclusive 0): a operação só pode seguir com o mesmo valor, senão o
+ * reembolso que talvez já tenha saído fica sem registro. null = sem conflito.
+ */
+export function conflictingPendingRefund(
+  order: { payment?: Partial<Pick<RentalOrderPayment, "pendingRefunds">> } | undefined,
+  key: string,
+  amount: unknown,
+): RentalPendingRefund | null {
+  const same = (order?.payment?.pendingRefunds ?? []).find((p) => p.key === key);
+  return same && same.amount !== amount ? same : null;
+}
+
+type ReviewKeyOrder = Pick<RentalOrderType, "cancellationReview"> & {
+  payment?: Partial<Pick<RentalOrderPayment, "pendingRefunds" | "refunds">>;
+};
+
+/**
+ * Chave do reembolso da aprovação da análise aberta. Reembolso de análise em
+ * andamento (ou com falha) → a chave dele, para retomar a mesma operação
+ * (vale também para chaves antigas, com os ids dos aluguéis). Senão, estável
+ * durante toda a análise: `${orderId}:review:${requestedAt}`, com `:2`, `:3`…
+ * quando a mesma análise já teve reembolsos (aprovação parcial: outro
+ * cancelamento entrou no meio e a análise continuou aberta).
+ */
+export function reviewRefundKey(order: ReviewKeyOrder, orderId: string): string {
+  const prefix = `${orderId}:review:`;
+  const pending = (order.payment?.pendingRefunds ?? []).find((p) => p.key.startsWith(prefix));
+  if (pending) return pending.key;
+  const base = `${prefix}${order.cancellationReview?.requestedAt ?? 0}`;
+  const done = (order.payment?.refunds ?? []).filter(
+    (r) => r.key === base || (r.key ?? "").startsWith(`${base}:`),
+  ).length;
+  return done === 0 ? base : `${base}:${done + 1}`;
+}
+
+/**
  * 2ª etapa (na transação): grava o reembolso feito no provedor. null quando a
  * mesma chave já foi registrada (nunca soma duas vezes).
  */

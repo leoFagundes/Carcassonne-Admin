@@ -8,6 +8,7 @@ import {
   beginRefund,
   checkoutItemsFor,
   closeCancellationReview,
+  conflictingPendingRefund,
   decideApproval,
   decideRefundedRedelivery,
   dropPendingRefund,
@@ -22,6 +23,7 @@ import {
   refundableLeft,
   releaseHeldBookings,
   reviewRefundCap,
+  reviewRefundKey,
   type ApprovalContext,
   type OrderPaymentView,
 } from "@/rental/payments";
@@ -770,8 +772,6 @@ export async function verifyOrderPayment(
 export const cancelRefundKey = (orderId: string, rentalId: string) =>
   `${orderId}:${rentalId}:cancel`;
 const adminRefundKey = (orderId: string, requestId: string) => `${orderId}:admin:${requestId}`;
-const reviewRefundKey = (orderId: string, rentalIds: string[]) =>
-  `${orderId}:review:${rentalIds.join(",")}`;
 
 export const refundFailed = () =>
   new ApiError(
@@ -784,6 +784,13 @@ export const refundInProgress = () =>
     409,
     "refund_in_progress",
     "Há um reembolso em andamento para este aluguel. Tente novamente em instantes.",
+  );
+/** Há intenção desta operação com outro valor: só dá para retomar com o mesmo. */
+export const refundAmountLocked = (amount: number) =>
+  new ApiError(
+    409,
+    "refund_in_progress",
+    `Há um reembolso de ${formatBRL(amount)} sem confirmação nesta operação. Use "Tentar de novo" com o mesmo valor (o reembolso não sai em dobro).`,
   );
 const notPaid = () =>
   new ApiError(409, "not_paid", "Este pedido não tem pagamento online aprovado.");
@@ -1054,9 +1061,13 @@ export async function reviewCancellation(
     const review = order.cancellationReview;
     if (review?.status !== "pending") throw noReview();
     const rentalIds = Array.isArray(review.rentalIds) ? review.rentalIds : [];
-    const key = reviewRefundKey(orderId, rentalIds);
+    // Estável durante a análise; com reembolso desta análise no meio, é a chave dele.
+    const key = reviewRefundKey(order, orderId);
     const cap = reviewRefundCap(order, rentalIds, key);
     if (!isValidRefundAmount(amount, cap)) throw invalidRefundAmount(cap);
+    // Reembolso sem confirmação: aprovar com outro valor (ou 0) deixaria o dinheiro sem registro.
+    const locked = conflictingPendingRefund(order, key, amount);
+    if (locked) throw refundAmountLocked(locked.amount);
 
     const close = (value: number) =>
       tx.update(orderRef, {

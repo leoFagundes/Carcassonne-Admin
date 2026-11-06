@@ -5,6 +5,7 @@ import {
   cancelPreview,
   clampFeePercent,
   closeCancellationReview,
+  conflictingPendingRefund,
   decideRefundedRedelivery,
   dropPendingRefund,
   finishRefund,
@@ -21,6 +22,7 @@ import {
   refundForRental,
   refundableLeft,
   reviewRefundCap,
+  reviewRefundKey,
   withLiveBookings,
 } from "../payments";
 import { DEFAULT_RENTAL_SETTINGS, mergeRentalSettings } from "../defaults";
@@ -349,6 +351,50 @@ describe("hasPendingReviewRefund", () => {
     expect(hasPendingReviewRefund(paidOrder({ pendingRefunds: [pending(1, "o1:review:r1", { failed: true })] }), "o1")).toBe(true);
     expect(hasPendingReviewRefund(paidOrder({ pendingRefunds: [pending(1, "o1:r1:cancel")] }), "o1")).toBe(false);
     expect(hasPendingReviewRefund(paidOrder(), "o1")).toBe(false);
+  });
+});
+
+describe("conflictingPendingRefund", () => {
+  const withFailed = paidOrder({ pendingRefunds: [pending(4500, "o1:r1:cancel", { failed: true })] });
+  it("intenção da mesma chave com outro valor (inclusive 0) → conflito", () => {
+    expect(conflictingPendingRefund(withFailed, "o1:r1:cancel", 0)).toMatchObject({ amount: 4500 });
+    expect(conflictingPendingRefund(withFailed, "o1:r1:cancel", 1000)).toMatchObject({ amount: 4500 });
+  });
+  it("mesmo valor (retomar) → sem conflito", () => {
+    expect(conflictingPendingRefund(withFailed, "o1:r1:cancel", 4500)).toBeNull();
+  });
+  it("sem intenção da chave → sem conflito", () => {
+    expect(conflictingPendingRefund(withFailed, "o1:r2:cancel", 0)).toBeNull();
+    expect(conflictingPendingRefund(paidOrder(), "o1:r1:cancel", 0)).toBeNull();
+    expect(conflictingPendingRefund(undefined, "o1:r1:cancel", 0)).toBeNull();
+  });
+});
+
+describe("reviewRefundKey", () => {
+  const review = { status: "pending" as const, requestedAt: 3, rentalIds: ["r1"] };
+  it("estável durante a análise, mesmo se outro aluguel entrar nela", () => {
+    expect(reviewRefundKey(paidOrder({}, { cancellationReview: review }), "o1")).toBe("o1:review:3");
+    const grown = { ...review, rentalIds: ["r1", "r2"] };
+    expect(reviewRefundKey(paidOrder({}, { cancellationReview: grown }), "o1")).toBe("o1:review:3");
+  });
+  it("com reembolso da análise no meio → reaproveita a chave dele (inclusive formato antigo)", () => {
+    const failed = paidOrder(
+      { pendingRefunds: [pending(4500, "o1:review:r1", { failed: true }), pending(100, "o1:r2:cancel")] },
+      { cancellationReview: { ...review, rentalIds: ["r1", "r2"] } },
+    );
+    expect(reviewRefundKey(failed, "o1")).toBe("o1:review:r1");
+  });
+  it("aprovação parcial já reembolsada na mesma análise → chave nova", () => {
+    const done = (key: string): RentalRefund => ({ amount: 100, at: 1, by: "a", providerRefundId: "rf", key });
+    const once = paidOrder({ refunds: [done("o1:review:3")] }, { cancellationReview: review });
+    expect(reviewRefundKey(once, "o1")).toBe("o1:review:3:2");
+    const twice = paidOrder({ refunds: [done("o1:review:3"), done("o1:review:3:2")] }, { cancellationReview: review });
+    expect(reviewRefundKey(twice, "o1")).toBe("o1:review:3:3");
+  });
+  it("reembolsos de outra análise (ou de outra data) não contam", () => {
+    const done = (key: string): RentalRefund => ({ amount: 100, at: 1, by: "a", providerRefundId: "rf", key });
+    const other = paidOrder({ refunds: [done("o1:review:30"), done("o1:review:1")] }, { cancellationReview: review });
+    expect(reviewRefundKey(other, "o1")).toBe("o1:review:3");
   });
 });
 

@@ -52,13 +52,23 @@ function ActionModal({
   const refundCap = order
     ? Math.min(rentalPrice(order, rental.id), refundableLeft(order, `${order.id}:${rental.id}:cancel`))
     : 0;
-  const resumed = order?.payment?.pendingRefunds?.find((p) => p.key === `${order.id}:${rental.id}:cancel`);
+  // Reembolso deste cancelamento em andamento ou sem confirmação: o servidor só aceita o mesmo valor.
+  const resumed = paid
+    ? order?.payment?.pendingRefunds?.find((p) => p.key === `${order.id}:${rental.id}:cancel`)
+    : undefined;
   // null = o admin ainda não mexeu: segue o padrão, mesmo se o pedido carregar depois.
   const [refundEdit, setRefundText] = useState<string | null>(null);
-  const refundText = refundEdit ?? centsToInput(resumed?.amount ?? refundCap);
+  const refundText = resumed ? centsToInput(resumed.amount) : (refundEdit ?? centsToInput(refundCap));
   const refundCents = parseBRL(refundText);
-  const refundValid = !paid || refundCap === 0 || (refundCents !== null && refundCents <= refundCap);
-  const refundAmount = !paid ? undefined : refundCap === 0 ? 0 : (refundCents ?? 0);
+  const refundValid =
+    !paid || !!resumed || refundCap === 0 || (refundCents !== null && refundCents <= refundCap);
+  const refundAmount = !paid
+    ? undefined
+    : resumed
+      ? resumed.amount
+      : refundCap === 0
+        ? 0
+        : (refundCents ?? 0);
 
   const run = async (request: () => Promise<ApiResult<unknown>>, success: string) => {
     if (loading) return;
@@ -219,7 +229,14 @@ function ActionModal({
               <span className="text-xs font-semibold text-primary-gold">
                 Este aluguel foi pago online. Quanto devolver ao cliente?
               </span>
-              {refundCap === 0 ? (
+              {resumed ? (
+                <p className="text-xs text-orange-300">
+                  Há um reembolso de {formatBRL(resumed.amount)} sem confirmação deste aluguel — use
+                  &quot;Tentar de novo&quot; no detalhe do pedido, ou confirme aqui com o mesmo valor
+                  (o reembolso não sai em dobro). Não dá para cancelar sem reembolso nem mudar o
+                  valor enquanto ele não for concluído.
+                </p>
+              ) : refundCap === 0 ? (
                 <p className="text-xs text-primary-gold/60">
                   Não há mais nada a devolver neste pedido.
                 </p>

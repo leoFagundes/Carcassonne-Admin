@@ -6,7 +6,7 @@ import Input from "@/components/input";
 import { useAlert } from "@/contexts/alertProvider";
 import { rentalApi, type ApiResult } from "@/services/rentalApi";
 import { formatBRL, parseBRL } from "@/rental/money";
-import { refundableLeft, reviewRefundCap } from "@/rental/payments";
+import { refundableLeft, reviewRefundCap, reviewRefundKey } from "@/rental/payments";
 
 type Order = RentalOrderType & { id: string };
 
@@ -127,7 +127,7 @@ export function ReviewForm({ order }: { order: Order }) {
   const review = order.cancellationReview;
   const rentalIds = review?.rentalIds ?? [];
   // Mesma chave do servidor: o reembolso desta análise que ficou no meio não conta contra o limite.
-  const reviewKey = `${order.id}:review:${rentalIds.join(",")}`;
+  const reviewKey = reviewRefundKey(order, order.id);
   const intent = (order.payment?.pendingRefunds ?? []).find((p) => p.key === reviewKey);
   const cap = reviewRefundCap(order, rentalIds, reviewKey);
   const [edited, setText] = useState<string | null>(null);
@@ -140,8 +140,8 @@ export function ReviewForm({ order }: { order: Order }) {
   if (review?.status !== "pending") return null;
 
   const cents = parseBRL(text);
-  // Com reembolso desta análise em andamento (ou sem confirmação), encerrar com 0 deixaria dinheiro sem registro.
-  const approveValid = cents !== null && cents <= cap && !(intent && cents === 0);
+  // Com reembolso desta análise em andamento (ou sem confirmação), só o mesmo valor: outro (ou 0) deixaria dinheiro sem registro.
+  const approveValid = cents !== null && cents <= cap && (!intent || cents === intent.amount);
 
   const run = async (request: () => Promise<ApiResult<unknown>>, success: string) => {
     if (loading) return;
@@ -188,7 +188,7 @@ export function ReviewForm({ order }: { order: Order }) {
           <AmountField label="Valor a devolver" value={text} onChange={setText} cap={cap} />
           <p className="text-[11px] text-primary-gold/50">
             {intent
-              ? `Há um reembolso de ${formatBRL(intent.amount)} desta análise em andamento ou sem confirmação. Aprove com o mesmo valor para concluí-lo; encerrar com 0,00 agora deixaria o dinheiro sem registro.`
+              ? `Há um reembolso de ${formatBRL(intent.amount)} desta análise em andamento ou sem confirmação. Aprove com o mesmo valor para concluí-lo; outro valor (ou 0,00) agora deixaria o dinheiro sem registro.`
               : "0,00 encerra a análise sem devolver nada. O jogo já foi cancelado e a cópia liberada."}
           </p>
           {error && <p className="text-xs text-invalid-color">{error}</p>}

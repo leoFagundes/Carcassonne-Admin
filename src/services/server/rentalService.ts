@@ -28,6 +28,7 @@ import {
 } from "@/rental/orders";
 import {
   cancelPreview,
+  conflictingPendingRefund,
   countActiveGames,
   hasRecentRefundFor,
   holdUntilFor,
@@ -60,6 +61,7 @@ import {
   commitRefund,
   createOrderCheckout,
   invalidRefundAmount,
+  refundAmountLocked,
   refundInProgress,
   sendProviderRefund,
   sendRefundNotice,
@@ -473,6 +475,9 @@ export async function cancelRental(
       }
       const cap = Math.min(rentalPrice(order, rentalId), refundableLeft(order, key));
       if (!isValidRefundAmount(refundAmount, cap)) throw invalidRefundAmount(cap);
+      // Reembolso deste cancelamento sem confirmação: outro valor (ou 0) deixaria o dinheiro sem registro.
+      const locked = conflictingPendingRefund(order, key, refundAmount);
+      if (locked) throw refundAmountLocked(locked.amount);
       amount = refundAmount;
     } else if (ownPending) {
       // Repetição de um cancelamento cujo reembolso ficou no meio.
