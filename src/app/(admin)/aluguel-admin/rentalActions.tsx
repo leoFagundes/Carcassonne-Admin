@@ -378,8 +378,14 @@ export default function RentalActions({
           </button>
         )}
         {finished && (
-          <button type="button" className={danger} onClick={() => setKind("delete")}>
-            <LuTrash2 size={13} /> Excluir
+          <button
+            type="button"
+            aria-label="Excluir aluguel"
+            title="Excluir aluguel"
+            onClick={() => setKind("delete")}
+            className="p-1.5 rounded-lg text-primary-gold/40 hover:text-invalid-color hover:bg-invalid-color/10 transition-colors cursor-pointer"
+          >
+            <LuTrash2 size={14} />
           </button>
         )}
         {!awaiting && !finished && (
