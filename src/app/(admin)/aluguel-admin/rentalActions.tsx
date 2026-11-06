@@ -53,7 +53,9 @@ function ActionModal({
     ? Math.min(rentalPrice(order, rental.id), refundableLeft(order, `${order.id}:${rental.id}:cancel`))
     : 0;
   const resumed = order?.payment?.pendingRefunds?.find((p) => p.key === `${order.id}:${rental.id}:cancel`);
-  const [refundText, setRefundText] = useState(centsToInput(resumed?.amount ?? refundCap));
+  // null = o admin ainda não mexeu: segue o padrão, mesmo se o pedido carregar depois.
+  const [refundEdit, setRefundText] = useState<string | null>(null);
+  const refundText = refundEdit ?? centsToInput(resumed?.amount ?? refundCap);
   const refundCents = parseBRL(refundText);
   const refundValid = !paid || refundCap === 0 || (refundCents !== null && refundCents <= refundCap);
   const refundAmount = !paid ? undefined : refundCap === 0 ? 0 : (refundCents ?? 0);

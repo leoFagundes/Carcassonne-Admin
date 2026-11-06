@@ -105,19 +105,21 @@ export default function GamesTab() {
   const filtered = searched.filter((game) => matches(game, status));
   const count = (value: Status) => searched.filter((game) => matches(game, value)).length;
 
-  const totals = useMemo(() => {
+  // Sem memo: reservas temporárias vencem com o tempo, então usa o instante atual a cada render.
+  const now = Date.now();
+  const totals = (() => {
     const t = { total: 0, free: 0, rented: 0, unavailable: 0 };
     for (const game of games) {
       for (const unit of game.units) {
         t.total++;
-        const s = unitStatus(withLiveBookings(game, Date.now()), unit, today);
+        const s = unitStatus(withLiveBookings(game, now), unit, today);
         if (s === "free") t.free++;
         else if (s === "rented" || s === "overdue") t.rented++;
         else if (s === "unavailable") t.unavailable++;
       }
     }
     return t;
-  }, [games, today]);
+  })();
 
   const hasFilters = !!search || status !== "all";
   const clearFilters = () => {

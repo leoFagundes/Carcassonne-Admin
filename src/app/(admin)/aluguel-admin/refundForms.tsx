@@ -126,8 +126,12 @@ export function ReviewForm({ order }: { order: Order }) {
   const { addAlert } = useAlert();
   const review = order.cancellationReview;
   const rentalIds = review?.rentalIds ?? [];
-  const cap = reviewRefundCap(order, rentalIds);
-  const [text, setText] = useState(centsToInput(cap));
+  // Mesma chave do servidor: o reembolso desta análise que ficou no meio não conta contra o limite.
+  const reviewKey = `${order.id}:review:${rentalIds.join(",")}`;
+  const intent = (order.payment?.pendingRefunds ?? []).find((p) => p.key === reviewKey);
+  const cap = reviewRefundCap(order, rentalIds, reviewKey);
+  const [edited, setText] = useState<string | null>(null);
+  const text = edited ?? centsToInput(intent?.amount ?? cap);
   const [denyReason, setDenyReason] = useState("");
   const [mode, setMode] = useState<"approve" | "deny">("approve");
   const [loading, setLoading] = useState(false);
@@ -136,7 +140,8 @@ export function ReviewForm({ order }: { order: Order }) {
   if (review?.status !== "pending") return null;
 
   const cents = parseBRL(text);
-  const approveValid = cents !== null && cents <= cap;
+  // Com reembolso desta análise em andamento (ou sem confirmação), encerrar com 0 deixaria dinheiro sem registro.
+  const approveValid = cents !== null && cents <= cap && !(intent && cents === 0);
 
   const run = async (request: () => Promise<ApiResult<unknown>>, success: string) => {
     if (loading) return;
@@ -182,7 +187,9 @@ export function ReviewForm({ order }: { order: Order }) {
         <>
           <AmountField label="Valor a devolver" value={text} onChange={setText} cap={cap} />
           <p className="text-[11px] text-primary-gold/50">
-            0,00 encerra a análise sem devolver nada. O jogo já foi cancelado e a cópia liberada.
+            {intent
+              ? `Há um reembolso de ${formatBRL(intent.amount)} desta análise em andamento ou sem confirmação. Aprove com o mesmo valor para concluí-lo; encerrar com 0,00 agora deixaria o dinheiro sem registro.`
+              : "0,00 encerra a análise sem devolver nada. O jogo já foi cancelado e a cópia liberada."}
           </p>
           {error && <p className="text-xs text-invalid-color">{error}</p>}
           <button

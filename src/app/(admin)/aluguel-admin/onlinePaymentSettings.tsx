@@ -107,7 +107,7 @@ export default function OnlinePaymentSection({
           </p>
         )}
         {integration.state === "error" && (
-          <p className="text-xs text-invalid-color/80">{integration.message}</p>
+          <p className="text-xs text-invalid-color/80">Não foi possível verificar a integração agora.</p>
         )}
         {integration.state === "ready" && integration.mode === "test" && (
           <p className="text-xs text-orange-300/80">
@@ -143,7 +143,12 @@ export default function OnlinePaymentSection({
         </span>
         <span className="min-w-0">Exigir pagamento online nos pedidos</span>
       </button>
-      {!canToggle && integration.state !== "loading" && (
+      {!canToggle && integration.state === "error" && (
+        <p className="-mt-2 text-xs text-primary-gold/55">
+          Não foi possível verificar a integração agora. Recarregue a página para tentar de novo.
+        </p>
+      )}
+      {!canToggle && integration.state === "ready" && (
         <p className="-mt-2 text-xs text-primary-gold/55">
           Indisponível enquanto o Mercado Pago não estiver configurado no servidor.
         </p>

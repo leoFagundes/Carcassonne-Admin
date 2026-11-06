@@ -229,7 +229,7 @@ export default function Sidebar() {
       rentals = list;
       recompute();
     });
-    const unsubOrders = RentalOrderRepository.subscribeToAll((list) => {
+    const unsubOrders = RentalOrderRepository.subscribeToOnline((list) => {
       orders = list;
       recompute();
     });

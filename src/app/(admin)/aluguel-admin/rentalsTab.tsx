@@ -7,6 +7,7 @@ import type { RentalOrderType, RentalStatus, RentalType } from "@/types";
 import { CatalogEmpty, CatalogSearch, FilterPills } from "@/components/adminCatalog";
 import { foldText, searchWords } from "@/components/showcase/search";
 import RentalRepository from "@/services/repositories/RentalRepository";
+import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import RentalOrderRepository from "@/services/repositories/RentalOrderRepository";
 import Modal from "@/components/modal";
 import PaymentBadge from "@/app/(client)/aluguel/paymentBadge";
@@ -68,6 +69,7 @@ function RentalRow({
   today,
   order,
   now,
+  showPayment,
   onOpenOrder,
   onOpenCustomer,
 }: {
@@ -75,6 +77,7 @@ function RentalRow({
   today: string;
   order?: Order;
   now: number;
+  showPayment: boolean;
   onOpenOrder: (order: Order) => void;
   onOpenCustomer: (rental: Rental) => void;
 }) {
@@ -116,7 +119,7 @@ function RentalRow({
       </div>
       {order && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <PaymentBadge view={orderPaymentView(order, now)} />
+          {showPayment && <PaymentBadge view={orderPaymentView(order, now)} />}
           <button
             type="button"
             onClick={() => onOpenOrder(order)}
@@ -183,6 +186,7 @@ export default function RentalsTab() {
   const [payment, setPayment] = useState<PaymentFilter>("all");
   const [orderOpen, setOrderOpen] = useState<string | null>(null);
   const now = useNow();
+  const [onlineEnabled, setOnlineEnabled] = useState(false);
 
   useEffect(() => {
     const unsub = RentalRepository.subscribeToAll((list) => {
@@ -197,6 +201,13 @@ export default function RentalsTab() {
     return () => unsub();
   }, []);
 
+  useEffect(() => {
+    const unsub = RentalConfigRepository.subscribeSettings((s) => setOnlineEnabled(s.onlinePayment.enabled));
+    return () => unsub();
+  }, []);
+
+  // Loja só de balcão: sem selos nem filtro de pagamento.
+  const showPayment = onlineEnabled || orders.some((o) => o.paymentMode === "online");
   const orderById = useMemo(() => new Map(orders.map((o) => [o.id, o])), [orders]);
   const attentionOrders = useMemo(() => orders.filter(orderNeedsAttention), [orders]);
   const openedOrder = orderOpen ? orderById.get(orderOpen) : undefined;
@@ -277,6 +288,7 @@ export default function RentalsTab() {
             { value: "canceled", label: "Cancelados", count: count("canceled") },
           ]}
         />
+        {showPayment && (
         <FilterPills<PaymentFilter>
           label="Pagamento"
           value={payment}
@@ -290,6 +302,7 @@ export default function RentalsTab() {
             { value: "refunded", label: "Reembolsados", count: countPayment("refunded") },
           ]}
         />
+        )}
       </div>
 
       {loading ? (
@@ -317,6 +330,7 @@ export default function RentalsTab() {
               today={today}
               order={orderById.get(r.orderId)}
               now={now}
+              showPayment={showPayment}
               onOpenOrder={(o) => setOrderOpen(o.id)}
               onOpenCustomer={setCustomerOf}
             />

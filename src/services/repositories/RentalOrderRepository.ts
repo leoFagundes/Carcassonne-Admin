@@ -40,6 +40,22 @@ class RentalOrderRepository {
     );
   }
 
+  /** Admin: só os pedidos com pagamento online (igualdade em um campo, sem índice composto). */
+  static subscribeToOnline(callback: (orders: OrderWithId[]) => void): () => void {
+    return onSnapshot(
+      query(collection(db, this.collectionName), where("paymentMode", "==", "online")),
+      (snapshot) => {
+        callback(
+          sortNewestFirst(snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as RentalOrderType) }))),
+        );
+      },
+      (error) => {
+        console.error("Erro ao ouvir os pedidos online:", error);
+        callback([]);
+      }
+    );
+  }
+
   static subscribeToCustomer(
     uid: string,
     callback: (orders: OrderWithId[]) => void
