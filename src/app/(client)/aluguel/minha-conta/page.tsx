@@ -39,6 +39,8 @@ function plural(n: number, one: string, many: string): string {
 
 function statusInfo(rental: Rental, today: string): { label: string; detail: string; tone: string } {
   switch (rental.status) {
+    case "awaiting_payment":
+      return { label: "Aguardando pagamento", detail: "", tone: "text-primary-gold" };
     case "reserved":
       return {
         label: "Reservado",

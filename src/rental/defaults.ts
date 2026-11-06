@@ -7,7 +7,17 @@ export const DEFAULT_RENTAL_SETTINGS: RentalSettingsType = {
   maxGamesPerOrder: 3,
   maxActiveGamesPerCustomer: 3,
   requireCpf: true,
+  onlinePayment: { enabled: false, holdMinutes: 30, cancellationPolicy: "full", feePercent: 10 },
 };
+
+/** Mescla configurações salvas (doc ausente/parcial) com os padrões, inclusive `onlinePayment`. */
+export function mergeRentalSettings(saved?: Partial<RentalSettingsType>): RentalSettingsType {
+  return {
+    ...DEFAULT_RENTAL_SETTINGS,
+    ...saved,
+    onlinePayment: { ...DEFAULT_RENTAL_SETTINGS.onlinePayment, ...saved?.onlinePayment },
+  };
+}
 
 const PLACEHOLDER = "A definir pelo Carcassonne Pub.";
 

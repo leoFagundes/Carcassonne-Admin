@@ -15,7 +15,7 @@ import {
 } from "@/rental/bookings";
 import { isValidCpf, normalizeCpf } from "@/rental/cpf";
 import { formatDateBR, todaySP } from "@/rental/dates";
-import { DEFAULT_RENTAL_RULES, DEFAULT_RENTAL_SETTINGS } from "@/rental/defaults";
+import { DEFAULT_RENTAL_RULES, mergeRentalSettings } from "@/rental/defaults";
 import {
   ORDER_ERROR_MESSAGES,
   buildOrderRecords,
@@ -47,10 +47,7 @@ function settingsRef(db: Firestore) {
 
 /** Configurações salvas por cima dos padrões (doc ausente ou parcial). */
 function readSettings(snap: DocumentSnapshot): RentalSettingsType {
-  return {
-    ...DEFAULT_RENTAL_SETTINGS,
-    ...(snap.exists ? (snap.data() as Partial<RentalSettingsType>) : {}),
-  };
+  return mergeRentalSettings(snap.exists ? (snap.data() as Partial<RentalSettingsType>) : undefined);
 }
 
 /** Versão publicada das regras (doc ausente → versão padrão). */

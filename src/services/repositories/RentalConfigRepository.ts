@@ -8,7 +8,7 @@ import {
   increment,
 } from "firebase/firestore";
 import { RentalRuleSection, RentalRulesType, RentalSettingsType } from "@/types";
-import { DEFAULT_RENTAL_RULES, DEFAULT_RENTAL_SETTINGS } from "@/rental/defaults";
+import { DEFAULT_RENTAL_RULES, DEFAULT_RENTAL_SETTINGS, mergeRentalSettings } from "@/rental/defaults";
 
 class RentalConfigRepository {
   static collectionName = "rental-config";
@@ -19,10 +19,9 @@ class RentalConfigRepository {
     return onSnapshot(
       doc(db, this.collectionName, this.settingsDoc),
       (snap) => {
-        callback({
-          ...DEFAULT_RENTAL_SETTINGS,
-          ...(snap.exists() ? (snap.data() as Partial<RentalSettingsType>) : {}),
-        });
+        callback(
+          mergeRentalSettings(snap.exists() ? (snap.data() as Partial<RentalSettingsType>) : undefined)
+        );
       },
       (error) => {
         console.error("Erro ao ouvir configurações do aluguel:", error);

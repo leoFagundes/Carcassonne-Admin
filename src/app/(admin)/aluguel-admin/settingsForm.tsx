@@ -69,6 +69,7 @@ export default function SettingsForm() {
       maxGamesPerOrder: local.maxGamesPerOrder,
       maxActiveGamesPerCustomer: local.maxActiveGamesPerCustomer,
       requireCpf: local.requireCpf,
+      onlinePayment: local.onlinePayment,
       ...(email ? { staffEmail: email } : {}),
     };
 

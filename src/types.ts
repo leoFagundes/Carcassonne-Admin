@@ -413,7 +413,9 @@ export interface RentalBooking {
   unitId: string;
   startDate: string;
   dueDate: string;
-  status: "reserved" | "picked_up";
+  status: "held" | "reserved" | "picked_up";
+  /** Fim da reserva temporária (ms); só em status "held". */
+  holdUntil?: number;
 }
 
 export interface RentalGameType {
@@ -436,7 +438,7 @@ export interface RentalGameType {
   updatedAt?: Timestamp;
 }
 
-export type RentalStatus = "reserved" | "picked_up" | "returned" | "canceled";
+export type RentalStatus = "awaiting_payment" | "reserved" | "picked_up" | "returned" | "canceled";
 export type RentalReturnCondition = "ok" | "damaged" | "missing_parts";
 
 export interface RentalType {
@@ -461,7 +463,7 @@ export interface RentalType {
   returnCondition?: RentalReturnCondition;
   returnNote?: string;
   canceledAt?: Timestamp;
-  canceledBy?: "customer" | "admin";
+  canceledBy?: "customer" | "admin" | "system";
   cancelReason?: string;
   rulesVersion: number;
   createdAt?: Timestamp;
@@ -479,6 +481,15 @@ export interface RentalCustomerType {
   createdAt?: Timestamp;
 }
 
+export type CancellationPolicy = "full" | "fee" | "manual";
+
+export interface OnlinePaymentSettings {
+  enabled: boolean;
+  holdMinutes: number;
+  cancellationPolicy: CancellationPolicy;
+  feePercent: number;
+}
+
 export interface RentalSettingsType {
   isEnabled: boolean;
   pickupWeekdays: number[];
@@ -487,6 +498,7 @@ export interface RentalSettingsType {
   maxActiveGamesPerCustomer: number;
   requireCpf: boolean;
   staffEmail?: string;
+  onlinePayment: OnlinePaymentSettings;
 }
 
 export interface RentalRuleSection {
@@ -499,4 +511,62 @@ export interface RentalRulesType {
   sections: RentalRuleSection[];
   version: number;
   updatedAt?: Timestamp;
+}
+
+// ---------- Pagamento online do aluguel ----------
+
+export type OrderPaymentStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "expired"
+  | "refunded"
+  | "partially_refunded";
+
+export interface RentalRefund {
+  amount: number;
+  at: number;
+  by: string;
+  providerRefundId: string;
+  rentalId?: string;
+  reason?: string;
+}
+
+export interface RentalOrderPayment {
+  status: OrderPaymentStatus;
+  provider: "mercadopago";
+  checkoutUrl: string;
+  providerCheckoutId: string;
+  providerPaymentId?: string;
+  method?: "pix" | "card";
+  paidAt?: number;
+  holdUntil: number;
+  refunds: RentalRefund[];
+  refundedTotal: number;
+  lateApprovalRefunded?: boolean;
+}
+
+export interface RentalCancellationReview {
+  status: "pending" | "approved" | "denied";
+  requestedAt: number;
+  rentalIds: string[];
+  decidedBy?: string;
+  amount?: number;
+  reason?: string;
+}
+
+export interface RentalOrderType {
+  id?: string;
+  code: string;
+  customerUid: string;
+  customer: { name: string; email: string; phone: string };
+  rentalIds: string[];
+  gameIds: string[];
+  items: { rentalId: string; gameId: string; gameName: string; price: number }[];
+  total: number;
+  startDate: string;
+  paymentMode: "counter" | "online";
+  payment?: RentalOrderPayment;
+  cancellationReview?: RentalCancellationReview;
+  createdAt?: Timestamp;
 }

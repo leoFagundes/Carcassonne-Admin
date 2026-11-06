@@ -7,6 +7,7 @@ import { todaySP } from "@/rental/dates";
 // Compartilhado pelas abas Aluguéis e Clientes (e pelo detalhe do cliente).
 
 export const STATUS_LABEL: Record<RentalStatus, string> = {
+  awaiting_payment: "Aguardando pagamento",
   reserved: "Reservado",
   picked_up: "Retirado",
   returned: "Devolvido",

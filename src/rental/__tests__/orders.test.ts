@@ -119,6 +119,7 @@ describe("defaults", () => {
     expect(DEFAULT_RENTAL_SETTINGS).toEqual({
       isEnabled: false, pickupWeekdays: [0, 1, 2, 3, 4, 5, 6], maxAdvanceDays: 30,
       maxGamesPerOrder: 3, maxActiveGamesPerCustomer: 3, requireCpf: true,
+      onlinePayment: { enabled: false, holdMinutes: 30, cancellationPolicy: "full", feePercent: 10 },
     });
     expect(DEFAULT_RENTAL_RULES.version).toBe(1);
     expect(DEFAULT_RENTAL_RULES.sections).toHaveLength(8);
