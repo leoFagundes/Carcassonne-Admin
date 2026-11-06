@@ -27,40 +27,91 @@ export { rentalAttention };
 
 type Rental = RentalType & { id: string };
 type Order = RentalOrderType & { id: string };
-type StatusFilter = "all" | RentalStatus;
+type StatusFilter = "all" | "active" | RentalStatus;
 
-function Band({
-  title,
-  tone,
-  rentals,
-  note,
+const ACTIVE: RentalStatus[] = ["awaiting_payment", "reserved", "picked_up"];
+const statusMatches = (r: { status: RentalStatus }, s: StatusFilter) =>
+  s === "all" || (s === "active" ? ACTIVE.includes(r.status) : r.status === s);
+
+/** Em andamento: o mais urgente primeiro (atrasado → devolução → retirada → pagamento). */
+function urgency(r: { status: RentalStatus; startDate: string; dueDate: string }, today: string): [number, string] {
+  if (r.status === "picked_up") return [r.dueDate < today ? 0 : 1, r.dueDate];
+  if (r.status === "reserved") return [2, r.startDate];
+  return [3, r.startDate];
+}
+
+type AgendaGroup = { key: string; title: string; tone: string; rentals: Rental[]; note?: (r: Rental) => string };
+
+/**
+ * O que fazer hoje: atrasados, devoluções, retiradas e não retirados — cada
+ * linha com o botão da ação (registrar retirada/devolução) e o WhatsApp.
+ */
+function TodayAgenda({
+  groups,
+  orderById,
+  onOpenCustomer,
 }: {
-  title: string;
-  tone: string;
-  rentals: Rental[];
-  note?: (r: Rental) => string;
+  groups: AgendaGroup[];
+  orderById: Map<string, Order>;
+  onOpenCustomer: (rental: Rental) => void;
 }) {
+  const visible = groups.filter((g) => g.rentals.length > 0);
+  const total = visible.reduce((sum, g) => sum + g.rentals.length, 0);
   return (
-    <div className={`flex flex-col gap-2 rounded-2xl border p-3 ${tone}`}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold uppercase tracking-widest">{title}</span>
-        <span className="text-lg font-semibold">{rentals.length}</span>
+    <section className="flex flex-col gap-3 rounded-2xl border border-primary-gold/15 bg-secondary-black/50 p-3 sm:p-4">
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/60">Hoje</span>
+        {total > 0 && (
+          <span className="text-[11px] text-primary-gold/45">{plural(total, "pendência", "pendências")}</span>
+        )}
       </div>
-      {rentals.length === 0 ? (
-        <span className="text-[11px] opacity-50">Nada por aqui.</span>
+      {visible.length === 0 ? (
+        <p className="text-sm text-emerald-300/90">Nada pendente para hoje: nenhuma retirada, devolução ou atraso.</p>
       ) : (
-        <ul className="flex flex-col gap-1">
-          {rentals.map((r) => (
-            <li key={r.id} className="text-xs flex flex-wrap gap-x-2 opacity-90">
-              <span className="font-semibold">{r.code}</span>
-              <span>{r.gameName}</span>
-              <span className="opacity-70">{r.customer.name}</span>
-              {note && <span className="font-semibold">{note(r)}</span>}
-            </li>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {visible.map((group) => (
+            <div key={group.key} className={`flex flex-col gap-1.5 rounded-xl border p-2.5 ${group.tone}`}>
+              <span className="flex items-center justify-between text-xs font-semibold">
+                {group.title}
+                <span className="text-base">{group.rentals.length}</span>
+              </span>
+              <ul className="flex flex-col gap-1.5">
+                {group.rentals.map((r) => (
+                  <li
+                    key={r.id}
+                    className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg bg-primary-black/40 px-2.5 py-2"
+                  >
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-sm font-medium text-primary-gold truncate">{r.gameName}</span>
+                      <span className="flex items-center gap-1.5 text-[11px] text-primary-gold/60 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => onOpenCustomer(r)}
+                          className="truncate underline underline-offset-2 hover:text-primary-gold cursor-pointer"
+                        >
+                          {r.customer.name}
+                        </button>
+                        <a
+                          href={whatsappLink(r.customer.phone)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`WhatsApp de ${r.customer.name}`}
+                          className="shrink-0 hover:text-primary-gold"
+                        >
+                          <FaWhatsapp size={12} />
+                        </a>
+                        {group.note && <span className="shrink-0 font-semibold">· {group.note(r)}</span>}
+                      </span>
+                    </div>
+                    <RentalActions rental={r} order={orderById.get(r.orderId)} compact />
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -287,7 +338,7 @@ export default function RentalsTab() {
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<StatusFilter>("all");
+  const [status, setStatus] = useState<StatusFilter>("active");
   const [customerOf, setCustomerOf] = useState<Rental | null>(null);
   const today = useToday();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -341,42 +392,46 @@ export default function RentalsTab() {
     [rentals, words],
   );
   const paymentOk = (r: Rental) => matchesPaymentFilter(orderById.get(r.orderId), payment, now);
-  const filtered = searched.filter((r) => (status === "all" || r.status === status) && paymentOk(r));
-  const count = (s: StatusFilter) =>
-    searched.filter((r) => (s === "all" || r.status === s) && paymentOk(r)).length;
+  const filtered = searched.filter((r) => statusMatches(r, status) && paymentOk(r));
+  if (status === "active") {
+    filtered.sort((a, b) => {
+      const [ua, da] = urgency(a, today);
+      const [ub, db] = urgency(b, today);
+      return ua - ub || (da < db ? -1 : da > db ? 1 : 0);
+    });
+  }
+  const count = (s: StatusFilter) => searched.filter((r) => statusMatches(r, s) && paymentOk(r)).length;
   const countPayment = (p: PaymentFilter) =>
     searched.filter(
-      (r) => (status === "all" || r.status === status) && matchesPaymentFilter(orderById.get(r.orderId), p, now),
+      (r) => statusMatches(r, status) && matchesPaymentFilter(orderById.get(r.orderId), p, now),
     ).length;
 
   return (
     <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto">
       <RefundBand orders={attentionOrders} onOpen={(o) => setOrderOpen(o.id)} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-        <Band
-          title="Retiradas de hoje"
-          tone="border-primary-gold/25 text-primary-gold"
-          rentals={bands.pickups}
-        />
-        <Band
-          title="Devoluções de hoje"
-          tone="border-primary-gold/25 text-primary-gold"
-          rentals={bands.returns}
-        />
-        <Band
-          title="Atrasados"
-          tone="border-invalid-color/40 text-invalid-color"
-          rentals={bands.overdue}
-          note={(r) => plural(diffDays(r.dueDate, today), "dia", "dias")}
-        />
-        <Band
-          title="Não retirados"
-          tone="border-primary-gold/15 text-primary-gold/70"
-          rentals={bands.notPickedUp}
-          note={(r) => `desde ${formatDateBR(r.startDate)}`}
-        />
-      </div>
+      <TodayAgenda
+        orderById={orderById}
+        onOpenCustomer={setCustomerOf}
+        groups={[
+          {
+            key: "overdue",
+            title: "Atrasados",
+            tone: "border-invalid-color/40 text-invalid-color",
+            rentals: bands.overdue,
+            note: (r) => `${plural(diffDays(r.dueDate, today), "dia", "dias")} de atraso`,
+          },
+          { key: "returns", title: "Devoluções de hoje", tone: "border-sky-300/30 text-sky-200", rentals: bands.returns },
+          { key: "pickups", title: "Retiradas de hoje", tone: "border-primary-gold/30 text-primary-gold", rentals: bands.pickups },
+          {
+            key: "notPickedUp",
+            title: "Não retirados",
+            tone: "border-orange-400/35 text-orange-200",
+            rentals: bands.notPickedUp,
+            note: (r) => `desde ${formatDateBR(r.startDate)}`,
+          },
+        ]}
+      />
 
       <div className="flex flex-col gap-3 rounded-2xl border border-primary-gold/15 bg-secondary-black/50 p-3 sm:p-4">
         <CatalogSearch
@@ -385,15 +440,20 @@ export default function RentalsTab() {
           placeholder="Buscar por cliente, código ou jogo"
         />
         <FilterPills<StatusFilter>
-          label="Status"
+          label="Situação"
+          scroll
           value={status}
           onChange={setStatus}
           options={[
-            { value: "all", label: "Todos", count: count("all") },
+            { value: "active", label: "Em andamento", count: count("active") },
+            ...(showPayment
+              ? [{ value: "awaiting_payment" as const, label: "Aguardando pagamento", count: count("awaiting_payment") }]
+              : []),
             { value: "reserved", label: "Reservados", count: count("reserved") },
             { value: "picked_up", label: "Retirados", count: count("picked_up") },
             { value: "returned", label: "Devolvidos", count: count("returned") },
             { value: "canceled", label: "Cancelados", count: count("canceled") },
+            { value: "all", label: "Todos", count: count("all") },
           ]}
         />
         {showPayment && (
@@ -419,12 +479,18 @@ export default function RentalsTab() {
       ) : filtered.length === 0 ? (
         <CatalogEmpty
           icon={LuPackage}
-          title={rentals.length ? "Nenhum aluguel com essa busca e filtro." : "Nenhum aluguel ainda."}
+          title={
+            !rentals.length
+              ? "Nenhum aluguel ainda."
+              : status === "active" && !search && payment === "all"
+                ? "Nenhum aluguel em andamento agora."
+                : "Nenhum aluguel com essa busca e filtro."
+          }
           onClear={
-            search || status !== "all" || payment !== "all"
+            search || status !== "active" || payment !== "all"
               ? () => {
                   setSearch("");
-                  setStatus("all");
+                  setStatus("active");
                   setPayment("all");
                 }
               : undefined

@@ -153,7 +153,7 @@ export default function GamesTab() {
     const details = (
       <span className="flex items-center gap-2.5 text-[11px] text-primary-gold/55">
         <span className="font-semibold text-primary-gold/80">{formatBRL(game.price)}</span>
-        <span>{game.rentalDays} dias</span>
+        <span>prazo {game.rentalDays} {game.rentalDays === 1 ? "dia" : "dias"}</span>
         <span>{unitsLabel(game)}</span>
       </span>
     );

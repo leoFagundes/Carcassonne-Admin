@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { LuTriangleAlert } from "react-icons/lu";
 import type { RentalSettingsType } from "@/types";
 import Input from "@/components/input";
 import Checkbox from "@/components/checkbox";
@@ -13,11 +15,26 @@ const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 type Draft = Omit<RentalSettingsType, "staffEmail"> & { staffEmail: string };
 
+/** Bloco do formulário: título, explicação curta e os campos. */
+function Group({ title, hint, children }: { title: string; hint?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3 rounded-xl border border-primary-gold/15 bg-primary-black/25 p-3.5">
+      <div className="flex flex-col gap-0.5">
+        <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-gold/75">{title}</h3>
+        {hint && <p className="text-[11px] text-primary-gold/45 leading-relaxed">{hint}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
 export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunction }) {
   const { addAlert } = useAlert();
   const [local, setLocal] = useState<Draft>({ ...DEFAULT_RENTAL_SETTINGS, staffEmail: "" });
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Último estado salvo: para avisar de alterações pendentes.
+  const [saved, setSaved] = useState<Draft | null>(null);
 
   useEffect(() => {
     let first = true;
@@ -25,6 +42,7 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
       if (!first) return;
       first = false;
       setLocal({ ...s, staffEmail: s.staffEmail ?? "" });
+      setSaved({ ...s, staffEmail: s.staffEmail ?? "" });
       setLoaded(true);
     });
     return () => unsub();
@@ -86,27 +104,44 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
     setSaving(true);
     try {
       const ok = await RentalConfigRepository.saveSettings(payload);
+      if (ok) setSaved(local);
       addAlert(ok ? "Configurações salvas!" : "Não foi possível salvar as configurações. Tente novamente.");
     } finally {
       setSaving(false);
     }
   };
 
+  const dirty = loaded && !!saved && JSON.stringify(saved) !== JSON.stringify(local);
+
   return (
-    <div className="flex flex-col gap-5 min-w-0">
+    <div className="flex flex-col gap-4 min-w-0">
       <h2 className="text-lg font-semibold text-primary-gold">Configurações do serviço</h2>
 
-      <Checkbox
-        checked={local.isEnabled}
-        setChecked={() => set("isEnabled", !local.isEnabled)}
-        variant
-        label="Serviço de aluguel ativo"
-      />
+      <Group
+        title="Serviço"
+        hint="Desligado, o cliente vê “Aluguel de jogos em breve”. Você (admin logado) continua vendo o catálogo para testar."
+      >
+        <Checkbox
+          checked={local.isEnabled}
+          setChecked={() => set("isEnabled", !local.isEnabled)}
+          variant
+          label={local.isEnabled ? "Aluguel ligado para os clientes" : "Aluguel desligado"}
+        />
+      </Group>
 
-      <div className="flex flex-col gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-gold/70">
-          Dias de retirada
-        </span>
+      <Group
+        title="Retirada"
+        hint={
+          <>
+            Em quais dias o cliente pode marcar a retirada e com quanta antecedência. O tempo que ele fica com o jogo é
+            definido em cada jogo (campo “Prazo”), na aba{" "}
+            <Link href="/aluguel-admin?tab=jogos" className="underline underline-offset-2">
+              Jogos
+            </Link>
+            .
+          </>
+        }
+      >
         <div className="flex flex-wrap gap-2">
           {WEEKDAYS.map((name, day) => (
             <Checkbox
@@ -119,9 +154,6 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
             />
           ))}
         </div>
-      </div>
-
-      <div className="flex flex-wrap gap-6">
         <Input
           label="Antecedência máxima (dias)"
           type="number"
@@ -131,42 +163,51 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
           variant
           width="!w-full sm:!w-[250px] !min-w-0"
         />
-        <Input
-          label="Máx. de jogos por pedido"
-          type="number"
-          placeholder="Máx. de jogos por pedido (1 a 10)"
-          value={String(local.maxGamesPerOrder)}
-          setValue={(e) => set("maxGamesPerOrder", Number(e.target.value))}
+      </Group>
+
+      <Group title="Limites" hint="Evitam que um cliente leve jogos demais de uma vez. Pedidos não pagos também contam.">
+        <div className="flex flex-wrap gap-6">
+          <Input
+            label="Máx. de jogos por pedido"
+            type="number"
+            placeholder="Máx. de jogos por pedido (1 a 10)"
+            value={String(local.maxGamesPerOrder)}
+            setValue={(e) => set("maxGamesPerOrder", Number(e.target.value))}
+            variant
+            width="!w-full sm:!w-[250px] !min-w-0"
+          />
+          <Input
+            label="Máx. de jogos ao mesmo tempo por cliente"
+            type="number"
+            placeholder="Máx. de jogos ativos por cliente (1 a 10)"
+            value={String(local.maxActiveGamesPerCustomer)}
+            setValue={(e) => set("maxActiveGamesPerCustomer", Number(e.target.value))}
+            variant
+            width="!w-full sm:!w-[250px] !min-w-0"
+          />
+        </div>
+      </Group>
+
+      <Group
+        title="Cadastro e avisos"
+        hint="Com o e-mail da equipe preenchido, cada confirmação de aluguel também chega nele (cópia oculta)."
+      >
+        <Checkbox
+          checked={local.requireCpf}
+          setChecked={() => set("requireCpf", !local.requireCpf)}
           variant
-          width="!w-full sm:!w-[250px] !min-w-0"
+          label="Exigir CPF no cadastro"
         />
         <Input
-          label="Máx. de jogos ativos por cliente"
-          type="number"
-          placeholder="Máx. de jogos ativos por cliente (1 a 10)"
-          value={String(local.maxActiveGamesPerCustomer)}
-          setValue={(e) => set("maxActiveGamesPerCustomer", Number(e.target.value))}
+          label="E-mail da equipe (opcional)"
+          type="email"
+          placeholder="E-mail da equipe (opcional)"
+          value={local.staffEmail}
+          setValue={(e) => set("staffEmail", e.target.value)}
           variant
-          width="!w-full sm:!w-[250px] !min-w-0"
+          width="!w-full sm:!w-[320px] !min-w-0"
         />
-      </div>
-
-      <Checkbox
-        checked={local.requireCpf}
-        setChecked={() => set("requireCpf", !local.requireCpf)}
-        variant
-        label="Exigir CPF"
-      />
-
-      <Input
-        label="E-mail da equipe (opcional)"
-        type="email"
-        placeholder="E-mail da equipe (opcional)"
-        value={local.staffEmail}
-        setValue={(e) => set("staffEmail", e.target.value)}
-        variant
-        width="!w-full sm:!w-[320px] !min-w-0"
-      />
+      </Group>
 
       <OnlinePaymentSection
         value={local.onlinePayment}
@@ -174,14 +215,25 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
         onOpenRules={onOpenRules}
       />
 
-      <button
-        type="button"
-        onClick={save}
-        disabled={saving || !loaded}
-        className="self-start text-sm px-5 py-2 rounded-xl bg-primary-gold text-primary-black font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {saving ? "Salvando..." : "Salvar configurações"}
-      </button>
+      {/* Salvar sempre à mão, com aviso de alterações pendentes */}
+      <div className="sticky bottom-3 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary-gold/25 bg-primary-black/90 backdrop-blur px-3 py-2.5">
+        {dirty ? (
+          <span className="flex items-center gap-1.5 text-xs text-yellow-400/90">
+            <LuTriangleAlert size={13} className="shrink-0" />
+            Você tem alterações não salvas
+          </span>
+        ) : (
+          <span className="text-xs text-primary-gold/40">{loaded ? "Tudo salvo" : "Carregando..."}</span>
+        )}
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving || !loaded}
+          className="text-sm px-5 py-2 rounded-xl bg-primary-gold text-primary-black font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {saving ? "Salvando..." : "Salvar configurações"}
+        </button>
+      </div>
     </div>
   );
 }

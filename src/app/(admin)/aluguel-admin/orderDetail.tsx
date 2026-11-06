@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { LuReceipt } from "react-icons/lu";
+import { FaWhatsapp } from "react-icons/fa";
+import { formatDateBR } from "@/rental/dates";
 import type { OrderPaymentStatus, RentalOrderType, RentalType } from "@/types";
 import { useAlert } from "@/contexts/alertProvider";
 import { rentalApi } from "@/services/rentalApi";
@@ -106,7 +108,7 @@ export default function OrderDetail({
   const canCheckProvider =
     order.paymentMode === "online" &&
     (p?.status === "pending" || p?.status === "rejected" || p?.status === "expired");
-  const statusOf = (rentalId: string) => rentals.find((r) => r.id === rentalId)?.status;
+  const rentalOf = (rentalId: string) => rentals.find((r) => r.id === rentalId);
 
   return (
     <FormCard
@@ -118,7 +120,30 @@ export default function OrderDetail({
       maxWidth="sm:max-w-[520px]"
     >
       <div className="flex flex-col gap-5 min-w-0">
-        <PaymentBadge view={view} className="self-start" />
+        {/* Resumo: o essencial num olhar */}
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            ["Total", formatBRL(order.total)],
+            ["Retirada", formatDateBR(order.startDate)],
+            ["Jogos", String(order.items.length)],
+          ].map(([label, value]) => (
+            <div key={label} className="flex flex-col gap-0.5 rounded-lg border border-primary-gold/15 bg-primary-black/30 px-2.5 py-2">
+              <span className="text-[10px] uppercase tracking-wider text-primary-gold/45">{label}</span>
+              <span className="text-sm font-semibold text-primary-gold">{value}</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <PaymentBadge view={view} />
+          <a
+            href={whatsappLink(order.customer.phone)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto flex items-center gap-1.5 h-8 px-3 rounded-lg border border-primary-gold/30 text-xs text-primary-gold/80 hover:border-primary-gold/60"
+          >
+            <FaWhatsapp size={13} /> Falar com {order.customer.name.split(" ")[0]}
+          </a>
+        </div>
 
         <OrderIssues order={order} />
 
@@ -139,12 +164,18 @@ export default function OrderDetail({
         <Section title="Jogos">
           <ul className="flex flex-col gap-1">
             {order.items.map((item) => {
-              const status = statusOf(item.rentalId);
+              const rental = rentalOf(item.rentalId);
+              const status = rental?.status;
               return (
                 <li key={item.rentalId} className="flex items-baseline justify-between gap-3 text-xs">
                   <span className="min-w-0 text-primary-gold/90">
-                    {item.gameName}
+                    <span className={status === "canceled" ? "line-through text-primary-gold/50" : ""}>{item.gameName}</span>
                     {status && <span className="text-primary-gold/50"> · {STATUS_LABEL[status]}</span>}
+                    {rental && (status === "reserved" || status === "picked_up") && (
+                      <span className="block text-[11px] text-primary-gold/45">
+                        {rental.unitLabel} · devolução até {formatDateBR(rental.dueDate)}
+                      </span>
+                    )}
                   </span>
                   <span className="shrink-0 text-primary-gold/80">{formatBRL(item.price)}</span>
                 </li>

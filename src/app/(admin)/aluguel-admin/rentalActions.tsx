@@ -328,9 +328,12 @@ function ActionModal({
 export default function RentalActions({
   rental,
   order,
+  compact = false,
 }: {
   rental: RentalType & { id: string };
   order?: Order;
+  /** Só a ação principal do dia (retirada ou devolução) — usado na agenda de hoje. */
+  compact?: boolean;
 }) {
   const [kind, setKind] = useState<ActionKind | null>(null);
   const reserved = rental.status === "reserved";
@@ -343,6 +346,24 @@ export default function RentalActions({
   const gold = `${buttonClass} border-primary-gold/50 bg-primary-gold/10 text-primary-gold hover:bg-primary-gold/20`;
   const neutral = `${buttonClass} border-primary-gold/15 text-primary-gold/60 hover:text-primary-gold hover:border-primary-gold/40`;
   const danger = `${buttonClass} border-invalid-color/30 text-invalid-color/80 hover:bg-invalid-color/10`;
+  const modal = (
+    <Modal isOpen={!!kind} onClose={() => setKind(null)} noPadding isFixed patternCloseButton={false}>
+      {kind && <ActionModal rental={rental} order={order} kind={kind} onClose={() => setKind(null)} />}
+    </Modal>
+  );
+
+  if (compact) {
+    const action = pickedUp ? "return" : reserved && canPickUp(rental, today) ? "pickup" : null;
+    if (!action) return null;
+    return (
+      <>
+        <button type="button" className={`${gold} shrink-0`} onClick={() => setKind(action)}>
+          {action === "pickup" ? "Registrar retirada" : "Registrar devolução"}
+        </button>
+        {modal}
+      </>
+    );
+  }
 
   return (
     <>
@@ -399,9 +420,7 @@ export default function RentalActions({
           </>
         )}
       </div>
-      <Modal isOpen={!!kind} onClose={() => setKind(null)} noPadding isFixed patternCloseButton={false}>
-        {kind && <ActionModal rental={rental} order={order} kind={kind} onClose={() => setKind(null)} />}
-      </Modal>
+      {modal}
     </>
   );
 }

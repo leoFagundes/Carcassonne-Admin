@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LuLink, LuPackage } from "react-icons/lu";
 import Tooltip from "@/components/Tooltip";
@@ -9,6 +9,22 @@ import RentalsTab from "./rentalsTab";
 import CustomersTab from "./customersTab";
 import RulesAndSettingsTab from "./rulesAndSettingsTab";
 import ConstructionGate from "./constructionGate";
+import type { RentalOrderType, RentalType } from "@/types";
+import RentalRepository from "@/services/repositories/RentalRepository";
+import RentalOrderRepository from "@/services/repositories/RentalOrderRepository";
+import { rentalAttention } from "@/rental/attention";
+import { useToday } from "./rentalShared";
+
+/** Pendências de hoje (retiradas, devoluções, atrasos, reembolsos) para o selo da aba. */
+function usePendingCount(): number {
+  const today = useToday();
+  const [rentals, setRentals] = useState<RentalType[]>([]);
+  const [orders, setOrders] = useState<RentalOrderType[]>([]);
+  useEffect(() => RentalRepository.subscribeToAll(setRentals), []);
+  useEffect(() => RentalOrderRepository.subscribeToAll(setOrders), []);
+  const a = rentalAttention(rentals, today, orders);
+  return a.pickupsToday + a.returnsToday + a.overdue + a.notPickedUp + a.refundReviews;
+}
 
 const TABS = [
   { key: "alugueis", label: "Aluguéis" },
@@ -24,6 +40,7 @@ function AluguelAdmin() {
   const pathname = usePathname();
   const param = useSearchParams().get("tab");
   const tab: TabKey = TABS.find((t) => t.key === param)?.key ?? "alugueis";
+  const pending = usePendingCount();
 
   return (
     <section className="flex flex-col gap-5 w-full h-full overflow-y-auto py-2 px-0 sm:px-6">
@@ -50,13 +67,21 @@ function AluguelAdmin() {
           <button
             key={t.key}
             onClick={() => router.replace(`${pathname}?tab=${t.key}`)}
-            className={`text-xs px-4 py-1.5 rounded-full border transition-all cursor-pointer ${
+            className={`relative text-xs px-4 py-1.5 rounded-full border transition-all cursor-pointer ${
               tab === t.key
                 ? "bg-primary-gold text-primary-black border-primary-gold font-semibold"
                 : "border-primary-gold/20 text-primary-gold/50 hover:border-primary-gold/50 hover:text-primary-gold"
             }`}
           >
             {t.label}
+            {t.key === "alugueis" && pending > 0 && (
+              <span
+                title="Pendências de hoje"
+                className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-[#ff9a3c] text-primary-black text-[9px] font-bold"
+              >
+                {pending}
+              </span>
+            )}
           </button>
         ))}
       </div>

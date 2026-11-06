@@ -294,7 +294,7 @@ export default function RentalGameForm({
               width="!w-[250px]"
             />
             <Input
-              label="Prazo (dias)"
+              label="Prazo: dias com o cliente"
               type="number"
               placeholder="Ex: 7"
               value={String(local.rentalDays)}

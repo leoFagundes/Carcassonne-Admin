@@ -232,7 +232,7 @@ const helpCards: HelpCard[] = [
     category: "aluguel",
     title: "Visão geral da aba Aluguéis",
     description:
-      "No topo ficam quatro faixas: 'Retiradas de hoje', 'Devoluções de hoje', 'Atrasados' (com quantos dias de atraso) e 'Não retirados' (a data de retirada já passou e o cliente não apareceu). Abaixo, a lista de todos os aluguéis com busca por cliente, código ou jogo e filtro por status (Reservados, Retirados, Devolvidos, Cancelados). Cada linha mostra o código do pedido, o jogo e a cópia, o cliente, as datas, o valor e o status; aluguéis cancelados aparecem esmaecidos, com o preço riscado, quem cancelou e o motivo. O item 'Aluguel' do menu lateral mostra um contador com as retiradas e devoluções de hoje mais os atrasados.",
+      "No topo, o quadro 'Hoje' mostra só o que pede ação: 'Atrasados' (com os dias de atraso), 'Devoluções de hoje', 'Retiradas de hoje' e 'Não retirados' (a data passou e o cliente não apareceu) — cada linha com o jogo, o cliente, o WhatsApp e o botão 'Registrar retirada' ou 'Registrar devolução' direto. Sem pendências, aparece 'Nada pendente para hoje'. Abaixo, a lista de aluguéis abre em 'Em andamento' (do mais urgente para o menos: atrasados, devoluções, retiradas, aguardando pagamento); os filtros mudam para Aguardando pagamento, Reservados, Retirados, Devolvidos, Cancelados ou Todos, e a busca acha por cliente, código ou jogo. Cada cartão mostra o jogo, uma situação colorida, o cliente, as datas, o valor, o pagamento (quando online) e o código do pedido. A aba 'Aluguéis' tem um selo laranja com as pendências do dia, igual ao contador do menu lateral.",
   },
   {
     category: "aluguel",

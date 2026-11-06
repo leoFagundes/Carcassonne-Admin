@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { LuUsers } from "react-icons/lu";
 import type { RentalCustomerType, RentalType } from "@/types";
 import Modal from "@/components/modal";
-import { CatalogEmpty, CatalogSearch } from "@/components/adminCatalog";
+import { CatalogEmpty, CatalogSearch, FilterPills } from "@/components/adminCatalog";
+import { formatDateBR } from "@/rental/dates";
 import { foldText, searchWords } from "@/components/showcase/search";
 import RentalRepository from "@/services/repositories/RentalRepository";
 import RentalCustomerRepository from "@/services/repositories/RentalCustomerRepository";
@@ -14,6 +15,7 @@ import { CustomerDetail, customerStats } from "./customerDetail";
 
 type Rental = RentalType & { id: string };
 type Customer = RentalCustomerType & { id: string };
+type Filter = "all" | "open" | "late" | "blocked";
 
 export default function CustomersTab() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -21,6 +23,7 @@ export default function CustomersTab() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<Filter>("all");
   const today = useToday();
 
   useEffect(() => {
@@ -43,21 +46,49 @@ export default function CustomersTab() {
 
   const statsOf = (id: string) => customerStats(byCustomer.get(id) ?? [], today);
 
+  // Último aluguel (data de retirada mais recente) — para ordenar e mostrar.
+  const lastRental = (id: string) =>
+    (byCustomer.get(id) ?? []).reduce<string | null>((max, r) => (!max || r.startDate > max ? r.startDate : max), null);
+
   const words = useMemo(() => searchWords(search), [search]);
-  const filtered = customers.filter((c) => {
+  const searched = customers.filter((c) => {
     if (!words.length) return true;
     const text = foldText(`${c.name} ${c.email} ${c.phone} ${c.cpf}`);
     return words.every((w) => text.includes(w));
   });
+  const matches = (c: Customer, f: Filter) => {
+    const st = statsOf(c.id);
+    return f === "all" || (f === "open" && st.open > 0) || (f === "late" && st.late > 0) || (f === "blocked" && !!c.isBlocked);
+  };
+  const filtered = searched
+    .filter((c) => matches(c, filter))
+    .sort((a, b) => {
+      const la = lastRental(a.id) ?? "";
+      const lb = lastRental(b.id) ?? "";
+      return la === lb ? a.name.localeCompare(b.name, "pt-BR") : la < lb ? 1 : -1;
+    });
+  const countOf = (f: Filter) => searched.filter((c) => matches(c, f)).length;
   const open = customers.find((c) => c.id === openId) ?? null;
 
   return (
     <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto">
-      <div className="rounded-2xl border border-primary-gold/15 bg-secondary-black/50 p-3 sm:p-4">
+      <div className="flex flex-col gap-3 rounded-2xl border border-primary-gold/15 bg-secondary-black/50 p-3 sm:p-4">
         <CatalogSearch
           value={search}
           onChange={setSearch}
           placeholder="Buscar por nome, e-mail, WhatsApp ou CPF"
+        />
+        <FilterPills<Filter>
+          label="Mostrar"
+          value={filter}
+          onChange={setFilter}
+          scroll
+          options={[
+            { value: "all", label: "Todos", count: countOf("all") },
+            { value: "open", label: "Com aluguel em aberto", count: countOf("open") },
+            { value: "late", label: "Já atrasaram", count: countOf("late") },
+            { value: "blocked", label: "Bloqueados", count: countOf("blocked") },
+          ]}
         />
       </div>
 
@@ -66,8 +97,15 @@ export default function CustomersTab() {
       ) : filtered.length === 0 ? (
         <CatalogEmpty
           icon={LuUsers}
-          title={customers.length ? "Nenhum cliente com essa busca." : "Nenhum cliente ainda."}
-          onClear={search ? () => setSearch("") : undefined}
+          title={customers.length ? "Nenhum cliente com essa busca e filtro." : "Nenhum cliente ainda."}
+          onClear={
+            search || filter !== "all"
+              ? () => {
+                  setSearch("");
+                  setFilter("all");
+                }
+              : undefined
+          }
         />
       ) : (
         <div className="flex flex-col gap-2">
@@ -100,9 +138,18 @@ export default function CustomersTab() {
                   </a>
                   <span>{formatCpf(c.cpf)}</span>
                 </div>
-                <span className="text-[11px] text-primary-gold/50">
-                  {plural(s.total, "aluguel", "aluguéis")} · {s.open} em aberto ·{" "}
-                  {plural(s.late, "atraso", "atrasos")}
+                <span className="flex flex-wrap gap-x-1.5 text-[11px] text-primary-gold/50">
+                  <span>{plural(s.total, "aluguel", "aluguéis")}</span>
+                  <span>·</span>
+                  <span className={s.open ? "text-sky-300" : ""}>{s.open} em aberto</span>
+                  <span>·</span>
+                  <span className={s.late ? "text-invalid-color" : ""}>{plural(s.late, "atraso", "atrasos")}</span>
+                  {lastRental(c.id) && (
+                    <>
+                      <span>·</span>
+                      <span>último em {formatDateBR(lastRental(c.id)!)}</span>
+                    </>
+                  )}
                 </span>
               </article>
             );
