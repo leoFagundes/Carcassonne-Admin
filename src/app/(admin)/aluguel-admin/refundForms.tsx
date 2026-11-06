@@ -6,7 +6,11 @@ import Input from "@/components/input";
 import { useAlert } from "@/contexts/alertProvider";
 import { rentalApi, type ApiResult } from "@/services/rentalApi";
 import { formatBRL, parseBRL } from "@/rental/money";
-import { refundableLeft, reviewRefundCap, reviewRefundKey } from "@/rental/payments";
+import {
+  refundableLeft,
+  reviewRefundCap,
+  reviewRefundKey,
+} from "@/rental/payments";
 
 type Order = RentalOrderType & { id: string };
 
@@ -46,7 +50,9 @@ export function AmountField({
         variant
         width="!w-full !min-w-0"
       />
-      <span className={`text-[11px] ${invalid ? "text-invalid-color/80" : "text-primary-gold/50"}`}>
+      <span
+        className={`text-[11px] ${invalid ? "text-invalid-color/80" : "text-primary-gold/50"}`}
+      >
         {invalid
           ? `Informe um valor de R$ 0,00 até ${formatBRL(cap)}.`
           : `Máximo: ${formatBRL(cap)}.`}
@@ -100,12 +106,21 @@ export function RefundForm({ order }: { order: Order }) {
   };
 
   if (left <= 0) {
-    return <p className="text-xs text-primary-gold/55">Nada mais a devolver neste pedido.</p>;
+    return (
+      <p className="text-xs text-primary-gold/55">
+        Nada mais a devolver neste pedido.
+      </p>
+    );
   }
 
   return (
     <div className="flex flex-col gap-2.5">
-      <AmountField label="Valor a devolver" value={text} onChange={changeAmount} cap={left} />
+      <AmountField
+        label="Valor a devolver"
+        value={text}
+        onChange={changeAmount}
+        cap={left}
+      />
       <Input
         labelSpace
         label="Motivo (opcional)"
@@ -113,10 +128,15 @@ export function RefundForm({ order }: { order: Order }) {
         value={reason}
         setValue={(e) => setReason(e.target.value)}
         variant
-        width="!w-full !min-w-0"
+        width={`!w-full !min-w-0 ${reason.trim() ? "" : "!mt-1"}`}
       />
       {error && <p className="text-xs text-invalid-color">{error}</p>}
-      <button type="button" className={`${primaryButton} self-start`} disabled={!valid || loading} onClick={submit}>
+      <button
+        type="button"
+        className={`${primaryButton} self-start`}
+        disabled={!valid || loading}
+        onClick={submit}
+      >
         {loading ? "Reembolsando..." : error ? "Tentar de novo" : "Reembolsar"}
       </button>
     </div>
@@ -130,7 +150,9 @@ export function ReviewForm({ order }: { order: Order }) {
   const rentalIds = review?.rentalIds ?? [];
   // Mesma chave do servidor: o reembolso desta análise que ficou no meio não conta contra o limite.
   const reviewKey = reviewRefundKey(order, order.id);
-  const intent = (order.payment?.pendingRefunds ?? []).find((p) => p.key === reviewKey);
+  const intent = (order.payment?.pendingRefunds ?? []).find(
+    (p) => p.key === reviewKey,
+  );
   const cap = reviewRefundCap(order, rentalIds, reviewKey);
   const [edited, setText] = useState<string | null>(null);
   const text = edited ?? centsToInput(intent?.amount ?? cap);
@@ -143,9 +165,13 @@ export function ReviewForm({ order }: { order: Order }) {
 
   const cents = parseBRL(text);
   // Com reembolso desta análise em andamento (ou sem confirmação), só o mesmo valor: outro (ou 0) deixaria dinheiro sem registro.
-  const approveValid = cents !== null && cents <= cap && (!intent || cents === intent.amount);
+  const approveValid =
+    cents !== null && cents <= cap && (!intent || cents === intent.amount);
 
-  const run = async (request: () => Promise<ApiResult<unknown>>, success: string) => {
+  const run = async (
+    request: () => Promise<ApiResult<unknown>>,
+    success: string,
+  ) => {
     if (loading) return;
     setLoading(true);
     setError("");
@@ -161,7 +187,11 @@ export function ReviewForm({ order }: { order: Order }) {
 
   return (
     <div className="flex flex-col gap-2.5">
-      <div role="radiogroup" aria-label="Decisão" className="flex flex-wrap gap-1.5">
+      <div
+        role="radiogroup"
+        aria-label="Decisão"
+        className="flex flex-wrap gap-1.5"
+      >
         {(
           [
             ["approve", "Aprovar reembolso"],
@@ -187,7 +217,12 @@ export function ReviewForm({ order }: { order: Order }) {
 
       {mode === "approve" ? (
         <>
-          <AmountField label="Valor a devolver" value={text} onChange={setText} cap={cap} />
+          <AmountField
+            label="Valor a devolver"
+            value={text}
+            onChange={setText}
+            cap={cap}
+          />
           <p className="text-[11px] text-primary-gold/50">
             {intent
               ? `Há um reembolso de ${formatBRL(intent.amount)} desta análise em andamento ou sem confirmação. Aprove com o mesmo valor para concluí-lo; outro valor (ou 0,00) agora deixaria o dinheiro sem registro.`
@@ -200,12 +235,22 @@ export function ReviewForm({ order }: { order: Order }) {
             disabled={!approveValid || loading}
             onClick={() =>
               run(
-                () => rentalApi.reviewCancellation(order.id, { decision: "approve", amount: cents! }),
-                cents === 0 ? "Análise encerrada sem reembolso." : "Reembolso aprovado.",
+                () =>
+                  rentalApi.reviewCancellation(order.id, {
+                    decision: "approve",
+                    amount: cents!,
+                  }),
+                cents === 0
+                  ? "Análise encerrada sem reembolso."
+                  : "Reembolso aprovado.",
               )
             }
           >
-            {loading ? "Enviando..." : error ? "Tentar de novo" : "Aprovar reembolso"}
+            {loading
+              ? "Enviando..."
+              : error
+                ? "Tentar de novo"
+                : "Aprovar reembolso"}
           </button>
         </>
       ) : (
@@ -231,7 +276,11 @@ export function ReviewForm({ order }: { order: Order }) {
             disabled={!denyReason.trim() || loading}
             onClick={() =>
               run(
-                () => rentalApi.reviewCancellation(order.id, { decision: "deny", reason: denyReason.trim() }),
+                () =>
+                  rentalApi.reviewCancellation(order.id, {
+                    decision: "deny",
+                    reason: denyReason.trim(),
+                  }),
                 "Reembolso recusado.",
               )
             }

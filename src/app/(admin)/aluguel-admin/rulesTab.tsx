@@ -88,7 +88,7 @@ export default function RulesTab() {
       {sections.map((section, index) => (
         <div
           key={section.id}
-          className="flex flex-col gap-5 rounded-xl border border-primary-gold/15 bg-primary-black/30 px-4 py-5"
+          className="flex flex-col gap-2 rounded-xl border border-primary-gold/15 bg-primary-black/30 p-4"
         >
           {/* Botões num cabeçalho próprio: na mesma linha do título, eles
               saíam da tela em celulares (o campo tem largura mínima). */}
