@@ -8,6 +8,7 @@ import GamesTab from "./gamesTab";
 import RentalsTab from "./rentalsTab";
 import CustomersTab from "./customersTab";
 import RulesAndSettingsTab from "./rulesAndSettingsTab";
+import ConstructionGate from "./constructionGate";
 
 const TABS = [
   { key: "alugueis", label: "Aluguéis" },
@@ -70,8 +71,10 @@ function AluguelAdmin() {
 
 export default function AluguelAdminPage() {
   return (
-    <Suspense fallback={null}>
-      <AluguelAdmin />
-    </Suspense>
+    <ConstructionGate>
+      <Suspense fallback={null}>
+        <AluguelAdmin />
+      </Suspense>
+    </ConstructionGate>
   );
 }
