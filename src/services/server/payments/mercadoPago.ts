@@ -1,10 +1,19 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
 import type {
   CreateCheckoutInput,
   PaymentProvider,
   ProviderPayment,
 } from "./provider";
+
+export class ProviderError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ProviderError";
+  }
+}
 
 const BASE_URL = "https://api.mercadopago.com";
 
@@ -56,7 +65,7 @@ function mapPayment(p: MpPayment): ProviderPayment {
     id: String(p.id),
     status,
     amount: toCents(p.transaction_amount ?? 0),
-    currency: p.currency_id ?? "BRL",
+    currency: p.currency_id ?? "",
     externalReference: p.external_reference ?? null,
     method,
     ...(Number.isFinite(approvedMs) ? { approvedAt: approvedMs } : {}),
@@ -90,7 +99,10 @@ export function createMercadoPagoProvider(token: string): PaymentProvider {
         `Mercado Pago ${init.method ?? "GET"} ${path} falhou (${res.status}):`,
         text,
       );
-      throw new Error(`Falha no provedor de pagamento (HTTP ${res.status}).`);
+      throw new ProviderError(
+        res.status,
+        `Falha no provedor de pagamento (HTTP ${res.status}).`,
+      );
     }
     return (await res.json()) as T;
   }
@@ -115,13 +127,14 @@ export function createMercadoPagoProvider(token: string): PaymentProvider {
           pending: input.returnUrl,
         },
         ...(secure ? { auto_return: "approved" } : {}),
-        notification_url: input.notificationUrl,
+        ...(input.notificationUrl.startsWith("https://")
+          ? { notification_url: input.notificationUrl }
+          : {}),
         expires: true,
-        expiration_date_from: toSaoPauloIso(Date.now()),
         expiration_date_to: expires,
         date_of_expiration: expires,
         payment_methods: {
-          excluded_payment_types: [{ id: "ticket" }],
+          excluded_payment_types: [{ id: "ticket" }, { id: "digital_currency" }],
           installments: 1,
         },
         statement_descriptor: "CARCASSONNE",
@@ -155,19 +168,26 @@ export function createMercadoPagoProvider(token: string): PaymentProvider {
       return (r.results ?? []).map(mapPayment);
     },
 
-    async refund(paymentId: string, amount?: number) {
+    async refund(
+      paymentId: string,
+      amount: number | undefined,
+      idempotencyKey: string,
+    ) {
       const r = await call<{ id: number | string; amount?: number }>(
         `/v1/payments/${encodeURIComponent(paymentId)}/refunds`,
         {
           method: "POST",
-          headers: { "X-Idempotency-Key": randomUUID() },
+          headers: { "X-Idempotency-Key": idempotencyKey },
           body: amount === undefined ? {} : { amount: toReais(amount) },
         },
       );
-      return {
-        refundId: String(r.id),
-        amount: r.amount === undefined ? (amount ?? 0) : toCents(r.amount),
-      };
+      const refunded =
+        r.amount !== undefined ? toCents(r.amount) : amount;
+      if (refunded === undefined) {
+        console.error("Mercado Pago: reembolso sem valor na resposta", r);
+        throw new Error("Resposta inválida do provedor de pagamento.");
+      }
+      return { refundId: String(r.id), amount: refunded };
     },
   };
 }

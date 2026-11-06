@@ -113,4 +113,31 @@ describe("verifyMercadoPagoSignature", () => {
       }),
     ).toBe(true);
   });
+
+  describe("vetor fixo", () => {
+    const V1 = "8f4021215aa316ebcc6b1a508f2f1a73fc7b5a939ac63308145da5bf283cee18";
+    const base = {
+      xRequestId: "7f1c2a3e-aaaa-bbbb-cccc-0123456789ab",
+      dataId: "987654321",
+      secret: "vetor-secreto-123",
+    };
+    const header = `ts=1742505638683,v1=${V1}`;
+
+    it("aceita o vetor calculado de forma independente", () => {
+      expect(verifyMercadoPagoSignature({ ...base, xSignature: header })).toBe(true);
+    });
+    it("rejeita ts adulterado", () => {
+      expect(
+        verifyMercadoPagoSignature({ ...base, xSignature: `ts=1742505638684,v1=${V1}` }),
+      ).toBe(false);
+    });
+    it("rejeita dataId diferente", () => {
+      expect(
+        verifyMercadoPagoSignature({ ...base, dataId: "987654322", xSignature: header }),
+      ).toBe(false);
+    });
+    it("rejeita segredo vazio", () => {
+      expect(verifyMercadoPagoSignature({ ...base, secret: "", xSignature: header })).toBe(false);
+    });
+  });
 });

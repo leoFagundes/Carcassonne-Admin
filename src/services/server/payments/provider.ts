@@ -37,8 +37,10 @@ export interface PaymentProvider {
   ): Promise<{ checkoutUrl: string; providerCheckoutId: string }>;
   getPayment(paymentId: string): Promise<ProviderPayment>;
   findPaymentsByReference(orderId: string): Promise<ProviderPayment[]>;
+  /** idempotencyKey estável por operação: repetir a chamada não reembolsa duas vezes. */
   refund(
     paymentId: string,
-    amount?: number,
+    amount: number | undefined,
+    idempotencyKey: string,
   ): Promise<{ refundId: string; amount: number }>;
 }
