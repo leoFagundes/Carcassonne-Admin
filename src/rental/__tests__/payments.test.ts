@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { RentalBooking, RentalOrderPayment, RentalOrderType, RentalPendingRefund, RentalRefund } from "@/types";
 import {
+  rentalRefundInfo,
   archiveDecidedReview,
   beginRefund,
   cancelPreview,
@@ -535,5 +536,52 @@ describe("compareProviderIds", () => {
     expect(compareProviderIds("99", "100")).toBeLessThan(0);
     expect(compareProviderIds("100", "99")).toBeGreaterThan(0);
     expect(compareProviderIds("5", "5")).toBe(0);
+  });
+});
+
+describe("rentalRefundInfo", () => {
+  const base = (payment: Partial<RentalOrderPayment> = {}, rentalIds = ["r1", "r2"]) => ({
+    paymentMode: "online" as const,
+    rentalIds,
+    payment: { status: "approved" as const, refunds: [], refundedTotal: 0, ...payment },
+  });
+  const refund = (over: Partial<RentalRefund>): RentalRefund => ({
+    amount: 500,
+    at: 1,
+    by: "a",
+    providerRefundId: "rf",
+    ...over,
+  });
+
+  it("balcão ou sem reembolso: nada", () => {
+    expect(rentalRefundInfo({ paymentMode: "counter", rentalIds: ["r1"] }, "r1")).toBeNull();
+    expect(rentalRefundInfo(base(), "r1")).toBeNull();
+  });
+
+  it("reembolso do próprio aluguel traz o valor (somando)", () => {
+    const o = base({ refunds: [refund({ rentalId: "r1", amount: 300 }), refund({ rentalId: "r1", amount: 200 })] });
+    expect(rentalRefundInfo(o, "r1")).toEqual({ state: "refunded", amount: 500 });
+    expect(rentalRefundInfo(o, "r2")).toBeNull();
+  });
+
+  it("reembolso de análise com vários jogos: reembolsado sem valor", () => {
+    const o = base({ refunds: [refund({ rentalIds: ["r1", "r2"] })] });
+    expect(rentalRefundInfo(o, "r2")).toEqual({ state: "refunded" });
+  });
+
+  it("em andamento vence o concluído", () => {
+    const o = base({
+      refunds: [refund({ rentalId: "r1" })],
+      pendingRefunds: [{ key: "k", amount: 700, at: 1, by: "a", rentalId: "r1" }],
+    });
+    expect(rentalRefundInfo(o, "r1")).toEqual({ state: "pending", amount: 700 });
+  });
+
+  it("pedido todo reembolsado vale para os aluguéis dele", () => {
+    expect(rentalRefundInfo(base({ status: "refunded", refundedTotal: 1000 }, ["r1"]), "r1")).toEqual({
+      state: "refunded",
+      amount: 1000,
+    });
+    expect(rentalRefundInfo(base({ status: "refunded", refundedTotal: 1000 }), "r2")).toEqual({ state: "refunded" });
   });
 });

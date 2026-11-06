@@ -11,7 +11,7 @@ import RentalConfigRepository from "@/services/repositories/RentalConfigReposito
 import RentalOrderRepository from "@/services/repositories/RentalOrderRepository";
 import Modal from "@/components/modal";
 import { orderNeedsAttention } from "@/rental/attention";
-import { formatCountdown, orderPaymentView, type OrderPaymentView } from "@/rental/payments";
+import { formatCountdown, orderPaymentView, rentalRefundInfo, type OrderPaymentView } from "@/rental/payments";
 import { rentalAttention } from "@/rental/attention";
 import { diffDays, formatDateBR } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
@@ -64,7 +64,7 @@ function Band({
   );
 }
 
-type Tone = "gold" | "sky" | "green" | "orange" | "red" | "muted";
+type Tone = "gold" | "sky" | "green" | "orange" | "red" | "violet" | "muted";
 
 /** Cor do texto + borda de cada tom (selo da situação e linha do pagamento). */
 const TONE: Record<Tone, { text: string; border: string }> = {
@@ -73,6 +73,7 @@ const TONE: Record<Tone, { text: string; border: string }> = {
   green: { text: "text-emerald-300", border: "border-emerald-400/50" },
   orange: { text: "text-orange-300", border: "border-orange-400/50" },
   red: { text: "text-invalid-color", border: "border-invalid-color/60" },
+  violet: { text: "text-violet-300", border: "border-violet-400/50" },
   muted: { text: "text-primary-gold/55", border: "border-primary-gold/20" },
 };
 
@@ -139,9 +140,9 @@ function paymentLine(view: OrderPaymentView): { text: string; tone: Tone } | nul
       return { text: `Pago online${how}`, tone: "green" };
     }
     case "refunded":
-      return { text: `Pago online · reembolsado ${formatBRL(view.amount)}`, tone: "muted" };
+      return { text: `Pago online · pedido reembolsado (${formatBRL(view.amount)})`, tone: "muted" };
     case "partially_refunded":
-      return { text: `Pago online · reembolso parcial de ${formatBRL(view.amount)}`, tone: "orange" };
+      return { text: `Pago online · ${formatBRL(view.amount)} já devolvidos do pedido`, tone: "orange" };
     case "review":
       return { text: "Pago online · cancelamento em análise", tone: "orange" };
   }
@@ -169,6 +170,18 @@ function RentalRow({
   const cancel = cancelText(rental);
   const payment = order ? paymentLine(orderPaymentView(order, now)) : null;
   const othersInOrder = order ? order.rentalIds.length - 1 : 0;
+  const refund = order ? rentalRefundInfo(order, rental.id) : null;
+  const refundTag = refund
+    ? {
+        label:
+          refund.state === "pending"
+            ? "Reembolso em andamento"
+            : refund.amount !== undefined
+              ? `Reembolsado ${formatBRL(refund.amount)}`
+              : "Reembolsado",
+        tone: (refund.state === "pending" ? "orange" : "violet") as Tone,
+      }
+    : null;
 
   return (
     <article
@@ -188,6 +201,13 @@ function RentalRow({
           >
             {situation.label}
           </span>
+          {refundTag && (
+            <span
+              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${TONE[refundTag.tone].text} ${TONE[refundTag.tone].border}`}
+            >
+              {refundTag.label}
+            </span>
+          )}
         </div>
         <span className={`shrink-0 text-sm font-semibold text-primary-gold/80 ${canceled ? "line-through" : ""}`}>
           {formatBRL(rental.price)}

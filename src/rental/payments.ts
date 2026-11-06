@@ -71,6 +71,43 @@ export function rentalPrice(order: Pick<RentalOrderType, "items">, rentalId: str
 }
 
 /**
+ * Reembolso de UM aluguel, para a etiqueta ao lado da situação:
+ * - "refunded": há reembolso concluído para ele (`amount` quando só dele;
+ *   ausente quando veio junto com outros jogos, numa análise, ou do pedido inteiro);
+ * - "pending": reembolso dele em andamento ou sem confirmação;
+ * - null: nada devolvido para este aluguel.
+ * Pedido todo reembolsado (ex.: pagamento tardio) conta para todos os aluguéis dele.
+ */
+export function rentalRefundInfo(
+  order: Pick<RentalOrderType, "paymentMode" | "rentalIds"> & {
+    payment?: Pick<RentalOrderPayment, "status" | "refunds" | "pendingRefunds" | "refundedTotal">;
+  },
+  rentalId: string,
+): { state: "refunded" | "pending"; amount?: number } | null {
+  const p = order.payment;
+  if (order.paymentMode !== "online" || !p) return null;
+  const covers = (r: { rentalId?: string; rentalIds?: string[] }) =>
+    r.rentalId === rentalId || (r.rentalIds ?? []).includes(rentalId);
+
+  if ((p.pendingRefunds ?? []).some(covers)) {
+    const own = (p.pendingRefunds ?? []).find((r) => r.rentalId === rentalId);
+    return { state: "pending", ...(own ? { amount: own.amount } : {}) };
+  }
+  const mine = (p.refunds ?? []).filter(covers);
+  if (mine.length) {
+    const onlyMine = mine.every((r) => r.rentalId === rentalId && !(r.rentalIds?.length ?? 0));
+    return onlyMine
+      ? { state: "refunded", amount: mine.reduce((sum, r) => sum + r.amount, 0) }
+      : { state: "refunded" };
+  }
+  if (p.status === "refunded") {
+    const single = (order.rentalIds ?? []).length === 1;
+    return single ? { state: "refunded", amount: p.refundedTotal } : { state: "refunded" };
+  }
+  return null;
+}
+
+/**
  * Reembolso de UM jogo do pedido segundo a política: o preço daquele jogo
  * (menos a taxa), nunca acima do que falta devolver. Manual → null.
  */
