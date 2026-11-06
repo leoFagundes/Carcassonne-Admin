@@ -31,10 +31,6 @@ import {
   LuPartyPopper,
 } from "react-icons/lu";
 import { onAuthStateChanged } from "firebase/auth";
-import BoardgameRepository from "@/services/repositories/BoardGameRepository";
-import MenuItemRepository from "@/services/repositories/MenuItemRepository";
-import InfoRepository from "@/services/repositories/InfoRepository";
-import ComboRepository from "@/services/repositories/ComboRepository";
 import LinksRepository from "@/services/repositories/LinksRepository";
 import Counter from "@/components/mage-ui/text/counter";
 import LoaderFullscreen from "@/components/loaderFullscreen";
@@ -55,6 +51,7 @@ import { DragCards } from "./drag-cards";
 import SiteThemeSettings from "./site-theme-settings";
 import EmailsTab from "./emails-tab";
 import RentalStats from "./rental-stats";
+import DatabaseStats from "./database-stats";
 import { useSiteThemeReminders } from "@/components/siteTheme/siteThemeContext";
 
 /**
@@ -240,15 +237,7 @@ export default function SettingsPage() {
   const [savedConfigsSnapshot, setSavedConfigsSnapshot] =
     useState<GeneralConfigsType>(patternGeneralConfigs);
 
-  const [databaseInfo, setDatabaseInfo] = useState({
-    currentUserEmail: "",
-    boardgamesQuantity: 0,
-    boardgamesVisible: 0,
-    boardgamesForSale: 0,
-    menuItemsQuantity: 0,
-    menuInfosQuantity: 0,
-    menuCombosQuantity: 0,
-  });
+  const [currentUserEmail, setCurrentUserEmail] = useState("");
 
   const [reserveStats, setReserveStats] = useState({
     totalThisMonth: 0,
@@ -417,35 +406,16 @@ export default function SettingsPage() {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const [
-          userEmail,
-          boardgames,
-          menuItems,
-          menuInfos,
-          menuCombos,
-          reserves,
-          links,
-        ] = await Promise.all([
+        // Os números do banco são contados na subaba "Banco de dados" (sem baixar as coleções).
+        const [userEmail, reserves, links] = await Promise.all([
           getCurrentUserEmail(),
-          BoardgameRepository.getAll(),
-          MenuItemRepository.getAll(),
-          InfoRepository.getAll(),
-          ComboRepository.getAll(),
           ReserveRepository.getAll(),
           LinksRepository.getAll(),
         ]);
 
         setRawLinks(links);
 
-        setDatabaseInfo({
-          currentUserEmail: userEmail,
-          boardgamesQuantity: boardgames.length,
-          boardgamesVisible: boardgames.filter((b) => b.isVisible).length,
-          boardgamesForSale: boardgames.filter((b) => b.isForSale).length,
-          menuItemsQuantity: menuItems.length,
-          menuInfosQuantity: menuInfos.length,
-          menuCombosQuantity: menuCombos.length,
-        });
+        setCurrentUserEmail(userEmail);
 
         setRawReserves(reserves);
         computeReserveStats(reserves);
@@ -862,6 +832,11 @@ export default function SettingsPage() {
             Configurações
           </h1>
         </div>
+        {currentUserEmail && (
+          <p className="text-center text-[11px] text-primary-gold/35 -mt-1">
+            Conectado como {currentUserEmail}
+          </p>
+        )}
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent" />
       </div>
 
@@ -1409,55 +1384,7 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {/* ── DATABASE INFO ── */}
-          {statsTab === "banco" && (
-      <div className="flex flex-col gap-4">
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
-          Banco de dados
-        </span>
-        <div className="rounded-xl border border-primary-gold/15 bg-secondary-black/40 p-4 flex flex-col gap-3">
-          <div className="flex flex-col gap-0.5 bg-primary-black/30 rounded-lg p-3">
-            <span className="text-[10px] text-primary-gold/40 uppercase tracking-widest">
-              Usuário ativo
-            </span>
-            <span className="text-sm text-primary-gold/80 truncate">
-              {databaseInfo.currentUserEmail || "Não identificado"}
-            </span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {[
-              {
-                label: "Jogos (total)",
-                value: databaseInfo.boardgamesQuantity,
-              },
-              {
-                label: "Jogos visíveis",
-                value: databaseInfo.boardgamesVisible,
-              },
-              { label: "Jogos à venda", value: databaseInfo.boardgamesForSale },
-              {
-                label: "Itens cardápio",
-                value: databaseInfo.menuItemsQuantity,
-              },
-              { label: "Avisos", value: databaseInfo.menuInfosQuantity },
-              { label: "Combos", value: databaseInfo.menuCombosQuantity },
-            ].map(({ label, value }) => (
-              <div
-                key={label}
-                className="flex flex-col gap-0.5 bg-primary-black/30 rounded-lg p-3"
-              >
-                <span className="text-[10px] text-primary-gold/40 uppercase tracking-widest">
-                  {label}
-                </span>
-                <span className="text-xl font-semibold text-primary-gold">
-                  <Counter targetValue={value} />
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-          )}
+          {statsTab === "banco" && <DatabaseStats links={rawLinks} />}
         </>
       )}
 

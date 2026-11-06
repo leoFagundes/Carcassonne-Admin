@@ -629,6 +629,12 @@ const helpCards: HelpCard[] = [
   },
   {
     category: "configuracoes",
+    title: "Banco de dados e saúde dos dados",
+    description:
+      "Em Estatísticas → 'Banco de dados'. No topo, 'Saúde dos dados' lista o que provavelmente precisa de atenção, cada item com 'Resolver →' levando à página certa: jogos da ludoteca sem imagem ou sem descrição, itens do cardápio sem preço, jogos de aluguel ativos sem cópia ativa ou sem imagem, pedidos de acesso ao admin esperando, links visíveis sem cliques há 90 dias e, a partir de 50, aluguéis encerrados que dá para limpar. Se nada aparecer, está tudo em ordem. Abaixo, um card por área (Ludoteca, Cardápio, Reservas, Aluguel, Eventos, Site e Equipe) com os números principais; clicar no card abre a página da área. Os números são contados direto no Firebase (sem baixar tudo), e o botão 'Atualizar' conta de novo.",
+  },
+  {
+    category: "configuracoes",
     title: "Estatísticas do aluguel",
     description:
       "Em Estatísticas → 'Aluguel'. O bloco 'Agora' mostra quantas cópias estão fora (alugadas) do total ativo, os atrasados e as retiradas e devoluções de hoje. O bloco 'Por período' (30 dias, 3 meses, 6 meses, 1 ano ou Total, contado pela data de retirada) mostra: aluguéis (sem os cancelados), receita (soma dos aluguéis não cancelados) e quanto foi reembolsado, % de devoluções atrasadas, clientes que alugaram e contas novas; os jogos mais alugados; a situação dos aluguéis (devolvidos, em andamento, cancelados); como pagaram (balcão, Pix, cartão, saldo do Mercado Pago); quem cancelou (cliente, admin ou prazo de pagamento esgotado) e os clientes que mais alugaram. No fim, o gráfico de aluguéis por mês, com troca de ano.",
