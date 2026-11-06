@@ -20,6 +20,7 @@ import {
 import { useAlert } from "@/contexts/alertProvider";
 import RentalGameRepository from "@/services/repositories/RentalGameRepository";
 import { gameAvailability } from "@/rental/availability";
+import { withLiveBookings } from "@/rental/payments";
 import { formatBRL } from "@/rental/money";
 import { todaySP } from "@/rental/dates";
 import RentalGameForm, { emptyRentalGame } from "./rentalGameForm";
@@ -81,7 +82,7 @@ export default function GamesTab() {
     addAlert(`${game.name} ${next ? "está ativo para aluguel" : "foi desativado"}`);
   };
 
-  const isSoldOut = (game: RentalGameType) => gameAvailability(game, today).state !== "available";
+  const isSoldOut = (game: RentalGameType) => gameAvailability(withLiveBookings(game, Date.now()), today).state !== "available";
 
   const words = useMemo(() => searchWords(search), [search]);
 
@@ -109,7 +110,7 @@ export default function GamesTab() {
     for (const game of games) {
       for (const unit of game.units) {
         t.total++;
-        const s = unitStatus(game, unit, today);
+        const s = unitStatus(withLiveBookings(game, Date.now()), unit, today);
         if (s === "free") t.free++;
         else if (s === "rented" || s === "overdue") t.rented++;
         else if (s === "unavailable") t.unavailable++;
@@ -125,7 +126,7 @@ export default function GamesTab() {
   };
 
   const unitsLabel = (game: RentalGameType) => {
-    const free = game.units.filter((u) => unitStatus(game, u, today) === "free").length;
+    const free = game.units.filter((u) => unitStatus(withLiveBookings(game, Date.now()), u, today) === "free").length;
     return `${free}/${game.units.length} livres`;
   };
 

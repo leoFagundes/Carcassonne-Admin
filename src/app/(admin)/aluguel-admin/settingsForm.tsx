@@ -7,12 +7,13 @@ import Checkbox from "@/components/checkbox";
 import { useAlert } from "@/contexts/alertProvider";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import { DEFAULT_RENTAL_SETTINGS } from "@/rental/defaults";
+import OnlinePaymentSection from "./onlinePaymentSettings";
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 type Draft = Omit<RentalSettingsType, "staffEmail"> & { staffEmail: string };
 
-export default function SettingsForm() {
+export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunction }) {
   const { addAlert } = useAlert();
   const [local, setLocal] = useState<Draft>({ ...DEFAULT_RENTAL_SETTINGS, staffEmail: "" });
   const [loaded, setLoaded] = useState(false);
@@ -54,6 +55,15 @@ export default function SettingsForm() {
     }
     if (!intIn(local.maxGamesPerOrder, 1, 10) || !intIn(local.maxActiveGamesPerCustomer, 1, 10)) {
       addAlert("Os limites de jogos devem ser números inteiros de 1 a 10.");
+      return;
+    }
+    const pay = local.onlinePayment;
+    if (!intIn(pay.holdMinutes, 15, 60)) {
+      addAlert("O tempo para pagar deve ser de 15 a 60 minutos.");
+      return;
+    }
+    if (!intIn(pay.feePercent, 0, 50)) {
+      addAlert("A taxa de cancelamento deve ser de 0 a 50%.");
       return;
     }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -156,6 +166,12 @@ export default function SettingsForm() {
         setValue={(e) => set("staffEmail", e.target.value)}
         variant
         width="!w-full sm:!w-[320px] !min-w-0"
+      />
+
+      <OnlinePaymentSection
+        value={local.onlinePayment}
+        onChange={(next) => set("onlinePayment", next)}
+        onOpenRules={onOpenRules}
       />
 
       <button

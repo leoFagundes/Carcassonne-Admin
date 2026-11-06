@@ -12,7 +12,7 @@ const INTERNAL_ERROR = "Erro inesperado. Tente novamente.";
 async function call<T>(
   path: string,
   body: unknown = {},
-  options: { auth?: boolean } = {}
+  options: { auth?: boolean; method?: "GET" | "POST" } = {}
 ): Promise<ApiResult<T>> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
 
@@ -31,7 +31,8 @@ async function call<T>(
 
   let response: Response;
   try {
-    response = await fetch(path, { method: "POST", headers, body: JSON.stringify(body) });
+    const method = options.method ?? "POST";
+    response = await fetch(path, method === "GET" ? { method, headers } : { method, headers, body: JSON.stringify(body) });
   } catch (error) {
     console.error("Erro de rede ao chamar a API: ", error);
     return { ok: false, code: "network", message: "Sem conexão. Tente novamente." };
@@ -78,6 +79,12 @@ export const rentalApi = {
     body: { decision: "approve"; amount: number; reason?: string } | { decision: "deny"; reason: string }
   ) =>
     call<{ kind: "approved"; amount: number } | { kind: "denied" }>(orderPath(id, "review"), body),
+
+  /** Admin: situação da integração com o Mercado Pago (vem das variáveis do servidor). */
+  paymentsStatus: () =>
+    call<{ configured: boolean; mode: "test" | "production" | null }>("/api/rental/payments/status", undefined, {
+      method: "GET",
+    }),
 
   pickup: (id: string) => call<null>(rentalPath(id, "pickup"), {}),
 

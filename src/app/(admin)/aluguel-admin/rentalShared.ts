@@ -29,3 +29,13 @@ export function whatsappLink(phone: string) {
 }
 
 export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/** Agora em ms, atualizado a cada 30 s (contagem regressiva do pagamento e reservas vencidas). */
+export function useNow() {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}

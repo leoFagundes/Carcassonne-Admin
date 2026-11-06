@@ -27,6 +27,7 @@ import RentalGameRepository from "@/services/repositories/RentalGameRepository";
 import { uploadImageToFirebase } from "@/services/repositories/FirebaseImageUtils";
 import { formatBRL, parseBRL } from "@/rental/money";
 import { todaySP } from "@/rental/dates";
+import { withLiveBookings } from "@/rental/payments";
 import UnitsEditor from "./unitsEditor";
 
 export const emptyRentalGame: RentalGameType = {
@@ -170,7 +171,7 @@ export default function RentalGameForm({
   };
 
   const handleDelete = async () => {
-    if (game.bookings.length > 0) {
+    if (withLiveBookings(game, Date.now()).bookings.length > 0) {
       addAlert("Há aluguéis em aberto para este jogo.");
       return;
     }

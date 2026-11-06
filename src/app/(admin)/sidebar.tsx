@@ -32,6 +32,7 @@ import ThemeBand from "@/components/siteTheme/ThemeBand";
 import { useSiteThemeReminders } from "@/components/siteTheme/siteThemeContext";
 import { SITE_THEMES } from "@/utils/siteThemes";
 import RentalRepository from "@/services/repositories/RentalRepository";
+import RentalOrderRepository from "@/services/repositories/RentalOrderRepository";
 import { rentalAttention } from "@/rental/attention";
 import { todaySP } from "@/rental/dates";
 
@@ -50,7 +51,7 @@ interface ItemProps {
   /** Pedidos de acesso de admin aguardando aprovação (Usuários). */
   pendingRequests?: number;
   /** Aluguéis que pedem atenção hoje (Aluguel). */
-  rentalCounts?: { pickups: number; returns: number; overdue: number };
+  rentalCounts?: { pickups: number; returns: number; overdue: number; refunds: number };
 }
 
 function Item({
@@ -133,14 +134,14 @@ function Item({
       )}
       {path === "/aluguel-admin" &&
         !!rentalCounts &&
-        rentalCounts.pickups + rentalCounts.returns + rentalCounts.overdue > 0 && (
+        rentalCounts.pickups + rentalCounts.returns + rentalCounts.overdue + rentalCounts.refunds > 0 && (
           <Tooltip
-            content={`${rentalCounts.pickups} ${rentalCounts.pickups === 1 ? "retirada" : "retiradas"}, ${rentalCounts.returns} ${rentalCounts.returns === 1 ? "devolução" : "devoluções"}, ${rentalCounts.overdue} ${rentalCounts.overdue === 1 ? "atrasado" : "atrasados"}`}
+            content={`${rentalCounts.pickups} ${rentalCounts.pickups === 1 ? "retirada" : "retiradas"}, ${rentalCounts.returns} ${rentalCounts.returns === 1 ? "devolução" : "devoluções"}, ${rentalCounts.overdue} ${rentalCounts.overdue === 1 ? "atrasado" : "atrasados"}${rentalCounts.refunds > 0 ? `, ${rentalCounts.refunds} ${rentalCounts.refunds === 1 ? "reembolso a decidir" : "reembolsos a decidir"}` : ""}`}
             direction="right"
             portal
           >
             <div className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary-gold text-primary-black text-[10px] font-bold animate-pulse">
-              {rentalCounts.pickups + rentalCounts.returns + rentalCounts.overdue}
+              {rentalCounts.pickups + rentalCounts.returns + rentalCounts.overdue + rentalCounts.refunds}
             </div>
           </Tooltip>
         )}
@@ -155,7 +156,7 @@ export default function Sidebar() {
   >([]);
   const [activeEventsCount, setActiveEventsCount] = useState(0);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
-  const [rentalCounts, setRentalCounts] = useState({ pickups: 0, returns: 0, overdue: 0 });
+  const [rentalCounts, setRentalCounts] = useState({ pickups: 0, returns: 0, overdue: 0, refunds: 0 });
 
   const { addAlert } = useAlert();
   const router = useRouter();
@@ -207,23 +208,35 @@ export default function Sidebar() {
   // Badge do Aluguel: recalcula a cada minuto para acompanhar a virada do dia
   useEffect(() => {
     let rentals: Parameters<typeof rentalAttention>[0] = [];
+    let orders: NonNullable<Parameters<typeof rentalAttention>[2]> = [];
     const recompute = () => {
-      const a = rentalAttention(rentals, todaySP());
+      const a = rentalAttention(rentals, todaySP(), orders);
       setRentalCounts((prev) =>
         prev.pickups === a.pickupsToday &&
         prev.returns === a.returnsToday &&
-        prev.overdue === a.overdue
+        prev.overdue === a.overdue &&
+        prev.refunds === a.refundReviews
           ? prev
-          : { pickups: a.pickupsToday, returns: a.returnsToday, overdue: a.overdue },
+          : {
+              pickups: a.pickupsToday,
+              returns: a.returnsToday,
+              overdue: a.overdue,
+              refunds: a.refundReviews,
+            },
       );
     };
     const unsub = RentalRepository.subscribeToAll((list) => {
       rentals = list;
       recompute();
     });
+    const unsubOrders = RentalOrderRepository.subscribeToAll((list) => {
+      orders = list;
+      recompute();
+    });
     const interval = setInterval(recompute, 60_000);
     return () => {
       unsub();
+      unsubOrders();
       clearInterval(interval);
     };
   }, []);

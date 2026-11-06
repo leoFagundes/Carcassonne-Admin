@@ -4,6 +4,7 @@ import { LuPlus, LuTrash } from "react-icons/lu";
 import type { RentalBooking, RentalUnit } from "@/types";
 import { useAlert } from "@/contexts/alertProvider";
 import { formatDateBR } from "@/rental/dates";
+import { withLiveBookings } from "@/rental/payments";
 
 export type UnitStatus = "free" | "reserved" | "rented" | "overdue" | "unavailable";
 
@@ -68,7 +69,8 @@ export default function UnitsEditor({
   today: string;
 }) {
   const { addAlert } = useAlert();
-  const game = { bookings };
+  // Reserva temporária vencida (pagamento não concluído) já não ocupa a cópia.
+  const game = withLiveBookings({ bookings }, Date.now());
 
   const patch = (id: string, change: Partial<RentalUnit>) =>
     setUnits(units.map((u) => (u.id === id ? { ...u, ...change } : u)));
@@ -80,7 +82,7 @@ export default function UnitsEditor({
     ]);
 
   const remove = (unit: RentalUnit) => {
-    if (bookings.some((b) => b.unitId === unit.id)) {
+    if (game.bookings.some((b) => b.unitId === unit.id)) {
       addAlert("Esta cópia tem aluguéis ou reservas em aberto.");
       return;
     }

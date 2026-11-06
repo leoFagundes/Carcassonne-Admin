@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { RentalType } from "@/types";
-import { rentalAttention } from "@/rental/attention";
+import type { RentalCancellationReview, RentalOrderType, RentalType } from "@/types";
+import { orderFlags, rentalAttention } from "@/rental/attention";
 
 const TODAY = "2026-11-10";
 
@@ -31,6 +31,7 @@ describe("rentalAttention", () => {
       returnsToday: 0,
       overdue: 0,
       notPickedUp: 0,
+      refundReviews: 0,
     });
   });
 
@@ -71,6 +72,71 @@ describe("rentalAttention", () => {
       ],
       TODAY,
     );
-    expect(r).toEqual({ pickupsToday: 0, returnsToday: 0, overdue: 0, notPickedUp: 0 });
+    expect(r).toEqual({ pickupsToday: 0, returnsToday: 0, overdue: 0, notPickedUp: 0, refundReviews: 0 });
+  });
+});
+
+function order(
+  over: Partial<RentalOrderType> = {},
+  payment: Partial<NonNullable<RentalOrderType["payment"]>> = {},
+): RentalOrderType {
+  return {
+    code: "PED1",
+    customerUid: "u1",
+    customer: { name: "Ana", email: "a@a.com", phone: "11999999999" },
+    rentalIds: ["r1"],
+    gameIds: ["g1"],
+    items: [{ rentalId: "r1", gameId: "g1", gameName: "Catan", price: 1000 }],
+    total: 1000,
+    startDate: TODAY,
+    paymentMode: "online",
+    payment: {
+      status: "approved",
+      provider: "mercadopago",
+      checkoutUrl: "",
+      providerCheckoutId: "c1",
+      providerPaymentId: "p1",
+      holdUntil: 0,
+      refunds: [],
+      refundedTotal: 0,
+      ...payment,
+    },
+    ...over,
+  };
+}
+
+const pendingReview: RentalCancellationReview = { status: "pending", requestedAt: 1, rentalIds: ["r1"] };
+
+describe("rentalAttention - reembolsos a decidir", () => {
+  it("sem pedidos, zero", () => {
+    expect(rentalAttention([], TODAY, []).refundReviews).toBe(0);
+    expect(rentalAttention([], TODAY).refundReviews).toBe(0);
+  });
+
+  it("conta pedidos com cancelamento em análise pendente", () => {
+    const pending = order({ cancellationReview: pendingReview });
+    const decided = order({ cancellationReview: { ...pendingReview, status: "denied" } });
+    expect(rentalAttention([], TODAY, [pending, decided, order()]).refundReviews).toBe(1);
+  });
+
+  it("conta pedidos com reembolso que falhou (tardio, duplicado, em andamento)", () => {
+    const late = order({}, { lateApprovalRefundFailed: true });
+    const dup = order({}, { duplicatePayments: [{ paymentId: "p2", amount: 1000, at: 1, refundFailed: true }] });
+    const stuck = order({}, { pendingRefunds: [{ key: "k", amount: 500, at: 1, by: "a", failed: true }] });
+    const inFlight = order({}, { pendingRefunds: [{ key: "k", amount: 500, at: 1, by: "a" }] });
+    expect(rentalAttention([], TODAY, [late, dup, stuck, inFlight]).refundReviews).toBe(3);
+  });
+
+  it("um pedido com vários motivos conta uma vez; reembolso tardio concluído não conta", () => {
+    const both = order({ cancellationReview: pendingReview }, { lateApprovalRefundFailed: true });
+    const healed = order({}, { lateApprovalRefundFailed: true, lateApprovalRefunded: true });
+    expect(rentalAttention([], TODAY, [both, healed]).refundReviews).toBe(1);
+  });
+
+  it("orderFlags separa os motivos", () => {
+    const f = orderFlags(
+      order({}, { duplicatePayments: [{ paymentId: "p2", amount: 1, at: 1, refundFailed: true }] }),
+    );
+    expect(f).toMatchObject({ review: false, lateRefundFailed: false, duplicateFailed: 1 });
   });
 });

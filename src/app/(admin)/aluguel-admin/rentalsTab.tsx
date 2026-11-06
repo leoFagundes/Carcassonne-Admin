@@ -3,20 +3,29 @@
 import { useEffect, useMemo, useState } from "react";
 import { FaWhatsapp } from "react-icons/fa";
 import { LuPackage } from "react-icons/lu";
-import type { RentalStatus, RentalType } from "@/types";
+import type { RentalOrderType, RentalStatus, RentalType } from "@/types";
 import { CatalogEmpty, CatalogSearch, FilterPills } from "@/components/adminCatalog";
 import { foldText, searchWords } from "@/components/showcase/search";
 import RentalRepository from "@/services/repositories/RentalRepository";
+import RentalOrderRepository from "@/services/repositories/RentalOrderRepository";
+import Modal from "@/components/modal";
+import PaymentBadge from "@/app/(client)/aluguel/paymentBadge";
+import { orderNeedsAttention } from "@/rental/attention";
+import { orderPaymentView } from "@/rental/payments";
 import { rentalAttention } from "@/rental/attention";
 import { diffDays, formatDateBR } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
 import RentalActions from "./rentalActions";
 import { CustomerModal } from "./customerDetail";
-import { STATUS_LABEL, plural, useToday, whatsappLink } from "./rentalShared";
+import { STATUS_LABEL, plural, useNow, useToday, whatsappLink } from "./rentalShared";
+import OrderDetail from "./orderDetail";
+import RefundBand from "./refundBand";
+import { matchesPaymentFilter, type PaymentFilter } from "./paymentFilters";
 
 export { rentalAttention };
 
 type Rental = RentalType & { id: string };
+type Order = RentalOrderType & { id: string };
 type StatusFilter = "all" | RentalStatus;
 
 function Band({
@@ -57,10 +66,16 @@ function Band({
 function RentalRow({
   rental,
   today,
+  order,
+  now,
+  onOpenOrder,
   onOpenCustomer,
 }: {
   rental: Rental;
   today: string;
+  order?: Order;
+  now: number;
+  onOpenOrder: (order: Order) => void;
   onOpenCustomer: (rental: Rental) => void;
 }) {
   const late = rental.status === "picked_up" && rental.dueDate < today;
@@ -99,6 +114,22 @@ function RentalRow({
           {formatBRL(rental.price)}
         </span>
       </div>
+      {order && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <PaymentBadge view={orderPaymentView(order, now)} />
+          <button
+            type="button"
+            onClick={() => onOpenOrder(order)}
+            title="Ver detalhes do pedido"
+            className="text-[11px] underline underline-offset-2 text-primary-gold/65 hover:text-primary-gold cursor-pointer"
+          >
+            Pedido {order.code}
+          </button>
+          {orderNeedsAttention(order) && (
+            <span className="text-[11px] font-semibold text-orange-300">Reembolso pede sua atenção</span>
+          )}
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:flex-wrap sm:gap-x-6 gap-y-0.5 text-xs text-primary-gold/65">
         <span>
           {rental.gameName} · {rental.unitLabel}
@@ -136,7 +167,7 @@ function RentalRow({
           {rental.returnNote ? `: ${rental.returnNote}` : ""}
         </span>
       )}
-      <RentalActions rental={rental} />
+      <RentalActions rental={rental} order={order} />
     </article>
   );
 }
@@ -148,6 +179,10 @@ export default function RentalsTab() {
   const [status, setStatus] = useState<StatusFilter>("all");
   const [customerOf, setCustomerOf] = useState<Rental | null>(null);
   const today = useToday();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [payment, setPayment] = useState<PaymentFilter>("all");
+  const [orderOpen, setOrderOpen] = useState<string | null>(null);
+  const now = useNow();
 
   useEffect(() => {
     const unsub = RentalRepository.subscribeToAll((list) => {
@@ -156,6 +191,15 @@ export default function RentalsTab() {
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    const unsub = RentalOrderRepository.subscribeToAll(setOrders);
+    return () => unsub();
+  }, []);
+
+  const orderById = useMemo(() => new Map(orders.map((o) => [o.id, o])), [orders]);
+  const attentionOrders = useMemo(() => orders.filter(orderNeedsAttention), [orders]);
+  const openedOrder = orderOpen ? orderById.get(orderOpen) : undefined;
 
   const bands = useMemo(
     () => ({
@@ -177,11 +221,19 @@ export default function RentalsTab() {
       }),
     [rentals, words],
   );
-  const filtered = searched.filter((r) => status === "all" || r.status === status);
-  const count = (s: StatusFilter) => searched.filter((r) => s === "all" || r.status === s).length;
+  const paymentOk = (r: Rental) => matchesPaymentFilter(orderById.get(r.orderId), payment, now);
+  const filtered = searched.filter((r) => (status === "all" || r.status === status) && paymentOk(r));
+  const count = (s: StatusFilter) =>
+    searched.filter((r) => (s === "all" || r.status === s) && paymentOk(r)).length;
+  const countPayment = (p: PaymentFilter) =>
+    searched.filter(
+      (r) => (status === "all" || r.status === status) && matchesPaymentFilter(orderById.get(r.orderId), p, now),
+    ).length;
 
   return (
     <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto">
+      <RefundBand orders={attentionOrders} onOpen={(o) => setOrderOpen(o.id)} />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         <Band
           title="Retiradas de hoje"
@@ -225,6 +277,19 @@ export default function RentalsTab() {
             { value: "canceled", label: "Cancelados", count: count("canceled") },
           ]}
         />
+        <FilterPills<PaymentFilter>
+          label="Pagamento"
+          value={payment}
+          onChange={setPayment}
+          scroll
+          options={[
+            { value: "all", label: "Todos", count: countPayment("all") },
+            { value: "paid", label: "Pagos online", count: countPayment("paid") },
+            { value: "awaiting", label: "Aguardando", count: countPayment("awaiting") },
+            { value: "expired", label: "Expirados", count: countPayment("expired") },
+            { value: "refunded", label: "Reembolsados", count: countPayment("refunded") },
+          ]}
+        />
       </div>
 
       {loading ? (
@@ -234,10 +299,11 @@ export default function RentalsTab() {
           icon={LuPackage}
           title={rentals.length ? "Nenhum aluguel com essa busca e filtro." : "Nenhum aluguel ainda."}
           onClear={
-            search || status !== "all"
+            search || status !== "all" || payment !== "all"
               ? () => {
                   setSearch("");
                   setStatus("all");
+                  setPayment("all");
                 }
               : undefined
           }
@@ -245,12 +311,31 @@ export default function RentalsTab() {
       ) : (
         <div className="flex flex-col gap-2">
           {filtered.map((r) => (
-            <RentalRow key={r.id} rental={r} today={today} onOpenCustomer={setCustomerOf} />
+            <RentalRow
+              key={r.id}
+              rental={r}
+              today={today}
+              order={orderById.get(r.orderId)}
+              now={now}
+              onOpenOrder={(o) => setOrderOpen(o.id)}
+              onOpenCustomer={setCustomerOf}
+            />
           ))}
         </div>
       )}
 
       <CustomerModal rental={customerOf} rentals={rentals} onClose={() => setCustomerOf(null)} />
+
+      <Modal isOpen={!!openedOrder} onClose={() => setOrderOpen(null)} noPadding isFixed patternCloseButton={false}>
+        {openedOrder && (
+          <OrderDetail
+            order={openedOrder}
+            rentals={rentals.filter((r) => r.orderId === openedOrder.id)}
+            now={now}
+            onClose={() => setOrderOpen(null)}
+          />
+        )}
+      </Modal>
     </div>
   );
 }
