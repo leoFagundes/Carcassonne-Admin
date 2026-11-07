@@ -5,7 +5,11 @@ import { rentalApi } from "@/services/rentalApi";
 import { FaWhatsapp } from "react-icons/fa";
 import { LuPackage } from "react-icons/lu";
 import type { RentalOrderType, RentalStatus, RentalType } from "@/types";
-import { CatalogEmpty, CatalogSearch, FilterPills } from "@/components/adminCatalog";
+import {
+  CatalogEmpty,
+  CatalogSearch,
+  FilterPills,
+} from "@/components/adminCatalog";
 import { foldText, searchWords } from "@/components/showcase/search";
 import RentalRepository from "@/services/repositories/RentalRepository";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
@@ -28,14 +32,24 @@ function unpaidClosed(
 ): "expired" | "canceled" | undefined {
   if (rental.status !== "awaiting_payment" || !order) return undefined;
   const state = orderPaymentView(order, now).state;
-  return state === "expired" ? "expired" : state === "canceled" ? "canceled" : undefined;
+  return state === "expired"
+    ? "expired"
+    : state === "canceled"
+      ? "canceled"
+      : undefined;
 }
 import { rentalAttention } from "@/rental/attention";
 import { diffDays, formatDateBR } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
 import RentalActions from "./rentalActions";
 import { CustomerModal } from "./customerDetail";
-import { formatStamp, plural, useNow, useToday, whatsappLink } from "./rentalShared";
+import {
+  formatStamp,
+  plural,
+  useNow,
+  useToday,
+  whatsappLink,
+} from "./rentalShared";
 import OrderDetail from "./orderDetail";
 import RefundBand from "./refundBand";
 import BulkDelete from "./bulkDelete";
@@ -51,8 +65,13 @@ const ACTIVE: RentalStatus[] = ["awaiting_payment", "reserved", "picked_up"];
 const statusMatches = (r: { status: RentalStatus }, s: StatusFilter) =>
   s === "all" || (s === "active" ? ACTIVE.includes(r.status) : r.status === s);
 
-
-type AgendaGroup = { key: string; title: string; tone: string; rentals: Rental[]; note?: (r: Rental) => string };
+type AgendaGroup = {
+  key: string;
+  title: string;
+  tone: string;
+  rentals: Rental[];
+  note?: (r: Rental) => string;
+};
 
 /**
  * O que fazer hoje: atrasados, devoluções, retiradas e não retirados — cada
@@ -72,17 +91,26 @@ function TodayAgenda({
   return (
     <section className="flex flex-col gap-3 rounded-2xl border border-primary-gold/15 bg-secondary-black/50 p-3 sm:p-4">
       <div className="flex items-center gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/60">Hoje</span>
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/60">
+          Hoje
+        </span>
         {total > 0 && (
-          <span className="text-[11px] text-primary-gold/45">{plural(total, "pendência", "pendências")}</span>
+          <span className="text-[11px] text-primary-gold/45">
+            {plural(total, "pendência", "pendências")}
+          </span>
         )}
       </div>
       {visible.length === 0 ? (
-        <p className="text-sm text-emerald-300/90">Nada pendente para hoje: nenhuma retirada, devolução ou atraso.</p>
+        <p className="text-sm text-emerald-300/90">
+          Nada pendente para hoje: nenhuma retirada, devolução ou atraso.
+        </p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {visible.map((group) => (
-            <div key={group.key} className={`flex flex-col gap-1.5 rounded-xl border p-2.5 ${group.tone}`}>
+            <div
+              key={group.key}
+              className={`flex flex-col gap-1.5 rounded-xl border p-2.5 ${group.tone}`}
+            >
               <span className="flex items-center justify-between text-xs font-semibold">
                 {group.title}
                 <span className="text-base">{group.rentals.length}</span>
@@ -94,7 +122,9 @@ function TodayAgenda({
                     className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg bg-primary-black/40 px-2.5 py-2"
                   >
                     <div className="flex flex-col min-w-0 flex-1">
-                      <span className="text-sm font-medium text-primary-gold truncate">{r.gameName}</span>
+                      <span className="text-sm font-medium text-primary-gold truncate">
+                        {r.gameName}
+                      </span>
                       <span className="flex items-center gap-1.5 text-[11px] text-primary-gold/60 min-w-0">
                         <button
                           type="button"
@@ -112,10 +142,18 @@ function TodayAgenda({
                         >
                           <FaWhatsapp size={12} />
                         </a>
-                        {group.note && <span className="shrink-0 font-semibold">· {group.note(r)}</span>}
+                        {group.note && (
+                          <span className="shrink-0 font-semibold">
+                            · {group.note(r)}
+                          </span>
+                        )}
                       </span>
                     </div>
-                    <RentalActions rental={r} order={orderById.get(r.orderId)} compact />
+                    <RentalActions
+                      rental={r}
+                      order={orderById.get(r.orderId)}
+                      compact
+                    />
                   </li>
                 ))}
               </ul>
@@ -141,9 +179,20 @@ const TONE: Record<Tone, { text: string; border: string }> = {
 };
 
 /** Uma situação só, com cor: o que o admin precisa saber deste aluguel agora. */
-function rentalSituation(rental: Rental, today: string, unpaid?: "expired" | "canceled"): { label: string; tone: Tone } {
+function rentalSituation(
+  rental: Rental,
+  today: string,
+  unpaid?: "expired" | "canceled",
+): { label: string; tone: Tone } {
   // O status gravado só muda quando a varredura roda; o prazo já diz que acabou.
-  if (unpaid) return { label: unpaid === "expired" ? "Pagamento expirado" : "Cancelado antes de pagar", tone: "muted" };
+  if (unpaid)
+    return {
+      label:
+        unpaid === "expired"
+          ? "Pagamento expirado"
+          : "Cancelado antes de pagar",
+      tone: "muted",
+    };
   switch (rental.status) {
     case "awaiting_payment":
       return { label: "Aguardando pagamento", tone: "orange" };
@@ -153,7 +202,10 @@ function rentalSituation(rental: Rental, today: string, unpaid?: "expired" | "ca
         : { label: "Reservado", tone: "gold" };
     case "picked_up":
       return rental.dueDate < today
-        ? { label: `Atrasado ${plural(diffDays(rental.dueDate, today), "dia", "dias")}`, tone: "red" }
+        ? {
+            label: `Atrasado ${plural(diffDays(rental.dueDate, today), "dia", "dias")}`,
+            tone: "red",
+          }
         : { label: "Retirado", tone: "sky" };
     case "returned":
       return { label: "Devolvido", tone: "green" };
@@ -164,7 +216,8 @@ function rentalSituation(rental: Rental, today: string, unpaid?: "expired" | "ca
 
 /** Complemento das datas: o prazo que importa hoje. */
 function dateHint(rental: Rental, today: string): string | null {
-  if (rental.status === "reserved" && rental.startDate === today) return "retira hoje";
+  if (rental.status === "reserved" && rental.startDate === today)
+    return "retira hoje";
   if (rental.status !== "picked_up" || rental.dueDate < today) return null;
   const left = diffDays(today, rental.dueDate);
   return left === 0 ? "devolve hoje" : `faltam ${plural(left, "dia", "dias")}`;
@@ -188,26 +241,51 @@ function cancelText(rental: Rental): string | null {
 }
 
 /** Linha do pagamento — só para pedidos online (balcão é o normal, não precisa dizer). */
-function paymentLine(view: OrderPaymentView): { text: string; tone: Tone } | null {
+function paymentLine(
+  view: OrderPaymentView,
+): { text: string; tone: Tone } | null {
   switch (view.state) {
     case "counter":
       return null;
     case "awaiting":
-      return { text: `Pagamento online · aguardando (expira em ${formatCountdown(view.msLeft)})`, tone: "orange" };
+      return {
+        text: `Pagamento online · aguardando (expira em ${formatCountdown(view.msLeft)})`,
+        tone: "orange",
+      };
     case "rejected":
-      return { text: "Pagamento online · recusado, cliente pode tentar de novo", tone: "orange" };
+      return {
+        text: "Pagamento online · recusado, cliente pode tentar de novo",
+        tone: "orange",
+      };
     case "expired":
-      return { text: "Pagamento online · prazo esgotado sem pagamento", tone: "muted" };
+      return {
+        text: "Pagamento online · prazo esgotado sem pagamento",
+        tone: "muted",
+      };
     case "canceled":
-      return { text: "Pagamento online · pedido cancelado antes de pagar", tone: "muted" };
+      return {
+        text: "Pagamento online · pedido cancelado antes de pagar",
+        tone: "muted",
+      };
     case "paid": {
-      const how = view.method === "pix" ? " (Pix)" : view.method === "card" ? " (cartão)" : "";
+      const how =
+        view.method === "pix"
+          ? " (Pix)"
+          : view.method === "card"
+            ? " (cartão)"
+            : "";
       return { text: `Pago online${how}`, tone: "green" };
     }
     case "refunded":
-      return { text: `Pago online · pedido reembolsado (${formatBRL(view.amount)})`, tone: "muted" };
+      return {
+        text: `Pago online · pedido reembolsado (${formatBRL(view.amount)})`,
+        tone: "muted",
+      };
     case "partially_refunded":
-      return { text: `Pago online · ${formatBRL(view.amount)} já devolvidos do pedido`, tone: "orange" };
+      return {
+        text: `Pago online · ${formatBRL(view.amount)} já devolvidos do pedido`,
+        tone: "orange",
+      };
     case "review":
       return { text: "Pago online · cancelamento em análise", tone: "orange" };
   }
@@ -252,101 +330,204 @@ function RentalRow({
 
   return (
     <article
-      className={`flex flex-col gap-1.5 rounded-xl border p-3 transition-opacity ${
+      className={`overflow-hidden rounded-xl border transition-all ${
         canceled
-          ? "border-dashed border-primary-gold/10 bg-secondary-black/20 opacity-60 hover:opacity-90"
-          : "border-primary-gold/15 bg-secondary-black/50"
+          ? "border-dashed border-primary-gold/15 bg-secondary-black/20 opacity-60 hover:opacity-90"
+          : "border-primary-gold/15 bg-secondary-black/50 hover:border-primary-gold/25"
       }`}
     >
-      {/* Jogo (o que importa) · situação · valor */}
-      <div className="flex items-start gap-x-3">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 flex-1">
-          <span className="text-sm font-semibold text-primary-gold">{rental.gameName}</span>
-          <span className="text-xs text-primary-gold/50">{rental.unitLabel}</span>
-          <span
-            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${TONE[situation.tone].text} ${TONE[situation.tone].border}`}
-          >
-            {situation.label}
-          </span>
-          {refundTag && (
-            <span
-              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${TONE[refundTag.tone].text} ${TONE[refundTag.tone].border}`}
-            >
-              {refundTag.label}
+      {/* Cabeçalho */}
+      <div className="flex items-start justify-between gap-4 p-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <h3 className="min-w-0 text-sm font-semibold leading-snug text-primary-gold">
+              {rental.gameName}
+            </h3>
+
+            <span className="text-xs text-primary-gold/45">
+              {rental.unitLabel}
             </span>
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <span
+              className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold leading-4 ${
+                TONE[situation.tone].text
+              } ${TONE[situation.tone].border}`}
+            >
+              {situation.label}
+            </span>
+
+            {refundTag && (
+              <span
+                className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold leading-4 ${
+                  TONE[refundTag.tone].text
+                } ${TONE[refundTag.tone].border}`}
+              >
+                {refundTag.label}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="shrink-0 text-right">
+          <span className="block text-[10px] uppercase tracking-wide text-primary-gold/35">
+            Valor
+          </span>
+          <span
+            className={`text-sm font-semibold text-primary-gold/90 ${
+              canceled ? "line-through" : ""
+            }`}
+          >
+            {formatBRL(rental.price)}
+          </span>
+        </div>
+      </div>
+
+      {/* Informações principais */}
+      <div className="mx-3 grid gap-2 rounded-lg border border-primary-gold/10 bg-secondary-black/30 p-2.5 sm:grid-cols-2">
+        <div className="min-w-0">
+          <span className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-primary-gold/35">
+            Cliente
+          </span>
+
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onOpenCustomer(rental)}
+              title="Ver dados do cliente"
+              className="min-w-0 truncate text-left text-xs font-medium text-primary-gold/75 underline decoration-primary-gold/30 underline-offset-2 transition-colors hover:text-primary-gold"
+            >
+              {rental.customer.name}
+            </button>
+
+            <a
+              href={whatsappLink(rental.customer.phone)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`WhatsApp de ${rental.customer.name}`}
+              title="Abrir WhatsApp"
+              className="shrink-0 rounded-md p-1 text-primary-gold/45 transition-colors hover:bg-primary-gold/10 hover:text-primary-gold"
+            >
+              <FaWhatsapp size={13} />
+            </a>
+          </div>
+        </div>
+
+        <div>
+          <span className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-primary-gold/35">
+            Período do aluguel
+          </span>
+
+          <p
+            title="Retirada → devolução"
+            className="text-xs font-medium text-primary-gold/70"
+          >
+            {formatDateBR(rental.startDate)}
+            <span className="mx-1.5 text-primary-gold/30">→</span>
+            {formatDateBR(rental.dueDate)}
+
+            {hint && (
+              <span className="ml-1 font-normal text-primary-gold/45">
+                ({hint})
+              </span>
+            )}
+          </p>
+        </div>
+      </div>
+
+      {/* Avisos */}
+      {(cancel ||
+        (rental.returnCondition && rental.returnCondition !== "ok") ||
+        payment ||
+        (order && orderNeedsAttention(order))) && (
+        <div className="space-y-1.5 px-3 pt-3">
+          {cancel && (
+            <p className="rounded-lg bg-primary-gold/5 px-2.5 py-2 text-[11px] leading-relaxed text-primary-gold/55">
+              {cancel}
+            </p>
+          )}
+
+          {rental.returnCondition && rental.returnCondition !== "ok" && (
+            <p className="rounded-lg border border-invalid-color/15 bg-invalid-color/5 px-2.5 py-2 text-[11px] leading-relaxed text-invalid-color/85">
+              <span className="font-semibold">
+                {rental.returnCondition === "damaged"
+                  ? "Devolvido com avaria"
+                  : "Devolvido com peça faltando"}
+              </span>
+
+              {rental.returnNote && (
+                <span className="text-invalid-color/70">
+                  {" "}
+                  — {rental.returnNote}
+                </span>
+              )}
+            </p>
+          )}
+
+          {payment && (
+            <p
+              className={`rounded-lg bg-primary-gold/5 px-2.5 py-2 text-[11px] font-medium leading-relaxed ${
+                TONE[payment.tone].text
+              }`}
+            >
+              {payment.text}
+            </p>
+          )}
+
+          {order && orderNeedsAttention(order) && (
+            <p className="rounded-lg border border-orange-300/15 bg-orange-300/5 px-2.5 py-2 text-[11px] font-semibold leading-relaxed text-orange-300">
+              Reembolso pendente de atenção. Abra o pedido para revisar.
+            </p>
           )}
         </div>
-        <span className={`shrink-0 text-sm font-semibold text-primary-gold/80 ${canceled ? "line-through" : ""}`}>
-          {formatBRL(rental.price)}
-        </span>
-      </div>
-
-      {/* Cliente · datas */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-primary-gold/70">
-        <span className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => onOpenCustomer(rental)}
-            title="Ver dados do cliente"
-            className="underline underline-offset-2 hover:text-primary-gold cursor-pointer text-left"
-          >
-            {rental.customer.name}
-          </button>
-          <a
-            href={whatsappLink(rental.customer.phone)}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`WhatsApp de ${rental.customer.name}`}
-            title="Abrir WhatsApp"
-            className="text-primary-gold/50 hover:text-primary-gold transition-colors"
-          >
-            <FaWhatsapp size={13} />
-          </a>
-        </span>
-        <span aria-hidden="true" className="text-primary-gold/30">
-          ·
-        </span>
-        <span title="Retirada → devolução">
-          {formatDateBR(rental.startDate)} → {formatDateBR(rental.dueDate)}
-          {hint && <span className="text-primary-gold/50"> ({hint})</span>}
-        </span>
-      </div>
-
-      {cancel && <span className="text-[11px] text-primary-gold/55">{cancel}</span>}
-      {rental.returnCondition && rental.returnCondition !== "ok" && (
-        <span className="text-[11px] text-invalid-color/80">
-          {rental.returnCondition === "damaged" ? "Devolvido com avaria" : "Devolvido com peça faltando"}
-          {rental.returnNote ? `: ${rental.returnNote}` : ""}
-        </span>
-      )}
-      {payment && <span className={`text-[11px] font-medium ${TONE[payment.tone].text}`}>{payment.text}</span>}
-      {order && orderNeedsAttention(order) && (
-        <span className="text-[11px] font-semibold text-orange-300">Reembolso pede sua atenção — abra o pedido</span>
       )}
 
-      {/* Pedido (+ lixeira nos encerrados) */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        {order ? (
-          <button
-            type="button"
-            onClick={() => onOpenOrder(order)}
-            title="Ver detalhes do pedido"
-            className="text-[11px] underline underline-offset-2 text-primary-gold/55 hover:text-primary-gold cursor-pointer"
-          >
-            Pedido {order.code}
-            {othersInOrder > 0 && ` · +${plural(othersInOrder, "jogo", "jogos")}`}
-          </button>
-        ) : (
-          <span className="text-[11px] text-primary-gold/45">Pedido {rental.code}</span>
-        )}
-        {placedAt && <span className="text-[11px] text-primary-gold/40">feito em {placedAt}</span>}
-        {finished && (
-          <div className="ml-auto">
+      {/* Rodapé */}
+      <div className="mt-3 border-t border-primary-gold/10 px-3 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            {order ? (
+              <button
+                type="button"
+                onClick={() => onOpenOrder(order)}
+                title="Ver detalhes do pedido"
+                className="text-[11px] font-medium text-primary-gold/60 underline decoration-primary-gold/25 underline-offset-2 transition-colors hover:text-primary-gold"
+              >
+                Pedido {order.code}
+                {othersInOrder > 0 &&
+                  ` · +${plural(othersInOrder, "jogo", "jogos")}`}
+              </button>
+            ) : (
+              <span className="text-[11px] font-medium text-primary-gold/45">
+                Pedido {rental.code}
+              </span>
+            )}
+
+            {placedAt && (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="text-[10px] text-primary-gold/20"
+                >
+                  •
+                </span>
+                <span className="text-[11px] text-primary-gold/35">
+                  feito em {placedAt}
+                </span>
+              </>
+            )}
+          </div>
+
+          {finished && <RentalActions rental={rental} order={order} />}
+        </div>
+
+        {!finished && !unpaid && (
+          <div className="mt-2.5">
             <RentalActions rental={rental} order={order} />
           </div>
         )}
       </div>
-      {!finished && !unpaid && <RentalActions rental={rental} order={order} />}
     </article>
   );
 }
@@ -378,14 +559,23 @@ export default function RentalsTab() {
   }, []);
 
   useEffect(() => {
-    const unsub = RentalConfigRepository.subscribeSettings((s) => setOnlineEnabled(s.onlinePayment.enabled));
+    const unsub = RentalConfigRepository.subscribeSettings((s) =>
+      setOnlineEnabled(s.onlinePayment.enabled),
+    );
     return () => unsub();
   }, []);
 
   // Loja só de balcão: sem selos nem filtro de pagamento.
-  const showPayment = onlineEnabled || orders.some((o) => o.paymentMode === "online");
-  const orderById = useMemo(() => new Map(orders.map((o) => [o.id, o])), [orders]);
-  const attentionOrders = useMemo(() => orders.filter(orderNeedsAttention), [orders]);
+  const showPayment =
+    onlineEnabled || orders.some((o) => o.paymentMode === "online");
+  const orderById = useMemo(
+    () => new Map(orders.map((o) => [o.id, o])),
+    [orders],
+  );
+  const attentionOrders = useMemo(
+    () => orders.filter(orderNeedsAttention),
+    [orders],
+  );
   const openedOrder = orderOpen ? orderById.get(orderOpen) : undefined;
 
   // Sem cron (ou entre uma rodada e outra), o admin aberto expira os vencidos de vez.
@@ -399,10 +589,18 @@ export default function RentalsTab() {
 
   const bands = useMemo(
     () => ({
-      pickups: rentals.filter((r) => r.status === "reserved" && r.startDate === today),
-      returns: rentals.filter((r) => r.status === "picked_up" && r.dueDate === today),
-      overdue: rentals.filter((r) => r.status === "picked_up" && r.dueDate < today),
-      notPickedUp: rentals.filter((r) => r.status === "reserved" && r.startDate < today),
+      pickups: rentals.filter(
+        (r) => r.status === "reserved" && r.startDate === today,
+      ),
+      returns: rentals.filter(
+        (r) => r.status === "picked_up" && r.dueDate === today,
+      ),
+      overdue: rentals.filter(
+        (r) => r.status === "picked_up" && r.dueDate < today,
+      ),
+      notPickedUp: rentals.filter(
+        (r) => r.status === "reserved" && r.startDate < today,
+      ),
     }),
     [rentals, today],
   );
@@ -417,17 +615,25 @@ export default function RentalsTab() {
       }),
     [rentals, words],
   );
-  const paymentOk = (r: Rental) => matchesPaymentFilter(orderById.get(r.orderId), payment, now);
+  const paymentOk = (r: Rental) =>
+    matchesPaymentFilter(orderById.get(r.orderId), payment, now);
   // Aguardando pagamento com o prazo vencido conta como cancelado nos filtros.
   const asShown = (r: Rental): Rental =>
-    unpaidClosed(r, orderById.get(r.orderId), now) ? { ...r, status: "canceled" } : r;
-  const filtered = searched.filter((r) => statusMatches(asShown(r), status) && paymentOk(r));
+    unpaidClosed(r, orderById.get(r.orderId), now)
+      ? { ...r, status: "canceled" }
+      : r;
+  const filtered = searched.filter(
+    (r) => statusMatches(asShown(r), status) && paymentOk(r),
+  );
   // Ordem do banco: os mais recentes primeiro (a urgência fica no quadro "Hoje").
 
-  const count = (s: StatusFilter) => searched.filter((r) => statusMatches(asShown(r), s) && paymentOk(r)).length;
+  const count = (s: StatusFilter) =>
+    searched.filter((r) => statusMatches(asShown(r), s) && paymentOk(r)).length;
   const countPayment = (p: PaymentFilter) =>
     searched.filter(
-      (r) => statusMatches(asShown(r), status) && matchesPaymentFilter(orderById.get(r.orderId), p, now),
+      (r) =>
+        statusMatches(asShown(r), status) &&
+        matchesPaymentFilter(orderById.get(r.orderId), p, now),
     ).length;
 
   return (
@@ -443,10 +649,21 @@ export default function RentalsTab() {
             title: "Atrasados",
             tone: "border-invalid-color/40 text-invalid-color",
             rentals: bands.overdue,
-            note: (r) => `${plural(diffDays(r.dueDate, today), "dia", "dias")} de atraso`,
+            note: (r) =>
+              `${plural(diffDays(r.dueDate, today), "dia", "dias")} de atraso`,
           },
-          { key: "returns", title: "Devoluções de hoje", tone: "border-sky-300/30 text-sky-200", rentals: bands.returns },
-          { key: "pickups", title: "Retiradas de hoje", tone: "border-primary-gold/30 text-primary-gold", rentals: bands.pickups },
+          {
+            key: "returns",
+            title: "Devoluções de hoje",
+            tone: "border-sky-300/30 text-sky-200",
+            rentals: bands.returns,
+          },
+          {
+            key: "pickups",
+            title: "Retiradas de hoje",
+            tone: "border-primary-gold/30 text-primary-gold",
+            rentals: bands.pickups,
+          },
           {
             key: "notPickedUp",
             title: "Não retirados",
@@ -471,35 +688,75 @@ export default function RentalsTab() {
           options={[
             { value: "active", label: "Em andamento", count: count("active") },
             ...(showPayment
-              ? [{ value: "awaiting_payment" as const, label: "Aguardando pagamento", count: count("awaiting_payment") }]
+              ? [
+                  {
+                    value: "awaiting_payment" as const,
+                    label: "Aguardando pagamento",
+                    count: count("awaiting_payment"),
+                  },
+                ]
               : []),
-            { value: "reserved", label: "Reservados", count: count("reserved") },
-            { value: "picked_up", label: "Retirados", count: count("picked_up") },
-            { value: "returned", label: "Devolvidos", count: count("returned") },
-            { value: "canceled", label: "Cancelados", count: count("canceled") },
+            {
+              value: "reserved",
+              label: "Reservados",
+              count: count("reserved"),
+            },
+            {
+              value: "picked_up",
+              label: "Retirados",
+              count: count("picked_up"),
+            },
+            {
+              value: "returned",
+              label: "Devolvidos",
+              count: count("returned"),
+            },
+            {
+              value: "canceled",
+              label: "Cancelados",
+              count: count("canceled"),
+            },
             { value: "all", label: "Todos", count: count("all") },
           ]}
         />
         {showPayment && (
-        <FilterPills<PaymentFilter>
-          label="Pagamento"
-          value={payment}
-          onChange={setPayment}
-          scroll
-          options={[
-            { value: "all", label: "Todos", count: countPayment("all") },
-            { value: "paid", label: "Pagos online", count: countPayment("paid") },
-            { value: "awaiting", label: "Aguardando", count: countPayment("awaiting") },
-            { value: "expired", label: "Expirados", count: countPayment("expired") },
-            { value: "refunded", label: "Reembolsados", count: countPayment("refunded") },
-          ]}
-        />
+          <FilterPills<PaymentFilter>
+            label="Pagamento"
+            value={payment}
+            onChange={setPayment}
+            scroll
+            options={[
+              { value: "all", label: "Todos", count: countPayment("all") },
+              {
+                value: "paid",
+                label: "Pagos online",
+                count: countPayment("paid"),
+              },
+              {
+                value: "awaiting",
+                label: "Aguardando",
+                count: countPayment("awaiting"),
+              },
+              {
+                value: "expired",
+                label: "Expirados",
+                count: countPayment("expired"),
+              },
+              {
+                value: "refunded",
+                label: "Reembolsados",
+                count: countPayment("refunded"),
+              },
+            ]}
+          />
         )}
         <BulkDelete rentals={rentals} orderById={orderById} />
       </div>
 
       {loading ? (
-        <span className="text-xs text-primary-gold/50 px-1">Carregando aluguéis...</span>
+        <span className="text-xs text-primary-gold/50 px-1">
+          Carregando aluguéis...
+        </span>
       ) : filtered.length === 0 ? (
         <CatalogEmpty
           icon={LuPackage}
@@ -536,9 +793,19 @@ export default function RentalsTab() {
         </div>
       )}
 
-      <CustomerModal rental={customerOf} rentals={rentals} onClose={() => setCustomerOf(null)} />
+      <CustomerModal
+        rental={customerOf}
+        rentals={rentals}
+        onClose={() => setCustomerOf(null)}
+      />
 
-      <Modal isOpen={!!openedOrder} onClose={() => setOrderOpen(null)} noPadding isFixed patternCloseButton={false}>
+      <Modal
+        isOpen={!!openedOrder}
+        onClose={() => setOrderOpen(null)}
+        noPadding
+        isFixed
+        patternCloseButton={false}
+      >
         {openedOrder && (
           <OrderDetail
             order={openedOrder}

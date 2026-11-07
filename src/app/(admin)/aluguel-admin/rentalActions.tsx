@@ -1,8 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { LuCalendarClock, LuPackageCheck, LuPackageOpen, LuTrash2, LuX } from "react-icons/lu";
-import type { RentalOrderType, RentalReturnCondition, RentalType } from "@/types";
+import {
+  LuCalendarClock,
+  LuPackageCheck,
+  LuPackageOpen,
+  LuTrash2,
+  LuX,
+} from "react-icons/lu";
+import type {
+  RentalOrderType,
+  RentalReturnCondition,
+  RentalType,
+} from "@/types";
 import Modal from "@/components/modal";
 import FormCard from "@/components/formCard";
 import Input from "@/components/input";
@@ -51,18 +61,28 @@ function ActionModal({
   const paid = isPaidOnline(order);
   // A chave é a do reembolso deste cancelamento no servidor: o que já está em andamento não conta contra ele.
   const refundCap = order
-    ? Math.min(rentalPrice(order, rental.id), refundableLeft(order, `${order.id}:${rental.id}:cancel`))
+    ? Math.min(
+        rentalPrice(order, rental.id),
+        refundableLeft(order, `${order.id}:${rental.id}:cancel`),
+      )
     : 0;
   // Reembolso deste cancelamento em andamento ou sem confirmação: o servidor só aceita o mesmo valor.
   const resumed = paid
-    ? order?.payment?.pendingRefunds?.find((p) => p.key === `${order.id}:${rental.id}:cancel`)
+    ? order?.payment?.pendingRefunds?.find(
+        (p) => p.key === `${order.id}:${rental.id}:cancel`,
+      )
     : undefined;
   // null = o admin ainda não mexeu: segue o padrão, mesmo se o pedido carregar depois.
   const [refundEdit, setRefundText] = useState<string | null>(null);
-  const refundText = resumed ? centsToInput(resumed.amount) : (refundEdit ?? centsToInput(refundCap));
+  const refundText = resumed
+    ? centsToInput(resumed.amount)
+    : (refundEdit ?? centsToInput(refundCap));
   const refundCents = parseBRL(refundText);
   const refundValid =
-    !paid || !!resumed || refundCap === 0 || (refundCents !== null && refundCents <= refundCap);
+    !paid ||
+    !!resumed ||
+    refundCap === 0 ||
+    (refundCents !== null && refundCents <= refundCap);
   const refundAmount = !paid
     ? undefined
     : resumed
@@ -71,7 +91,10 @@ function ActionModal({
         ? 0
         : (refundCents ?? 0);
 
-  const run = async (request: () => Promise<ApiResult<unknown>>, success: string) => {
+  const run = async (
+    request: () => Promise<ApiResult<unknown>>,
+    success: string,
+  ) => {
     if (loading) return;
     setLoading(true);
     const result = await request();
@@ -85,7 +108,8 @@ function ActionModal({
   };
 
   // Exclusão: a mesma regra do servidor, para explicar antes de tentar.
-  const deleteBlock = kind === "delete" ? rentalDeletionBlock(rental, order, Date.now()) : null;
+  const deleteBlock =
+    kind === "delete" ? rentalDeletionBlock(rental, order, Date.now()) : null;
   const removeRental = async () => {
     if (loading) return;
     setLoading(true);
@@ -96,7 +120,10 @@ function ActionModal({
       return;
     }
     if (result.data.deleted === 0) {
-      addAlert(result.data.skipped[0]?.message ?? "Não foi possível excluir este aluguel.");
+      addAlert(
+        result.data.skipped[0]?.message ??
+          "Não foi possível excluir este aluguel.",
+      );
       return;
     }
     addAlert(`Aluguel ${rental.code} excluído`);
@@ -114,7 +141,8 @@ function ActionModal({
       submitLabel: "Registrar retirada",
       icon: <LuPackageOpen size={18} />,
       disabled: false,
-      submit: () => run(() => rentalApi.pickup(rental.id), "Retirada registrada"),
+      submit: () =>
+        run(() => rentalApi.pickup(rental.id), "Retirada registrada"),
     },
     return: {
       title: "Registrar devolução",
@@ -138,7 +166,10 @@ function ActionModal({
       icon: <LuCalendarClock size={18} />,
       disabled: !dueDate || dueDate < rental.startDate,
       submit: () =>
-        run(() => rentalApi.changeDueDate(rental.id, dueDate), "Data de devolução alterada"),
+        run(
+          () => rentalApi.changeDueDate(rental.id, dueDate),
+          "Data de devolução alterada",
+        ),
     },
     cancel: {
       title: "Cancelar aluguel",
@@ -150,9 +181,12 @@ function ActionModal({
           : paid
             ? `Cancelar e devolver ${formatBRL(refundAmount ?? 0)}`
             : "Cancelar aluguel",
-      submit: () => run(
+      submit: () =>
+        run(
           () => rentalApi.cancel(rental.id, reason.trim(), refundAmount),
-          paid && refundAmount ? `Aluguel cancelado e ${formatBRL(refundAmount)} devolvidos` : "Aluguel cancelado",
+          paid && refundAmount
+            ? `Aluguel cancelado e ${formatBRL(refundAmount)} devolvidos`
+            : "Aluguel cancelado",
         ),
     },
     delete: {
@@ -183,7 +217,11 @@ function ActionModal({
 
       {kind === "return" && (
         <>
-          <div role="radiogroup" aria-label="Estado do jogo" className="flex flex-wrap gap-1.5">
+          <div
+            role="radiogroup"
+            aria-label="Estado do jogo"
+            className="flex flex-wrap gap-1.5"
+          >
             {CONDITIONS.map((c) => (
               <button
                 key={c.value}
@@ -243,13 +281,16 @@ function ActionModal({
         ) : (
           <div className="flex flex-col gap-2 text-sm text-primary-gold/70">
             <p>
-              O aluguel de {rental.gameName} para {rental.customer.name} sai da lista e do histórico do
-              cliente. <strong className="text-primary-gold">Não dá para desfazer.</strong>
+              O aluguel de {rental.gameName} para {rental.customer.name} sai da
+              lista e do histórico do cliente.{" "}
+              <strong className="text-primary-gold">
+                Não dá para desfazer.
+              </strong>
             </p>
             {order && order.rentalIds.length > 1 && (
               <p className="text-xs text-primary-gold/50">
-                Os outros jogos do pedido {order.code} continuam. O pedido só é apagado junto com o
-                último deles.
+                Os outros jogos do pedido {order.code} continuam. O pedido só é
+                apagado junto com o último deles.
               </p>
             )}
             {order?.paymentMode === "online" && (
@@ -264,8 +305,8 @@ function ActionModal({
         <>
           {rental.status === "picked_up" && (
             <p className="text-xs text-invalid-color/80">
-              Este jogo foi retirado. Se ele já voltou, use &quot;Registrar devolução&quot; —
-              cancelar libera a cópia imediatamente.
+              Este jogo foi retirado. Se ele já voltou, use &quot;Registrar
+              devolução&quot; — cancelar libera a cópia imediatamente.
             </p>
           )}
           <Input
@@ -284,9 +325,10 @@ function ActionModal({
               </span>
               {resumed ? (
                 <p className="text-xs text-orange-300">
-                  Há um reembolso de {formatBRL(resumed.amount)} sem confirmação deste aluguel — use
-                  &quot;Tentar de novo&quot; no detalhe do pedido, ou confirme aqui com o mesmo valor
-                  (o reembolso não sai em dobro). Não dá para cancelar sem reembolso nem mudar o
+                  Há um reembolso de {formatBRL(resumed.amount)} sem confirmação
+                  deste aluguel — use &quot;Tentar de novo&quot; no detalhe do
+                  pedido, ou confirme aqui com o mesmo valor (o reembolso não
+                  sai em dobro). Não dá para cancelar sem reembolso nem mudar o
                   valor enquanto ele não for concluído.
                 </p>
               ) : refundCap === 0 ? (
@@ -335,34 +377,80 @@ export default function RentalActions({
 }: {
   rental: RentalType & { id: string };
   order?: Order;
-  /** Só a ação principal do dia (retirada ou devolução) — usado na agenda de hoje. */
+  /** Só a ação principal do dia — usado na agenda de hoje. */
   compact?: boolean;
 }) {
   const [kind, setKind] = useState<ActionKind | null>(null);
+
   const reserved = rental.status === "reserved";
   const pickedUp = rental.status === "picked_up";
   const awaiting = rental.status === "awaiting_payment";
   const today = todaySP();
   const finished = isRentalFinished(rental);
+  const pickupAvailable = reserved && canPickUp(rental, today);
+
   if (!reserved && !pickedUp && !awaiting && !finished) return null;
 
-  const gold = `${buttonClass} border-primary-gold/50 bg-primary-gold/10 text-primary-gold hover:bg-primary-gold/20`;
-  const neutral = `${buttonClass} border-primary-gold/15 text-primary-gold/60 hover:text-primary-gold hover:border-primary-gold/40`;
-  const danger = `${buttonClass} border-invalid-color/30 text-invalid-color/80 hover:bg-invalid-color/10`;
+  const primary = `${buttonClass} border-primary-gold/50 bg-primary-gold/10 text-primary-gold hover:border-primary-gold/70 hover:bg-primary-gold/20 disabled:cursor-not-allowed disabled:opacity-40`;
+  const secondary = `${buttonClass} border-primary-gold/15 bg-transparent text-primary-gold/60 hover:border-primary-gold/35 hover:bg-primary-gold/5 hover:text-primary-gold`;
+  const danger = `${buttonClass} border-invalid-color/25 bg-transparent text-invalid-color/75 hover:border-invalid-color/40 hover:bg-invalid-color/10 hover:text-invalid-color`;
+
   const modal = (
-    <Modal isOpen={!!kind} onClose={() => setKind(null)} noPadding isFixed patternCloseButton={false}>
-      {kind && <ActionModal rental={rental} order={order} kind={kind} onClose={() => setKind(null)} />}
+    <Modal
+      isOpen={!!kind}
+      onClose={() => setKind(null)}
+      noPadding
+      isFixed
+      patternCloseButton={false}
+    >
+      {kind && (
+        <ActionModal
+          rental={rental}
+          order={order}
+          kind={kind}
+          onClose={() => setKind(null)}
+        />
+      )}
     </Modal>
   );
 
   if (compact) {
-    const action = pickedUp ? "return" : reserved && canPickUp(rental, today) ? "pickup" : null;
+    const action: ActionKind | null = pickedUp
+      ? "return"
+      : pickupAvailable
+        ? "pickup"
+        : null;
+
     if (!action) return null;
+
     return (
       <>
-        <button type="button" className={`${gold} shrink-0`} onClick={() => setKind(action)}>
+        <button
+          type="button"
+          className={`${primary} shrink-0 whitespace-nowrap`}
+          onClick={() => setKind(action)}
+        >
           {action === "pickup" ? "Registrar retirada" : "Registrar devolução"}
         </button>
+
+        {modal}
+      </>
+    );
+  }
+
+  if (finished) {
+    return (
+      <>
+        <button
+          type="button"
+          aria-label="Excluir aluguel"
+          title="Excluir aluguel"
+          onClick={() => setKind("delete")}
+          className="inline-flex items-center justify-center rounded-lg border border-transparent p-1.5 text-primary-gold/35 transition-colors hover:border-invalid-color/15 hover:bg-invalid-color/10 hover:text-invalid-color"
+        >
+          <LuTrash2 size={14} />
+        </button>
+
         {modal}
       </>
     );
@@ -370,59 +458,71 @@ export default function RentalActions({
 
   return (
     <>
-      <div className="flex flex-wrap gap-1.5">
-        {awaiting && (
-          <>
-            <button type="button" className={gold} disabled>
-              Registrar retirada
-            </button>
-            <span className="self-center text-xs text-primary-gold/55">Aguardando pagamento</span>
-          </>
-        )}
-        {reserved && (
-          <>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          {awaiting && (
+            <>
+              <button type="button" className={primary} disabled>
+                Registrar retirada
+              </button>
+
+              <span className="text-[11px] text-primary-gold/45">
+                Aguardando pagamento
+              </span>
+            </>
+          )}
+
+          {reserved && (
+            <>
+              <button
+                type="button"
+                className={primary}
+                disabled={!pickupAvailable}
+                onClick={() => setKind("pickup")}
+              >
+                Registrar retirada
+              </button>
+
+              {!pickupAvailable && (
+                <span className="text-[11px] text-primary-gold/45">
+                  Disponível em {formatDateBR(rental.startDate)}
+                </span>
+              )}
+            </>
+          )}
+
+          {pickedUp && (
             <button
               type="button"
-              className={gold}
-              disabled={!canPickUp(rental, today)}
-              onClick={() => setKind("pickup")}
+              className={primary}
+              onClick={() => setKind("return")}
             >
-              Registrar retirada
+              Registrar devolução
             </button>
-            {!canPickUp(rental, today) && (
-              <span className="self-center text-xs text-primary-gold/55">
-                Retirada a partir de {formatDateBR(rental.startDate)}
-              </span>
-            )}
-          </>
-        )}
-        {pickedUp && (
-          <button type="button" className={gold} onClick={() => setKind("return")}>
-            Registrar devolução
-          </button>
-        )}
-        {finished && (
-          <button
-            type="button"
-            aria-label="Excluir aluguel"
-            title="Excluir aluguel"
-            onClick={() => setKind("delete")}
-            className="p-1.5 rounded-lg text-primary-gold/40 hover:text-invalid-color hover:bg-invalid-color/10 transition-colors cursor-pointer"
-          >
-            <LuTrash2 size={14} />
-          </button>
-        )}
-        {!awaiting && !finished && (
-          <>
-            <button type="button" className={neutral} onClick={() => setKind("dueDate")}>
+          )}
+        </div>
+
+        {!awaiting && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              className={secondary}
+              onClick={() => setKind("dueDate")}
+            >
               Alterar devolução
             </button>
-            <button type="button" className={danger} onClick={() => setKind("cancel")}>
+
+            <button
+              type="button"
+              className={danger}
+              onClick={() => setKind("cancel")}
+            >
               Cancelar
             </button>
-          </>
+          </div>
         )}
       </div>
+
       {modal}
     </>
   );

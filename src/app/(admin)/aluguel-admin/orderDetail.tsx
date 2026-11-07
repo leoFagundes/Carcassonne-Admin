@@ -147,207 +147,308 @@ export default function OrderDetail({
       hideFooter
       maxWidth="sm:max-w-[520px]"
     >
-      <div className="flex flex-col gap-5 min-w-0">
-        {/* Resumo: o essencial num olhar */}
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            ["Total", formatBRL(order.total)],
-            ["Retirada", formatDateBR(order.startDate)],
-            ["Jogos", String(order.items.length)],
-          ].map(([label, value]) => (
-            <div
-              key={label}
-              className="flex flex-col gap-0.5 rounded-lg border border-primary-gold/15 bg-primary-black/30 px-2.5 py-2"
-            >
-              <span className="text-[10px] uppercase tracking-wider text-primary-gold/45">
-                {label}
-              </span>
-              <span className="text-sm font-semibold text-primary-gold">
-                {value}
-              </span>
-            </div>
-          ))}
-        </div>
-        {formatStamp(order.createdAt) && (
-          <p className="-mt-2 text-xs text-primary-gold/55">
-            Pedido feito em {formatStamp(order.createdAt)}
-          </p>
-        )}
+      <div className="flex min-w-0 flex-col gap-4">
+        {/* Status e contato */}
         <div className="flex flex-wrap items-center gap-2">
           <PaymentBadge view={view} />
+
           <a
             href={whatsappLink(order.customer.phone)}
             target="_blank"
             rel="noopener noreferrer"
-            className="ml-auto flex items-center gap-1.5 h-8 px-3 rounded-lg border border-primary-gold/30 text-xs text-primary-gold/80 hover:border-primary-gold/60"
+            className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-lg border border-primary-gold/25 px-3 text-xs font-medium text-primary-gold/75 transition-colors hover:border-primary-gold/50 hover:bg-primary-gold/5 hover:text-primary-gold"
           >
-            <FaWhatsapp size={13} /> Falar com{" "}
-            {order.customer.name.split(" ")[0]}
+            <FaWhatsapp size={13} />
+            Falar com {order.customer.name.split(" ")[0]}
           </a>
+        </div>
+
+        {/* Resumo principal */}
+        <div className="overflow-hidden rounded-xl border border-primary-gold/15 bg-primary-black/20">
+          <div className="grid grid-cols-3 divide-x divide-primary-gold/10">
+            {[
+              ["Total", formatBRL(order.total)],
+              ["Retirada", formatDateBR(order.startDate)],
+              ["Jogos", String(order.items.length)],
+            ].map(([label, value]) => (
+              <div key={label} className="min-w-0 px-3 py-3">
+                <span className="block text-[10px] font-medium uppercase tracking-wider text-primary-gold/40">
+                  {label}
+                </span>
+
+                <span className="mt-1 block truncate text-sm font-semibold text-primary-gold">
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {formatStamp(order.createdAt) && (
+            <div className="border-t border-primary-gold/10 px-3 py-2">
+              <p className="text-[11px] text-primary-gold/45">
+                Pedido feito em {formatStamp(order.createdAt)}
+              </p>
+            </div>
+          )}
         </div>
 
         <OrderIssues order={order} />
 
+        {/* Cancelamento pendente */}
         {reviewIds.length > 0 && (
-          <Section title="Cancelamento em análise">
-            <p className="text-xs text-primary-gold/70">
-              O cliente cancelou{" "}
-              {reviewIds
-                .map(
-                  (id) => order.items.find((i) => i.rentalId === id)?.gameName,
-                )
-                .filter(Boolean)
-                .join(", ")}{" "}
-              e aguarda a sua decisão sobre quanto devolver.
-            </p>
+          <div className="rounded-xl border border-orange-300/20 bg-orange-300/5 p-3">
+            <div className="mb-3">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-orange-300/70">
+                Ação necessária
+              </span>
+
+              <h3 className="mt-0.5 text-sm font-semibold text-orange-300">
+                Cancelamento em análise
+              </h3>
+
+              <p className="mt-1 text-xs leading-relaxed text-primary-gold/65">
+                O cliente cancelou{" "}
+                <span className="font-medium text-primary-gold/85">
+                  {reviewIds
+                    .map(
+                      (id) =>
+                        order.items.find((item) => item.rentalId === id)
+                          ?.gameName,
+                    )
+                    .filter(Boolean)
+                    .join(", ")}
+                </span>{" "}
+                e aguarda a sua decisão sobre quanto devolver.
+              </p>
+            </div>
+
             <ReviewForm order={order} />
-          </Section>
+          </div>
         )}
 
+        {/* Jogos */}
         <Section title="Jogos">
-          <ul className="flex flex-col gap-1">
+          <ul className="flex flex-col divide-y divide-primary-gold/10">
             {order.items.map((item) => {
               const rental = rentalOf(item.rentalId);
               const status = rental?.status;
+
+              const statusLabel =
+                status === "awaiting_payment" &&
+                (view.state === "expired" || view.state === "canceled")
+                  ? view.state === "expired"
+                    ? "Pagamento expirado"
+                    : "Cancelado antes de pagar"
+                  : status
+                    ? STATUS_LABEL[status]
+                    : null;
+
               return (
                 <li
                   key={item.rentalId}
-                  className="flex items-baseline justify-between gap-3 text-xs"
+                  className="flex items-start justify-between gap-4 py-2.5 first:pt-0 last:pb-0"
                 >
-                  <span className="min-w-0 text-primary-gold/90">
-                    <span
-                      className={
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={`text-xs font-medium leading-relaxed ${
                         status === "canceled"
-                          ? "line-through text-primary-gold/50"
-                          : ""
-                      }
+                          ? "text-primary-gold/45 line-through"
+                          : "text-primary-gold/90"
+                      }`}
                     >
                       {item.gameName}
-                    </span>
-                    {status && (
-                      <span className="text-primary-gold/50">
-                        {" "}
-                        ·{" "}
-                        {status === "awaiting_payment" &&
-                        (view.state === "expired" || view.state === "canceled")
-                          ? view.state === "expired"
-                            ? "Pagamento expirado"
-                            : "Cancelado antes de pagar"
-                          : STATUS_LABEL[status]}
-                      </span>
-                    )}
-                    {rental &&
-                      (status === "reserved" || status === "picked_up") && (
-                        <span className="block text-[11px] text-primary-gold/45">
-                          {rental.unitLabel} · devolução até{" "}
-                          {formatDateBR(rental.dueDate)}
+                    </p>
+
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      {statusLabel && (
+                        <span className="text-[11px] text-primary-gold/50">
+                          {statusLabel}
                         </span>
                       )}
-                  </span>
-                  <span className="shrink-0 text-primary-gold/80">
+
+                      {statusLabel &&
+                        rental &&
+                        (status === "reserved" || status === "picked_up") && (
+                          <span
+                            aria-hidden="true"
+                            className="text-[10px] text-primary-gold/25"
+                          >
+                            •
+                          </span>
+                        )}
+
+                      {rental &&
+                        (status === "reserved" || status === "picked_up") && (
+                          <span className="text-[11px] text-primary-gold/45">
+                            {rental.unitLabel} · devolução até{" "}
+                            {formatDateBR(rental.dueDate)}
+                          </span>
+                        )}
+                    </div>
+                  </div>
+
+                  <span
+                    className={`shrink-0 text-xs font-medium ${
+                      status === "canceled"
+                        ? "text-primary-gold/40 line-through"
+                        : "text-primary-gold/80"
+                    }`}
+                  >
                     {formatBRL(item.price)}
                   </span>
                 </li>
               );
             })}
           </ul>
-          <Row
-            label="Total do pedido"
-            value={<strong>{formatBRL(order.total)}</strong>}
-          />
+
+          <div className="mt-3 border-t border-primary-gold/15 pt-2">
+            <Row
+              label="Total do pedido"
+              value={<strong>{formatBRL(order.total)}</strong>}
+            />
+          </div>
         </Section>
 
+        {/* Cliente */}
         <Section title="Cliente">
-          <Row label="Nome" value={order.customer.name} />
-          <Row
-            label="WhatsApp"
-            value={
-              <a
-                href={whatsappLink(order.customer.phone)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline underline-offset-2"
-              >
-                {order.customer.phone}
-              </a>
-            }
-          />
-          <Row label="E-mail" value={order.customer.email} />
+          <div className="flex flex-col gap-2">
+            <Row label="Nome" value={order.customer.name} />
+
+            <Row
+              label="WhatsApp"
+              value={
+                <a
+                  href={whatsappLink(order.customer.phone)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-primary-gold/30 underline-offset-2 transition-colors hover:text-primary-gold"
+                >
+                  {order.customer.phone}
+                </a>
+              }
+            />
+
+            <Row label="E-mail" value={order.customer.email} />
+          </div>
         </Section>
 
+        {/* Pagamento */}
         <Section title="Pagamento">
           {order.paymentMode === "counter" || !p ? (
-            <p className="text-xs text-primary-gold/65">
-              Pagamento no balcão, sem cobrança online.
-            </p>
+            <div className="rounded-lg border border-primary-gold/10 bg-primary-gold/5 px-3 py-2.5">
+              <p className="text-xs leading-relaxed text-primary-gold/65">
+                Pagamento no balcão, sem cobrança online.
+              </p>
+            </div>
           ) : (
-            <>
-              {p.method && <Row label="Forma" value={METHOD_LABEL[p.method]} />}
-              {p.paidAt && <Row label="Pago em" value={dateTime(p.paidAt)} />}
-              <Row label="Valor" value={formatBRL(order.total)} />
-              {p.providerPaymentId && (
-                <Row label="Nº no Mercado Pago" value={p.providerPaymentId} />
-              )}
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
+                {p.method && (
+                  <Row label="Forma" value={METHOD_LABEL[p.method]} />
+                )}
+
+                {p.paidAt && <Row label="Pago em" value={dateTime(p.paidAt)} />}
+
+                <Row label="Valor" value={formatBRL(order.total)} />
+
+                {p.providerPaymentId && (
+                  <Row label="Nº no Mercado Pago" value={p.providerPaymentId} />
+                )}
+              </div>
+
               {!paid && (
-                <p className="text-xs text-primary-gold/60">
-                  Ainda não há pagamento aprovado neste pedido.
-                  {p.status === "pending" && p.holdUntil > now
-                    ? ` A reserva vale até ${dateTime(p.holdUntil)}.`
-                    : ""}
-                </p>
-              )}
-              {canCheckProvider && (
-                <>
-                  <p className="text-[11px] text-primary-gold/50">
-                    O cliente diz que pagou? Consulte no Mercado Pago: se houver
-                    pagamento aprovado, o pedido é confirmado (ou, se as cópias
-                    já foram liberadas, o valor é devolvido).
+                <div className="rounded-lg border border-primary-gold/10 bg-primary-gold/5 px-3 py-2.5">
+                  <p className="text-xs leading-relaxed text-primary-gold/60">
+                    Ainda não há pagamento aprovado neste pedido.
+                    {p.status === "pending" && p.holdUntil > now
+                      ? ` A reserva vale até ${dateTime(p.holdUntil)}.`
+                      : ""}
                   </p>
-                  <CheckProviderButton orderId={order.id} />
-                </>
+                </div>
               )}
-            </>
+
+              {canCheckProvider && (
+                <div className="rounded-lg border border-primary-gold/10 bg-primary-black/20 p-3">
+                  <p className="mb-2.5 text-[11px] leading-relaxed text-primary-gold/50">
+                    O cliente diz que pagou? Consulte no Mercado Pago. Se houver
+                    pagamento aprovado, o pedido será confirmado. Caso as cópias
+                    já tenham sido liberadas, o valor será devolvido.
+                  </p>
+
+                  <CheckProviderButton orderId={order.id} />
+                </div>
+              )}
+            </div>
           )}
         </Section>
 
+        {/* Histórico de reembolsos */}
         {p && (p.refunds.length > 0 || pendingRefunds.length > 0) && (
           <Section title="Reembolsos">
-            <ul className="flex flex-col gap-1.5">
-              {p.refunds.map((r) => (
+            <ul className="flex flex-col divide-y divide-primary-gold/10">
+              {p.refunds.map((refund) => (
                 <li
-                  key={r.providerRefundId || r.key}
-                  className="flex flex-col text-xs"
+                  key={refund.providerRefundId || refund.key}
+                  className="py-2 first:pt-0 last:pb-0"
                 >
-                  <span className="flex justify-between gap-3">
-                    <span className="text-primary-gold/90">
-                      {formatBRL(r.amount)}
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-xs font-medium text-primary-gold/90">
+                      {formatBRL(refund.amount)}
                     </span>
-                    <span className="text-primary-gold/55">
-                      {dateTime(r.at)}
+
+                    <span className="shrink-0 text-[11px] text-primary-gold/45">
+                      {dateTime(refund.at)}
                     </span>
-                  </span>
-                  {r.reason && (
-                    <span className="text-primary-gold/50">{r.reason}</span>
+                  </div>
+
+                  {refund.reason && (
+                    <p className="mt-0.5 text-[11px] leading-relaxed text-primary-gold/50">
+                      {refund.reason}
+                    </p>
                   )}
                 </li>
               ))}
-              {pendingRefunds.map((r) => (
-                <li key={r.key} className="text-xs text-orange-300">
-                  {formatBRL(r.amount)} em andamento...
+
+              {pendingRefunds.map((refund) => (
+                <li
+                  key={refund.key}
+                  className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
+                >
+                  <span className="text-xs font-medium text-orange-300">
+                    {formatBRL(refund.amount)}
+                  </span>
+
+                  <span className="text-[11px] text-orange-300/70">
+                    Em andamento
+                  </span>
                 </li>
               ))}
             </ul>
-            <Row label="Já devolvido" value={formatBRL(p.refundedTotal)} />
+
+            <div className="mt-3 border-t border-primary-gold/15 pt-2">
+              <Row label="Já devolvido" value={formatBRL(p.refundedTotal)} />
+            </div>
           </Section>
         )}
 
+        {/* Novo reembolso */}
         {paid && (
           <Section title="Reembolsar">
-            <p className="text-xs text-primary-gold/55 mb-2">
-              Ainda dá para devolver {formatBRL(refundableLeft(order))}. O
-              cliente é avisado por e-mail.
-            </p>
-            {/* A chave refaz o formulário (e o requestId) quando o saldo muda. */}
+            <div className="mb-3 rounded-lg border border-primary-gold/10 bg-primary-gold/5 px-3 py-2.5">
+              <span className="block text-[10px] font-medium uppercase tracking-wider text-primary-gold/40">
+                Disponível para reembolso
+              </span>
+
+              <strong className="mt-0.5 block text-sm text-primary-gold/90">
+                {formatBRL(refundableLeft(order))}
+              </strong>
+
+              <p className="mt-1 text-[11px] text-primary-gold/50">
+                O cliente será avisado por e-mail.
+              </p>
+            </div>
+
+            {/* A chave refaz o formulário e o requestId quando o saldo muda. */}
             <RefundForm
               key={`${order.id}:${refundableLeft(order)}`}
               order={order}
