@@ -46,9 +46,11 @@ function RulesSheet({ onClosed }: { onClosed: () => void }) {
         </div>
       )}
     >
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 p-3">
         {!rules ? (
-          <p className="text-sm text-primary-gold/55 text-center">Carregando regras...</p>
+          <p className="text-sm text-primary-gold/55 text-center">
+            Carregando regras...
+          </p>
         ) : rules.sections.length === 0 ? (
           <p className="text-sm text-primary-gold/55 text-center">
             As regras ainda não foram publicadas.
@@ -79,7 +81,13 @@ function RulesSheet({ onClosed }: { onClosed: () => void }) {
  * dentro do <label> do aceite, um clique no painel marcaria o checkbox, e
  * dentro de um <form> os botões poderiam enviá-lo.
  */
-export function RulesLink({ children, className }: { children: ReactNode; className?: string }) {
+export function RulesLink({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
 
   const openSheet = (event: MouseEvent<HTMLButtonElement>) => {
@@ -94,7 +102,11 @@ export function RulesLink({ children, className }: { children: ReactNode; classN
       <button type="button" onClick={openSheet} className={className}>
         {children}
       </button>
-      {open && createPortal(<RulesSheet onClosed={() => setOpen(false)} />, document.body)}
+      {open &&
+        createPortal(
+          <RulesSheet onClosed={() => setOpen(false)} />,
+          document.body,
+        )}
     </>
   );
 }

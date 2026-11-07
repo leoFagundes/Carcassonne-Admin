@@ -39,7 +39,10 @@ export default function RentalPageShell({
         <div className="hex-bg-rental fixed inset-0 pointer-events-none z-0" />
         <div
           className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] max-w-full h-[300px] pointer-events-none z-0"
-          style={{ background: "radial-gradient(ellipse at center, rgba(230,197,107,0.06) 0%, transparent 70%)" }}
+          style={{
+            background:
+              "radial-gradient(ellipse at center, rgba(230,197,107,0.06) 0%, transparent 70%)",
+          }}
         />
         <div className="relative z-10">
           <RentalHeader cartCount={cartCount} />
@@ -55,7 +58,9 @@ export default function RentalPageShell({
             </Link>
             {aside}
           </div>
-          <h1 className="font-cinzel text-xl sm:text-3xl text-center tracking-widest uppercase">{title}</h1>
+          <h1 className="font-cinzel text-xl sm:text-3xl text-center tracking-widest uppercase">
+            {title}
+          </h1>
           {top}
           {children}
         </main>
