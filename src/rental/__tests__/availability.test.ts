@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { availabilityFor, gameAvailability, pickUnit } from "../availability";
+import { availabilityFor, blockReason, gameAvailability, pickUnit } from "../availability";
 import { bk, unit } from "./fixtures";
 
 const today = "2026-11-05";
@@ -178,5 +178,44 @@ describe("folga entre aluguéis (gapDays)", () => {
   it("folga inválida vira 1", () => {
     expect(availabilityFor(back23, "2026-11-24", today, { gapDays: 0 })).toEqual({ ok: true });
     expect(availabilityFor(back23, "2026-11-24", today, { gapDays: 99 })).toEqual({ ok: true });
+  });
+});
+
+describe("blockReason", () => {
+  const today = "2026-11-05";
+  const reserved = { units: [unit("u1")], bookings: [bk("u1", "2026-11-16", "2026-11-23", "reserved")], rentalDays: 7 };
+  const out = { units: [unit("u1")], bookings: [bk("u1", "2026-11-01", "2026-11-08", "picked_up")], rentalDays: 7 };
+
+  it("livre: sem motivo", () => {
+    expect(blockReason(reserved, "2026-11-05", today)).toBeNull();
+  });
+
+  it("reservado por outro cliente no período", () => {
+    expect(blockReason(reserved, "2026-11-18", today)).toEqual({
+      kind: "reserved",
+      from: "2026-11-16",
+      to: "2026-11-23",
+      copies: 1,
+    });
+    // a janela de 7 dias a partir de 10/11 encosta na reserva
+    expect(blockReason(reserved, "2026-11-10", today)).toMatchObject({ kind: "reserved" });
+  });
+
+  it("com outro cliente", () => {
+    expect(blockReason(out, "2026-11-07", today)).toEqual({ kind: "with_customer", until: "2026-11-08", copies: 1 });
+  });
+
+  it("sem fila: depois de uma reserva é 'behind'", () => {
+    expect(blockReason(reserved, "2026-11-28", today, { allowQueue: false })).toEqual({
+      kind: "behind",
+      from: "2026-11-16",
+      to: "2026-11-23",
+      copies: 1,
+    });
+    expect(blockReason(out, "2026-11-20", today, { allowQueue: false })).toMatchObject({ kind: "with_customer" });
+  });
+
+  it("sem cópias ativas", () => {
+    expect(blockReason({ units: [], bookings: [], rentalDays: 7 }, today, today)).toEqual({ kind: "no_copies" });
   });
 });

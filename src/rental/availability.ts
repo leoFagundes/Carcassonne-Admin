@@ -190,3 +190,58 @@ export function pickUnit(game: GameLike, start: string, today: string, opts?: Av
   }
   return bestId;
 }
+
+/** Por que o jogo não pode ser retirado nessa data (para explicar ao cliente). */
+export type BlockReason =
+  | { kind: "no_copies" }
+  /** A cópia está com outro cliente até `until` (mais a folga). */
+  | { kind: "with_customer"; until: string; copies: number }
+  /** Já reservada por outro cliente nesse período (contando a folga). */
+  | { kind: "reserved"; from: string; to: string; copies: number }
+  /** Sem fila: seria depois de outro cliente, e o pub não permite. */
+  | { kind: "behind"; from: string; to: string; copies: number };
+
+export function blockReason(
+  game: GameLike,
+  start: string,
+  today: string,
+  opts?: AvailabilityOptions,
+): BlockReason | null {
+  const active = game.units.filter((u) => u.status === "active");
+  if (active.length === 0) return { kind: "no_copies" };
+  const end = addDays(start, game.rentalDays);
+  if (active.some((u) => unitAccepts(u.id, game.bookings, start, end, today, opts))) return null;
+
+  const gap = gapDaysOf(opts);
+  const extra = gap - 1;
+  let best: { reason: BlockReason; ends: string } | null = null;
+  for (const u of active) {
+    const mine = game.bookings
+      .filter((b) => b.unitId === u.id)
+      .sort((a, b) => (a.startDate < b.startDate ? -1 : 1));
+    const clash = mine.find(
+      (b) => b.startDate <= addDays(end, extra) && addDays(bookingEnd(b, today), extra) >= start,
+    );
+    let reason: BlockReason | null = null;
+    let ends = "";
+    if (clash) {
+      ends = bookingEnd(clash, today);
+      reason =
+        clash.status === "picked_up"
+          ? { kind: "with_customer", until: ends, copies: active.length }
+          : { kind: "reserved", from: clash.startDate, to: clash.dueDate, copies: active.length };
+    } else {
+      // Livre nas datas, mas atrás de outro cliente (fila desligada).
+      const ahead = [...mine].reverse().find((b) => b.startDate < start);
+      if (ahead) {
+        ends = bookingEnd(ahead, today);
+        reason =
+          ahead.status === "picked_up"
+            ? { kind: "with_customer", until: ends, copies: active.length }
+            : { kind: "behind", from: ahead.startDate, to: ahead.dueDate, copies: active.length };
+      }
+    }
+    if (reason && (!best || ends < best.ends)) best = { reason, ends };
+  }
+  return best?.reason ?? null;
+}

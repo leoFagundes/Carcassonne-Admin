@@ -514,6 +514,7 @@ export default function RentalShowcase() {
               availabilityOptions(settings),
             )}
             inCart={cart.has(detail.game.id)}
+            allowQueue={settings?.allowQueue !== false}
             onAdd={() => cart.add(detail.game.id)}
             onClosed={() => setDetail(null)}
           />

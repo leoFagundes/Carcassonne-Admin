@@ -16,7 +16,8 @@ export default function RootLayout({
 }>) {
   return (
     <ConfigGroup>
-      <div className="flex flex-col md:flex-row items-start w-screen h-screen">
+      {/* h-dvh: no celular, 100vh passa da área visível (barra do navegador) e corta o que fica embaixo */}
+      <div className="flex flex-col md:flex-row items-start w-screen h-dvh">
         <AuthStateRequired />
         <SessionTimer />
         <Sidebar />

@@ -23,7 +23,8 @@ import {
 } from "@/app/(client)/clientCollection/collectionUtils";
 import type { GameAvailability } from "@/rental/availability";
 import { formatBRL } from "@/rental/money";
-import { formatDateBR } from "@/rental/dates";
+import { formatDateBR, todaySP } from "@/rental/dates";
+import { liveBookings } from "@/rental/payments";
 import AvailabilityBadge from "./availabilityBadge";
 import { asBoardgame, type RentalGameWithId } from "./rentalGameCard";
 
@@ -46,7 +47,10 @@ export default function RentalGameDetail({
   inCart,
   onAdd,
   onClosed,
+  allowQueue = true,
 }: {
+  /** Fila desligada: só dá para pegar antes de quem já reservou. */
+  allowQueue?: boolean;
   game: RentalGameWithId;
   origin: HTMLElement | null;
   availability: GameAvailability;
@@ -58,6 +62,20 @@ export default function RentalGameDetail({
   const copies = game.units.filter((unit) => unit.status === "active").length;
   // "rented": todas as cópias com alguém e o pub não deixa entrar na fila.
   const unavailable = availability.state === "unavailable" || availability.state === "rented";
+  // Livre agora, mas já com reserva marcada em todas as cópias: avisa o período.
+  const today = todaySP();
+  const activeIds = game.units.filter((u) => u.status === "active").map((u) => u.id);
+  const upcoming = liveBookings(game.bookings, Date.now())
+    .filter((b) => activeIds.includes(b.unitId) && b.startDate > today)
+    .sort((a, b) => (a.startDate < b.startDate ? -1 : 1));
+  const everyCopyBooked = activeIds.length > 0 && activeIds.every((id) => upcoming.some((b) => b.unitId === id));
+  const upcomingNotice =
+    availability.state === "available" && everyCopyBooked
+      ? `Já há reserva de ${formatDateBR(upcoming[0].startDate)} a ${formatDateBR(upcoming[0].dueDate)}${
+          upcoming.length > 1 ? " (e outras datas)" : ""
+        }. ${allowQueue ? "Dá para alugar antes ou depois desse período" : "Dá para alugar só antes desse período"}: no pedido aparecem as datas livres.`
+      : null;
+
   // Aviso logo acima do botão quando o jogo não está livre agora.
   const notice =
     availability.state === "from"
@@ -72,7 +90,7 @@ export default function RentalGameDetail({
             }.`
           : unavailable
           ? "Este jogo está indisponível no momento."
-          : null;
+          : upcomingNotice;
 
   return (
     <DetailSheet

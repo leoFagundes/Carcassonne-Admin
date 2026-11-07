@@ -255,7 +255,7 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
       />
 
       {/* Salvar sempre à mão, com aviso de alterações pendentes */}
-      <div className="sticky bottom-3 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary-gold/25 bg-primary-black/90 backdrop-blur px-3 py-2.5">
+      <div className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary-gold/25 bg-primary-black/90 backdrop-blur px-3 py-2.5">
         {dirty ? (
           <span className="flex items-center gap-1.5 text-xs text-yellow-400/90">
             <LuTriangleAlert size={13} className="shrink-0" />

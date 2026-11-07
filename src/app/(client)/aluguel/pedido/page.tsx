@@ -11,7 +11,7 @@ import type { RentalGameType, RentalRulesType, RentalSettingsType } from "@/type
 import RentalGameRepository from "@/services/repositories/RentalGameRepository";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import { accountApi, rentalApi } from "@/services/rentalApi";
-import { availabilityFor, availabilityOptions } from "@/rental/availability";
+import { availabilityFor, availabilityOptions, blockReason, gapDaysOf, type BlockReason } from "@/rental/availability";
 import { withLiveBookings } from "@/rental/payments";
 import { addDays, formatDateBR, todaySP, weekdayOf } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
@@ -37,6 +37,18 @@ const mainBtn =
   "h-11 px-4 rounded-xl bg-primary-gold text-primary-black text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center";
 const ghostBtn =
   "h-11 px-4 rounded-xl border border-primary-gold/40 text-primary-gold text-sm font-semibold hover:bg-primary-gold/10 transition-colors inline-flex items-center justify-center";
+
+/** Por que o jogo não sai nessa data, em palavras do cliente. */
+function reasonText(r: BlockReason, gapDays: number): string {
+  if (r.kind === "no_copies") return "Este jogo está sem cópias disponíveis no momento.";
+  const all = r.copies > 1 ? `As ${r.copies} cópias estão ocupadas nessa data. ` : "";
+  const gap = gapDays > 1 ? ` O pub deixa ${gapDays} dias de folga entre um aluguel e outro.` : "";
+  if (r.kind === "with_customer") return `${all}Está com outro cliente até ${formatDateBR(r.until)}.${gap}`;
+  if (r.kind === "reserved") {
+    return `${all}Já reservado por outro cliente de ${formatDateBR(r.from)} a ${formatDateBR(r.to)}.${gap}`;
+  }
+  return `${all}Já reservado de ${formatDateBR(r.from)} a ${formatDateBR(r.to)}, e o pub não permite reservar para depois de outro cliente.`;
+}
 
 /** Checkout do aluguel: revisão do carrinho, data de retirada e confirmação. */
 export default function PedidoPage() {
@@ -202,6 +214,16 @@ export default function PedidoPage() {
   else if (needsLogin) buttonLabel = "Entrar para confirmar";
   else if (needsProfile) buttonLabel = "Completar cadastro";
 
+  const avOpts = availabilityOptions(settings);
+  const liveGames = validGames.map((g) => withLiveBookings(g, Date.now()));
+  /** Primeira/última data liberada para retirada em que o jogo está livre (para sugerir). */
+  const okOn = (game: Game, date: string) =>
+    availabilityFor(withLiveBookings(game, Date.now()), date, today, avOpts).ok;
+  const busyDates = new Set(
+    dates
+      .filter((d) => d.enabled && liveGames.some((g) => !availabilityFor(g, d.date, today, avOpts).ok))
+      .map((d) => d.date),
+  );
   const returnDates = startDate ? validGames.map((g) => addDays(startDate, g.rentalDays)) : [];
   const firstReturn = returnDates.length ? [...returnDates].sort()[0] : undefined;
   const showSteps = !redirecting && !done && dataReady && cart.gameIds.length > 0;
@@ -293,8 +315,14 @@ export default function PedidoPage() {
                   game && startDate
                     ? availabilityFor(withLiveBookings(game, Date.now()), startDate, today, availabilityOptions(settings))
                     : null;
-                const next = av && !av.ok ? av.nextStart : null;
-                const canUseNext = !!next && dates.some((d) => d.date === next && d.enabled);
+                const reason =
+                  game && startDate && av && !av.ok
+                    ? blockReason(withLiveBookings(game, Date.now()), startDate, today, avOpts)
+                    : null;
+                // Datas liberadas mais próximas, antes e depois, em que este jogo sai.
+                const open = game && av && !av.ok && startDate ? dates.filter((d) => d.enabled && okOn(game, d.date)) : [];
+                const before = startDate ? [...open].reverse().find((d) => d.date < startDate)?.date : undefined;
+                const after = startDate ? open.find((d) => d.date > startDate)?.date : undefined;
                 const flagged = flaggedId === id || (av !== null && !av.ok) || !game;
                 return (
                   <li
@@ -318,11 +346,15 @@ export default function PedidoPage() {
                       {!game ? (
                         <span className="text-xs text-orange-200">Não está mais disponível — remova para continuar.</span>
                       ) : av && !av.ok ? (
-                        <span className="text-xs text-orange-200">
-                          {av.nextStart
-                            ? `Sem cópia livre nesta data. Disponível a partir de ${formatDateBR(av.nextStart)}.`
-                            : "Indisponível para esta data."}
-                        </span>
+                        <div className="flex flex-col gap-1 text-xs text-orange-200">
+                          <span className="font-semibold">Não sai em {formatDateBR(startDate!)}.</span>
+                          {reason && <span className="text-orange-100/85">{reasonText(reason, gapDaysOf(avOpts))}</span>}
+                          <span className="text-orange-100/85">
+                            {before || after
+                              ? "Escolha uma destas datas para retirar:"
+                              : `Nenhuma data livre nos próximos ${settings.maxAdvanceDays} dias. Remova o jogo para seguir com os outros.`}
+                          </span>
+                        </div>
                       ) : (
                         startDate && (
                           <span className="text-xs text-primary-gold/55">
@@ -332,11 +364,11 @@ export default function PedidoPage() {
                         )
                       )}
                       <div className="flex flex-wrap items-center gap-2">
-                        {canUseNext && next && (
-                          <button type="button" className={smallBtn} onClick={() => changeDate(next)}>
-                            Retirar em {formatDateBR(next)}
+                        {[before, after].filter((d): d is string => !!d).map((d) => (
+                          <button key={d} type="button" className={smallBtn} onClick={() => changeDate(d)}>
+                            Retirar {dayLabel(d)}
                           </button>
-                        )}
+                        ))}
                         <button
                           type="button"
                           onClick={() => cart.remove(id)}
@@ -368,6 +400,7 @@ export default function PedidoPage() {
                 <div className="grid grid-cols-4 sm:grid-cols-5 gap-2" role="radiogroup" aria-label="Data de retirada">
                   {dates.map(({ date, enabled }) => {
                     const selected = date === startDate;
+                    const busy = enabled && busyDates.has(date);
                     return (
                       <button
                         key={date}
@@ -376,8 +409,8 @@ export default function PedidoPage() {
                         aria-checked={selected}
                         disabled={!enabled}
                         onClick={() => changeDate(date)}
-                        title={enabled ? undefined : "Sem retirada neste dia"}
-                        className={`flex flex-col items-center py-2 rounded-lg border text-xs transition-colors ${
+                        title={!enabled ? "Sem retirada neste dia" : busy ? "Algum jogo do pedido já está reservado nesse período" : undefined}
+                        className={`relative flex flex-col items-center py-2 rounded-lg border text-xs transition-colors ${
                           selected
                             ? "border-primary-gold bg-primary-gold text-primary-black"
                             : enabled
@@ -388,11 +421,25 @@ export default function PedidoPage() {
                         <span className="uppercase text-[10px]">
                           {date === today ? "hoje" : WEEKDAYS[weekdayOf(date)]}
                         </span>
-                        <span className="text-sm font-semibold">{formatDateBR(date)}</span>
+                        <span className={`text-sm font-semibold ${busy && !selected ? "line-through decoration-orange-300/70" : ""}`}>
+                          {formatDateBR(date)}
+                        </span>
+                        {busy && (
+                          <span
+                            aria-label="Ocupado para algum jogo do pedido"
+                            className={`absolute top-1 right-1 h-1.5 w-1.5 rounded-full ${selected ? "bg-primary-black" : "bg-orange-400"}`}
+                          />
+                        )}
                       </button>
                     );
                   })}
                 </div>
+                {busyDates.size > 0 && (
+                  <p className="flex items-center gap-1.5 text-[11px] text-primary-gold/55">
+                    <span className="h-1.5 w-1.5 rounded-full bg-orange-400" /> Datas riscadas: algum jogo do seu pedido já está
+                    reservado nesse período.
+                  </p>
+                )}
                 <p className="text-xs text-primary-gold/60">
                   Retirada no balcão do Carcassonne a partir de <strong className="text-primary-gold">{dayLabel(startDate)}</strong>
                   {firstReturn && (
