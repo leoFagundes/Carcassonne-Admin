@@ -8,7 +8,6 @@ import GamesTab from "./gamesTab";
 import RentalsTab from "./rentalsTab";
 import CustomersTab from "./customersTab";
 import RulesAndSettingsTab from "./rulesAndSettingsTab";
-import ConstructionGate from "./constructionGate";
 import type { RentalOrderType, RentalType } from "@/types";
 import RentalRepository from "@/services/repositories/RentalRepository";
 import RentalOrderRepository from "@/services/repositories/RentalOrderRepository";
@@ -23,7 +22,13 @@ function usePendingCount(): number {
   useEffect(() => RentalRepository.subscribeToAll(setRentals), []);
   useEffect(() => RentalOrderRepository.subscribeToAll(setOrders), []);
   const a = rentalAttention(rentals, today, orders);
-  return a.pickupsToday + a.returnsToday + a.overdue + a.notPickedUp + a.refundReviews;
+  return (
+    a.pickupsToday +
+    a.returnsToday +
+    a.overdue +
+    a.notPickedUp +
+    a.refundReviews
+  );
 }
 
 const TABS = [
@@ -48,11 +53,15 @@ function AluguelAdmin() {
         <div className="flex items-center justify-center gap-3 sm:gap-4 w-full">
           <div className="flex items-center gap-2 min-w-0">
             <LuPackage size={30} className="text-primary-gold/70 shrink-0" />
-            <h1 className="text-2xl sm:text-3xl font-semibold text-primary-gold">Aluguel de Jogos</h1>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-primary-gold">
+              Aluguel de Jogos
+            </h1>
           </div>
           <Tooltip direction="bottom" content="Ir para visão do cliente">
             <button
-              onClick={() => window.open("/aluguel", "_blank", "noopener,noreferrer")}
+              onClick={() =>
+                window.open("/aluguel", "_blank", "noopener,noreferrer")
+              }
               className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
             >
               <LuLink size={16} />
@@ -96,10 +105,8 @@ function AluguelAdmin() {
 
 export default function AluguelAdminPage() {
   return (
-    <ConstructionGate>
-      <Suspense fallback={null}>
-        <AluguelAdmin />
-      </Suspense>
-    </ConstructionGate>
+    <Suspense fallback={null}>
+      <AluguelAdmin />
+    </Suspense>
   );
 }

@@ -3,16 +3,14 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { LuConstruction, LuLock } from "react-icons/lu";
 
-/**
- * Tela "Em construção" por cima do aluguel no admin, enquanto ele é testado em
- * produção. A senha é fixa de propósito: só esconde a área de quem não está
- * testando, não é segurança (as ações continuam protegidas no servidor).
- * Para liberar de vez, remova o <ConstructionGate> de page.tsx.
- */
 const PASSWORD = "1235";
 const STORAGE_KEY = "carcassonne-aluguel-admin-unlocked";
 
-export default function ConstructionGate({ children }: { children: ReactNode }) {
+export default function ConstructionGate({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const [unlocked, setUnlocked] = useState<boolean | null>(null);
   const [value, setValue] = useState("");
   const [error, setError] = useState(false);
@@ -53,16 +51,22 @@ export default function ConstructionGate({ children }: { children: ReactNode }) 
       >
         <LuConstruction size={40} className="text-primary-gold/70" />
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-xl font-semibold text-primary-gold">Aluguel de Jogos</h1>
+          <h1 className="text-xl font-semibold text-primary-gold">
+            Aluguel de Jogos
+          </h1>
           <p className="text-sm text-primary-gold/70">
             Esta funcionalidade está em construção e ainda não está disponível.
           </p>
         </div>
         <label className="flex flex-col gap-1.5 w-full text-left">
-          <span className="text-xs text-primary-gold/55">Senha de acesso para testes</span>
+          <span className="text-xs text-primary-gold/55">
+            Senha de acesso para testes
+          </span>
           <div
             className={`flex items-center gap-2 rounded-xl border bg-primary-black px-3 h-11 ${
-              error ? "border-invalid-color/60" : "border-primary-gold/20 focus-within:border-primary-gold/60"
+              error
+                ? "border-invalid-color/60"
+                : "border-primary-gold/20 focus-within:border-primary-gold/60"
             }`}
           >
             <LuLock size={14} className="text-primary-gold/40 shrink-0" />
@@ -79,7 +83,9 @@ export default function ConstructionGate({ children }: { children: ReactNode }) 
               className="flex-1 min-w-0 bg-transparent text-sm text-primary-gold outline-none"
             />
           </div>
-          {error && <span className="text-xs text-invalid-color">Senha incorreta.</span>}
+          {error && (
+            <span className="text-xs text-invalid-color">Senha incorreta.</span>
+          )}
         </label>
         <button
           type="submit"
