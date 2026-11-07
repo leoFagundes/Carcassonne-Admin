@@ -349,6 +349,11 @@ export default function PedidoPage() {
                         <div className="flex flex-col gap-1 text-xs text-orange-200">
                           <span className="font-semibold">Não sai em {formatDateBR(startDate!)}.</span>
                           {reason && <span className="text-orange-100/85">{reasonText(reason, gapDaysOf(avOpts))}</span>}
+                          {settings.allowQueue === false && !after && reason && reason.kind !== "no_copies" && (
+                            <span className="text-orange-100/85">
+                              Depois disso, o pub só libera novas reservas quando a cópia voltar.
+                            </span>
+                          )}
                           <span className="text-orange-100/85">
                             {before || after
                               ? "Escolha uma destas datas para retirar:"
@@ -436,8 +441,8 @@ export default function PedidoPage() {
                 </div>
                 {busyDates.size > 0 && (
                   <p className="flex items-center gap-1.5 text-[11px] text-primary-gold/55">
-                    <span className="h-1.5 w-1.5 rounded-full bg-orange-400" /> Datas riscadas: algum jogo do seu pedido já está
-                    reservado nesse período.
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-orange-400" /> Datas riscadas: algum jogo do seu pedido não
+                    está livre nesse dia (o motivo aparece no jogo).
                   </p>
                 )}
                 <p className="text-xs text-primary-gold/60">
