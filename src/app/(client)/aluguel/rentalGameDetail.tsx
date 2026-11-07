@@ -28,13 +28,23 @@ import { liveBookings } from "@/rental/payments";
 import AvailabilityBadge from "./availabilityBadge";
 import { asBoardgame, type RentalGameWithId } from "./rentalGameCard";
 
-function Stat({ icon: Icon, label, children }: { icon: IconType; label: string; children: ReactNode }) {
+function Stat({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: IconType;
+  label: string;
+  children: ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-1.5 rounded-xl border border-primary-gold/15 bg-primary-black/40 px-3 py-2.5 min-w-0">
       <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">
         <Icon size={11} /> {label}
       </span>
-      <span className="text-sm font-semibold text-primary-gold leading-tight">{children}</span>
+      <span className="text-sm font-semibold text-primary-gold leading-tight">
+        {children}
+      </span>
     </div>
   );
 }
@@ -61,14 +71,19 @@ export default function RentalGameDetail({
   const board = asBoardgame(game);
   const copies = game.units.filter((unit) => unit.status === "active").length;
   // "rented": todas as cópias com alguém e o pub não deixa entrar na fila.
-  const unavailable = availability.state === "unavailable" || availability.state === "rented";
+  const unavailable =
+    availability.state === "unavailable" || availability.state === "rented";
   // Livre agora, mas já com reserva marcada em todas as cópias: avisa o período.
   const today = todaySP();
-  const activeIds = game.units.filter((u) => u.status === "active").map((u) => u.id);
+  const activeIds = game.units
+    .filter((u) => u.status === "active")
+    .map((u) => u.id);
   const upcoming = liveBookings(game.bookings, Date.now())
     .filter((b) => activeIds.includes(b.unitId) && b.startDate > today)
     .sort((a, b) => (a.startDate < b.startDate ? -1 : 1));
-  const everyCopyBooked = activeIds.length > 0 && activeIds.every((id) => upcoming.some((b) => b.unitId === id));
+  const everyCopyBooked =
+    activeIds.length > 0 &&
+    activeIds.every((id) => upcoming.some((b) => b.unitId === id));
   const upcomingNotice =
     availability.state === "available" && everyCopyBooked
       ? `Já há reserva de ${formatDateBR(upcoming[0].startDate)} a ${formatDateBR(upcoming[0].dueDate)}${
@@ -80,17 +95,21 @@ export default function RentalGameDetail({
   const notice =
     availability.state === "from"
       ? `Todas as cópias estão alugadas agora. Disponível a partir de ${formatDateBR(availability.start)}${
-          availability.daysUntilReturn ? ` (em ${availability.daysUntilReturn} ${availability.daysUntilReturn === 1 ? "dia" : "dias"})` : ""
+          availability.daysUntilReturn
+            ? ` (em ${availability.daysUntilReturn} ${availability.daysUntilReturn === 1 ? "dia" : "dias"})`
+            : ""
         }: você pode adicionar ao pedido e escolher essa data para retirar.`
       : availability.state === "overdue"
         ? "A cópia está com um cliente e a devolução está atrasada, então ainda não sabemos quando volta. Você pode adicionar e ver no pedido as datas livres."
         : availability.state === "rented"
           ? `Todas as cópias estão com clientes agora. Este jogo só pode ser alugado depois que uma delas voltar${
-              availability.returnDate ? ` (previsão: ${formatDateBR(availability.returnDate)})` : ""
+              availability.returnDate
+                ? ` (previsão: ${formatDateBR(availability.returnDate)})`
+                : ""
             }.`
           : unavailable
-          ? "Este jogo está indisponível no momento."
-          : upcomingNotice;
+            ? "Este jogo está indisponível no momento."
+            : upcomingNotice;
 
   return (
     <DetailSheet
@@ -102,7 +121,12 @@ export default function RentalGameDetail({
           <LuTag size={15} /> {formatBRL(game.price)}
         </span>
       }
-      badges={<AvailabilityBadge availability={availability} className="!text-xs !px-2.5 !py-1" />}
+      badges={
+        <AvailabilityBadge
+          availability={availability}
+          className="!text-xs !px-2.5 !py-1"
+        />
+      }
       origin={origin}
       onClosed={onClosed}
       footer={(close) => (
@@ -119,37 +143,38 @@ export default function RentalGameDetail({
               {notice}
             </p>
           )}
-        <div className="flex gap-2">
-          {inCart ? (
-            // Já está no pedido: o próximo passo natural é revisar.
-            <Link
-              href="/aluguel/pedido"
-              className="flex-1 flex items-center justify-center gap-2 h-10 rounded-lg border border-primary-gold bg-primary-gold text-primary-black text-sm font-semibold hover:bg-primary-gold/90"
-            >
-              No pedido · Ver pedido <LuArrowRight size={16} />
-            </Link>
-          ) : (
+          <div className="flex gap-2">
+            {inCart ? (
+              // Já está no pedido: o próximo passo natural é revisar.
+              <Link
+                href="/aluguel/pedido"
+                className="flex-1 flex items-center justify-center gap-2 h-10 rounded-lg border bg-primary-black/70 border-emerald-400/60 text-emerald-300 text-sm font-semibold hover:bg-primary-black"
+              >
+                Já adicionado · Ver pedido <LuArrowRight size={16} />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled={unavailable}
+                onClick={onAdd}
+                className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-lg border text-sm font-semibold transition-colors ${
+                  unavailable
+                    ? "border-primary-gold/15 bg-primary-gold/5 text-primary-gold/35 cursor-not-allowed"
+                    : "border-primary-gold bg-primary-gold text-primary-black hover:bg-primary-gold/90 cursor-pointer"
+                }`}
+              >
+                <LuPlus size={16} />{" "}
+                {unavailable ? "Indisponível" : "Adicionar ao pedido"}
+              </button>
+            )}
             <button
               type="button"
-              disabled={unavailable}
-              onClick={onAdd}
-              className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-lg border text-sm font-semibold transition-colors ${
-                unavailable
-                  ? "border-primary-gold/15 bg-primary-gold/5 text-primary-gold/35 cursor-not-allowed"
-                  : "border-primary-gold bg-primary-gold text-primary-black hover:bg-primary-gold/90 cursor-pointer"
-              }`}
+              onClick={close}
+              className="h-10 px-5 rounded-lg border border-primary-gold/30 text-primary-gold/80 hover:text-primary-gold hover:border-primary-gold/60 text-sm transition-colors cursor-pointer"
             >
-              <LuPlus size={16} /> {unavailable ? "Indisponível" : "Adicionar ao pedido"}
+              Voltar
             </button>
-          )}
-          <button
-            type="button"
-            onClick={close}
-            className="h-10 px-5 rounded-lg border border-primary-gold/30 text-primary-gold/80 hover:text-primary-gold hover:border-primary-gold/60 text-sm transition-colors cursor-pointer"
-          >
-            Voltar
-          </button>
-        </div>
+          </div>
         </div>
       )}
     >
