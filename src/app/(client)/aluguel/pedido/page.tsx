@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { FiCheckCircle, FiTrash2 } from "react-icons/fi";
+import { FiCalendar, FiCheckCircle, FiTrash2 } from "react-icons/fi";
 import { LuShoppingBag } from "react-icons/lu";
 import ShowcaseImage from "@/components/showcase/showcaseImage";
 import { BOARDGAME_PLACEHOLDER } from "@/app/(client)/clientCollection/collectionUtils";
@@ -578,25 +578,27 @@ export default function PedidoPage() {
                   <p className="flex items-center gap-1.5 text-[11px] text-primary-gold/55">
                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-orange-400" />{" "}
                     Datas riscadas: algum jogo do seu pedido não está livre
-                    nesse dia (o motivo aparece no jogo).
+                    nesse dia.
                   </p>
                 )}
-                <p className="text-xs text-primary-gold/60">
-                  Retirada no balcão do Carcassonne a partir de{" "}
-                  <strong className="text-primary-gold">
-                    {dayLabel(startDate)}
-                  </strong>
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm">
+                    <FiCalendar size={14} className="inline -mt-0.5 mr-1" />
+                    Retirada:{" "}
+                    <strong className="text-primary-gold text-base">
+                      a partir de {dayLabel(startDate)}
+                    </strong>
+                  </span>
                   {firstReturn && (
-                    <>
-                      {" "}
-                      · devolução até{" "}
-                      <strong className="text-primary-gold">
-                        {dayLabel(firstReturn)}
+                    <span className="text-sm">
+                      <FiCalendar size={14} className="inline -mt-0.5 mr-1" />
+                      Devolução:{" "}
+                      <strong className="text-primary-gold text-base">
+                        até {dayLabel(firstReturn)}
                       </strong>
-                    </>
+                    </span>
                   )}
-                  .
-                </p>
+                </div>
               </>
             )}
           </section>
@@ -612,16 +614,19 @@ export default function PedidoPage() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Link
-                    href={withNext("/aluguel/entrar", "/aluguel/pedido")}
-                    className={`${mainBtn} flex-1`}
-                  >
-                    Entrar
-                  </Link>
-                  <Link
                     href={withNext("/aluguel/cadastro", "/aluguel/pedido")}
-                    className={`${ghostBtn} flex-1`}
+                    className={`${mainBtn} flex-1 py-2`}
                   >
                     Criar conta
+                  </Link>
+                  <span className="sm:hidden flex w-full justify-center">
+                    ou
+                  </span>
+                  <Link
+                    href={withNext("/aluguel/entrar", "/aluguel/pedido")}
+                    className={`${ghostBtn} flex-1 py-2`}
+                  >
+                    Já tenho uma conta
                   </Link>
                 </div>
               </div>
@@ -681,7 +686,12 @@ export default function PedidoPage() {
                     <RulesLink className="underline text-primary-gold cursor-pointer">
                       regras do aluguel
                     </RulesLink>{" "}
-                    (versão {rules.version}).
+                    (versão {rules.version}).{" "}
+                    {!accepted ? (
+                      <span className="text-orange-400 animate-pulse">
+                        (marque para continuar)
+                      </span>
+                    ) : null}
                   </span>
                 </label>
               </>
