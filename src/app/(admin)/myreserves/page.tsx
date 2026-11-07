@@ -136,7 +136,11 @@ export default function Rerserve() {
     setSettingsOpen(true);
     params.delete("config");
     const rest = params.toString();
-    window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + (rest ? `?${rest}` : ""),
+    );
   }, []);
   const [fullCalendarDate, setFullCalendarDate] = useState(
     today(getLocalTimeZone()),
@@ -582,8 +586,7 @@ export default function Rerserve() {
             r.name?.toLowerCase().includes(q) ||
             r.phone?.includes(q) ||
             r.email?.toLowerCase().includes(q) ||
-            (qCode !== "" &&
-              normalizeReserveCode(r.code ?? "").includes(qCode))
+            (qCode !== "" && normalizeReserveCode(r.code ?? "").includes(qCode))
           );
         })
         .sort((a, b) => {
@@ -1544,7 +1547,7 @@ Equipe Carcassonne Pub`,
                                         e.target.value,
                                       )
                                     }
-                                    width="!w-[40px] !min-w-[80px] !py-1 !px-0"
+                                    width="!w-[40px] !min-w-[80px] !py-1 !px-2"
                                   />
                                 </div>
                               </div>
@@ -1910,7 +1913,13 @@ Equipe Carcassonne Pub`,
         </div>
       )}
 
-      <Modal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} noPadding isFixed patternCloseButton={false}>
+      <Modal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        noPadding
+        isFixed
+        patternCloseButton={false}
+      >
         <div className="relative w-[min(100%-2rem,820px)] max-h-[90vh] overflow-y-auto rounded-2xl border border-primary-gold/20 bg-primary-black shadow-2xl">
           <button
             onClick={() => setSettingsOpen(false)}
@@ -1920,7 +1929,10 @@ Equipe Carcassonne Pub`,
             <LuX size={16} />
           </button>
           <ReserveSettings
-            alsoIn={{ label: "Configurações → Reservas", href: "/carcassonne?tab=configuracoes&section=reservas" }}
+            alsoIn={{
+              label: "Configurações → Reservas",
+              href: "/carcassonne?tab=configuracoes&section=reservas",
+            }}
             className="border-0 rounded-none"
           />
         </div>
