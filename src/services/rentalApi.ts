@@ -102,6 +102,9 @@ export const rentalApi = {
   setBlocked: (uid: string, blocked: boolean, reason?: string) =>
     call<null>(`/api/rental/customers/${encodeURIComponent(uid)}/block`, { blocked, reason }),
 
+  /** Admin: expira de vez os pedidos online cujo prazo para pagar acabou (mesma rotina do cron). */
+  sweepExpired: () => call<{ expired: number; paid: number; skipped: number }>("/api/rental/payments/sweep", {}),
+
   /** Admin: exclui de vez aluguéis encerrados (até 200 por chamada). */
   deleteRentals: (ids: string[]) =>
     call<{ deleted: number; skipped: { id: string; message: string }[] }>("/api/rental/rentals/delete", {

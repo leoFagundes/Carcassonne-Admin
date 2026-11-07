@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { rentalApi } from "@/services/rentalApi";
 import { FaWhatsapp } from "react-icons/fa";
 import { LuPackage } from "react-icons/lu";
 import type { RentalOrderType, RentalStatus, RentalType } from "@/types";
@@ -11,13 +12,30 @@ import RentalConfigRepository from "@/services/repositories/RentalConfigReposito
 import RentalOrderRepository from "@/services/repositories/RentalOrderRepository";
 import Modal from "@/components/modal";
 import { orderNeedsAttention } from "@/rental/attention";
-import { formatCountdown, orderPaymentView, rentalRefundInfo, type OrderPaymentView } from "@/rental/payments";
+import {
+  formatCountdown,
+  isOrderExpirable,
+  orderPaymentView,
+  rentalRefundInfo,
+  type OrderPaymentView,
+} from "@/rental/payments";
+
+/** Aguardando pagamento cujo pedido já fechou sem pagar (prazo vencido ou cliente cancelou). */
+function unpaidClosed(
+  rental: { status: RentalStatus },
+  order: RentalOrderType | undefined,
+  now: number,
+): "expired" | "canceled" | undefined {
+  if (rental.status !== "awaiting_payment" || !order) return undefined;
+  const state = orderPaymentView(order, now).state;
+  return state === "expired" ? "expired" : state === "canceled" ? "canceled" : undefined;
+}
 import { rentalAttention } from "@/rental/attention";
 import { diffDays, formatDateBR } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
 import RentalActions from "./rentalActions";
 import { CustomerModal } from "./customerDetail";
-import { plural, useNow, useToday, whatsappLink } from "./rentalShared";
+import { formatStamp, plural, useNow, useToday, whatsappLink } from "./rentalShared";
 import OrderDetail from "./orderDetail";
 import RefundBand from "./refundBand";
 import BulkDelete from "./bulkDelete";
@@ -123,7 +141,9 @@ const TONE: Record<Tone, { text: string; border: string }> = {
 };
 
 /** Uma situação só, com cor: o que o admin precisa saber deste aluguel agora. */
-function rentalSituation(rental: Rental, today: string): { label: string; tone: Tone } {
+function rentalSituation(rental: Rental, today: string, unpaid?: "expired" | "canceled"): { label: string; tone: Tone } {
+  // O status gravado só muda quando a varredura roda; o prazo já diz que acabou.
+  if (unpaid) return { label: unpaid === "expired" ? "Pagamento expirado" : "Cancelado antes de pagar", tone: "muted" };
   switch (rental.status) {
     case "awaiting_payment":
       return { label: "Aguardando pagamento", tone: "orange" };
@@ -208,8 +228,10 @@ function RentalRow({
   onOpenOrder: (order: Order) => void;
   onOpenCustomer: (rental: Rental) => void;
 }) {
-  const situation = rentalSituation(rental, today);
+  const unpaid = unpaidClosed(rental, order, now);
+  const situation = rentalSituation(rental, today, unpaid);
   const finished = rental.status === "returned" || rental.status === "canceled";
+  const placedAt = formatStamp(rental.createdAt);
   const canceled = rental.status === "canceled";
   const hint = dateHint(rental, today);
   const cancel = cancelText(rental);
@@ -317,13 +339,14 @@ function RentalRow({
         ) : (
           <span className="text-[11px] text-primary-gold/45">Pedido {rental.code}</span>
         )}
+        {placedAt && <span className="text-[11px] text-primary-gold/40">feito em {placedAt}</span>}
         {finished && (
           <div className="ml-auto">
             <RentalActions rental={rental} order={order} />
           </div>
         )}
       </div>
-      {!finished && <RentalActions rental={rental} order={order} />}
+      {!finished && !unpaid && <RentalActions rental={rental} order={order} />}
     </article>
   );
 }
@@ -365,6 +388,15 @@ export default function RentalsTab() {
   const attentionOrders = useMemo(() => orders.filter(orderNeedsAttention), [orders]);
   const openedOrder = orderOpen ? orderById.get(orderOpen) : undefined;
 
+  // Sem cron (ou entre uma rodada e outra), o admin aberto expira os vencidos de vez.
+  const hasExpirable = orders.some((o) => isOrderExpirable(o, now));
+  const lastSweep = useRef(0);
+  useEffect(() => {
+    if (!hasExpirable || Date.now() - lastSweep.current < 120_000) return;
+    lastSweep.current = Date.now();
+    void rentalApi.sweepExpired();
+  }, [hasExpirable, now]);
+
   const bands = useMemo(
     () => ({
       pickups: rentals.filter((r) => r.status === "reserved" && r.startDate === today),
@@ -386,13 +418,16 @@ export default function RentalsTab() {
     [rentals, words],
   );
   const paymentOk = (r: Rental) => matchesPaymentFilter(orderById.get(r.orderId), payment, now);
-  const filtered = searched.filter((r) => statusMatches(r, status) && paymentOk(r));
+  // Aguardando pagamento com o prazo vencido conta como cancelado nos filtros.
+  const asShown = (r: Rental): Rental =>
+    unpaidClosed(r, orderById.get(r.orderId), now) ? { ...r, status: "canceled" } : r;
+  const filtered = searched.filter((r) => statusMatches(asShown(r), status) && paymentOk(r));
   // Ordem do banco: os mais recentes primeiro (a urgência fica no quadro "Hoje").
 
-  const count = (s: StatusFilter) => searched.filter((r) => statusMatches(r, s) && paymentOk(r)).length;
+  const count = (s: StatusFilter) => searched.filter((r) => statusMatches(asShown(r), s) && paymentOk(r)).length;
   const countPayment = (p: PaymentFilter) =>
     searched.filter(
-      (r) => statusMatches(r, status) && matchesPaymentFilter(orderById.get(r.orderId), p, now),
+      (r) => statusMatches(asShown(r), status) && matchesPaymentFilter(orderById.get(r.orderId), p, now),
     ).length;
 
   return (

@@ -17,7 +17,7 @@ import {
 } from "@/rental/payments";
 import { RefundForm, ReviewForm } from "./refundForms";
 import OrderIssues from "./orderIssues";
-import { STATUS_LABEL, whatsappLink } from "./rentalShared";
+import { STATUS_LABEL, formatStamp, whatsappLink } from "./rentalShared";
 
 type Order = RentalOrderType & { id: string };
 type Rental = RentalType & { id: string };
@@ -168,6 +168,11 @@ export default function OrderDetail({
             </div>
           ))}
         </div>
+        {formatStamp(order.createdAt) && (
+          <p className="-mt-2 text-xs text-primary-gold/55">
+            Pedido feito em {formatStamp(order.createdAt)}
+          </p>
+        )}
         <div className="flex flex-wrap items-center gap-2">
           <PaymentBadge view={view} />
           <a
@@ -222,7 +227,13 @@ export default function OrderDetail({
                     {status && (
                       <span className="text-primary-gold/50">
                         {" "}
-                        · {STATUS_LABEL[status]}
+                        ·{" "}
+                        {status === "awaiting_payment" &&
+                        (view.state === "expired" || view.state === "canceled")
+                          ? view.state === "expired"
+                            ? "Pagamento expirado"
+                            : "Cancelado antes de pagar"
+                          : STATUS_LABEL[status]}
                       </span>
                     )}
                     {rental &&
