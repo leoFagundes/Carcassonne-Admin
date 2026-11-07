@@ -1,4 +1,4 @@
-import { addDays, diffDays } from "./dates";
+import { addDays, diffDays, weekdayOf } from "./dates";
 import type { RentalBooking, RentalGameType, RentalSettingsType } from "@/types";
 
 export type GameLike = Pick<RentalGameType, "units" | "bookings" | "rentalDays">;
@@ -15,6 +15,8 @@ export type AvailabilityOptions = {
   allowQueue?: boolean;
   /** Folga mínima entre a devolução e a próxima retirada da mesma cópia (1 = dia seguinte). */
   gapDays?: number;
+  /** Dias da semana em que o pub atende (0 = domingo). A devolução que cair fora vai para o próximo dia aberto. */
+  openWeekdays?: number[];
 };
 
 export const MAX_GAP_DAYS = 14;
@@ -28,10 +30,26 @@ export function gapDaysOf(opts?: AvailabilityOptions): number {
 }
 
 /** Opções de disponibilidade a partir das configurações do aluguel. */
-export const availabilityOptions = (s?: Pick<RentalSettingsType, "allowQueue" | "queueGapDays"> | null): AvailabilityOptions => ({
+export const availabilityOptions = (
+  s?: Pick<RentalSettingsType, "allowQueue" | "queueGapDays" | "pickupWeekdays"> | null,
+): AvailabilityOptions => ({
   allowQueue: s?.allowQueue,
   gapDays: s?.queueGapDays,
+  openWeekdays: s?.pickupWeekdays,
 });
+
+/**
+ * Data de devolução: retirada + prazo do jogo; se cair num dia em que o pub
+ * não abre, passa para o próximo dia aberto (ex.: segunda e terça fechado →
+ * quarta). Sem dias informados, fica a data do prazo.
+ */
+export function dueDateFor(start: string, rentalDays: number, opts?: AvailabilityOptions): string {
+  let due = addDays(start, rentalDays);
+  const open = opts?.openWeekdays;
+  if (!open?.length) return due;
+  for (let i = 0; i < 7 && !open.includes(weekdayOf(due)); i++) due = addDays(due, 1);
+  return due;
+}
 
 /** Último dia em que a reserva ocupa a unidade (retirado e vencido conta até hoje). */
 export function bookingEnd(b: RentalBooking, today: string): string {
@@ -81,7 +99,7 @@ function firstAcceptedStart(game: GameLike, from: string, today: string, opts?: 
   const active = game.units.filter((u) => u.status === "active");
   for (let i = 0; i <= 120; i++) {
     const day = addDays(from, i);
-    const end = addDays(day, game.rentalDays);
+    const end = dueDateFor(day, game.rentalDays, opts);
     if (active.some((u) => unitAccepts(u.id, game.bookings, day, end, today, opts))) return day;
   }
   return null;
@@ -95,6 +113,7 @@ export function earliestStartForUnit(
   today: string,
   lowerBound: string = today,
   gapDays = 1,
+  openWeekdays?: number[],
 ): { start: string; blocking: RentalBooking | null } {
   const min = lowerBound < today ? today : lowerBound;
   const candidates: { start: string; blocking: RentalBooking | null }[] = [
@@ -107,7 +126,7 @@ export function earliestStartForUnit(
   }
   candidates.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
   for (const c of candidates) {
-    if (isUnitFree(unitId, bookings, c.start, addDays(c.start, rentalDays), today, gapDays)) return c;
+    if (isUnitFree(unitId, bookings, c.start, dueDateFor(c.start, rentalDays, { openWeekdays }), today, gapDays)) return c;
   }
   // Inalcançável: o dia após o fim da última reserva sempre está livre.
   return candidates[candidates.length - 1];
@@ -118,7 +137,7 @@ export function gameAvailability(game: GameLike, today: string, opts?: Availabil
   if (active.length === 0) return { state: "unavailable" };
 
   if (noQueue(opts)) {
-    const end = addDays(today, game.rentalDays);
+    const end = dueDateFor(today, game.rentalDays, opts);
     if (active.some((u) => unitAccepts(u.id, game.bookings, today, end, today, opts))) return { state: "available" };
     // Ninguém livre agora: informa a devolução mais próxima (não dá para reservar antes dela).
     const out = game.bookings
@@ -132,7 +151,7 @@ export function gameAvailability(game: GameLike, today: string, opts?: Availabil
 
   let best: { start: string; blocking: RentalBooking | null } | null = null;
   for (const u of active) {
-    const e = earliestStartForUnit(u.id, game.bookings, game.rentalDays, today, today, gapDaysOf(opts));
+    const e = earliestStartForUnit(u.id, game.bookings, game.rentalDays, today, today, gapDaysOf(opts), opts?.openWeekdays);
     if (e.start === today) return { state: "available" };
     if (!best || e.start < best.start) best = e;
   }
@@ -155,14 +174,14 @@ export function availabilityFor(
   today: string,
   opts?: AvailabilityOptions,
 ): { ok: true } | { ok: false; nextStart: string | null } {
-  const end = addDays(start, game.rentalDays);
+  const end = dueDateFor(start, game.rentalDays, opts);
   const active = game.units.filter((u) => u.status === "active");
   if (active.some((u) => unitAccepts(u.id, game.bookings, start, end, today, opts))) return { ok: true };
   // Sem fila, a próxima data pode até ser antes da escolhida (antes de quem já reservou).
   if (noQueue(opts)) return { ok: false, nextStart: firstAcceptedStart(game, today, today, opts) };
   let next: string | null = null;
   for (const u of active) {
-    const e = earliestStartForUnit(u.id, game.bookings, game.rentalDays, today, start, gapDaysOf(opts));
+    const e = earliestStartForUnit(u.id, game.bookings, game.rentalDays, today, start, gapDaysOf(opts), opts?.openWeekdays);
     if (next === null || e.start < next) next = e.start;
   }
   return { ok: false, nextStart: next };
@@ -170,7 +189,7 @@ export function availabilityFor(
 
 /** Unidade ativa e livre com o encaixe mais justo antes de `start`; empate → ordem de `units`. */
 export function pickUnit(game: GameLike, start: string, today: string, opts?: AvailabilityOptions): string | null {
-  const end = addDays(start, game.rentalDays);
+  const end = dueDateFor(start, game.rentalDays, opts);
   let bestId: string | null = null;
   let bestGap = Infinity;
   for (const u of game.units) {
@@ -209,7 +228,7 @@ export function blockReason(
 ): BlockReason | null {
   const active = game.units.filter((u) => u.status === "active");
   if (active.length === 0) return { kind: "no_copies" };
-  const end = addDays(start, game.rentalDays);
+  const end = dueDateFor(start, game.rentalDays, opts);
   if (active.some((u) => unitAccepts(u.id, game.bookings, start, end, today, opts))) return null;
 
   const gap = gapDaysOf(opts);

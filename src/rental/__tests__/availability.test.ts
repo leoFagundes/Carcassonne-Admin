@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { availabilityFor, blockReason, gameAvailability, pickUnit } from "../availability";
+import { availabilityFor, blockReason, dueDateFor, gameAvailability, pickUnit } from "../availability";
 import { bk, unit } from "./fixtures";
 
 const today = "2026-11-05";
@@ -217,5 +217,28 @@ describe("blockReason", () => {
 
   it("sem cópias ativas", () => {
     expect(blockReason({ units: [], bookings: [], rentalDays: 7 }, today, today)).toEqual({ kind: "no_copies" });
+  });
+});
+
+describe("devolução em dia fechado (openWeekdays)", () => {
+  // 2026-11-23 é segunda; pub fechado segunda (1) e terça (2)
+  const OPEN = { openWeekdays: [0, 3, 4, 5, 6] };
+
+  it("segunda fechada → quarta", () => {
+    expect(dueDateFor("2026-11-16", 7, OPEN)).toBe("2026-11-25");
+  });
+
+  it("dia aberto ou sem dias informados: fica o prazo", () => {
+    expect(dueDateFor("2026-11-15", 7, OPEN)).toBe("2026-11-22");
+    expect(dueDateFor("2026-11-16", 7)).toBe("2026-11-23");
+    expect(dueDateFor("2026-11-16", 7, { openWeekdays: [] })).toBe("2026-11-23");
+  });
+
+  it("a disponibilidade usa a devolução já empurrada", () => {
+    const today = "2026-11-05";
+    // reserva começa dia 24 (terça); quem retira dia 16 devolveria 23 (seg) → 25 (qua): conflita
+    const game = { units: [unit("u1")], bookings: [bk("u1", "2026-11-24", "2026-12-01", "reserved")], rentalDays: 7 };
+    expect(availabilityFor(game, "2026-11-16", today).ok).toBe(true);
+    expect(availabilityFor(game, "2026-11-16", today, OPEN).ok).toBe(false);
   });
 });

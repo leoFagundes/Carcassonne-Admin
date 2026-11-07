@@ -1,4 +1,4 @@
-import { availabilityOptions, bookingEnd, pickUnit, type GameLike } from "./availability";
+import { availabilityOptions, bookingEnd, dueDateFor, pickUnit, type GameLike } from "./availability";
 import { isValidCpf } from "./cpf";
 import { addDays, weekdayOf } from "./dates";
 import type {
@@ -119,7 +119,7 @@ export function planOrder(input: OrderInput, ctx: OrderContext): PlanResult {
       unitId,
       unitLabel,
       startDate,
-      dueDate: addDays(startDate, game.rentalDays),
+      dueDate: dueDateFor(startDate, game.rentalDays, availabilityOptions(settings)),
       price: game.price,
       rentalDays: game.rentalDays,
     });

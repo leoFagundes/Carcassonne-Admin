@@ -140,8 +140,10 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
         title="Retirada"
         hint={
           <>
-            Em quais dias o cliente pode marcar a retirada e com quanta antecedência. O tempo que ele fica com o jogo é
-            definido em cada jogo (campo “Prazo”), na aba{" "}
+            Os dias em que o pub atende para retirada e devolução, e com quanta antecedência o cliente pode marcar. Se o
+            prazo do jogo terminar num dia sem atendimento, a devolução passa sozinha para o próximo dia marcado (ex.: prazo
+            terminando na segunda, com segunda e terça desmarcadas, a devolução fica para quarta). O tempo que o cliente fica
+            com o jogo é definido em cada jogo (campo “Prazo”), na aba{" "}
             <Link href="/aluguel-admin?tab=jogos" className="underline underline-offset-2">
               Jogos
             </Link>

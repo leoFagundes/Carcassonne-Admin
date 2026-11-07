@@ -144,3 +144,14 @@ describe("planOrder sem fila", () => {
     });
   });
 });
+
+describe("planOrder: devolução em dia fechado", () => {
+  it("prazo terminando na segunda, com segunda e terça fechadas → quarta", () => {
+    const base = withSettings(makeCtx(), { pickupWeekdays: [0, 3, 4, 5, 6], maxAdvanceDays: 30 });
+    const ctxDays = { ...base, games: { ...base.games, g1: { ...base.games.g1, rentalDays: 8 } } };
+    // retira domingo 15/11 + 8 dias = segunda 23/11 → quarta 25/11
+    const plan = planOrder(input(["g1"], "2026-11-15"), ctxDays);
+    expect(plan).toMatchObject({ ok: true });
+    if (plan.ok) expect(plan.items[0].dueDate).toBe("2026-11-25");
+  });
+});

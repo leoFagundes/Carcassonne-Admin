@@ -11,7 +11,7 @@ import type { RentalGameType, RentalRulesType, RentalSettingsType } from "@/type
 import RentalGameRepository from "@/services/repositories/RentalGameRepository";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import { accountApi, rentalApi } from "@/services/rentalApi";
-import { availabilityFor, availabilityOptions, blockReason, gapDaysOf, type BlockReason } from "@/rental/availability";
+import { availabilityFor, availabilityOptions, blockReason, dueDateFor, gapDaysOf, type BlockReason } from "@/rental/availability";
 import { withLiveBookings } from "@/rental/payments";
 import { addDays, formatDateBR, todaySP, weekdayOf } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
@@ -184,7 +184,7 @@ export default function PedidoPage() {
         }
         return;
       }
-      const dues = validGames.map((g) => addDays(startDate, g.rentalDays)).sort();
+      const dues = validGames.map((g) => dueDateFor(startDate, g.rentalDays, availabilityOptions(settings))).sort();
       setDone({ code: result.data.code, startDate, dueDate: dues[0], total });
       return;
     }
@@ -224,7 +224,7 @@ export default function PedidoPage() {
       .filter((d) => d.enabled && liveGames.some((g) => !availabilityFor(g, d.date, today, avOpts).ok))
       .map((d) => d.date),
   );
-  const returnDates = startDate ? validGames.map((g) => addDays(startDate, g.rentalDays)) : [];
+  const returnDates = startDate ? validGames.map((g) => dueDateFor(startDate, g.rentalDays, avOpts)) : [];
   const firstReturn = returnDates.length ? [...returnDates].sort()[0] : undefined;
   const showSteps = !redirecting && !done && dataReady && cart.gameIds.length > 0;
 
@@ -364,7 +364,9 @@ export default function PedidoPage() {
                         startDate && (
                           <span className="text-xs text-primary-gold/55">
                             Fica com você {game.rentalDays} {game.rentalDays === 1 ? "dia" : "dias"} · devolva até{" "}
-                            {formatDateBR(addDays(startDate, game.rentalDays))}
+                            {formatDateBR(dueDateFor(startDate, game.rentalDays, avOpts))}
+                            {dueDateFor(startDate, game.rentalDays, avOpts) !== addDays(startDate, game.rentalDays) &&
+                              ` (o pub não abre em ${formatDateBR(addDays(startDate, game.rentalDays))}, então vai para o próximo dia aberto)`}
                           </span>
                         )
                       )}
