@@ -1,4 +1,4 @@
-import tavern from "../../public/images/carcassonne-bg6.jpg";
+import tavern from "../../public/images/carcassonne-bg4.jpg";
 import type { SceneLight } from "@/components/authBackground";
 
 /**

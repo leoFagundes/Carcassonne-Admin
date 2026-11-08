@@ -4,7 +4,7 @@ import Input from "@/components/input";
 import { useEffect, useState } from "react";
 import { FiArrowLeft, FiLock, FiMail } from "react-icons/fi";
 import { useRouter } from "next/navigation";
-import carcassonneBoardgame from "../../public/images/carcassonne-boardgame.png";
+import carcassonneBoardgame from "../../public/images/[oficial]-carcassonne-boardgame.jpg";
 import fabiosali from "../../public/images/fabio&sali.png";
 import klausjurgen from "../../public/images/klausjurgen.png";
 import {
@@ -166,7 +166,9 @@ export default function Home() {
           footer={
             <>
               Ainda não tem acesso?{" "}
-              <AuthLink onClick={() => router.push("/signup")}>Criar conta</AuthLink>
+              <AuthLink onClick={() => router.push("/signup")}>
+                Criar conta
+              </AuthLink>
             </>
           }
         >
