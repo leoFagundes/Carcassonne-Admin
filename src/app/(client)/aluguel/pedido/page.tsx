@@ -721,8 +721,8 @@ export default function PedidoPage() {
                     },
                     {
                       value: "checkout",
-                      title: "Mercado Pago",
-                      text: "Abre a página do Mercado Pago: Pix ou cartão de crédito/débito.",
+                      title: "Cartão ou Pix",
+                      text: "Pagamento seguro pelo Mercado Pago: crédito, débito ou Pix.",
                     },
                   ] as const
                 ).map((o) => {

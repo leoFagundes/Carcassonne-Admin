@@ -340,7 +340,7 @@ function OrderContent() {
                 {busy === "pay"
                   ? "Abrindo o pagamento..."
                   : pixCode
-                    ? "Prefiro pagar com cartão (Mercado Pago)"
+                    ? "Prefiro pagar com cartão"
                     : shown.state === "rejected"
                       ? `Tentar de novo · ${formatBRL(order.total)}`
                       : `Pagar ${formatBRL(order.total)} agora`}

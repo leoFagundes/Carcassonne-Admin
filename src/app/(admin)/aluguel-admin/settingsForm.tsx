@@ -318,7 +318,7 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
           />
           <p className="text-[11px] text-primary-gold/45 leading-relaxed">
             {local.onlinePayment.pixDirect !== false
-              ? "Ligado: o cliente escolhe entre o Pix gerado na hora (QR Code e copia e cola na própria página do pedido, que confirma sozinha) e a página do Mercado Pago (Pix ou cartão). Com o Pix, as cópias ficam reservadas por pelo menos 31 minutos. Se o Pix não puder ser gerado (conta de teste ou sem chave Pix), o cliente segue para o Mercado Pago."
+              ? "Ligado: o cliente escolhe entre o Pix gerado na hora (QR Code e copia e cola na própria página do pedido, que confirma sozinha) e a opção “Cartão ou Pix” (página do Mercado Pago). Com o Pix, as cópias ficam reservadas por pelo menos 31 minutos. Se o Pix não puder ser gerado (conta de teste ou sem chave Pix), o cliente segue para o Mercado Pago."
               : "Desligado: o pagamento online abre sempre a página do Mercado Pago (Pix ou cartão)."}
           </p>
         </div>
