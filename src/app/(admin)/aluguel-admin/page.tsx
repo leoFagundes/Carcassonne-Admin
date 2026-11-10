@@ -2,8 +2,10 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { LuLink, LuPackage } from "react-icons/lu";
+import { LuLink, LuPackage, LuPlus } from "react-icons/lu";
 import Tooltip from "@/components/Tooltip";
+import Modal from "@/components/modal";
+import NewRentalForm from "./newRentalForm";
 import GamesTab from "./gamesTab";
 import RentalsTab from "./rentalsTab";
 import CustomersTab from "./customersTab";
@@ -46,6 +48,8 @@ function AluguelAdmin() {
   const param = useSearchParams().get("tab");
   const tab: TabKey = TABS.find((t) => t.key === param)?.key ?? "alugueis";
   const pending = usePendingCount();
+  const [newOpen, setNewOpen] = useState(false);
+  const [newKey, setNewKey] = useState(0);
 
   return (
     <section className="flex flex-col gap-5 w-full h-full overflow-y-auto py-2 px-0 sm:px-6">
@@ -57,6 +61,15 @@ function AluguelAdmin() {
               Aluguel de Jogos
             </h1>
           </div>
+          <Tooltip direction="bottom" content="Novo aluguel no balcão">
+            <button
+              onClick={() => setNewOpen(true)}
+              aria-label="Novo aluguel no balcão"
+              className="p-2.5 rounded-lg border border-primary-gold/40 bg-primary-gold/10 hover:bg-primary-gold/20 hover:border-primary-gold/70 text-primary-gold transition-all cursor-pointer"
+            >
+              <LuPlus size={16} />
+            </button>
+          </Tooltip>
           <Tooltip direction="bottom" content="Ir para visão do cliente">
             <button
               onClick={() =>
@@ -99,6 +112,16 @@ function AluguelAdmin() {
       {tab === "jogos" && <GamesTab />}
       {tab === "clientes" && <CustomersTab />}
       {tab === "regras" && <RulesAndSettingsTab />}
+
+      <Modal isOpen={newOpen} onClose={() => setNewOpen(false)} noPadding isFixed patternCloseButton={false}>
+        {newOpen && (
+          <NewRentalForm
+            key={newKey}
+            onClose={() => setNewOpen(false)}
+            onAgain={() => setNewKey((k) => k + 1)}
+          />
+        )}
+      </Modal>
     </section>
   );
 }

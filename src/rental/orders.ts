@@ -107,6 +107,16 @@ export function planOrder(input: OrderInput, ctx: OrderContext): PlanResult {
     return fail("active_limit");
   }
 
+  return planItems(gameIds, startDate, ctx);
+}
+
+/** Escolhe a cópia e a devolução de cada jogo (comum ao pedido do cliente e ao do balcão). */
+export function planItems(
+  gameIds: string[],
+  startDate: string,
+  ctx: Pick<OrderContext, "today" | "settings" | "games">,
+): PlanResult {
+  const { settings, today } = ctx;
   const items: PlannedItem[] = [];
   for (const gameId of gameIds) {
     const game = Object.prototype.hasOwnProperty.call(ctx.games, gameId) ? ctx.games[gameId] : undefined;
@@ -126,6 +136,11 @@ export function planOrder(input: OrderInput, ctx: OrderContext): PlanResult {
     });
   }
   return { ok: true, items };
+}
+
+/** Data AAAA-MM-DD que existe no calendário. */
+export function isRealDate(date: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) && addDays(date, 0) === date;
 }
 
 export type OrderRecordsMeta = {

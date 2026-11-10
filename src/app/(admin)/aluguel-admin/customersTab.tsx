@@ -124,6 +124,11 @@ export default function CustomersTab() {
                       Bloqueado
                     </span>
                   )}
+                  {c.guest && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full border border-primary-gold/25 text-primary-gold/55">
+                      Sem conta
+                    </span>
+                  )}
                 </div>
                 <div className="flex flex-col sm:flex-row sm:flex-wrap sm:gap-x-5 text-xs text-primary-gold/65">
                   <span className="break-all">{c.email}</span>

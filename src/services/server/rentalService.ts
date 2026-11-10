@@ -15,6 +15,7 @@ import {
   updateBooking,
 } from "@/rental/bookings";
 import { isValidCpf, normalizeCpf } from "@/rental/cpf";
+import { guestMatches } from "@/rental/adminOrders";
 import { formatDateBR, todaySP } from "@/rental/dates";
 import { DEFAULT_RENTAL_RULES, mergeRentalSettings } from "@/rental/defaults";
 import {
@@ -75,17 +76,17 @@ function invalid(message: string): never {
   throw new ApiError(400, "invalid_profile", message);
 }
 
-function settingsRef(db: Firestore) {
+export function settingsRef(db: Firestore) {
   return db.collection("rental-config").doc("settings");
 }
 
 /** Configurações salvas por cima dos padrões (doc ausente ou parcial). */
-function readSettings(snap: DocumentSnapshot): RentalSettingsType {
+export function readSettings(snap: DocumentSnapshot): RentalSettingsType {
   return mergeRentalSettings(snap.exists ? (snap.data() as Partial<RentalSettingsType>) : undefined);
 }
 
 /** Versão publicada das regras (doc ausente → versão padrão). */
-function readRulesVersion(snap: DocumentSnapshot): number {
+export function readRulesVersion(snap: DocumentSnapshot): number {
   const version = snap.exists ? snap.data()?.version : undefined;
   return typeof version === "number" ? version : DEFAULT_RENTAL_RULES.version;
 }
@@ -126,26 +127,62 @@ export async function saveCustomerProfile(
     }
 
     const newIndexRef = cpf && cpf !== oldCpf ? db.collection("rentalCpfIndex").doc(cpf) : null;
+    // CPF de um cliente cadastrado no balcão (sem conta): com o mesmo WhatsApp,
+    // o histórico dele passa para esta conta; senão o CPF continua ocupado.
+    let guest: { ref: DocumentReference; data: RentalCustomerType; docs: DocumentReference[] } | null = null;
     if (newIndexRef) {
       const indexSnap = await tx.get(newIndexRef);
-      if (indexSnap.exists && indexSnap.data()?.uid !== uid) {
-        throw new ApiError(409, "cpf_in_use", "Este CPF já está cadastrado em outra conta.");
+      const owner = indexSnap.exists ? String(indexSnap.data()?.uid ?? "") : "";
+      if (owner && owner !== uid) {
+        const guestRef = isGuestId(owner) ? db.collection("rentalCustomers").doc(owner) : null;
+        const guestSnap = guestRef ? await tx.get(guestRef) : null;
+        const guestData = guestSnap?.exists ? (guestSnap.data() as RentalCustomerType) : null;
+        if (!guestRef || !guestData?.guest) {
+          throw new ApiError(409, "cpf_in_use", "Este CPF já está cadastrado em outra conta.");
+        }
+        if (!guestMatches(guestData, phone)) {
+          throw new ApiError(
+            409,
+            "cpf_in_use",
+            "Este CPF já tem um cadastro feito no balcão do pub com outro WhatsApp. Fale com a equipe para juntar ao seu cadastro.",
+          );
+        }
+        const [rentalsSnap, ordersSnap] = await Promise.all([
+          tx.get(db.collection("rentals").where("customerUid", "==", owner)),
+          tx.get(db.collection("rentalOrders").where("customerUid", "==", owner)),
+        ]);
+        const docs = [...rentalsSnap.docs, ...ordersSnap.docs].map((d) => d.ref);
+        if (docs.length > MAX_GUEST_MERGE_DOCS) {
+          throw new ApiError(409, "cpf_in_use", "Não foi possível juntar o histórico do balcão agora. Fale com a equipe.");
+        }
+        guest = { ref: guestRef, data: guestData, docs };
       }
     }
 
+    // ---- escritas ----
+    if (guest) {
+      const contact = { name, email, phone };
+      for (const ref of guest.docs) tx.update(ref, { customerUid: uid, customer: contact });
+      tx.delete(guest.ref);
+    }
     if (newIndexRef) tx.set(newIndexRef, { uid });
     if (oldCpf && oldCpf !== cpf) {
       tx.delete(db.collection("rentalCpfIndex").doc(oldCpf));
     }
+    // Bloqueio do cadastro do balcão vale para a conta (não some ao criar conta).
+    const carriedBlock = guest?.data.isBlocked
+      ? { isBlocked: true, ...(guest.data.blockedReason ? { blockedReason: guest.data.blockedReason } : {}) }
+      : {};
 
     if (exists) {
-      tx.update(customerRef, { name, phone, cpf, email });
+      tx.update(customerRef, { name, phone, cpf, email, ...carriedBlock });
     } else {
       tx.set(customerRef, {
         name,
         phone,
         cpf,
         email,
+        ...carriedBlock,
         acceptedTermsAt: FieldValue.serverTimestamp(),
         createdAt: FieldValue.serverTimestamp(),
       });
@@ -153,7 +190,12 @@ export async function saveCustomerProfile(
   });
 }
 
-const MAX_CODE_ATTEMPTS = 5;
+/** Histórico do balcão que dá para juntar numa transação (limite de 500 escritas). */
+const MAX_GUEST_MERGE_DOCS = 400;
+
+const isGuestId = (id: string) => id.startsWith("guest_") && isDocId(id);
+
+export const MAX_CODE_ATTEMPTS = 5;
 
 /**
  * Cria o pedido inteiro (tudo ou nada) numa transação: relê tudo do banco,

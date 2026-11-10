@@ -1,6 +1,7 @@
 import "server-only";
 import type {
   CreateCheckoutInput,
+  CreatePixInput,
   PaymentProvider,
   ProviderPayment,
 } from "./provider";
@@ -162,6 +163,41 @@ export function createMercadoPagoProvider(token: string): PaymentProvider {
         throw new Error("Resposta inválida do provedor de pagamento.");
       }
       return { checkoutUrl, providerCheckoutId: pref.id };
+    },
+
+    async createPixPayment(input: CreatePixInput) {
+      const body = {
+        transaction_amount: toReais(input.amount),
+        description: input.description,
+        payment_method_id: "pix",
+        payer: { email: input.payerEmail },
+        external_reference: input.orderId,
+        date_of_expiration: toSaoPauloIso(input.expiresAt),
+        ...(input.notificationUrl.startsWith("https://")
+          ? { notification_url: input.notificationUrl }
+          : {}),
+        statement_descriptor: "CARCASSONNE",
+      };
+      const p = await call<{
+        id: number | string;
+        point_of_interaction?: {
+          transaction_data?: { qr_code?: string; ticket_url?: string };
+        };
+      }>("/v1/payments", {
+        method: "POST",
+        headers: { "X-Idempotency-Key": idempotencyHeader(input.idempotencyKey) },
+        body,
+      });
+      const data = p.point_of_interaction?.transaction_data;
+      if (!data?.qr_code) {
+        console.error("Mercado Pago: Pix sem código na resposta", { id: p.id });
+        throw new Error("Resposta inválida do provedor de pagamento.");
+      }
+      return {
+        paymentId: String(p.id),
+        qrCode: data.qr_code,
+        ...(data.ticket_url ? { ticketUrl: data.ticket_url } : {}),
+      };
     },
 
     async getPayment(paymentId: string) {

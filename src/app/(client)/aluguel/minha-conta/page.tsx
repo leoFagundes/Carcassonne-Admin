@@ -20,6 +20,7 @@ import { accountApi, rentalApi } from "@/services/rentalApi";
 import { diffDays, formatDateBR, todaySP } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
 import { isProfileComplete } from "@/rental/orders";
+import { counterPaymentText } from "@/rental/adminOrders";
 import { formatCpf, normalizeCpf } from "@/rental/cpf";
 import { safeNextPath, withNext } from "@/rental/navigation";
 import { useRentalCart } from "../useRentalCart";
@@ -453,7 +454,10 @@ function MinhaContaContent() {
                   {/* Rodapé: pagamento e detalhes */}
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-primary-gold/60">
                     {counter ? (
-                      <span>Pagamento no balcão, na retirada · {formatBRL(total)}</span>
+                      <span>
+                        {(orderDoc && counterPaymentText(orderDoc)) ?? "Pagamento no balcão, na retirada"} ·{" "}
+                        {formatBRL(total)}
+                      </span>
                     ) : (
                       view && headline.stage !== "pay" && <PaymentBadge view={view} />
                     )}

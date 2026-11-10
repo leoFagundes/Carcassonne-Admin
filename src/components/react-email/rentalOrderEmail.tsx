@@ -35,6 +35,10 @@ export type RentalOrderEmailProps = {
   rulesUrl: string;
   /** Pago online (forma do pagamento); ausente = pagamento no balcão. */
   paidOnline?: "pix" | "card" | "other";
+  /** Texto do pagamento no lugar do padrão (ex.: pago no balcão, cortesia). */
+  paymentNote?: string;
+  /** O cliente já levou os jogos (aluguel criado no balcão com retirada na hora). */
+  pickedUp?: boolean;
   /** Endereço do pub (Configurações → Geral); ausente = o padrão. */
   address?: string;
 };
@@ -219,7 +223,9 @@ export const RentalOrderEmail = ({
   total,
   rulesUrl,
   paidOnline,
-  address = "CLN 407 Bloco E Loja 37 — Asa Norte, Brasília/DF",
+  paymentNote,
+  pickedUp,
+  address ="CLN 407 Bloco E Loja 37 — Asa Norte, Brasília/DF",
 }: RentalOrderEmailProps) => {
   const count = items.length;
   return (
@@ -233,9 +239,19 @@ export const RentalOrderEmail = ({
             <Section style={contentBox}>
               <Heading style={heading}>Aluguel confirmado! 🎲</Heading>
               <Text style={lead}>
-                Olá, <strong>{customerName}</strong>! Separamos{" "}
-                {count === 1 ? "o jogo" : `os ${count} jogos`} do seu pedido.
-                Apresente o código abaixo no balcão na hora da retirada.
+                Olá, <strong>{customerName}</strong>!{" "}
+                {pickedUp ? (
+                  <>
+                    Você já está com {count === 1 ? "o jogo" : `os ${count} jogos`}{" "}
+                    do pedido. Confira abaixo a data de devolução.
+                  </>
+                ) : (
+                  <>
+                    Separamos {count === 1 ? "o jogo" : `os ${count} jogos`} do
+                    seu pedido. Apresente o código abaixo no balcão na hora da
+                    retirada.
+                  </>
+                )}
               </Text>
 
               <Section style={codeBox}>
@@ -269,9 +285,10 @@ export const RentalOrderEmail = ({
                 <Text style={paymentText}>
                   💳{" "}
                   <strong>
-                    {paidOnline
-                      ? PAID_ONLINE_LABEL[paidOnline]
-                      : "Pagamento no balcão, na retirada."}
+                    {paymentNote ??
+                      (paidOnline
+                        ? PAID_ONLINE_LABEL[paidOnline]
+                        : "Pagamento no balcão, na retirada.")}
                   </strong>
                 </Text>
               </Section>

@@ -39,6 +39,7 @@ function unpaidClosed(
       : undefined;
 }
 import { rentalAttention } from "@/rental/attention";
+import { counterPaymentText } from "@/rental/adminOrders";
 import { diffDays, formatDateBR } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
 import RentalActions from "./rentalActions";
@@ -243,13 +244,14 @@ function cancelText(rental: Rental): string | null {
 /** Linha do pagamento — só para pedidos online (balcão é o normal, não precisa dizer). */
 function paymentLine(
   view: OrderPaymentView,
+  pixAtCounter = false,
 ): { text: string; tone: Tone } | null {
   switch (view.state) {
     case "counter":
       return null;
     case "awaiting":
       return {
-        text: `Pagamento online · aguardando (expira em ${formatCountdown(view.msLeft)})`,
+        text: `${pixAtCounter ? "Pix do balcão" : "Pagamento online"} · aguardando (expira em ${formatCountdown(view.msLeft)})`,
         tone: "orange",
       };
     case "rejected":
@@ -313,7 +315,19 @@ function RentalRow({
   const canceled = rental.status === "canceled";
   const hint = dateHint(rental, today);
   const cancel = cancelText(rental);
-  const payment = order ? paymentLine(orderPaymentView(order, now)) : null;
+  const counterPaid = order ? counterPaymentText(order) : null;
+  const payment = order
+    ? counterPaid
+      ? {
+          text:
+            order.counterPayment?.kind === "courtesy" && order.counterPayment.reason
+              ? `${counterPaid} · ${order.counterPayment.reason}`
+              : counterPaid,
+          tone: (order.counterPayment?.kind === "courtesy" ? "violet" : "green") as Tone,
+        }
+      : paymentLine(orderPaymentView(order, now), order.payment?.channel === "pix")
+    : null;
+  const byAdmin = order?.origin === "admin";
   const othersInOrder = order ? order.rentalIds.length - 1 : 0;
   const refund = order ? rentalRefundInfo(order, rental.id) : null;
   const refundTag = refund
@@ -365,6 +379,15 @@ function RentalRow({
                 } ${TONE[refundTag.tone].border}`}
               >
                 {refundTag.label}
+              </span>
+            )}
+
+            {byAdmin && (
+              <span
+                title={order?.createdBy ? `Criado no balcão por ${order.createdBy.name}` : "Criado no balcão"}
+                className="rounded-full border border-primary-gold/25 px-2 py-0.5 text-[10px] font-medium leading-4 text-primary-gold/60"
+              >
+                Balcão
               </span>
             )}
           </div>

@@ -17,6 +17,8 @@ import {
 } from "@/rental/payments";
 import { RefundForm, ReviewForm } from "./refundForms";
 import OrderIssues from "./orderIssues";
+import CounterPaymentPanel from "./counterPaymentPanel";
+import { counterPaymentText } from "@/rental/adminOrders";
 import { STATUS_LABEL, formatStamp, whatsappLink } from "./rentalShared";
 
 type Order = RentalOrderType & { id: string };
@@ -188,7 +190,8 @@ export default function OrderDetail({
           {formatStamp(order.createdAt) && (
             <div className="border-t border-primary-gold/10 px-3 py-2">
               <p className="text-[11px] text-primary-gold/45">
-                Pedido feito em {formatStamp(order.createdAt)}
+                {order.origin === "admin" ? "Criado no balcão" : "Pedido feito"} em {formatStamp(order.createdAt)}
+                {order.origin === "admin" && order.createdBy ? ` por ${order.createdBy.name}` : ""}
               </p>
             </div>
           )}
@@ -337,13 +340,38 @@ export default function OrderDetail({
         {/* Pagamento */}
         <Section title="Pagamento">
           {order.paymentMode === "counter" || !p ? (
-            <div className="rounded-lg border border-primary-gold/10 bg-primary-gold/5 px-3 py-2.5">
-              <p className="text-xs leading-relaxed text-primary-gold/65">
-                Pagamento no balcão, sem cobrança online.
-              </p>
-            </div>
+            order.counterPayment ? (
+              <div className="flex flex-col gap-2">
+                <Row
+                  label="Forma"
+                  value={counterPaymentText(order)}
+                />
+                <Row
+                  label={order.counterPayment.kind === "courtesy" ? "Valor sem a cortesia" : "Recebido"}
+                  value={formatBRL(
+                    order.counterPayment.kind === "courtesy"
+                      ? (order.counterPayment.waived ?? 0)
+                      : order.counterPayment.amount,
+                  )}
+                />
+                {order.counterPayment.reason && <Row label="Motivo" value={order.counterPayment.reason} />}
+                <Row
+                  label="Registrado"
+                  value={`${dateTime(order.counterPayment.at)} por ${order.counterPayment.byName}`}
+                />
+              </div>
+            ) : (
+              <div className="rounded-lg border border-primary-gold/10 bg-primary-gold/5 px-3 py-2.5">
+                <p className="text-xs leading-relaxed text-primary-gold/65">
+                  Pagamento no balcão, na retirada ({formatBRL(order.total)}).
+                </p>
+              </div>
+            )
           ) : (
             <div className="flex flex-col gap-3">
+              {(view.state === "awaiting" || view.state === "rejected") && (
+                <CounterPaymentPanel orderId={order.id} initial={order} compact />
+              )}
               <div className="flex flex-col gap-2">
                 {p.method && (
                   <Row label="Forma" value={METHOD_LABEL[p.method]} />

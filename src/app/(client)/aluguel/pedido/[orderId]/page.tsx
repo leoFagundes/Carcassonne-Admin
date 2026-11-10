@@ -14,6 +14,7 @@ import { formatBRL } from "@/rental/money";
 import { withNext } from "@/rental/navigation";
 import { clearPendingOrder, clearPendingOrderIf } from "@/rental/pendingOrder";
 import { formatCountdown, orderPaymentView, type OrderPaymentView } from "@/rental/payments";
+import { counterPaymentText } from "@/rental/adminOrders";
 import { useRentalCart } from "../../useRentalCart";
 import { useRentalCustomer } from "../../useRentalCustomer";
 import RentalPageShell from "../../rentalPageShell";
@@ -66,12 +67,16 @@ function bannerFor(view: OrderPaymentView, order: Order, confirming: boolean): B
     };
   }
   switch (view.state) {
-    case "counter":
+    case "counter": {
+      const paid = counterPaymentText(order);
       return {
         icon: "ok",
         title: "Aluguel confirmado!",
-        text: "Retire os jogos no balcão do Carcassonne Pub e pague na retirada.",
+        text: paid
+          ? `${paid}. Retire os jogos no balcão do Carcassonne Pub na data abaixo.`
+          : "Retire os jogos no balcão do Carcassonne Pub e pague na retirada.",
       };
+    }
     case "awaiting":
       return {
         icon: "wait",
@@ -341,7 +346,7 @@ function OrderContent() {
             startDate={order.startDate}
             dueDate={dues[0]}
             code={order.code}
-            payAtCounter={shown.state === "counter" ? payAtCounter : undefined}
+            payAtCounter={shown.state === "counter" && !order.counterPayment ? payAtCounter : undefined}
           />
         )}
 

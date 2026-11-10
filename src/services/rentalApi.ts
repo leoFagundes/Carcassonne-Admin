@@ -59,6 +59,30 @@ export const rentalApi = {
   createOrder: (input: OrderInput) =>
     call<{ orderId: string; code: string; checkoutUrl?: string }>("/api/rental/orders", input),
 
+  /** Admin: aluguel criado no balcão. `override_required` traz `overrides` para confirmar. */
+  createAdminOrder: (body: {
+    customer:
+      | { kind: "existing"; uid: string }
+      | { kind: "new"; guest: { name: string; phone: string; cpf: string; email: string } };
+    gameIds: string[];
+    startDate: string;
+    overrides: import("@/rental/adminOrders").AdminOverride[];
+    payment: import("@/rental/adminOrders").AdminPaymentChoice;
+    pickupNow: boolean;
+    acceptedRules: boolean;
+  }) =>
+    call<{
+      orderId: string;
+      code: string;
+      customerUid: string;
+      holdUntil?: number;
+      checkoutUrl?: string;
+      pixCode?: string;
+    }>("/api/rental/orders/admin", body),
+
+  /** Admin: cancela um pedido ainda não pago e libera as cópias. */
+  abortOrder: (id: string) => call<null>(orderPath(id, "abort"), {}),
+
   reopenCheckout: (id: string) => call<{ checkoutUrl: string }>(orderPath(id, "checkout"), {}),
 
   verifyOrder: (id: string) => call<unknown>(orderPath(id, "verify"), {}),

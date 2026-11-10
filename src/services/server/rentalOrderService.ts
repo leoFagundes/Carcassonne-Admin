@@ -4,6 +4,7 @@ import { asBookings, asUnits, removeBooking } from "@/rental/bookings";
 import { todaySP } from "@/rental/dates";
 import { mergeRentalSettings } from "@/rental/defaults";
 import { formatBRL } from "@/rental/money";
+import { payerEmailFor } from "@/rental/adminOrders";
 import {
   beginRefund,
   checkoutItemsFor,
@@ -203,13 +204,13 @@ export async function cancelPendingOrder(orderId: string, uid: string): Promise<
  */
 export async function createOrderCheckout(
   orderId: string,
-  order: Pick<RentalOrderType, "items" | "customer"> & { payment: { holdUntil: number } },
+  order: Pick<RentalOrderType, "items" | "customer" | "code"> & { payment: { holdUntil: number } },
 ): Promise<string> {
   const provider = getPaymentProvider();
   const { checkoutUrl, providerCheckoutId } = await provider.createCheckout({
     orderId,
     items: checkoutItemsFor(order.items),
-    payerEmail: order.customer.email,
+    payerEmail: payerEmailFor(order.customer.email, order.code),
     expiresAt: order.payment.holdUntil,
     returnUrl: `${siteUrl()}/aluguel/pedido/${orderId}`,
     notificationUrl: `${siteUrl()}/api/payments/mercadopago/webhook`,
@@ -219,6 +220,52 @@ export async function createOrderCheckout(
     "payment.providerCheckoutId": providerCheckoutId,
   });
   return checkoutUrl;
+}
+
+/** Pix indisponível na conta (modo de teste, chave não cadastrada) ou recusado pelo provedor. */
+export const pixFailed = () =>
+  new ApiError(
+    502,
+    "pix_unavailable",
+    "Não foi possível gerar o Pix agora. Se a conta do Mercado Pago ainda está em modo de teste ou sem chave Pix cadastrada, o Pix direto não funciona: use o link de pagamento.",
+  );
+
+/**
+ * Pix direto do pedido (balcão): cria o pagamento no provedor, que expira junto
+ * com a reserva, e grava o "copia e cola" no pedido. O link (`checkoutUrl`)
+ * vira a página do Pix no Mercado Pago, para o cliente reabrir pela conta.
+ */
+export async function createOrderPix(
+  orderId: string,
+  order: Pick<RentalOrderType, "total" | "customer" | "code"> & { payment: { holdUntil: number } },
+): Promise<{ qrCode: string; paymentId: string }> {
+  const pix = await getPaymentProvider().createPixPayment({
+    orderId,
+    amount: order.total,
+    description: `Aluguel de jogos · pedido ${order.code}`,
+    payerEmail: payerEmailFor(order.customer.email, order.code),
+    expiresAt: order.payment.holdUntil,
+    notificationUrl: `${siteUrl()}/api/payments/mercadopago/webhook`,
+    idempotencyKey: `${orderId}:pix`,
+  });
+  await ordersCol().doc(orderId).update({
+    "payment.channel": "pix",
+    "payment.pix": { qrCode: pix.qrCode, paymentId: pix.paymentId },
+    "payment.checkoutUrl": pix.ticketUrl ?? "",
+    "payment.providerCheckoutId": `pix:${pix.paymentId}`,
+  });
+  return { qrCode: pix.qrCode, paymentId: pix.paymentId };
+}
+
+/** Admin desiste de um pedido do balcão ainda não pago: libera as cópias na hora. */
+export async function adminAbortUnpaidOrder(orderId: string): Promise<void> {
+  const snap = await ordersCol().doc(orderId).get();
+  if (!snap.exists) throw notFound();
+  const order = snap.data() as RentalOrderType;
+  if (!isAwaitingPayment(order)) throw new ApiError(409, "not_cancelable", "Este pedido não está aguardando pagamento.");
+  if (!(await abortUnpaidOrder(orderId, "Cancelado no balcão antes do pagamento"))) {
+    throw new ApiError(409, "not_cancelable", "Este pedido mudou agora há pouco. Confira se foi pago.");
+  }
 }
 
 /**

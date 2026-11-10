@@ -24,14 +24,17 @@ export async function sendOrderConfirmation(
   props: RentalOrderEmailProps,
   staffEmail?: string,
 ): Promise<void> {
-  const resend = new Resend(process.env.RESEND_API_KEY);
   const staff = staffEmail?.trim();
+  const customer = to.trim();
+  // Cliente sem e-mail (cadastrado no balcão): só a equipe recebe, se configurada.
+  if (!customer && !staff) return;
+  const resend = new Resend(process.env.RESEND_API_KEY);
   // Endereço salvo em Configurações → Geral (falha na leitura → o padrão).
   const address = mergePubInfo((await loadGeneralConfigs())?.pubInfo).address;
   const result = await resend.emails.send({
     from: FROM_ADDRESS,
-    to,
-    ...(staff && staff.toLowerCase() !== to.toLowerCase() ? { bcc: staff } : {}),
+    to: customer || staff!,
+    ...(customer && staff && staff.toLowerCase() !== customer.toLowerCase() ? { bcc: staff } : {}),
     subject: `🎲 Aluguel confirmado — código ${props.code} · Carcassonne Pub`,
     react: <RentalOrderEmail {...props} address={address} />,
   });
@@ -42,6 +45,7 @@ export async function sendOrderConfirmation(
 
 /** E-mail de reembolso do pedido (valor, motivo e prazo típico). */
 export async function sendRefundEmail(to: string, props: RentalRefundEmailProps): Promise<void> {
+  if (!to.trim()) return; // cliente sem e-mail (cadastrado no balcão)
   const resend = new Resend(process.env.RESEND_API_KEY);
   const result = await resend.emails.send({
     from: FROM_ADDRESS,

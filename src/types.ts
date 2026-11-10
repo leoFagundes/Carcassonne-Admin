@@ -552,6 +552,13 @@ export interface RentalCustomerType {
   blockedReason?: string;
   acceptedTermsAt?: Timestamp;
   createdAt?: Timestamp;
+  /**
+   * Cliente sem conta, cadastrado pelo admin no balcão (id `guest_…`). Quando a
+   * pessoa cria conta com o mesmo CPF e WhatsApp, o histórico passa para a conta.
+   */
+  guest?: boolean;
+  /** Admin que cadastrou o cliente sem conta. */
+  createdBy?: string;
 }
 
 export type CancellationPolicy = "full" | "fee" | "manual";
@@ -672,6 +679,27 @@ export interface RentalOrderPayment {
   duplicatePayments?: RentalDuplicatePayment[];
   /** Quem encerrou o pedido não pago (status "expired"): cliente cancelou × sistema expirou. */
   closedBy?: "customer" | "system";
+  /** Como o cliente paga: página do Mercado Pago (padrão) ou Pix direto (QR gerado no balcão). */
+  channel?: "checkout" | "pix";
+  /** Pix direto: código "copia e cola" (o QR é gerado a partir dele) e o pagamento criado. */
+  pix?: { qrCode: string; paymentId: string };
+}
+
+/** Pagamento registrado pelo admin num pedido de balcão. */
+export type CounterPaymentMethod = "cash" | "card" | "pix";
+
+export interface RentalCounterPayment {
+  /** "paid": recebido no balcão; "courtesy": saiu de graça. */
+  kind: "paid" | "courtesy";
+  method?: CounterPaymentMethod;
+  /** Recebido (centavos); 0 na cortesia. */
+  amount: number;
+  /** Cortesia: quanto o pedido custaria (centavos). */
+  waived?: number;
+  reason?: string;
+  at: number;
+  by: string;
+  byName: string;
 }
 
 export interface RentalCancellationReview {
@@ -696,6 +724,11 @@ export interface RentalOrderType {
   startDate: string;
   paymentMode: "counter" | "online";
   payment?: RentalOrderPayment;
+  /** Ausente = pedido feito pelo cliente no site; "admin" = criado no balcão. */
+  origin?: "customer" | "admin";
+  createdBy?: { uid: string; name: string };
+  /** Balcão: pago na hora ou cortesia (ausente = paga na retirada). */
+  counterPayment?: RentalCounterPayment;
   cancellationReview?: RentalCancellationReview;
   /** Análises já decididas que deram lugar a uma nova (mais antiga primeiro). */
   cancellationReviewHistory?: RentalCancellationReview[];

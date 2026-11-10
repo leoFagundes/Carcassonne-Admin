@@ -185,12 +185,19 @@ export function CustomerDetail({
         </div>
       )}
 
+      {customer.guest && (
+        <p className="rounded-xl border border-primary-gold/15 bg-primary-gold/[0.04] px-3 py-2.5 text-[11px] leading-relaxed text-primary-gold/60">
+          <strong className="text-primary-gold/80">Cliente sem conta</strong>: cadastrado no balcão. Se criar conta no site
+          com o mesmo CPF e WhatsApp, este histórico passa para a conta dele.
+        </p>
+      )}
+
       {/* Contato */}
       <div className="flex flex-col gap-2">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
           <span className="flex flex-col min-w-0">
             <span className="text-[10px] uppercase tracking-wider text-primary-gold/45">E-mail</span>
-            <span className="break-all text-primary-gold/85">{customer.email}</span>
+            <span className="break-all text-primary-gold/85">{customer.email || "não informado"}</span>
           </span>
           <span className="flex flex-col min-w-0">
             <span className="text-[10px] uppercase tracking-wider text-primary-gold/45">CPF</span>

@@ -23,6 +23,7 @@ import {
   cancelBreakdown,
   monthlyRentals,
   ordersFrom,
+  originBreakdown,
   paymentBreakdown,
   paymentFees,
   periodStart,
@@ -165,7 +166,13 @@ export default function RentalStats() {
     const cancels = cancelBreakdown(inPeriod);
     const payment = paymentBreakdown(ordersInPeriod);
     const fees = paymentFees(ordersInPeriod);
+    const origin = originBreakdown(ordersInPeriod);
     return {
+      origin,
+      originChart: [
+        { name: "Pelo site", value: origin.site, fill: GOLD },
+        { name: "No balcão (admin)", value: origin.admin, fill: SKY },
+      ],
       summary: rentalSummary(inPeriod, orders, start),
       fees,
       games: topGames(inPeriod, 8),
@@ -181,7 +188,8 @@ export default function RentalStats() {
         { name: "Prazo de pagamento", value: cancels.system, fill: VIOLET },
       ],
       payment: [
-        { name: "Balcão", value: payment.counter, fill: GOLD },
+        { name: "Balcão", value: payment.counter - origin.courtesy, fill: GOLD },
+        { name: "Cortesia", value: origin.courtesy, fill: RED },
         { name: "Pix", value: payment.pix, fill: GREEN },
         { name: "Cartão", value: payment.card, fill: SKY },
         { name: "Saldo Mercado Pago", value: payment.other, fill: VIOLET },
@@ -248,6 +256,15 @@ export default function RentalStats() {
     { name: "Situação dos aluguéis", rows: [["Situação", "Aluguéis"], ...stats.status.map((d) => [d.name, d.value])] },
     { name: "Como pagaram", rows: [["Forma", "Pedidos"], ...stats.payment.map((d) => [d.name, d.value])] },
     { name: "Quem cancelou", rows: [["Quem", "Aluguéis"], ...stats.cancels.map((d) => [d.name, d.value])] },
+    {
+      name: "Origem dos pedidos",
+      rows: [
+        ["Origem", "Pedidos"],
+        ...stats.originChart.map((d) => [d.name, d.value]),
+        ["Cortesias", stats.origin.courtesy],
+        ["Deixou de receber com cortesias (R$)", brl(stats.origin.waived)],
+      ],
+    },
     { name: "Clientes que mais alugaram", rows: [["Cliente", "Aluguéis"], ...stats.customers.map((c) => [c.name, c.count])] },
     { name: `Aluguéis por mês ${year}`, rows: [["Mês", "Aluguéis"], ...monthly.map((m) => [m.name, m.aluguéis])] },
   ]);
@@ -393,6 +410,16 @@ export default function RentalStats() {
 
           <Panel title="Quem cancelou">
             <Donut data={stats.cancels} />
+          </Panel>
+
+          <Panel title="De onde vieram os pedidos">
+            <Donut data={stats.originChart} />
+            {stats.origin.courtesy > 0 && (
+              <p className="text-[11px] text-primary-gold/50">
+                {plural(stats.origin.courtesy, "cortesia", "cortesias")} no período ·{" "}
+                {formatBRL(stats.origin.waived)} que o pub deixou de receber.
+              </p>
+            )}
           </Panel>
 
           <Panel icon={<LuUsers size={14} />} title="Clientes que mais alugaram">

@@ -3,6 +3,7 @@ import type { RentalOrderType, RentalType } from "@/types";
 import {
   cancelBreakdown,
   monthlyRentals,
+  originBreakdown,
   paymentBreakdown,
   paymentFees,
   periodStart,
@@ -173,5 +174,21 @@ describe("paymentFees", () => {
     expect(
       paymentFees([paid(1000, 50, 950), paid(2000, 100), paid(500), { paymentMode: "counter", total: 9999 }]),
     ).toEqual({ paidOnline: 3, gross: 3500, fees: 150, net: 2850, missing: 1, grossKnown: 3000 });
+  });
+});
+
+describe("originBreakdown", () => {
+  it("separa site e balcão e soma as cortesias", () => {
+    const courtesy = { kind: "courtesy" as const, amount: 0, waived: 4500, at: 1, by: "a", byName: "Leo" };
+    const paid = { kind: "paid" as const, method: "cash" as const, amount: 4500, at: 1, by: "a", byName: "Leo" };
+    expect(
+      originBreakdown([
+        {},
+        { origin: "customer" },
+        { origin: "admin", counterPayment: paid },
+        { origin: "admin", counterPayment: courtesy },
+        { origin: "admin", counterPayment: { ...courtesy, waived: 9000 } },
+      ]),
+    ).toEqual({ site: 2, admin: 3, courtesy: 2, waived: 13500 });
   });
 });

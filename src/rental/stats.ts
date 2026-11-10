@@ -188,6 +188,28 @@ export function paymentBreakdown(orders: Pick<RentalOrderType, "paymentMode" | "
   return out;
 }
 
+/**
+ * De onde vieram os pedidos (site × balcão) e as cortesias do balcão, com o
+ * valor que o pub deixou de receber.
+ */
+export function originBreakdown(orders: Pick<RentalOrderType, "origin" | "counterPayment">[]): {
+  site: number;
+  admin: number;
+  courtesy: number;
+  waived: number;
+} {
+  const out = { site: 0, admin: 0, courtesy: 0, waived: 0 };
+  for (const o of orders) {
+    if (o.origin === "admin") out.admin++;
+    else out.site++;
+    if (o.counterPayment?.kind === "courtesy") {
+      out.courtesy++;
+      out.waived += o.counterPayment.waived ?? 0;
+    }
+  }
+  return out;
+}
+
 /** Pedidos com retirada a partir de `start`. */
 export function ordersFrom<T extends Pick<RentalOrderType, "startDate">>(orders: T[], start: string | null): T[] {
   return start ? orders.filter((o) => o.startDate >= start) : orders;
