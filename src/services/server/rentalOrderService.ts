@@ -232,8 +232,9 @@ export const pixFailed = () =>
 
 /**
  * Pix direto do pedido (balcão): cria o pagamento no provedor, que expira junto
- * com a reserva, e grava o "copia e cola" no pedido. O link (`checkoutUrl`)
- * vira a página do Pix no Mercado Pago, para o cliente reabrir pela conta.
+ * com a reserva, e grava o "copia e cola" no pedido. O `checkoutUrl` fica
+ * vazio: se o cliente preferir cartão, o checkout do Mercado Pago é criado na
+ * hora para o mesmo pedido (pagar duas vezes devolve o pagamento a mais).
  */
 export async function createOrderPix(
   orderId: string,
@@ -251,8 +252,6 @@ export async function createOrderPix(
   await ordersCol().doc(orderId).update({
     "payment.channel": "pix",
     "payment.pix": { qrCode: pix.qrCode, paymentId: pix.paymentId },
-    "payment.checkoutUrl": pix.ticketUrl ?? "",
-    "payment.providerCheckoutId": `pix:${pix.paymentId}`,
   });
   return { qrCode: pix.qrCode, paymentId: pix.paymentId };
 }

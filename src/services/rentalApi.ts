@@ -57,7 +57,7 @@ const orderPath = (id: string, action: string) =>
 
 export const rentalApi = {
   createOrder: (input: OrderInput) =>
-    call<{ orderId: string; code: string; checkoutUrl?: string }>("/api/rental/orders", input),
+    call<{ orderId: string; code: string; checkoutUrl?: string; pixCode?: string }>("/api/rental/orders", input),
 
   /** Admin: aluguel criado no balcão. `override_required` traz `overrides` para confirmar. */
   createAdminOrder: (body: {

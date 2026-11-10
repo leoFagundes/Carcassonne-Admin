@@ -21,6 +21,7 @@ import RentalPageShell from "../../rentalPageShell";
 import HelpWhatsapp from "../../helpWhatsapp";
 import RentalSteps, { type RentalStep } from "../../rentalSteps";
 import { CopyCode, NextSteps } from "../../orderBits";
+import PixPayBox from "../../pixPayBox";
 
 type Order = RentalOrderType & { id: string };
 type Rental = RentalType & { id: string };
@@ -81,7 +82,9 @@ function bannerFor(view: OrderPaymentView, order: Order, confirming: boolean): B
       return {
         icon: "wait",
         title: "Aguardando seu pagamento",
-        text: "Suas cópias estão reservadas. Conclua o pagamento antes que o tempo acabe.",
+        text: order.payment?.pix?.qrCode
+          ? "Suas cópias estão reservadas. Pague o Pix abaixo antes que o tempo acabe."
+          : "Suas cópias estão reservadas. Conclua o pagamento antes que o tempo acabe.",
       };
     case "rejected":
       return {
@@ -266,6 +269,7 @@ function OrderContent() {
       banner.icon === "ok" ? "text-emerald-400" : banner.icon === "bad" ? "text-red-300" : "text-primary-gold";
     const open = shown.state === "awaiting" || shown.state === "rejected";
     const canPay = open && !confirming;
+    const pixCode = order.payment?.channel === "pix" ? (order.payment.pix?.qrCode ?? null) : null;
     const unconfirmed = stalled && returned === "approved" && shown.state === "awaiting";
 
     // Etapa e próximos passos (só para pedido confirmado: pago ou no balcão).
@@ -320,16 +324,26 @@ function OrderContent() {
           </p>
         )}
 
+        {/* Pix na tela: QR e copia e cola; a página atualiza sozinha quando cai */}
+        {canPay && pixCode && <PixPayBox code={pixCode} amount={order.total} />}
+
         {/* Ação principal logo abaixo do aviso */}
         {(canPay || shown.state === "expired" || shown.state === "canceled") && (
           <div className="flex flex-col gap-2">
             {canPay && (
-              <button type="button" onClick={pay} disabled={busy !== null} className={mainBtn}>
+              <button
+                type="button"
+                onClick={pay}
+                disabled={busy !== null}
+                className={pixCode ? `${smallBtn} self-center` : mainBtn}
+              >
                 {busy === "pay"
                   ? "Abrindo o pagamento..."
-                  : shown.state === "rejected"
-                    ? `Tentar de novo · ${formatBRL(order.total)}`
-                    : `Pagar ${formatBRL(order.total)} agora`}
+                  : pixCode
+                    ? "Prefiro pagar com cartão (Mercado Pago)"
+                    : shown.state === "rejected"
+                      ? `Tentar de novo · ${formatBRL(order.total)}`
+                      : `Pagar ${formatBRL(order.total)} agora`}
               </button>
             )}
             {(shown.state === "expired" || shown.state === "canceled") && (

@@ -565,6 +565,12 @@ export type CancellationPolicy = "full" | "fee" | "manual";
 
 export interface OnlinePaymentSettings {
   enabled: boolean;
+  /**
+   * Oferece no site o "Pix aqui na tela" (QR gerado na hora, sem sair do site)
+   * além do Mercado Pago. Ausente = ligado. Se o Pix falhar, o cliente segue
+   * para o Mercado Pago.
+   */
+  pixDirect?: boolean;
   holdMinutes: number;
   cancellationPolicy: CancellationPolicy;
   feePercent: number;

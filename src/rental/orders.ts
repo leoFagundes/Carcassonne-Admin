@@ -11,7 +11,13 @@ import type {
   RentalType,
 } from "@/types";
 
-export type OrderInput = { gameIds: string[]; startDate: string; rulesVersion: number };
+export type OrderInput = {
+  gameIds: string[];
+  startDate: string;
+  rulesVersion: number;
+  /** Pagamento online: página do Mercado Pago (padrão) ou Pix na tela do site. */
+  paymentChannel?: "checkout" | "pix";
+};
 
 export type OrderErrorCode =
   | "service_disabled"

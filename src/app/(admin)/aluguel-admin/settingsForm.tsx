@@ -305,6 +305,25 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
         onOpenRules={onOpenRules}
       />
 
+      {local.onlinePayment.enabled && (
+        <div className="flex flex-col gap-1.5 -mt-2">
+          <Checkbox
+            checked={local.onlinePayment.pixDirect !== false}
+            setChecked={() =>
+              set("onlinePayment", { ...local.onlinePayment, pixDirect: local.onlinePayment.pixDirect === false })
+            }
+            variant
+            width="!max-w-none"
+            label="Oferecer “Pix aqui na tela” no pedido"
+          />
+          <p className="text-[11px] text-primary-gold/45 leading-relaxed">
+            {local.onlinePayment.pixDirect !== false
+              ? "Ligado: o cliente escolhe entre o Pix gerado na hora (QR Code e copia e cola na própria página do pedido, que confirma sozinha) e a página do Mercado Pago (Pix ou cartão). Com o Pix, as cópias ficam reservadas por pelo menos 31 minutos. Se o Pix não puder ser gerado (conta de teste ou sem chave Pix), o cliente segue para o Mercado Pago."
+              : "Desligado: o pagamento online abre sempre a página do Mercado Pago (Pix ou cartão)."}
+          </p>
+        </div>
+      )}
+
       {/* Salvar sempre à mão, com aviso de alterações pendentes */}
       <div className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary-gold/25 bg-primary-black/90 backdrop-blur px-3 py-2.5">
         {dirty ? (

@@ -15,7 +15,7 @@ import {
   updateBooking,
 } from "@/rental/bookings";
 import { isValidCpf, normalizeCpf } from "@/rental/cpf";
-import { checkGuest, guestMatches } from "@/rental/adminOrders";
+import { checkGuest, counterHoldMinutes, guestMatches } from "@/rental/adminOrders";
 import { formatDateBR, todaySP } from "@/rental/dates";
 import { DEFAULT_RENTAL_RULES, mergeRentalSettings } from "@/rental/defaults";
 import {
@@ -62,6 +62,7 @@ import {
   checkoutFailed,
   commitRefund,
   createOrderCheckout,
+  createOrderPix,
   invalidRefundAmount,
   refundAmountLocked,
   refundInProgress,
@@ -212,7 +213,7 @@ export const MAX_CODE_ATTEMPTS = 5;
 export async function createOrder(
   token: DecodedIdToken,
   input: OrderInput,
-): Promise<{ orderId: string; code: string; checkoutUrl?: string }> {
+): Promise<{ orderId: string; code: string; checkoutUrl?: string; pixCode?: string }> {
   const db = getAdminDb();
   const uid = token.uid;
   const rentalsCol = db.collection("rentals");
@@ -303,7 +304,10 @@ export async function createOrder(
         "O pagamento online está indisponível no momento. Tente novamente mais tarde.",
       );
     }
-    const holdUntil = online ? holdUntilFor(now, settings.onlinePayment.holdMinutes) : undefined;
+    // Pix na tela: o Pix do Mercado Pago vale no mínimo 30 minutos.
+    const pix = online && input.paymentChannel === "pix" && settings.onlinePayment.pixDirect !== false;
+    const holdMinutes = pix ? counterHoldMinutes(settings.onlinePayment.holdMinutes) : settings.onlinePayment.holdMinutes;
+    const holdUntil = online ? holdUntilFor(now, holdMinutes) : undefined;
 
     // Código curto do balcão: não repete o de outro pedido (ainda é leitura).
     let code = "";
@@ -359,11 +363,21 @@ export async function createOrder(
       orderDoc,
       customer: customerInfo,
       staffEmail: settings.staffEmail,
+      pix,
     };
   });
 
   // Online: checkout depois da transação; se falhar, libera as cópias na hora.
   const payment = order.orderDoc.payment;
+  if (payment && order.pix) {
+    try {
+      const pix = await createOrderPix(order.orderId, { ...order.orderDoc, payment });
+      return { orderId: order.orderId, code: order.code, pixCode: pix.qrCode };
+    } catch (error) {
+      // Sem Pix (conta de teste, chave não cadastrada): segue pelo Mercado Pago.
+      console.error(`Pix do pedido ${order.orderId} falhou; usando o checkout:`, error);
+    }
+  }
   if (payment) {
     try {
       const checkoutUrl = await createOrderCheckout(order.orderId, {

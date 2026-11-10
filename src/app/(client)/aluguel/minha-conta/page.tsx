@@ -358,10 +358,18 @@ function MinhaContaContent() {
                       <button
                         type="button"
                         disabled={payingId !== null}
-                        onClick={() => payNow(orderId)}
+                        onClick={() =>
+                          orderDoc?.payment?.pix?.qrCode
+                            ? router.push(`/aluguel/pedido/${encodeURIComponent(orderId)}`)
+                            : payNow(orderId)
+                        }
                         className="h-11 rounded-xl bg-primary-gold text-primary-black text-sm font-semibold cursor-pointer disabled:opacity-60"
                       >
-                        {payingId === orderId ? "Abrindo o pagamento..." : `Pagar ${formatBRL(total)} agora`}
+                        {payingId === orderId
+                          ? "Abrindo o pagamento..."
+                          : orderDoc?.payment?.pix?.qrCode
+                            ? `Ver o Pix · ${formatBRL(total)}`
+                            : `Pagar ${formatBRL(total)} agora`}
                       </button>
                       <span className="text-center text-xs text-orange-200">
                         Tempo restante: {formatCountdown(view.msLeft)}

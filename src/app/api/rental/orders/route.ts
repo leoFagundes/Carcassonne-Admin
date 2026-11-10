@@ -7,7 +7,7 @@ const MAX_GAME_IDS = 20;
 
 function parseOrderInput(body: unknown): OrderInput {
   const b = (body ?? {}) as Record<string, unknown>;
-  const { gameIds, startDate, rulesVersion } = b;
+  const { gameIds, startDate, rulesVersion, paymentChannel } = b;
   if (
     !Array.isArray(gameIds) ||
     gameIds.length === 0 ||
@@ -15,11 +15,12 @@ function parseOrderInput(body: unknown): OrderInput {
     !gameIds.every(isDocId) ||
     typeof startDate !== "string" ||
     // Versão com uma casa decimal (ex.: 2.1)
-    !isValidRulesVersion(rulesVersion)
+    !isValidRulesVersion(rulesVersion) ||
+    (paymentChannel !== undefined && paymentChannel !== "checkout" && paymentChannel !== "pix")
   ) {
     throw new ApiError(400, "invalid_body", "Corpo da requisição inválido.");
   }
-  return { gameIds, startDate, rulesVersion };
+  return { gameIds, startDate, rulesVersion, ...(paymentChannel ? { paymentChannel } : {}) };
 }
 
 export const POST = withApi(async (req) => {

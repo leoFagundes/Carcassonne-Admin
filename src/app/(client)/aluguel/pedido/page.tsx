@@ -101,6 +101,7 @@ export default function PedidoPage() {
   const [verifyBusy, setVerifyBusy] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+  const [channel, setChannel] = useState<"pix" | "checkout">("pix");
   const [done, setDone] = useState<{
     code: string;
     startDate: string;
@@ -190,6 +191,9 @@ export default function PedidoPage() {
   }
 
   const online = settings?.onlinePayment?.enabled === true;
+  // "Pix aqui na tela" (QR na hora) além do Mercado Pago; o admin pode desligar.
+  const pixDirect = online && settings?.onlinePayment?.pixDirect !== false;
+  const payChannel = pixDirect ? channel : "checkout";
 
   async function submit() {
     if (!settings || !rules || !startDate || sending) return;
@@ -209,6 +213,7 @@ export default function PedidoPage() {
       gameIds: cart.gameIds,
       startDate,
       rulesVersion: rules.version,
+      ...(online ? { paymentChannel: payChannel } : {}),
     });
     if (!result.ok || !online) setSending(false);
     if (result.ok) {
@@ -217,7 +222,10 @@ export default function PedidoPage() {
         rememberPendingOrder(result.data.orderId);
         setCreatedOrderId(result.data.orderId);
         setRedirecting(true);
-        if (result.data.checkoutUrl) {
+        if (result.data.pixCode) {
+          // Pix na tela: o QR aparece na página do pedido e atualiza sozinho.
+          router.push(`/aluguel/pedido/${encodeURIComponent(result.data.orderId)}`);
+        } else if (result.data.checkoutUrl) {
           // Segue para o Mercado Pago na mesma aba.
           window.location.assign(result.data.checkoutUrl);
         } else {
@@ -260,8 +268,8 @@ export default function PedidoPage() {
     settings?.isEnabled === false ||
     (!needsLogin && !needsProfile && (!accepted || needsVerify));
 
-  let buttonLabel = online ? "Ir para o pagamento" : "Confirmar aluguel";
-  if (sending) buttonLabel = online ? "Abrindo o pagamento..." : "Enviando...";
+  let buttonLabel = online ? (payChannel === "pix" ? "Gerar o Pix" : "Ir para o pagamento") : "Confirmar aluguel";
+  if (sending) buttonLabel = online ? (payChannel === "pix" ? "Gerando o Pix..." : "Abrindo o pagamento...") : "Enviando...";
   else if (needsLogin) buttonLabel = "Entrar para confirmar";
   else if (needsProfile) buttonLabel = "Completar cadastro";
 
@@ -702,9 +710,52 @@ export default function PedidoPage() {
                 </label>
               </>
             )}
+            {pixDirect && (
+              <div role="radiogroup" aria-label="Como pagar" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {(
+                  [
+                    {
+                      value: "pix",
+                      title: "Pix aqui na tela",
+                      text: "O QR Code aparece na hora. Pague no app do banco e a confirmação chega sozinha.",
+                    },
+                    {
+                      value: "checkout",
+                      title: "Mercado Pago",
+                      text: "Abre a página do Mercado Pago: Pix ou cartão de crédito/débito.",
+                    },
+                  ] as const
+                ).map((o) => {
+                  const on = channel === o.value;
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => setChannel(o.value)}
+                      className={`flex flex-col gap-0.5 rounded-xl border p-3 text-left transition-colors cursor-pointer ${
+                        on ? "border-primary-gold/70 bg-primary-gold/[0.08]" : "border-primary-gold/20 hover:border-primary-gold/45"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 text-sm font-semibold text-primary-gold">
+                        <span
+                          aria-hidden="true"
+                          className={`h-3.5 w-3.5 rounded-full border ${on ? "border-primary-gold bg-primary-gold shadow-[inset_0_0_0_2px_#141414]" : "border-primary-gold/40"}`}
+                        />
+                        {o.title}
+                      </span>
+                      <span className="text-xs leading-snug text-primary-gold/55">{o.text}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             <p className="text-xs text-primary-gold/55">
               {online
-                ? `Pagamento online, por Pix ou cartão. Suas cópias ficam reservadas por ${settings.onlinePayment.holdMinutes} minutos enquanto você paga.`
+                ? `Pagamento online${pixDirect ? "" : ", por Pix ou cartão"}. Suas cópias ficam reservadas por ${
+                    payChannel === "pix" ? Math.max(31, settings.onlinePayment.holdMinutes) : settings.onlinePayment.holdMinutes
+                  } minutos enquanto você paga.`
                 : "Pagamento no balcão, na retirada."}
             </p>
           </section>
