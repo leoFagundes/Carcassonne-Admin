@@ -991,14 +991,6 @@ export default function Rerserve() {
             </span>
           </div>
 
-          {/* Público real do dia (com e sem reserva) — usado nas estatísticas */}
-          <DayAttendanceCard
-            date={date}
-            reservedPeople={reserves
-              .filter((r) => r.status === "confirmed")
-              .reduce((total, r) => total + (r.adults ?? 0) + (r.childs ?? 0), 0)}
-          />
-
           {/* Anotações do dia */}
           <div className="flex flex-col gap-2 bg-secondary-black/40 border border-primary-gold/15 rounded-xl p-3 max-w-[267.84px]">
             <div className="flex items-center justify-between mb-1">
@@ -1090,6 +1082,17 @@ export default function Rerserve() {
               </>
             )}
           </div>
+
+          {/* Público real do dia (com e sem reserva) — usado nas estatísticas */}
+          <DayAttendanceCard
+            date={date}
+            reservedPeople={reserves
+              .filter((r) => r.status === "confirmed")
+              .reduce(
+                (total, r) => total + (r.adults ?? 0) + (r.childs ?? 0),
+                0,
+              )}
+          />
 
           {/* Freelancers */}
           {freelancers.length > 0 && (

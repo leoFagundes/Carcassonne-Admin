@@ -14,8 +14,16 @@ type Integration =
   | { state: "ready"; configured: boolean; mode: "test" | "production" | null };
 
 const POLICIES: { value: CancellationPolicy; title: string; text: string }[] = [
-  { value: "full", title: "Reembolso integral automático", text: "O cliente recebe tudo de volta na hora." },
-  { value: "fee", title: "Reembolso com taxa", text: "O cliente recebe o valor menos a taxa." },
+  {
+    value: "full",
+    title: "Reembolso integral automático",
+    text: "O cliente recebe tudo de volta na hora.",
+  },
+  {
+    value: "fee",
+    title: "Reembolso com taxa",
+    text: "O cliente recebe o valor menos a taxa.",
+  },
   {
     value: "manual",
     title: "Análise manual",
@@ -24,7 +32,10 @@ const POLICIES: { value: CancellationPolicy; title: string; text: string }[] = [
 ];
 
 /** Frase que traduz a política escolhida num exemplo de R$ 100,00. */
-export function policyPreview(policy: CancellationPolicy, feePercent: number): string {
+export function policyPreview(
+  policy: CancellationPolicy,
+  feePercent: number,
+): string {
   const example = 10000;
   const back = refundFor(policy, feePercent, example);
   if (back === null) {
@@ -36,16 +47,33 @@ export function policyPreview(policy: CancellationPolicy, feePercent: number): s
 function IntegrationStatus({ status }: { status: Integration }) {
   const info =
     status.state === "loading"
-      ? { text: "Verificando...", cls: "border-primary-gold/20 text-primary-gold/60" }
+      ? {
+          text: "Verificando...",
+          cls: "border-primary-gold/20 text-primary-gold/60",
+        }
       : status.state === "error"
-        ? { text: "Não foi possível verificar", cls: "border-invalid-color/40 text-invalid-color" }
+        ? {
+            text: "Não foi possível verificar",
+            cls: "border-invalid-color/40 text-invalid-color",
+          }
         : !status.configured
-          ? { text: "Não configurado", cls: "border-invalid-color/40 text-invalid-color" }
+          ? {
+              text: "Não configurado",
+              cls: "border-invalid-color/40 text-invalid-color",
+            }
           : status.mode === "test"
-            ? { text: "Modo de teste", cls: "border-orange-400/50 text-orange-300" }
-            : { text: "Produção", cls: "border-emerald-400/50 text-emerald-300" };
+            ? {
+                text: "Modo de teste",
+                cls: "border-orange-400/50 text-orange-300",
+              }
+            : {
+                text: "Produção / Funcionando",
+                cls: "border-emerald-400/50 text-emerald-300",
+              };
   return (
-    <span className={`self-start text-xs px-2.5 py-1 rounded-full border font-semibold ${info.cls}`}>
+    <span
+      className={`self-start text-xs px-2.5 py-1 rounded-full border font-semibold ${info.cls}`}
+    >
       {info.text}
     </span>
   );
@@ -60,7 +88,9 @@ export default function OnlinePaymentSection({
   onChange: (next: OnlinePaymentSettings) => void;
   onOpenRules: VoidFunction;
 }) {
-  const [integration, setIntegration] = useState<Integration>({ state: "loading" });
+  const [integration, setIntegration] = useState<Integration>({
+    state: "loading",
+  });
   const [justEnabled, setJustEnabled] = useState(false);
 
   useEffect(() => {
@@ -69,7 +99,11 @@ export default function OnlinePaymentSection({
       if (!alive) return;
       setIntegration(
         result.ok
-          ? { state: "ready", configured: result.data.configured, mode: result.data.mode }
+          ? {
+              state: "ready",
+              configured: result.data.configured,
+              mode: result.data.mode,
+            }
           : { state: "error", message: result.message },
       );
     });
@@ -81,7 +115,8 @@ export default function OnlinePaymentSection({
   const configured = integration.state === "ready" && integration.configured;
   // Ligado e sem credenciais (ou sem saber): ainda dá para desligar.
   const canToggle = configured || value.enabled;
-  const set = (patch: Partial<OnlinePaymentSettings>) => onChange({ ...value, ...patch });
+  const set = (patch: Partial<OnlinePaymentSettings>) =>
+    onChange({ ...value, ...patch });
 
   const toggle = () => {
     const next = !value.enabled;
@@ -93,26 +128,31 @@ export default function OnlinePaymentSection({
     <div className="flex flex-col gap-4 min-w-0 rounded-2xl border border-primary-gold/15 bg-primary-black/30 p-3 sm:p-4">
       <div className="flex items-center gap-2">
         <LuCreditCard size={18} className="text-primary-gold/70 shrink-0" />
-        <h3 className="text-base font-semibold text-primary-gold">Pagamento online</h3>
+        <h3 className="text-base font-semibold text-primary-gold">
+          Pagamento online
+        </h3>
       </div>
 
       <div className="flex flex-col gap-1.5">
         <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-gold/70">
-          Situação da integração (Mercado Pago)
+          Situação ao vivo da integração (Mercado Pago)
         </span>
         <IntegrationStatus status={integration} />
         {integration.state === "ready" && !integration.configured && (
           <p className="text-xs text-primary-gold/60">
-            Configure as credenciais do Mercado Pago no servidor para poder ligar o pagamento online.
+            Configure as credenciais do Mercado Pago no servidor para poder
+            ligar o pagamento online.
           </p>
         )}
         {integration.state === "error" && (
-          <p className="text-xs text-invalid-color/80">Não foi possível verificar a integração agora.</p>
+          <p className="text-xs text-invalid-color/80">
+            Não foi possível verificar a integração agora.
+          </p>
         )}
         {integration.state === "ready" && integration.mode === "test" && (
           <p className="text-xs text-orange-300/80">
-            Em modo de teste os pagamentos não são reais. Troque pela credencial de produção antes de abrir
-            ao público.
+            Em modo de teste os pagamentos não são reais. Troque pela credencial
+            de produção antes de abrir ao público.
           </p>
         )}
       </div>
@@ -145,12 +185,14 @@ export default function OnlinePaymentSection({
       </button>
       {!canToggle && integration.state === "error" && (
         <p className="-mt-2 text-xs text-primary-gold/55">
-          Não foi possível verificar a integração agora. Recarregue a página para tentar de novo.
+          Não foi possível verificar a integração agora. Recarregue a página
+          para tentar de novo.
         </p>
       )}
       {!canToggle && integration.state === "ready" && (
         <p className="-mt-2 text-xs text-primary-gold/55">
-          Indisponível enquanto o Mercado Pago não estiver configurado no servidor.
+          Indisponível enquanto o Mercado Pago não estiver configurado no
+          servidor.
         </p>
       )}
 
@@ -159,8 +201,9 @@ export default function OnlinePaymentSection({
           <LuTriangleAlert size={16} className="shrink-0 mt-0.5" />
           <div className="flex flex-col gap-1.5 min-w-0">
             <span>
-              Ao ligar, os clientes passam a pagar online (Pix ou cartão, à vista). Revise a regra de
-              &quot;Formas de pagamento&quot; e as de cancelamento para ficarem de acordo.
+              Ao ligar, os clientes passam a pagar online (Pix ou cartão, à
+              vista). Revise a regra de &quot;Formas de pagamento&quot; e as de
+              cancelamento para ficarem de acordo.
             </span>
             <button
               type="button"
@@ -174,8 +217,8 @@ export default function OnlinePaymentSection({
       )}
       {!value.enabled && (
         <p className="text-xs text-primary-gold/50">
-          Desligado: os pedidos são reservados na hora e o pagamento é feito no balcão. Pedidos que já
-          estão aguardando pagamento seguem até expirar.
+          Desligado: os pedidos são reservados na hora e o pagamento é feito no
+          balcão. Pedidos que já estão aguardando pagamento seguem até expirar.
         </p>
       )}
 
@@ -190,7 +233,8 @@ export default function OnlinePaymentSection({
         width="!w-full sm:!w-[250px] !min-w-0"
       />
       <p className="-mt-2 text-xs text-primary-gold/55">
-        Enquanto o cliente paga, o jogo fica reservado por esse tempo (de 15 a 60 minutos).
+        Enquanto o cliente paga, o jogo fica reservado por esse tempo (de 15 a
+        60 minutos).
       </p>
 
       <div className="flex flex-col gap-2">
@@ -217,7 +261,9 @@ export default function OnlinePaymentSection({
                     : "border-primary-gold/15 hover:border-primary-gold/40"
                 }`}
               >
-                <span className={`text-sm font-semibold ${active ? "text-primary-gold" : "text-primary-gold/80"}`}>
+                <span
+                  className={`text-sm font-semibold ${active ? "text-primary-gold" : "text-primary-gold/80"}`}
+                >
                   {p.title}
                 </span>
                 <span className="text-xs text-primary-gold/60">{p.text}</span>
