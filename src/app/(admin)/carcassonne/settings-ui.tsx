@@ -60,7 +60,7 @@ export function AlsoInNote({ alsoIn }: { alsoIn?: AlsoIn }) {
 
 /** Cartão de uma seção de configurações, com o aviso de alterações e o botão Salvar no rodapé. */
 /** Botão "i" ao lado do título: abre a explicação (o que é, onde aparece). */
-function InfoToggle({ title, children }: { title: string; children: ReactNode }) {
+export function InfoToggle({ title, children }: { title: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
     <>

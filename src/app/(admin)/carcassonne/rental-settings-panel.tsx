@@ -11,7 +11,7 @@ import { AlsoInNote } from "./settings-ui";
 export default function RentalSettingsPanel() {
   const router = useRouter();
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-primary-gold/15 bg-secondary-black/40 p-4 sm:p-5">
+    <div className="flex flex-col gap-3">
       <AlsoInNote
         alsoIn={{
           label: "Aluguel → Regras",
@@ -20,7 +20,7 @@ export default function RentalSettingsPanel() {
       />
       {/* As regras (texto) ficam só na página do aluguel. */}
       <SettingsForm
-        onOpenRules={() => router.push("/aluguel-admin?tab=regras")}
+        onOpenRules={() => router.push("/aluguel-admin?tab=regras&view=regras")}
       />
     </div>
   );

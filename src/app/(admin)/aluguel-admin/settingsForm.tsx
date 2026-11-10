@@ -2,15 +2,23 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { LuTriangleAlert } from "react-icons/lu";
+import {
+  LuArrowLeftRight,
+  LuCalendarDays,
+  LuGauge,
+  LuPower,
+  LuTriangleAlert,
+  LuUserCheck,
+} from "react-icons/lu";
 import type { RentalSettingsType } from "@/types";
 import Input from "@/components/input";
-import Checkbox from "@/components/checkbox";
 import { useAlert } from "@/contexts/alertProvider";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import { DEFAULT_RENTAL_SETTINGS } from "@/rental/defaults";
-import OnlinePaymentSection from "./onlinePaymentSettings";
 import { queueModeOf, type QueueMode } from "@/rental/availability";
+import { weekdaysText } from "@/rental/settingsText";
+import OnlinePaymentSection from "./onlinePaymentSettings";
+import { FieldNote, PillChoice, SettingsSection, ToggleRow } from "./settingsBlocks";
 
 const QUEUE_MODE_OPTIONS: { value: QueueMode; label: string; text: string }[] = [
   {
@@ -34,18 +42,69 @@ const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 type Draft = Omit<RentalSettingsType, "staffEmail"> & { staffEmail: string };
 
-/** Bloco do formulário: título, explicação curta e os campos. */
-function Group({ title, hint, children }: { title: string; hint?: ReactNode; children: ReactNode }) {
+const POLICY_SHORT = { full: "reembolso integral", fee: "reembolso com taxa", manual: "análise manual" } as const;
+
+/** Resumo do serviço numa linha: cada item leva à sua seção. */
+function Summary({ local }: { local: Draft }) {
+  const queue =
+    local.allowQueue === false
+      ? "sem fila"
+      : QUEUE_MODE_OPTIONS.find((o) => o.value === queueModeOf(local.queueMode))?.label.toLowerCase();
+  const gap = local.queueGapDays ?? 1;
+  const pay = local.onlinePayment;
+  const items: { href: string; label: string; value: string; tone?: "on" | "off" }[] = [
+    {
+      href: "#cfg-servico",
+      label: "Serviço",
+      value: local.isEnabled ? "Ligado" : "Desligado",
+      tone: local.isEnabled ? "on" : "off",
+    },
+    {
+      href: "#cfg-retirada",
+      label: "Retirada",
+      value: `${weekdaysText(local.pickupWeekdays)} · até ${local.maxAdvanceDays} ${local.maxAdvanceDays === 1 ? "dia" : "dias"} antes`,
+    },
+    { href: "#cfg-fila", label: "Fila", value: `${queue} · folga de ${gap} ${gap === 1 ? "dia" : "dias"}` },
+    {
+      href: "#cfg-limites",
+      label: "Limites",
+      value: `${local.maxGamesPerOrder} por pedido · ${local.maxActiveGamesPerCustomer} por cliente`,
+    },
+    {
+      href: "#cfg-pagamento",
+      label: "Pagamento",
+      value: pay.enabled
+        ? `Online${pay.pixDirect !== false ? " (Pix na tela ou cartão)" : ""} · ${POLICY_SHORT[pay.cancellationPolicy]}`
+        : "No balcão, na retirada",
+    },
+  ];
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-primary-gold/15 bg-primary-black/25 p-3.5">
-      <div className="flex flex-col gap-0.5">
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-gold/75">{title}</h3>
-        {hint && <p className="text-[11px] text-primary-gold/45 leading-relaxed">{hint}</p>}
-      </div>
-      {children}
-    </section>
+    <nav aria-label="Resumo das configurações" className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((it) => (
+        <a
+          key={it.href}
+          href={it.href}
+          onClick={(e) => {
+            e.preventDefault();
+            document.querySelector(it.href)?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+          className="flex min-w-0 flex-col gap-0.5 rounded-xl border border-primary-gold/15 bg-primary-black/30 px-3 py-2 transition-colors hover:border-primary-gold/40"
+        >
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-gold/45">{it.label}</span>
+          <span
+            className={`truncate text-xs font-medium first-letter:uppercase ${
+              it.tone === "on" ? "text-emerald-300" : it.tone === "off" ? "text-invalid-color" : "text-primary-gold/85"
+            }`}
+          >
+            {it.value}
+          </span>
+        </a>
+      ))}
+    </nav>
   );
 }
+
+const numberWidth = "!w-full sm:!w-[260px] !min-w-0";
 
 export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunction }) {
   const { addAlert } = useAlert();
@@ -139,50 +198,74 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
   };
 
   const dirty = loaded && !!saved && JSON.stringify(saved) !== JSON.stringify(local);
+  const gap = Math.min(14, Math.max(1, Math.round(local.queueGapDays ?? 1) || 1));
+  const queueOn = local.allowQueue !== false;
+  const mode = queueModeOf(local.queueMode);
+
+  const jogosLink: ReactNode = (
+    <Link href="/aluguel-admin?tab=jogos" className="underline underline-offset-2">
+      Jogos
+    </Link>
+  );
 
   return (
     <div className="flex flex-col gap-4 min-w-0">
-      <h2 className="text-lg font-semibold text-primary-gold">Configurações do serviço</h2>
+      <Summary local={local} />
 
-      <Group
+      {/* 1. Serviço */}
+      <SettingsSection
+        id="cfg-servico"
+        n={1}
+        icon={<LuPower size={18} />}
         title="Serviço"
-        hint="Desligado, o cliente vê “Aluguel de jogos em breve”. Você (admin logado) continua vendo o catálogo para testar."
+        summary="Liga ou desliga o aluguel de jogos para os clientes."
+        info={
+          <p>
+            Desligado, o cliente vê <strong>“Aluguel de jogos em breve”</strong> e não consegue fazer pedidos. Você, logado
+            como admin, continua vendo o catálogo (com o aviso “Serviço desativado”) para testar. Os aluguéis que já
+            existem continuam normalmente.
+          </p>
+        }
       >
-        <Checkbox
+        <ToggleRow
           checked={local.isEnabled}
-          setChecked={() => set("isEnabled", !local.isEnabled)}
-          variant
-          label={local.isEnabled ? "Aluguel ligado para os clientes" : "Aluguel desligado"}
+          onChange={(v) => set("isEnabled", v)}
+          title="Aluguel aberto para os clientes"
+          description={
+            local.isEnabled
+              ? "Ligado: o catálogo aparece e os clientes podem fazer pedidos."
+              : "Desligado: os clientes veem “Aluguel de jogos em breve”."
+          }
         />
-      </Group>
+      </SettingsSection>
 
-      <Group
-        title="Retirada"
-        hint={
+      {/* 2. Retirada */}
+      <SettingsSection
+        id="cfg-retirada"
+        n={2}
+        icon={<LuCalendarDays size={18} />}
+        title="Retirada e devolução"
+        summary="Em que dias o pub atende o aluguel e com quanta antecedência o cliente pode marcar."
+        info={
           <>
-            Os dias em que o pub atende para retirada e devolução, e com quanta antecedência o cliente pode marcar. Se o
-            prazo do jogo terminar num dia sem atendimento, a devolução passa sozinha para o próximo dia marcado (ex.: prazo
-            terminando na segunda, com segunda e terça desmarcadas, a devolução fica para quarta). O tempo que o cliente fica
-            com o jogo é definido em cada jogo (campo “Prazo”), na aba{" "}
-            <Link href="/aluguel-admin?tab=jogos" className="underline underline-offset-2">
-              Jogos
-            </Link>
-            .
+            <p>
+              Os dias marcados valem para <strong>retirar e para devolver</strong>. Se o prazo do jogo terminar num dia sem
+              atendimento, a devolução passa sozinha para o próximo dia marcado (ex.: prazo terminando na segunda, com
+              segunda e terça desmarcadas, a devolução fica para quarta). O cliente vê a data certa no pedido.
+            </p>
+            <p>
+              Quantos dias o cliente fica com o jogo é definido em cada jogo (campo “Prazo”), na aba {jogosLink}.
+            </p>
           </>
         }
       >
-        <div className="flex flex-wrap gap-2">
-          {WEEKDAYS.map((name, day) => (
-            <Checkbox
-              key={day}
-              checked={local.pickupWeekdays.includes(day)}
-              setChecked={() => toggleDay(day)}
-              variant
-              label={name}
-              width="!min-w-0 !w-auto"
-            />
-          ))}
-        </div>
+        <PillChoice
+          label="Dias de retirada e devolução"
+          multi
+          options={WEEKDAYS.map((label, value) => ({ value, label }))}
+          value={local.pickupWeekdays}
+          onChange={toggleDay}
+        />
         <Input
           labelSpace
           label="Antecedência máxima (dias)"
@@ -191,69 +274,93 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
           value={String(local.maxAdvanceDays)}
           setValue={(e) => set("maxAdvanceDays", Number(e.target.value))}
           variant
-          width="!w-full sm:!w-[250px] !min-w-0"
+          width={numberWidth}
         />
-        <Checkbox
-          checked={local.allowQueue !== false}
-          setChecked={() => set("allowQueue", local.allowQueue === false)}
-          variant
-          width="!max-w-none"
-          label="Permitir reservar um jogo que está com outro cliente"
-        />
-        <p className="-mt-1 text-[11px] text-primary-gold/45 leading-relaxed">
-          {local.allowQueue !== false
-            ? "Ligado: escolha abaixo se o cliente pode encaixar o aluguel antes de quem já reservou, depois de quem está com o jogo (se essa pessoa atrasar, a retirada atrasa junto), ou os dois."
-            : "Desligado: ninguém fica na fila atrás de outro cliente. Com todas as cópias fora, o jogo aparece como “Alugado” e só pode ser alugado depois que uma cópia voltar. Ainda dá para pegar uma cópia livre agora que tem reserva marcada mais para frente, desde que devolva antes (com a folga)."}
-        </p>
-        {local.allowQueue !== false && (
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-gold/70">
-              Em volta de uma reserva já marcada, o cliente pode alugar
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {QUEUE_MODE_OPTIONS.map((o) => {
-                const on = queueModeOf(local.queueMode) === o.value;
-                return (
-                  <button
-                    key={o.value}
-                    type="button"
-                    onClick={() => set("queueMode", o.value)}
-                    className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors cursor-pointer ${
-                      on
-                        ? "border-primary-gold bg-primary-gold text-primary-black"
-                        : "border-primary-gold/20 text-primary-gold/60 hover:border-primary-gold/50 hover:text-primary-gold"
-                    }`}
-                  >
-                    {o.label}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="text-[11px] text-primary-gold/45 leading-relaxed">
-              {QUEUE_MODE_OPTIONS.find((o) => o.value === queueModeOf(local.queueMode))?.text}
+        <FieldNote>
+          {local.maxAdvanceDays === 0
+            ? "0: o cliente só pode marcar para retirar no mesmo dia."
+            : `O cliente pode marcar a retirada de hoje até daqui a ${local.maxAdvanceDays} ${local.maxAdvanceDays === 1 ? "dia" : "dias"}.`}
+        </FieldNote>
+      </SettingsSection>
+
+      {/* 3. Fila e folga */}
+      <SettingsSection
+        id="cfg-fila"
+        n={3}
+        icon={<LuArrowLeftRight size={18} />}
+        title="Fila e folga entre aluguéis"
+        summary="Se dá para reservar um jogo que já está com alguém (ou reservado) e a margem entre um cliente e o próximo."
+        info={
+          <>
+            <p>
+              <strong>Ligado:</strong> o cliente pode encaixar o aluguel em volta de outra reserva da mesma cópia, como
+              você escolher abaixo. Reservando para depois de quem está com o jogo, se essa pessoa atrasar, a retirada
+              atrasa junto.
             </p>
-          </div>
+            <p>
+              <strong>Desligado:</strong> ninguém fica na fila atrás de outro cliente. Com todas as cópias fora, o jogo
+              aparece como “Alugado” e só pode ser alugado quando uma voltar. Ainda dá para pegar uma cópia livre agora que
+              tem reserva mais para frente, desde que devolva antes (com a folga).
+            </p>
+            <p>
+              <strong>Folga:</strong> margem de segurança caso alguém atrase. Vale também para quem pega a cópia antes de
+              uma reserva já marcada: precisa devolver com essa folga.
+            </p>
+          </>
+        }
+      >
+        <ToggleRow
+          checked={queueOn}
+          onChange={(v) => set("allowQueue", v)}
+          title="Permitir reservar um jogo que está com outro cliente"
+          description={
+            queueOn
+              ? "Ligado: o cliente pode reservar em volta de outra reserva, como escolhido abaixo."
+              : "Desligado: só cópias sem ninguém na frente. O jogo fica “Alugado” até uma cópia voltar."
+          }
+        />
+        {queueOn && (
+          <>
+            <PillChoice
+              label="Em volta de uma reserva já marcada, o cliente pode alugar"
+              options={QUEUE_MODE_OPTIONS.map(({ value, label }) => ({ value, label }))}
+              value={mode}
+              onChange={(v) => set("queueMode", v)}
+            />
+            <FieldNote tone="box">{QUEUE_MODE_OPTIONS.find((o) => o.value === mode)?.text}</FieldNote>
+          </>
         )}
         <Input
           labelSpace
           label="Folga entre aluguéis da mesma cópia (dias)"
           type="number"
-          placeholder="Folga entre aluguéis da mesma cópia (1 a 14 dias)"
+          placeholder="Folga entre aluguéis (1 a 14 dias)"
           value={String(local.queueGapDays ?? 1)}
           setValue={(e) => set("queueGapDays", Number(e.target.value))}
           variant
           width="!w-full sm:!w-[320px] !min-w-0"
         />
-        <p className="-mt-1 text-[11px] text-primary-gold/45 leading-relaxed">
-          Margem de segurança caso alguém atrase. Ex.: se a cópia volta dia 23, o próximo cliente pode retirar a partir do
-          dia {23 + Math.min(14, Math.max(1, Math.round(local.queueGapDays ?? 1) || 1))}
-          {(local.queueGapDays ?? 1) <= 1 ? " (dia seguinte, sem margem extra)" : ""}. Vale também para quem pega a cópia
-          antes de uma reserva já marcada: precisa devolver com essa folga.
-        </p>
-      </Group>
+        <FieldNote>
+          Ex.: se a cópia volta dia 23, o próximo cliente retira a partir do dia {23 + gap}
+          {gap <= 1 ? " (dia seguinte, sem margem extra)" : ""}.
+        </FieldNote>
+      </SettingsSection>
 
-      <Group title="Limites" hint="Evitam que um cliente leve jogos demais de uma vez: quantos jogos cabem num pedido e quantos o mesmo cliente pode ter ao mesmo tempo (pedidos ainda não pagos também contam).">
-        <div className="flex flex-wrap gap-x-6 gap-y-1">
+      {/* 4. Limites */}
+      <SettingsSection
+        id="cfg-limites"
+        n={4}
+        icon={<LuGauge size={18} />}
+        title="Limites"
+        summary="Quantos jogos cabem num pedido e quantos o mesmo cliente pode ter ao mesmo tempo."
+        info={
+          <p>
+            Evitam que um cliente leve jogos demais de uma vez. No limite por cliente contam os reservados, os retirados e
+            os pedidos ainda aguardando pagamento. No balcão, o admin pode passar desses limites com confirmação.
+          </p>
+        }
+      >
+        <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
           <Input
             labelSpace
             label="Máx. de jogos por pedido"
@@ -262,30 +369,38 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
             value={String(local.maxGamesPerOrder)}
             setValue={(e) => set("maxGamesPerOrder", Number(e.target.value))}
             variant
-            width="!w-full sm:!w-[250px] !min-w-0"
+            width="!w-full !max-w-none !min-w-0"
           />
           <Input
             labelSpace
-            label="Máx. de jogos por cliente"
+            label="Máx. de jogos ao mesmo tempo por cliente"
             type="number"
-            placeholder="Máx. de jogos ativos por cliente (1 a 10)"
+            placeholder="Máx. de jogos por cliente (1 a 10)"
             value={String(local.maxActiveGamesPerCustomer)}
             setValue={(e) => set("maxActiveGamesPerCustomer", Number(e.target.value))}
             variant
-            width="!w-full sm:!w-[250px] !min-w-0"
+            width="!w-full !max-w-none !min-w-0"
           />
         </div>
-      </Group>
+      </SettingsSection>
 
-      <Group
+      {/* 5. Cadastro e avisos */}
+      <SettingsSection
+        id="cfg-cadastro"
+        n={5}
+        icon={<LuUserCheck size={18} />}
         title="Cadastro e avisos"
-        hint="Com o e-mail da equipe preenchido, cada confirmação de aluguel também chega nele (cópia oculta)."
+        summary="O que o cliente precisa informar para alugar e quem da equipe recebe cópia dos pedidos."
       >
-        <Checkbox
+        <ToggleRow
           checked={local.requireCpf}
-          setChecked={() => set("requireCpf", !local.requireCpf)}
-          variant
-          label="Exigir CPF no cadastro"
+          onChange={(v) => set("requireCpf", v)}
+          title="Exigir CPF no cadastro"
+          description={
+            local.requireCpf
+              ? "O cliente só aluga com CPF válido (também usado para juntar o histórico de quem foi cadastrado no balcão)."
+              : "O CPF fica opcional no cadastro."
+          }
         />
         <Input
           labelSpace
@@ -295,34 +410,19 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
           value={local.staffEmail}
           setValue={(e) => set("staffEmail", e.target.value)}
           variant
-          width="!w-full sm:!w-[320px] !min-w-0"
+          width="!w-full sm:!w-[360px] !min-w-0"
         />
-      </Group>
+        <FieldNote>Preenchido, cada confirmação de aluguel também chega nele (cópia oculta).</FieldNote>
+      </SettingsSection>
 
+      {/* 6. Pagamento online */}
       <OnlinePaymentSection
+        n={6}
+        id="cfg-pagamento"
         value={local.onlinePayment}
         onChange={(next) => set("onlinePayment", next)}
         onOpenRules={onOpenRules}
       />
-
-      {local.onlinePayment.enabled && (
-        <div className="flex flex-col gap-1.5 -mt-2">
-          <Checkbox
-            checked={local.onlinePayment.pixDirect !== false}
-            setChecked={() =>
-              set("onlinePayment", { ...local.onlinePayment, pixDirect: local.onlinePayment.pixDirect === false })
-            }
-            variant
-            width="!max-w-none"
-            label="Oferecer “Pix aqui na tela” no pedido"
-          />
-          <p className="text-[11px] text-primary-gold/45 leading-relaxed">
-            {local.onlinePayment.pixDirect !== false
-              ? "Ligado: o cliente escolhe entre o Pix gerado na hora (QR Code e copia e cola na própria página do pedido, que confirma sozinha) e a opção “Cartão ou Pix” (página do Mercado Pago). Com o Pix, as cópias ficam reservadas por pelo menos 31 minutos. Se o Pix não puder ser gerado (conta de teste ou sem chave Pix), o cliente segue para o Mercado Pago."
-              : "Desligado: o pagamento online abre sempre a página do Mercado Pago (Pix ou cartão)."}
-          </p>
-        </div>
-      )}
 
       {/* Salvar sempre à mão, com aviso de alterações pendentes */}
       <div className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary-gold/25 bg-primary-black/90 backdrop-blur px-3 py-2.5">
