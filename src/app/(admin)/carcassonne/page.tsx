@@ -38,6 +38,15 @@ import EmailsTab from "./emails-tab";
 import RentalStats from "./rental-stats";
 import VisitorsChart from "./visitors-chart";
 import EmailStats from "./email-stats";
+import { ExportButtons, StatsExportProvider, useExportSheets, type ExportSheet } from "./stats-export";
+
+/** Tabelas de uma parte das estatísticas para o Excel (fica dentro do provider). */
+function RegisterSheets({ id, sheets }: { id: string; sheets: ExportSheet[] }) {
+  useExportSheets(id, sheets);
+  return null;
+}
+
+const STATS_TAB_LABEL = { reservas: "Reservas", aluguel: "Aluguel", emails: "E-mails", links: "Links", banco: "Banco de dados" } as const;
 import DatabaseStats from "./database-stats";
 import ReserveSettings from "./reserve-settings";
 import GeneralSettings from "./general-settings";
@@ -188,6 +197,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<
     "stats" | "settings" | "temas" | "emails" | "mural"
   >("stats");
+  const statsRef = React.useRef<HTMLDivElement>(null);
   const [statsTab, setStatsTab] = useState<"reservas" | "aluguel" | "emails" | "links" | "banco">("reservas");
   const { pending: pendingThemeReminders } = useSiteThemeReminders();
   // Vindo da página Adicionar (?tab=emails), o editor do e-mail já abre.
@@ -716,8 +726,35 @@ export default function SettingsPage() {
               </button>
             ))}
           </div>
+          <StatsExportProvider>
+          <ExportButtons targetRef={statsRef} label={STATS_TAB_LABEL[statsTab]} />
+          <div ref={statsRef} className="flex flex-col gap-5">
           {statsTab === "reservas" && (
             <>
+              <RegisterSheets
+                id="reservas"
+                sheets={[
+                  {
+                    name: "Resumo do mês",
+                    rows: [
+                      ["Indicador", "Valor"],
+                      ["Reservas no mês", reserveStats.totalThisMonth],
+                      ["Confirmadas", reserveStats.confirmedThisMonth],
+                      ["Canceladas", reserveStats.canceledThisMonth],
+                      ["Pessoas confirmadas", reserveStats.peopleThisMonth],
+                      ["Média por reserva", reserveStats.avgGroupSize],
+                      ["Taxa de cancelamento (%)", reserveStats.cancelRate],
+                      ["Horário mais popular", reserveStats.mostPopularHour],
+                      ["Dia mais popular", reserveStats.mostPopularDay],
+                    ],
+                  },
+                  { name: "Por dia da semana", rows: [["Dia", "Reservas"], ...dayOfWeekData.map((d) => [d.name, d.reservas])] },
+                  { name: "Confirmadas x canceladas", rows: [["Situação", "Reservas"], ...statusData.map((d) => [d.name, d.value])] },
+                  { name: "Por horário", rows: [["Horário", "Reservas"], ...hourData.map((d) => [d.name, d.reservas])] },
+                  { name: "Tamanho de grupo", rows: [["Grupo", "Reservas"], ...groupSizeData.map((d) => [d.name, d.reservas])] },
+                  { name: `Reservas por mês ${selectedYear}`, rows: [["Mês", "Reservas"], ...monthlyData.map((d) => [d.name, d.reservas])] },
+                ]}
+              />
       {/* ── RESERVE STATS ── */}
       <div className="flex flex-col gap-4">
         <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
@@ -1126,6 +1163,10 @@ export default function SettingsPage() {
 
           {statsTab === "links" && (
             <div className="flex flex-col gap-4">
+              <RegisterSheets
+                id="links"
+                sheets={[{ name: "Cliques por link", rows: [["Link", "Cliques"], ...linkClicksData.map((l) => [l.name, l.clicks])] }]}
+              />
               {periodSelector}
       {/* ── LINK CLICKS CHART ── */}
       {linkClicksData.length > 0 && (
@@ -1207,6 +1248,8 @@ export default function SettingsPage() {
           )}
 
           {statsTab === "banco" && <DatabaseStats links={rawLinks} />}
+          </div>
+          </StatsExportProvider>
         </>
       )}
 

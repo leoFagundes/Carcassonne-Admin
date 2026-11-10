@@ -635,6 +635,30 @@ const helpCards: HelpCard[] = [
   },
   {
     category: "configuracoes",
+    title: "Exportar estatísticas (PDF ou Excel)",
+    description:
+      "Em Configurações → Estatísticas, acima de cada subaba há 'Exportar …: PDF / Excel'. O PDF sai como a subaba aparece na tela (gráficos incluídos). O Excel (.xlsx) traz uma aba por tabela da subaba aberta — ex.: em Aluguel, resumo, jogos mais alugados, formas de pagamento e aluguéis por mês; valores em reais como número, prontos para somar.",
+  },
+  {
+    category: "configuracoes",
+    title: "Estatísticas de e-mails (Resend)",
+    description:
+      "Em Estatísticas → 'E-mails': quantos e-mails o site mandou hoje e no mês (com a barra do limite do plano), problemas (voltaram, falharam, marcados como spam), o gráfico dos últimos 30 dias, a situação de cada envio, quem enviou (Reservas, Aluguel) e os últimos e-mails. Precisa de uma chave do Resend com 'Full access' na Vercel como RESEND_STATS_API_KEY — a chave de envio não tem permissão de leitura; sem ela a página explica o que fazer.",
+  },
+  {
+    category: "configuracoes",
+    title: "Clientes por mês e público do dia",
+    description:
+      "Na página de Reservas, cada dia tem 'Quantas pessoas vieram?': anote o público real, contando quem veio sem reserva. Em Estatísticas → Reservas, o gráfico 'Clientes por mês' usa esse número nos dias anotados e, nos outros, as pessoas das reservas confirmadas. O balão de cada mês mostra quantos dias foram anotados.",
+  },
+  {
+    category: "configuracoes",
+    title: "Taxas do Mercado Pago",
+    description:
+      "Cada pagamento online aprovado guarda a taxa cobrada pelo Mercado Pago e o líquido que caiu na conta. O detalhe do pedido mostra 'Taxa do Mercado Pago' e 'Líquido recebido'; Estatísticas → Aluguel mostra o total pago online, as taxas (com a % do valor) e o líquido no período. Pedidos pagos antes dessa função não têm a taxa: abra o pedido e use 'Consultar no Mercado Pago' para completar.",
+  },
+  {
+    category: "configuracoes",
     title: "Estatísticas do aluguel",
     description:
       "Em Estatísticas → 'Aluguel'. O bloco 'Agora' mostra quantas cópias estão fora (alugadas) do total ativo, os atrasados e as retiradas e devoluções de hoje. O bloco 'Por período' (30 dias, 3 meses, 6 meses, 1 ano ou Total, contado pela data de retirada) mostra: aluguéis (sem os cancelados), receita (soma dos aluguéis não cancelados) e quanto foi reembolsado, % de devoluções atrasadas, clientes que alugaram e contas novas; os jogos mais alugados; a situação dos aluguéis (devolvidos, em andamento, cancelados); como pagaram (balcão, Pix, cartão, saldo do Mercado Pago); quem cancelou (cliente, admin ou prazo de pagamento esgotado) e os clientes que mais alugaram. No fim, o gráfico de aluguéis por mês, com troca de ano.",

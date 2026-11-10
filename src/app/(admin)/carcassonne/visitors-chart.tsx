@@ -6,6 +6,7 @@ import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 
 import type { ReserveType } from "@/types";
 import DayAttendanceRepository, { type DayAttendanceType } from "@/services/repositories/DayAttendanceRepository";
 import { monthlyVisitors } from "@/utils/attendance";
+import { useExportSheets } from "./stats-export";
 
 const GOLD = "#e6c56b";
 const GOLD_DIM = "#d4af37";
@@ -27,6 +28,12 @@ export default function VisitorsChart({ reserves }: { reserves: ReserveType[] })
   const total = months.reduce((s, m) => s + m.pessoas, 0);
   const noted = months.reduce((s, m) => s + m.diasAnotados, 0);
   const max = Math.max(0, ...months.map((m) => m.pessoas));
+  useExportSheets("visitantes", [
+    {
+      name: `Clientes por mês ${year}`,
+      rows: [["Mês", "Pessoas", "De dias anotados", "Dias anotados"], ...months.map((m) => [m.name, m.pessoas, m.anotado, m.diasAnotados])],
+    },
+  ]);
 
   return (
     <div className="bg-secondary-black/40 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3">

@@ -28,6 +28,7 @@ import { db } from "@/services/firebaseConfig";
 import type { LinkType, RentalGameType } from "@/types";
 import { todaySP } from "@/rental/dates";
 import { healthItems, rentalGameGaps, staleLinks, type HealthItem } from "@/utils/databaseHealth";
+import { useExportSheets } from "./stats-export";
 
 /**
  * Banco de dados: números de cada área e a "saúde dos dados".
@@ -70,6 +71,41 @@ const COUNTS = {
 } satisfies Record<string, [string, ...QueryConstraint[]]>;
 
 type CountKey = keyof typeof COUNTS;
+
+/** Nomes legíveis para o Excel. */
+const COUNT_LABELS: Record<string, string> = {
+  boardgames: "Ludoteca: jogos",
+  boardgamesVisible: "Ludoteca: visíveis",
+  boardgamesForSale: "Ludoteca: à venda",
+  boardgamesNoImage: "Ludoteca: sem imagem",
+  boardgamesNoDescription: "Ludoteca: sem descrição",
+  menuItems: "Cardápio: itens",
+  menuVisible: "Cardápio: itens visíveis",
+  menuNoPrice: "Cardápio: sem preço",
+  infos: "Cardápio: avisos",
+  combos: "Cardápio: combos",
+  popups: "Cardápio: popups",
+  popupsActive: "Cardápio: popups ativos",
+  reserves: "Reservas",
+  reservesConfirmed: "Reservas confirmadas",
+  tables: "Mesas",
+  rentalCustomers: "Aluguel: clientes",
+  rentals: "Aluguel: aluguéis",
+  rentalsFinished: "Aluguel: encerrados",
+  rentalOrders: "Aluguel: pedidos",
+  events: "Eventos",
+  quizQuestions: "Quiz: perguntas",
+  quizParticipants: "Quiz: participantes",
+  bolaoParticipants: "Bolão: participantes",
+  votingEntries: "Votação: opções",
+  links: "Links",
+  carcaImages: "Mural: fotos",
+  musicRecommendations: "Músicas sugeridas",
+  snakeScores: "Recordes da cobrinha",
+  admins: "Administradores",
+  adminRequests: "Pedidos de acesso",
+  freelancers: "Freelancers",
+};
 type Counts = Record<CountKey, number | null>;
 
 /** Conta uma coleção (com filtros); falha vira null ("—") sem derrubar o resto. */
@@ -170,6 +206,23 @@ export default function DatabaseStats({ links }: { links: (LinkType & { id: stri
   useEffect(() => {
     load();
   }, [load]);
+
+  useExportSheets(
+    "banco",
+    counts
+      ? [
+          {
+            name: "Banco de dados",
+            rows: [
+              ["Item", "Quantidade"],
+              ...(Object.entries(counts) as [string, number | null][]).map(([k, v]) => [COUNT_LABELS[k] ?? k, v ?? "—"]),
+              ["Aluguel: jogos", rental?.games ?? "—"],
+              ["Aluguel: cópias", rental?.copies ?? "—"],
+            ],
+          },
+        ]
+      : [],
+  );
 
   if (!counts) return <p className="text-xs text-primary-gold/50 px-1">Contando os dados...</p>;
 

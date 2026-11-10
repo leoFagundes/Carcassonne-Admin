@@ -35,6 +35,7 @@ import {
   type RentalStatsPeriod,
 } from "@/rental/stats";
 import { unitStatus } from "../aluguel-admin/unitsEditor";
+import { useExportSheets } from "./stats-export";
 
 const GOLD = "#e6c56b";
 const GOLD_DIM = "#d4af37";
@@ -218,6 +219,38 @@ export default function RentalStats() {
   }, [games, rentals, today]);
 
   const monthly = useMemo(() => monthlyRentals(rentals ?? [], year), [rentals, year]);
+
+  // Excel: valores em reais (número), uma aba por tabela.
+  const brl = (c: number) => Math.round(c) / 100;
+  const periodName = PERIODS.find((p) => p.key === period)?.label ?? "";
+  useExportSheets("aluguel", [
+    {
+      name: `Resumo (${periodName})`,
+      rows: [
+        ["Indicador", "Valor"],
+        ["Aluguéis (sem cancelados)", stats.summary.rentals],
+        ["Cancelados", stats.summary.canceled],
+        ["Receita (R$)", brl(stats.summary.revenue)],
+        ["Reembolsado (R$)", brl(stats.summary.refunded)],
+        ["Devoluções atrasadas (%)", stats.summary.lateRate],
+        ["Clientes", stats.summary.customers],
+        ["Contas novas", stats.newCustomers],
+        ["Pago online (R$)", brl(stats.fees.gross)],
+        ["Taxas do Mercado Pago (R$)", brl(stats.fees.fees)],
+        ["Líquido recebido (R$)", brl(stats.fees.net)],
+        ["Pedidos sem a taxa guardada", stats.fees.missing],
+        ["Cópias fora agora", now.out],
+        ["Cópias ativas", now.units],
+        ["Atrasados agora", now.overdue],
+      ],
+    },
+    { name: "Jogos mais alugados", rows: [["Jogo", "Aluguéis"], ...stats.games.map((g) => [g.name, g.aluguéis])] },
+    { name: "Situação dos aluguéis", rows: [["Situação", "Aluguéis"], ...stats.status.map((d) => [d.name, d.value])] },
+    { name: "Como pagaram", rows: [["Forma", "Pedidos"], ...stats.payment.map((d) => [d.name, d.value])] },
+    { name: "Quem cancelou", rows: [["Quem", "Aluguéis"], ...stats.cancels.map((d) => [d.name, d.value])] },
+    { name: "Clientes que mais alugaram", rows: [["Cliente", "Aluguéis"], ...stats.customers.map((c) => [c.name, c.count])] },
+    { name: `Aluguéis por mês ${year}`, rows: [["Mês", "Aluguéis"], ...monthly.map((m) => [m.name, m.aluguéis])] },
+  ]);
   const thisYear = Number(today.slice(0, 4));
 
   if (rentals === null) return <p className="text-xs text-primary-gold/50 px-1">Carregando estatísticas do aluguel...</p>;
