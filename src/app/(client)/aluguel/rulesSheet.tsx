@@ -65,9 +65,7 @@ function RulesSheet({ onClosed }: { onClosed: () => void }) {
               <h3 className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/60">
                 {section.title}
               </h3>
-              <p className="text-sm text-primary-gold/85 leading-relaxed">
-                <RichText text={section.body} />
-              </p>
+              <RichText text={section.body} className="text-sm text-primary-gold/85 leading-relaxed" />
             </section>
           ))
         )}

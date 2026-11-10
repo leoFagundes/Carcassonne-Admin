@@ -65,9 +65,7 @@ export default function RegrasPage() {
                 </span>
                 {section.title}
               </h2>
-              <p className="text-sm text-primary-gold/85 leading-relaxed">
-                <RichText text={section.body} />
-              </p>
+              <RichText text={section.body} className="text-sm text-primary-gold/85 leading-relaxed" />
             </section>
           ))}
         </>

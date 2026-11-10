@@ -1,7 +1,9 @@
 import { db } from "@/services/firebaseConfig";
 import {
+  deleteDoc,
   doc,
   getDoc,
+  type Timestamp,
   setDoc,
   onSnapshot,
   serverTimestamp,
@@ -14,6 +16,40 @@ class RentalConfigRepository {
   static collectionName = "rental-config";
   static settingsDoc = "settings";
   static rulesDoc = "rules";
+  /** Rascunho das regras: só o admin usa; o cliente sempre vê o documento publicado. */
+  static rulesDraftDoc = "rulesDraft";
+
+  static async getRulesDraft(): Promise<{ sections: RentalRuleSection[]; updatedAt?: Timestamp } | null> {
+    try {
+      const snap = await getDoc(doc(db, this.collectionName, this.rulesDraftDoc));
+      if (!snap.exists()) return null;
+      const data = snap.data() as { sections?: RentalRuleSection[]; updatedAt?: Timestamp };
+      return Array.isArray(data.sections) ? { sections: data.sections, updatedAt: data.updatedAt } : null;
+    } catch (error) {
+      console.error("Erro ao ler o rascunho das regras: ", error);
+      return null;
+    }
+  }
+
+  static async saveRulesDraft(sections: RentalRuleSection[]): Promise<boolean> {
+    try {
+      await setDoc(doc(db, this.collectionName, this.rulesDraftDoc), { sections, updatedAt: serverTimestamp() });
+      return true;
+    } catch (error) {
+      console.error("Erro ao salvar o rascunho das regras: ", error);
+      return false;
+    }
+  }
+
+  static async deleteRulesDraft(): Promise<boolean> {
+    try {
+      await deleteDoc(doc(db, this.collectionName, this.rulesDraftDoc));
+      return true;
+    } catch (error) {
+      console.error("Erro ao descartar o rascunho das regras: ", error);
+      return false;
+    }
+  }
 
   static subscribeSettings(callback: (settings: RentalSettingsType) => void): () => void {
     return onSnapshot(
