@@ -36,6 +36,7 @@ import { DragCards } from "./drag-cards";
 import SiteThemeSettings from "./site-theme-settings";
 import EmailsTab from "./emails-tab";
 import RentalStats from "./rental-stats";
+import VisitorsChart from "./visitors-chart";
 import DatabaseStats from "./database-stats";
 import ReserveSettings from "./reserve-settings";
 import GeneralSettings from "./general-settings";
@@ -1113,6 +1114,7 @@ export default function SettingsPage() {
           </ResponsiveContainer>
         </div>
       </div>
+              <VisitorsChart reserves={rawReserves} />
             </>
           )}
 

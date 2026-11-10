@@ -54,6 +54,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import Modal from "@/components/modal";
 import ReserveSettings from "../carcassonne/reserve-settings";
+import DayAttendanceCard from "./dayAttendance";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import ReserveAdminForms from "@/components/reserveAdminForms";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -989,6 +990,14 @@ export default function Rerserve() {
                 : "reservas canceladas"}
             </span>
           </div>
+
+          {/* Público real do dia (com e sem reserva) — usado nas estatísticas */}
+          <DayAttendanceCard
+            date={date}
+            reservedPeople={reserves
+              .filter((r) => r.status === "confirmed")
+              .reduce((total, r) => total + (r.adults ?? 0) + (r.childs ?? 0), 0)}
+          />
 
           {/* Anotações do dia */}
           <div className="flex flex-col gap-2 bg-secondary-black/40 border border-primary-gold/15 rounded-xl p-3 max-w-[267.84px]">
