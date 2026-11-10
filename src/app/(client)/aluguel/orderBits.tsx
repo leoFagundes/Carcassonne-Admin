@@ -140,7 +140,7 @@ export function NextSteps({
         rel="noopener noreferrer"
         className="flex items-center gap-1.5 self-start text-xs text-primary-gold/55 hover:text-primary-gold"
       >
-        <FaWhatsapp size={14} /> Dúvidas? Fale com a gente no WhatsApp
+        <FaWhatsapp size={14} /> Dúvidas sobre a retirada? Fale com a gente no WhatsApp
       </a>
     </section>
   );

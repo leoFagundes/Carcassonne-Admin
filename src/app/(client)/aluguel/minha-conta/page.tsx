@@ -25,6 +25,7 @@ import { safeNextPath, withNext } from "@/rental/navigation";
 import { useRentalCart } from "../useRentalCart";
 import { useRentalCustomer } from "../useRentalCustomer";
 import RentalPageShell from "../rentalPageShell";
+import HelpWhatsapp from "../helpWhatsapp";
 import ProfileForm, { maskPhone } from "../profileForm";
 import PaymentBadge from "../paymentBadge";
 import { STAGE_ORDER, orderHeadline, type OrderStage } from "@/rental/myAccount";
@@ -561,6 +562,7 @@ function MinhaContaContent() {
   return (
     <RentalPageShell title="Minha conta" cartCount={cart.gameIds.length}>
       {body}
+      <HelpWhatsapp />
     </RentalPageShell>
   );
 }

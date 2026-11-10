@@ -292,12 +292,12 @@ export default function Sidebar() {
       message: "Reservas",
       icon: <LuCalendar size={18} />,
     },
-    { path: "/collection", message: "Coleção", icon: <LuDices size={18} /> },
     {
       path: "/aluguel-admin",
       message: "Aluguel",
       icon: <LuPackage size={18} />,
     },
+    { path: "/collection", message: "Coleção", icon: <LuDices size={18} /> },
     { path: "/menu", message: "Cardápio", icon: <LuPizza size={18} /> },
     {
       path: "/musicRecommendation",

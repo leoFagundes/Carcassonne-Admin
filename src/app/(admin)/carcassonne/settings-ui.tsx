@@ -70,13 +70,12 @@ function InfoToggle({ title, children }: { title: string; children: ReactNode })
         aria-expanded={open}
         aria-label={open ? "Fechar explicação" : `O que é "${title}"?`}
         title="O que é isso?"
-        className={`flex items-center justify-center w-6 h-6 rounded-full border transition-colors cursor-pointer ${
-          open
-            ? "border-primary-gold/60 bg-primary-gold/15 text-primary-gold"
-            : "border-primary-gold/25 text-primary-gold/50 hover:border-primary-gold/50 hover:text-primary-gold"
+        // Só o ícone, sem círculo em volta
+        className={`flex items-center justify-center p-0.5 rounded-md transition-colors cursor-pointer ${
+          open ? "text-primary-gold" : "text-primary-gold/45 hover:text-primary-gold"
         }`}
       >
-        {open ? <LuX size={12} /> : <LuInfo size={13} />}
+        {open ? <LuX size={15} /> : <LuInfo size={16} />}
       </button>
       {open && (
         <div className="basis-full mt-1 flex flex-col gap-1.5 rounded-lg border border-primary-gold/20 bg-primary-gold/[0.05] p-3 text-xs leading-relaxed text-primary-gold/75 [&_strong]:text-primary-gold">

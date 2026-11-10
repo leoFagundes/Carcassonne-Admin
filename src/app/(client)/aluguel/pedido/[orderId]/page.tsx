@@ -17,6 +17,7 @@ import { formatCountdown, orderPaymentView, type OrderPaymentView } from "@/rent
 import { useRentalCart } from "../../useRentalCart";
 import { useRentalCustomer } from "../../useRentalCustomer";
 import RentalPageShell from "../../rentalPageShell";
+import HelpWhatsapp from "../../helpWhatsapp";
 import RentalSteps, { type RentalStep } from "../../rentalSteps";
 import { CopyCode, NextSteps } from "../../orderBits";
 
@@ -434,6 +435,7 @@ function OrderContent() {
       top={step ? <RentalSteps current={step} online={order?.paymentMode === "online"} /> : null}
     >
       {body}
+      <HelpWhatsapp context={order ? `pedido ${order.code}` : undefined} />
     </RentalPageShell>
   );
 }

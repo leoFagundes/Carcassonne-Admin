@@ -40,6 +40,7 @@ import {
 import { useRentalCart } from "../useRentalCart";
 import { useRentalCustomer } from "../useRentalCustomer";
 import RentalPageShell from "../rentalPageShell";
+import HelpWhatsapp from "../helpWhatsapp";
 import RentalSteps from "../rentalSteps";
 import { CopyCode, NextSteps, dayLabel } from "../orderBits";
 import { RulesLink } from "../rulesSheet";
@@ -737,6 +738,7 @@ export default function PedidoPage() {
           )}
         </>
       )}
+      {!redirecting && <HelpWhatsapp context={done ? `pedido ${done.code}` : undefined} />}
     </RentalPageShell>
   );
 }

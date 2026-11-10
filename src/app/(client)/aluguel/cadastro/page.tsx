@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FiArrowLeft, FiLock, FiMail } from "react-icons/fi";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import Input from "@/components/input";
 import AuthBackground from "@/components/authBackground";
 import AuthCard, { AuthLink } from "@/components/authCard";
@@ -114,7 +114,10 @@ function CadastroCard() {
         onSubmit={() => submitRef.current?.()}
         footer={
           profileOnly ? (
-            <>Conta: {user?.email}</>
+            <>
+              Não é você?{" "}
+              <AuthLink onClick={() => void signOut(auth)}>Sair e criar outra conta</AuthLink>
+            </>
           ) : (
             <>
               Já tem uma conta?{" "}
@@ -125,6 +128,14 @@ function CadastroCard() {
           )
         }
       >
+        {/* Já logado (ex.: conta de admin ou cadastro interrompido): só falta o perfil.
+            Diz isso claramente, senão parece que a página "não pede e-mail". */}
+        {profileOnly && (
+          <p className="rounded-lg border border-primary-gold/20 bg-primary-gold/[0.06] px-3 py-2 text-xs leading-relaxed text-primary-gold/80">
+            Você já entrou com <strong className="break-all text-primary-gold">{user?.email}</strong>. Falta só
+            preencher seus dados para alugar. Quer usar outro e-mail? Toque em “Sair e criar outra conta” lá embaixo.
+          </p>
+        )}
         {showLoading ? (
           <span className="text-center text-xs text-primary-gold/50">Carregando...</span>
         ) : (
