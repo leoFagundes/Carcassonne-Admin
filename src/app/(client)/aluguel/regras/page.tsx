@@ -58,7 +58,7 @@ export default function RegrasPage() {
             <section
               key={section.id}
               id={`regra-${section.id}`}
-              className="scroll-mt-4 bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-2"
+              className="scroll-mt-4 min-w-0 overflow-hidden bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-2"
             >
               <h2 className="flex items-center gap-2 text-sm font-semibold text-primary-gold">
                 <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary-gold/15 border border-primary-gold/30 text-[11px]">

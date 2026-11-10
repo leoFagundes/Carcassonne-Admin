@@ -6,24 +6,64 @@ import { parseRich, type BlockNode, type InlineNode } from "@/utils/richMarkup";
 // Tudo vira elementos React; nada de HTML cru, então não há como injetar
 // código pelo editor. Textos antigos (só **negrito** e quebras) continuam iguais.
 
-function renderInline(nodes: InlineNode[], key = "i"): ReactNode[] {
+// Endereços colados soltos no texto (sem [texto](link)) também viram link, com
+// o endereço encurtado: um link enorme do Google Maps não estoura o card.
+const BARE_URL = /https?:\/\/[^\s<>()]+[^\s<>().,;:!?"']/g;
+
+export function shortUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const rest = (u.pathname + u.search).replace(/\/$/, "");
+    const host = u.hostname.replace(/^www\./, "");
+    return rest.length > 18 ? `${host}${rest.slice(0, 18)}…` : host + rest;
+  } catch {
+    return url;
+  }
+}
+
+function linkify(text: string, key: string): ReactNode {
+  const parts: ReactNode[] = [];
+  let last = 0;
+  for (const m of text.matchAll(BARE_URL)) {
+    const at = m.index ?? 0;
+    if (at > last) parts.push(text.slice(last, at));
+    parts.push(
+      <a
+        key={`${key}-u${at}`}
+        href={m[0]}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={m[0]}
+        className="underline underline-offset-2 text-primary-gold hover:opacity-80"
+      >
+        {shortUrl(m[0])}
+      </a>,
+    );
+    last = at + m[0].length;
+  }
+  if (!parts.length) return text;
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
+
+function renderInline(nodes: InlineNode[], key = "i", inLink = false): ReactNode[] {
   return nodes.map((node, i) => {
     const k = `${key}-${i}`;
     switch (node.type) {
       case "text":
-        return node.text;
+        return inLink ? node.text : linkify(node.text, k);
       case "bold":
-        return <strong key={k} className="font-semibold text-primary-gold">{renderInline(node.children, k)}</strong>;
+        return <strong key={k} className="font-semibold text-primary-gold">{renderInline(node.children, k, inLink)}</strong>;
       case "italic":
-        return <em key={k}>{renderInline(node.children, k)}</em>;
+        return <em key={k}>{renderInline(node.children, k, inLink)}</em>;
       case "underline":
-        return <u key={k} className="underline-offset-2">{renderInline(node.children, k)}</u>;
+        return <u key={k} className="underline-offset-2">{renderInline(node.children, k, inLink)}</u>;
       case "strike":
-        return <s key={k} className="opacity-70">{renderInline(node.children, k)}</s>;
+        return <s key={k} className="opacity-70">{renderInline(node.children, k, inLink)}</s>;
       case "mark":
         return (
           <mark key={k} className="rounded px-1 bg-primary-gold/25 text-primary-gold">
-            {renderInline(node.children, k)}
+            {renderInline(node.children, k, inLink)}
           </mark>
         );
       case "link": {
@@ -35,7 +75,7 @@ function renderInline(nodes: InlineNode[], key = "i"): ReactNode[] {
             {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             className="underline underline-offset-2 text-primary-gold hover:opacity-80"
           >
-            {renderInline(node.children, k)}
+            {renderInline(node.children, k, true)}
           </a>
         );
       }
@@ -79,7 +119,7 @@ function renderBlock(block: BlockNode, i: number): ReactNode {
 
 /** Texto formatado em blocos (use dentro de um <div>, não de um <p>). */
 export function RichText({ text, className = "" }: { text: string; className?: string }) {
-  return <div className={`flex flex-col gap-2 ${className}`}>{parseRich(text).map(renderBlock)}</div>;
+  return <div className={`flex flex-col gap-2 min-w-0 break-words [overflow-wrap:anywhere] ${className}`}>{parseRich(text).map(renderBlock)}</div>;
 }
 
 export default RichText;
