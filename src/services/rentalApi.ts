@@ -130,10 +130,28 @@ export const rentalApi = {
   sweepExpired: () => call<{ expired: number; paid: number; skipped: number }>("/api/rental/payments/sweep", {}),
 
   /** Admin: exclui de vez aluguéis encerrados (até 200 por chamada). */
-  deleteRentals: (ids: string[]) =>
+  deleteRentals: (ids: string[], force = false) =>
     call<{ deleted: number; skipped: { id: string; message: string }[] }>("/api/rental/rentals/delete", {
       ids,
+      force,
     }),
+
+  /** Admin: apaga o histórico de aluguéis do cliente; `force` inclui os em andamento. */
+  deleteCustomerHistory: (uid: string, force = false) =>
+    call<{ deleted: number; skipped: { id: string; message: string }[] }>(
+      `/api/rental/customers/${encodeURIComponent(uid)}/history`,
+      { force },
+    ),
+
+  /** Admin: corrige o cadastro do cliente. */
+  updateCustomer: (uid: string, body: { name: string; phone: string; cpf: string; email?: string }) =>
+    call<{ updated: number }>(`/api/rental/customers/${encodeURIComponent(uid)}/profile`, body),
+
+  /** Admin: registra (ou desfaz) o pagamento recebido no balcão. */
+  setCounterPayment: (
+    id: string,
+    body: { kind: "paid"; method: import("@/types").CounterPaymentMethod } | { kind: "clear" },
+  ) => call<null>(orderPath(id, "counter-payment"), body),
 };
 
 export const adminApi = {
@@ -146,8 +164,8 @@ export const adminApi = {
     ),
 
   /** Exclui de vez a conta (login, cadastro, acesso de admin e histórico de aluguéis). */
-  deleteAccount: (uid: string) =>
-    call<{ rentals: number }>(`/api/accounts/${encodeURIComponent(uid)}/delete`, {}),
+  deleteAccount: (uid: string, force = false) =>
+    call<{ rentals: number }>(`/api/accounts/${encodeURIComponent(uid)}/delete`, { force }),
 };
 
 export const accountApi = {

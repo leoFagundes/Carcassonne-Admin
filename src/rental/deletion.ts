@@ -2,10 +2,14 @@ import type { RentalOrderType, RentalType } from "@/types";
 import { orderNeedsAttention } from "./attention";
 
 /**
- * Regras de exclusão definitiva (admin). Só sai o que já terminou e cujo
- * dinheiro está resolvido — nunca se perde de vista um jogo emprestado nem um
- * pagamento/reembolso em aberto.
+ * Regras de exclusão definitiva (admin). Normal: só sai o que já terminou e
+ * cujo dinheiro está resolvido. Forçada (`force`): sai também o que está em
+ * andamento (a cópia é liberada) e o pedido não pago ainda no prazo do
+ * Mercado Pago. Só um reembolso ou análise em aberto continua segurando,
+ * porque sem o pedido o dinheiro do cliente se perderia de vista.
  */
+
+export type DeletionOptions = { force?: boolean };
 
 /**
  * Pedido online não pago (expirado/cancelado/recusado): o Mercado Pago ainda
@@ -34,6 +38,7 @@ export function orderDeletionBlock(
   order: RentalOrderType | undefined,
   nowMs: number,
   subject = "O pedido deste aluguel",
+  opts: DeletionOptions = {},
 ): string | null {
   if (!order) return null;
   const p = order.payment;
@@ -45,7 +50,7 @@ export function orderDeletionBlock(
   if (moneyOpen) {
     return `${subject} tem reembolso ou análise pendente. Resolva antes de excluir.`;
   }
-  if (order.paymentMode === "online" && p && ["pending", "rejected", "expired"].includes(p.status)) {
+  if (!opts.force && order.paymentMode === "online" && p && ["pending", "rejected", "expired"].includes(p.status)) {
     const releaseAt = p.holdUntil + UNPAID_ORDER_GRACE_MS;
     if (nowMs < releaseAt) {
       return `O pagamento online deste pedido ainda pode ser confirmado pelo Mercado Pago. A exclusão fica liberada a partir de ${formatDayMonth(releaseAt)}.`;
@@ -59,11 +64,12 @@ export function rentalDeletionBlock(
   rental: Pick<RentalType, "status">,
   order: RentalOrderType | undefined,
   nowMs: number,
+  opts: DeletionOptions = {},
 ): string | null {
-  if (!isRentalFinished(rental)) {
+  if (!opts.force && !isRentalFinished(rental)) {
     return "Só dá para excluir aluguéis devolvidos ou cancelados.";
   }
-  return orderDeletionBlock(order, nowMs);
+  return orderDeletionBlock(order, nowMs, "O pedido deste aluguel", opts);
 }
 
 /** Motivo para a conta do cliente ainda não poder ser apagada, ou `null` se pode. */
@@ -71,13 +77,14 @@ export function customerDeletionBlock(
   rentals: Pick<RentalType, "status">[],
   orders: RentalOrderType[],
   nowMs: number,
+  opts: DeletionOptions = {},
 ): string | null {
   const open = rentals.filter((r) => !isRentalFinished(r)).length;
-  if (open > 0) {
+  if (!opts.force && open > 0) {
     return `Este cliente tem ${open === 1 ? "1 aluguel" : `${open} aluguéis`} em andamento. Devolva ou cancele antes de excluir a conta.`;
   }
   for (const order of orders) {
-    const block = orderDeletionBlock(order, nowMs, "Um pedido deste cliente");
+    const block = orderDeletionBlock(order, nowMs, "Um pedido deste cliente", opts);
     if (block) return block;
   }
   return null;

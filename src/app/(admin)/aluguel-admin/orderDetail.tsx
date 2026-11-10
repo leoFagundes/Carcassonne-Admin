@@ -4,7 +4,7 @@ import { useState } from "react";
 import { LuReceipt } from "react-icons/lu";
 import { FaWhatsapp } from "react-icons/fa";
 import { formatDateBR } from "@/rental/dates";
-import type { OrderPaymentStatus, RentalOrderType, RentalType } from "@/types";
+import type { CounterPaymentMethod, OrderPaymentStatus, RentalOrderType, RentalType } from "@/types";
 import { useAlert } from "@/contexts/alertProvider";
 import { rentalApi } from "@/services/rentalApi";
 import FormCard from "@/components/formCard";
@@ -53,6 +53,63 @@ function Section({
       </h3>
       {children}
     </section>
+  );
+}
+
+const COUNTER_METHODS: { value: CounterPaymentMethod; label: string }[] = [
+  { value: "cash", label: "Dinheiro" },
+  { value: "card", label: "Cartão" },
+  { value: "pix", label: "Pix" },
+];
+
+/** Registra (ou desfaz) o pagamento recebido no balcão num pedido "paga na retirada". */
+function CounterPaymentForm({ order, undo = false }: { order: Order; undo?: boolean }) {
+  const { addAlert } = useAlert();
+  const [method, setMethod] = useState<CounterPaymentMethod>("cash");
+  const [busy, setBusy] = useState(false);
+  const send = async (body: { kind: "paid"; method: CounterPaymentMethod } | { kind: "clear" }) => {
+    setBusy(true);
+    const r = await rentalApi.setCounterPayment(order.id, body);
+    setBusy(false);
+    addAlert(r.ok ? (body.kind === "clear" ? "Registro do pagamento desfeito" : "Pagamento registrado") : r.message);
+  };
+  if (undo) {
+    return (
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => send({ kind: "clear" })}
+        className="self-start text-[11px] text-primary-gold/45 underline underline-offset-2 hover:text-invalid-color cursor-pointer disabled:opacity-40"
+      >
+        Registrado por engano? Desfazer
+      </button>
+    );
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {COUNTER_METHODS.map((m) => (
+        <button
+          key={m.value}
+          type="button"
+          onClick={() => setMethod(m.value)}
+          className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors cursor-pointer ${
+            method === m.value
+              ? "border-primary-gold bg-primary-gold text-primary-black"
+              : "border-primary-gold/20 text-primary-gold/60 hover:border-primary-gold/50"
+          }`}
+        >
+          {m.label}
+        </button>
+      ))}
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => send({ kind: "paid", method })}
+        className="ml-auto h-8 rounded-lg bg-primary-gold px-3 text-[11px] font-semibold text-primary-black hover:bg-primary-gold/90 cursor-pointer disabled:opacity-40"
+      >
+        {busy ? "Registrando..." : `Registrar ${formatBRL(order.total)} recebidos`}
+      </button>
+    </div>
   );
 }
 
@@ -359,12 +416,14 @@ export default function OrderDetail({
                   label="Registrado"
                   value={`${dateTime(order.counterPayment.at)} por ${order.counterPayment.byName}`}
                 />
+                {order.counterPayment.kind === "paid" && <CounterPaymentForm order={order} undo />}
               </div>
             ) : (
-              <div className="rounded-lg border border-primary-gold/10 bg-primary-gold/5 px-3 py-2.5">
+              <div className="flex flex-col gap-2 rounded-lg border border-primary-gold/10 bg-primary-gold/5 px-3 py-2.5">
                 <p className="text-xs leading-relaxed text-primary-gold/65">
-                  Pagamento no balcão, na retirada ({formatBRL(order.total)}).
+                  Pagamento no balcão, na retirada ({formatBRL(order.total)}). Quando o cliente pagar, registre aqui.
                 </p>
+                <CounterPaymentForm order={order} />
               </div>
             )
           ) : (

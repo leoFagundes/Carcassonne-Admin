@@ -138,3 +138,28 @@ describe("rentalEndedAt", () => {
     expect(rentalEndedAt({ dueDate: "2026-11-01" })).toBe(Date.parse("2026-11-01T23:59:59-03:00"));
   });
 });
+
+describe("exclusão forçada (admin)", () => {
+  const rentalOf = (status: RentalType["status"]) => ({ status });
+  it("aluguel em andamento sai quando forçado", () => {
+    expect(rentalDeletionBlock(rentalOf("picked_up"), order(), NOW)).not.toBeNull();
+    expect(rentalDeletionBlock(rentalOf("picked_up"), order(), NOW, { force: true })).toBeNull();
+    expect(rentalDeletionBlock(rentalOf("reserved"), order(), NOW, { force: true })).toBeNull();
+  });
+
+  it("pedido não pago ainda no prazo do Mercado Pago sai quando forçado", () => {
+    const unpaid = order({}, { status: "expired", holdUntil: NOW - 60_000 });
+    expect(orderDeletionBlock(unpaid, NOW)).not.toBeNull();
+    expect(orderDeletionBlock(unpaid, NOW, "x", { force: true })).toBeNull();
+  });
+
+  it("reembolso em andamento continua segurando, mesmo forçado", () => {
+    const pending = order({}, { pendingRefunds: [{ key: "k", amount: 100, at: NOW, by: "a" }] });
+    expect(rentalDeletionBlock(rentalOf("returned"), pending, NOW, { force: true })).toMatch(/reembolso/);
+  });
+
+  it("histórico do cliente com aluguel em andamento sai quando forçado", () => {
+    expect(customerDeletionBlock([rentalOf("picked_up")], [], NOW)).not.toBeNull();
+    expect(customerDeletionBlock([rentalOf("picked_up")], [], NOW, { force: true })).toBeNull();
+  });
+});

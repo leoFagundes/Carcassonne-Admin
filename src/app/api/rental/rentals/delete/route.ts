@@ -4,7 +4,7 @@ import { MAX_RENTALS_PER_DELETE, deleteRentals } from "@/services/server/deletio
 /** Admin: exclui de vez aluguéis encerrados (um ou vários). Os que não podem sair voltam em `skipped`. */
 export const POST = withApi(async (req) => {
   await requireAdmin(req);
-  const body = (await readJson<unknown>(req)) as { ids?: unknown } | null;
+  const body = (await readJson<unknown>(req)) as { ids?: unknown; force?: unknown } | null;
   const ids = body?.ids;
   if (
     !Array.isArray(ids) ||
@@ -14,5 +14,5 @@ export const POST = withApi(async (req) => {
   ) {
     throw new ApiError(400, "invalid_body", "Corpo da requisição inválido.");
   }
-  return deleteRentals([...new Set(ids)]);
+  return deleteRentals([...new Set(ids)], { force: body?.force === true });
 });

@@ -1,7 +1,7 @@
 import "server-only";
 import { FieldValue, type DocumentSnapshot } from "firebase-admin/firestore";
 import { asBookings, removeBooking } from "@/rental/bookings";
-import { customerDeletionBlock, rentalDeletionBlock } from "@/rental/deletion";
+import { customerDeletionBlock, isRentalFinished, rentalDeletionBlock, type DeletionOptions } from "@/rental/deletion";
 import type { RentalOrderType, RentalType } from "@/types";
 import { ApiError, isDocId } from "./apiHelpers";
 import { getAdminAuth, getAdminDb } from "./firebaseAdmin";
@@ -27,7 +27,7 @@ const unique = <T,>(list: T[]) => [...new Set(list)];
  * Quando o último aluguel de um pedido sai, o pedido (com os dados do
  * pagamento) sai junto.
  */
-export async function deleteRentals(ids: string[]): Promise<DeleteRentalsResult> {
+export async function deleteRentals(ids: string[], opts: DeletionOptions = {}): Promise<DeleteRentalsResult> {
   const db = getAdminDb();
   const rentalsCol = db.collection("rentals");
   const result: DeleteRentalsResult = { deleted: 0, skipped: [] };
@@ -45,14 +45,14 @@ export async function deleteRentals(ids: string[]): Promise<DeleteRentalsResult>
   }
 
   for (const [orderId, groupIds] of groups) {
-    const outcome = await deleteRentalGroup(orderId, groupIds);
+    const outcome = await deleteRentalGroup(orderId, groupIds, opts);
     result.deleted += outcome.deleted;
     result.skipped.push(...outcome.skipped);
   }
   return result;
 }
 
-async function deleteRentalGroup(orderId: string, ids: string[]): Promise<DeleteRentalsResult> {
+async function deleteRentalGroup(orderId: string, ids: string[], opts: DeletionOptions): Promise<DeleteRentalsResult> {
   const db = getAdminDb();
   const rentalsCol = db.collection("rentals");
   const orderRef = isDocId(orderId) ? db.collection("rentalOrders").doc(orderId) : null;
@@ -76,13 +76,13 @@ async function deleteRentalGroup(orderId: string, ids: string[]): Promise<Delete
         continue;
       }
       const rental = snap.data() as RentalType;
-      const block = rentalDeletionBlock(rental, order, now);
+      const block = rentalDeletionBlock(rental, order, now, opts);
       if (block) skipped.push({ id, message: block });
       else doomed.push({ id, rental });
     }
     if (doomed.length === 0) return { deleted: 0, skipped };
 
-    // Encerrados não deveriam ter reserva no jogo; se sobrou alguma, sai junto.
+    // A reserva do jogo sai junto (em andamento, na exclusão forçada, libera a cópia).
     const gameIds = unique(doomed.map((d) => d.rental.gameId).filter(isDocId));
     const gameSnaps: DocumentSnapshot[] = gameIds.length
       ? await tx.getAll(...gameIds.map((id) => db.collection("rentalGames").doc(id)))
@@ -109,12 +109,34 @@ async function deleteRentalGroup(orderId: string, ids: string[]): Promise<Delete
 }
 
 /**
+ * Apaga o histórico de aluguéis de um cliente (a conta continua). Normal: só
+ * os encerrados; forçado: também os em andamento, liberando as cópias.
+ */
+export async function deleteCustomerHistory(uid: string, opts: DeletionOptions = {}): Promise<DeleteRentalsResult> {
+  const snap = await getAdminDb().collection("rentals").where("customerUid", "==", uid).get();
+  const ids = snap.docs
+    .filter((d) => opts.force || isRentalFinished(d.data() as RentalType))
+    .map((d) => d.id);
+  const result: DeleteRentalsResult = { deleted: 0, skipped: [] };
+  for (let i = 0; i < ids.length; i += MAX_RENTALS_PER_DELETE) {
+    const part = await deleteRentals(ids.slice(i, i + MAX_RENTALS_PER_DELETE), opts);
+    result.deleted += part.deleted;
+    result.skipped.push(...part.skipped);
+  }
+  return result;
+}
+
+/**
  * Apaga uma conta de vez: login (Firebase Auth), cadastro de cliente, índice
  * do CPF, acesso de admin/pedido de acesso e o histórico de aluguéis e pedidos.
  * Só se não houver aluguel em andamento nem dinheiro em aberto. Ninguém apaga
  * a própria conta (assim sempre sobra pelo menos um admin).
  */
-export async function deleteAccount(uid: string, actorUid: string): Promise<{ rentals: number }> {
+export async function deleteAccount(
+  uid: string,
+  actorUid: string,
+  opts: DeletionOptions = {},
+): Promise<{ rentals: number }> {
   if (uid === actorUid) {
     throw new ApiError(400, "cannot_delete_self", "Você não pode excluir a sua própria conta.");
   }
@@ -140,8 +162,20 @@ export async function deleteAccount(uid: string, actorUid: string): Promise<{ re
 
     const rentals = rentalsSnap.docs.map((d) => d.data() as RentalType);
     const orders = ordersSnap.docs.map((d) => d.data() as RentalOrderType);
-    const block = customerDeletionBlock(rentals, orders, Date.now());
+    const block = customerDeletionBlock(rentals, orders, Date.now(), opts);
     if (block) throw new ApiError(409, "account_busy", block);
+
+    // Forçado com aluguel em andamento: a reserva sai do jogo e a cópia fica livre.
+    const activeIds = new Set(rentalsSnap.docs.filter((d) => !isRentalFinished(d.data() as RentalType)).map((d) => d.id));
+    const activeGameIds = unique(
+      rentalsSnap.docs
+        .filter((d) => activeIds.has(d.id))
+        .map((d) => String((d.data() as RentalType).gameId))
+        .filter(isDocId),
+    );
+    const gameSnaps = activeGameIds.length
+      ? await tx.getAll(...activeGameIds.map((id) => db.collection("rentalGames").doc(id)))
+      : [];
 
     const total = rentalsSnap.size + ordersSnap.size + 4;
     if (total > MAX_ACCOUNT_DOCS) {
@@ -153,6 +187,14 @@ export async function deleteAccount(uid: string, actorUid: string): Promise<{ re
     }
 
     // ---- escritas ----
+    for (const game of gameSnaps) {
+      if (!game.exists) continue;
+      const before = asBookings(game.data()?.bookings);
+      const after = [...activeIds].reduce((list, id) => removeBooking(list, id), before);
+      if (after.length !== before.length) {
+        tx.update(game.ref, { bookings: after, updatedAt: FieldValue.serverTimestamp() });
+      }
+    }
     for (const doc of rentalsSnap.docs) tx.delete(doc.ref);
     for (const doc of ordersSnap.docs) tx.delete(doc.ref);
     if (customerSnap.exists) tx.delete(customerRef);

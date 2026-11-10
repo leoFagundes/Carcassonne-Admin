@@ -25,6 +25,7 @@ import { formatBRL, parseBRL } from "@/rental/money";
 import { isPaidOnline, refundableLeft, rentalPrice } from "@/rental/payments";
 import { isRentalFinished, rentalDeletionBlock } from "@/rental/deletion";
 import { AmountField, centsToInput } from "./refundForms";
+import { STATUS_LABEL } from "./rentalShared";
 
 type Order = RentalOrderType & { id: string };
 type ActionKind = "pickup" | "return" | "dueDate" | "cancel" | "delete";
@@ -107,13 +108,15 @@ function ActionModal({
     onClose();
   };
 
-  // Exclusão: a mesma regra do servidor, para explicar antes de tentar.
+  // Exclusão (forçada: o admin pode apagar até o que está em andamento). Só
+  // reembolso/análise em aberto segura; a mesma regra do servidor.
   const deleteBlock =
-    kind === "delete" ? rentalDeletionBlock(rental, order, Date.now()) : null;
+    kind === "delete" ? rentalDeletionBlock(rental, order, Date.now(), { force: true }) : null;
+  const deletingActive = !isRentalFinished(rental);
   const removeRental = async () => {
     if (loading) return;
     setLoading(true);
-    const result = await rentalApi.deleteRentals([rental.id]);
+    const result = await rentalApi.deleteRentals([rental.id], true);
     setLoading(false);
     if (!result.ok) {
       addAlert(result.message);
@@ -280,6 +283,14 @@ function ActionModal({
           <p className="text-sm text-orange-300">{deleteBlock}</p>
         ) : (
           <div className="flex flex-col gap-2 text-sm text-primary-gold/70">
+            {deletingActive && (
+              <p className="rounded-lg border border-orange-300/30 bg-orange-300/[0.06] px-3 py-2 text-xs text-orange-200">
+                Este aluguel ainda está em andamento ({STATUS_LABEL[rental.status].toLowerCase()}). Excluir libera a cópia
+                na hora
+                {rental.status === "picked_up" ? ": confira se o jogo já voltou para o pub" : ""}. Se a ideia é só
+                desistir, prefira Cancelar, que fica registrado.
+              </p>
+            )}
             <p>
               O aluguel de {rental.gameName} para {rental.customer.name} sai da
               lista e do histórico do cliente.{" "}
@@ -518,6 +529,16 @@ export default function RentalActions({
               onClick={() => setKind("cancel")}
             >
               Cancelar
+            </button>
+
+            <button
+              type="button"
+              aria-label="Excluir aluguel"
+              title="Excluir aluguel"
+              onClick={() => setKind("delete")}
+              className="inline-flex items-center justify-center rounded-lg border border-transparent p-1.5 text-primary-gold/35 transition-colors hover:border-invalid-color/15 hover:bg-invalid-color/10 hover:text-invalid-color"
+            >
+              <LuTrash2 size={14} />
             </button>
           </div>
         )}

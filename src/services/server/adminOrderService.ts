@@ -18,7 +18,7 @@ import {
 import { todaySP } from "@/rental/dates";
 import { ORDER_ERROR_MESSAGES, buildOrderRecords, buildRentalOrderDoc, generateOrderCode } from "@/rental/orders";
 import { countActiveGames, holdUntilFor, withLiveBookings } from "@/rental/payments";
-import type { RentalCustomerType, RentalGameType, RentalOrderType, RentalType } from "@/types";
+import type { CounterPaymentMethod, RentalCustomerType, RentalGameType, RentalOrderType, RentalType } from "@/types";
 import { ApiError, isDocId } from "./apiHelpers";
 import { getAdminDb } from "./firebaseAdmin";
 import { paymentsStatus } from "./payments";
@@ -287,4 +287,35 @@ export async function createAdminOrder(token: DecodedIdToken, body: AdminOrderBo
   }
 
   return { orderId: order.orderId, code: order.code, customerUid: order.customerUid };
+}
+
+/**
+ * Pedido de balcão "paga na retirada": o admin registra que recebeu (forma do
+ * pagamento) ou desfaz o registro. Cortesia não se desfaz por aqui (o pedido
+ * já foi gravado a R$ 0).
+ */
+export async function setCounterPayment(
+  token: DecodedIdToken,
+  orderId: string,
+  input: { kind: "paid"; method: CounterPaymentMethod } | { kind: "clear" },
+): Promise<void> {
+  const db = getAdminDb();
+  const ref = db.collection("rentalOrders").doc(orderId);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new ApiError(404, "not_found", "Pedido não encontrado.");
+    const order = snap.data() as RentalOrderType;
+    if (order.paymentMode !== "counter") {
+      throw new ApiError(409, "not_counter", "Este pedido é pago online.");
+    }
+    if (order.counterPayment?.kind === "courtesy") {
+      throw new ApiError(409, "courtesy", "Este pedido é uma cortesia.");
+    }
+    if (input.kind === "clear") {
+      tx.update(ref, { counterPayment: FieldValue.delete() });
+      return;
+    }
+    const payment = counterPaymentFor({ kind: "paid", method: input.method }, order.total, actorOf(token), Date.now());
+    tx.update(ref, { counterPayment: payment });
+  });
 }

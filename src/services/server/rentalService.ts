@@ -15,7 +15,7 @@ import {
   updateBooking,
 } from "@/rental/bookings";
 import { isValidCpf, normalizeCpf } from "@/rental/cpf";
-import { guestMatches } from "@/rental/adminOrders";
+import { checkGuest, guestMatches } from "@/rental/adminOrders";
 import { formatDateBR, todaySP } from "@/rental/dates";
 import { DEFAULT_RENTAL_RULES, mergeRentalSettings } from "@/rental/defaults";
 import {
@@ -751,5 +751,62 @@ export async function setCustomerBlocked(
       isBlocked: blocked,
       blockedReason: blocked ? reason : FieldValue.delete(),
     });
+  });
+}
+
+/**
+ * Admin corrige o cadastro do cliente (nome, WhatsApp, CPF e, no cliente sem
+ * conta, o e-mail; numa conta o e-mail é o do login). Mantém o índice do CPF
+ * único e atualiza o contato copiado nos aluguéis e pedidos dele.
+ */
+export async function updateCustomerByAdmin(
+  uid: string,
+  body: { name?: unknown; phone?: unknown; cpf?: unknown; email?: unknown },
+): Promise<{ updated: number }> {
+  const db = getAdminDb();
+  const settings = readSettings(await settingsRef(db).get());
+  const customerRef = db.collection("rentalCustomers").doc(uid);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(customerRef);
+    if (!snap.exists) throw new ApiError(404, "not_found", "Cliente não encontrado.");
+    const current = snap.data() as RentalCustomerType;
+    const check = checkGuest(
+      {
+        name: typeof body.name === "string" ? body.name : "",
+        phone: typeof body.phone === "string" ? body.phone : "",
+        cpf: typeof body.cpf === "string" ? body.cpf : "",
+        email: current.guest && typeof body.email === "string" ? body.email : "",
+      },
+      settings.requireCpf,
+    );
+    if (!check.ok) throw new ApiError(400, "invalid_profile", check.message);
+    const { name, phone, cpf } = check.guest;
+    const email = current.guest ? check.guest.email : (current.email ?? "");
+
+    const oldCpf = String(current.cpf ?? "");
+    const newIndexRef = cpf && cpf !== oldCpf ? db.collection("rentalCpfIndex").doc(cpf) : null;
+    if (newIndexRef) {
+      const indexSnap = await tx.get(newIndexRef);
+      if (indexSnap.exists && indexSnap.data()?.uid !== uid) {
+        throw new ApiError(409, "cpf_in_use", "Este CPF já está no cadastro de outro cliente.");
+      }
+    }
+    const [rentalsSnap, ordersSnap] = await Promise.all([
+      tx.get(db.collection("rentals").where("customerUid", "==", uid)),
+      tx.get(db.collection("rentalOrders").where("customerUid", "==", uid)),
+    ]);
+    const docs = [...rentalsSnap.docs, ...ordersSnap.docs];
+    if (docs.length > MAX_GUEST_MERGE_DOCS) {
+      throw new ApiError(409, "too_large", "Este cliente tem histórico demais para atualizar de uma vez.");
+    }
+
+    // ---- escritas ----
+    tx.update(customerRef, { name, phone, cpf, email });
+    if (newIndexRef) tx.set(newIndexRef, current.guest ? { uid, guest: true } : { uid });
+    if (oldCpf && oldCpf !== cpf) tx.delete(db.collection("rentalCpfIndex").doc(oldCpf));
+    const contact = { name, email, phone };
+    for (const d of docs) tx.update(d.ref, { customer: contact });
+    return { updated: docs.length };
   });
 }

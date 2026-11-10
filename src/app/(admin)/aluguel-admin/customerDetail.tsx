@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { LuBan, LuTrash2, LuUser } from "react-icons/lu";
+import { LuBan, LuEraser, LuPencil, LuTrash2, LuUser } from "react-icons/lu";
 import { FaWhatsapp } from "react-icons/fa";
 import type { RentalCustomerType, RentalType } from "@/types";
 import Modal from "@/components/modal";
 import FormCard from "@/components/formCard";
 import Input from "@/components/input";
+import Checkbox from "@/components/checkbox";
 import { useAlert } from "@/contexts/alertProvider";
 import RentalCustomerRepository from "@/services/repositories/RentalCustomerRepository";
 import { adminApi, rentalApi } from "@/services/rentalApi";
-import { customerDeletionBlock } from "@/rental/deletion";
 import { formatCpf } from "@/rental/cpf";
 import { diffDays, formatDateBR } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
@@ -124,10 +124,16 @@ export function CustomerDetail({
   const [loading, setLoading] = useState(false);
   const [blocking, setBlocking] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [panel, setPanel] = useState<"edit" | "history" | null>(null);
+  const [includeActive, setIncludeActive] = useState(false);
+  const [form, setForm] = useState({
+    name: customer.name,
+    phone: customer.phone,
+    cpf: customer.cpf ? formatCpf(customer.cpf) : "",
+    email: customer.email ?? "",
+  });
   const [showAllHistory, setShowAllHistory] = useState(false);
   const since = sinceText(customer);
-  // Pedidos com dinheiro em aberto o servidor confere; aqui já avisa dos aluguéis em andamento.
-  const deleteBlock = customerDeletionBlock(rentals, [], Date.now());
 
   const active = rentals
     .filter((r) => ACTIVE_STATUSES.includes(r.status))
@@ -135,11 +141,13 @@ export function CustomerDetail({
   const history = rentals.filter((r) => !ACTIVE_STATUSES.includes(r.status));
   const shownHistory = showAllHistory ? history : history.slice(0, 5);
   const spent = rentals.filter((r) => r.status !== "canceled").reduce((sum, r) => sum + r.price, 0);
+  // Com aluguel em andamento, excluir exige marcar "incluir os em andamento" (libera as cópias).
+  const needsForce = active.length > 0;
 
   const removeAccount = async () => {
-    if (loading) return;
+    if (loading || (needsForce && !includeActive)) return;
     setLoading(true);
-    const result = await adminApi.deleteAccount(customer.id);
+    const result = await adminApi.deleteAccount(customer.id, includeActive);
     setLoading(false);
     if (!result.ok) {
       addAlert(result.message);
@@ -147,6 +155,45 @@ export function CustomerDetail({
     }
     addAlert(`Conta de ${customer.name} excluída`);
     onClose();
+  };
+
+  const clearHistory = async () => {
+    if (loading) return;
+    setLoading(true);
+    const result = await rentalApi.deleteCustomerHistory(customer.id, includeActive);
+    setLoading(false);
+    if (!result.ok) {
+      addAlert(result.message);
+      return;
+    }
+    const { deleted, skipped } = result.data;
+    addAlert(
+      skipped.length
+        ? `${plural(deleted, "aluguel apagado", "aluguéis apagados")}. ${skipped.length} ficaram: ${skipped[0].message}`
+        : deleted
+          ? `${plural(deleted, "aluguel apagado", "aluguéis apagados")} do histórico de ${customer.name}`
+          : "Nada para apagar.",
+    );
+    setPanel(null);
+    setIncludeActive(false);
+  };
+
+  const saveProfile = async () => {
+    if (loading) return;
+    setLoading(true);
+    const result = await rentalApi.updateCustomer(customer.id, {
+      name: form.name,
+      phone: form.phone,
+      cpf: form.cpf,
+      ...(customer.guest ? { email: form.email } : {}),
+    });
+    setLoading(false);
+    if (!result.ok) {
+      addAlert(result.message);
+      return;
+    }
+    addAlert(`Cadastro de ${form.name.trim()} atualizado`);
+    setPanel(null);
   };
 
   const toggleBlock = async () => {
@@ -313,8 +360,15 @@ export function CustomerDetail({
           </div>
         ) : null}
 
-        {!blocking && !confirmDelete && (
+        {!blocking && !confirmDelete && !panel && (
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setPanel("edit")}
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-primary-gold/20 text-xs text-primary-gold/70 hover:text-primary-gold hover:border-primary-gold/50 cursor-pointer"
+            >
+              <LuPencil size={13} /> Editar dados
+            </button>
             {!customer.isBlocked && (
               <button
                 type="button"
@@ -324,10 +378,24 @@ export function CustomerDetail({
                 <LuBan size={13} /> Bloquear cliente
               </button>
             )}
+            {rentals.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIncludeActive(false);
+                  setPanel("history");
+                }}
+                className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-primary-gold/20 text-xs text-primary-gold/70 hover:text-invalid-color hover:border-invalid-color/40 cursor-pointer"
+              >
+                <LuEraser size={13} /> Apagar histórico
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => (deleteBlock ? addAlert(deleteBlock) : setConfirmDelete(true))}
-              title={deleteBlock ?? undefined}
+              onClick={() => {
+                setIncludeActive(false);
+                setConfirmDelete(true);
+              }}
               className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-primary-gold/20 text-xs text-primary-gold/70 hover:text-invalid-color hover:border-invalid-color/40 cursor-pointer"
             >
               <LuTrash2 size={13} /> Excluir conta
@@ -335,12 +403,127 @@ export function CustomerDetail({
           </div>
         )}
 
+        {panel === "edit" && (
+          <div className="flex flex-col gap-2 rounded-xl border border-primary-gold/20 p-3">
+            <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
+              <Input
+                labelSpace
+                label="Nome"
+                placeholder="Nome completo"
+                value={form.name}
+                setValue={(e) => setForm({ ...form, name: e.target.value })}
+                width="!w-full !max-w-none !min-w-0"
+              />
+              <Input
+                labelSpace
+                label="WhatsApp"
+                placeholder="WhatsApp com DDD"
+                value={form.phone}
+                setValue={(e) => setForm({ ...form, phone: e.target.value })}
+                width="!w-full !max-w-none !min-w-0"
+              />
+              <Input
+                labelSpace
+                label="CPF"
+                placeholder="CPF"
+                value={form.cpf}
+                setValue={(e) => setForm({ ...form, cpf: e.target.value })}
+                width="!w-full !max-w-none !min-w-0"
+              />
+              {customer.guest ? (
+                <Input
+                  labelSpace
+                  label="E-mail (opcional)"
+                  placeholder="E-mail (opcional)"
+                  value={form.email}
+                  setValue={(e) => setForm({ ...form, email: e.target.value })}
+                  width="!w-full !max-w-none !min-w-0"
+                />
+              ) : (
+                <p className="mt-2 self-center text-[11px] leading-relaxed text-primary-gold/45">
+                  O e-mail é o do login da conta e não muda por aqui.
+                </p>
+              )}
+            </div>
+            <p className="text-[11px] text-primary-gold/45">
+              Os aluguéis e pedidos deste cliente passam a mostrar os dados novos.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPanel(null)}
+                disabled={loading}
+                className="flex-1 h-9 rounded-xl border border-primary-gold/20 text-xs text-primary-gold/70 hover:border-primary-gold/50 cursor-pointer disabled:opacity-40"
+              >
+                Voltar
+              </button>
+              <button
+                type="button"
+                onClick={saveProfile}
+                disabled={loading}
+                className="flex-1 h-9 rounded-xl bg-primary-gold text-xs font-semibold text-primary-black hover:bg-primary-gold/90 cursor-pointer disabled:opacity-40"
+              >
+                {loading ? "Salvando..." : "Salvar dados"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {panel === "history" && (
+          <div className="flex flex-col gap-2 rounded-xl border border-invalid-color/30 p-3">
+            <p className="text-xs text-primary-gold/70">
+              Apaga de vez {plural(history.length, "aluguel encerrado", "aluguéis encerrados")} de {customer.name}. A conta
+              e o cadastro continuam. Não dá para desfazer.
+            </p>
+            {active.length > 0 && (
+              <Checkbox
+                withoutBackground
+                width="!w-full !max-w-none !min-w-0"
+                checked={includeActive}
+                setChecked={(e) => setIncludeActive(e.target.checked)}
+                label={`Incluir também ${plural(active.length, "aluguel em andamento", "aluguéis em andamento")} (as cópias ficam livres)`}
+              />
+            )}
+            <p className="text-[11px] text-primary-gold/45">
+              Pedidos com reembolso ou análise em aberto ficam até serem resolvidos. Pagamentos online continuam
+              registrados no painel do Mercado Pago.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPanel(null)}
+                disabled={loading}
+                className="flex-1 h-9 rounded-xl border border-primary-gold/20 text-xs text-primary-gold/70 hover:border-primary-gold/50 cursor-pointer disabled:opacity-40"
+              >
+                Voltar
+              </button>
+              <button
+                type="button"
+                onClick={clearHistory}
+                disabled={loading || (history.length === 0 && !includeActive)}
+                className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl bg-invalid-color/90 text-xs font-semibold text-primary-black hover:bg-invalid-color cursor-pointer disabled:opacity-40"
+              >
+                <LuEraser size={13} /> {loading ? "Apagando..." : "Apagar histórico"}
+              </button>
+            </div>
+          </div>
+        )}
+
         {confirmDelete && (
           <div className="flex flex-col gap-2 rounded-xl border border-invalid-color/30 p-3">
             <p className="text-xs text-invalid-color">
-              Excluir de vez a conta de {customer.name}? Apaga o login, o cadastro e o histórico de{" "}
-              {plural(rentals.length, "aluguel", "aluguéis")}. Não dá para desfazer.
+              Excluir de vez a conta de {customer.name}? Apaga {customer.guest ? "" : "o login, "}o cadastro e o histórico
+              de {plural(rentals.length, "aluguel", "aluguéis")}. Não dá para desfazer.
             </p>
+            {needsForce && (
+              <Checkbox
+                withoutBackground
+                width="!w-full !max-w-none !min-w-0"
+                checked={includeActive}
+                setChecked={(e) => setIncludeActive(e.target.checked)}
+                label={`Excluir mesmo com ${plural(active.length, "aluguel em andamento", "aluguéis em andamento")} (as cópias ficam livres; confira se os jogos voltaram)`}
+              />
+            )}
             <div className="flex gap-2">
               <button
                 type="button"
@@ -353,7 +536,7 @@ export function CustomerDetail({
               <button
                 type="button"
                 onClick={removeAccount}
-                disabled={loading}
+                disabled={loading || (needsForce && !includeActive)}
                 className="flex-1 flex items-center justify-center gap-1.5 h-9 px-4 rounded-xl bg-invalid-color/90 text-xs font-semibold text-primary-black hover:bg-invalid-color cursor-pointer disabled:opacity-40"
               >
                 <LuTrash2 size={13} /> {loading ? "Excluindo..." : "Sim, excluir"}

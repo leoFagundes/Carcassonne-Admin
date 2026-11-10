@@ -6,5 +6,12 @@ export const POST = withApi(async (req, ctx) => {
   const admin = await requireAdmin(req);
   const { uid } = await ctx.params;
   if (!isDocId(uid)) throw new ApiError(400, "invalid_body", "Corpo da requisição inválido.");
-  return deleteAccount(uid, admin.uid);
+  // Corpo opcional: { force: true } apaga também os aluguéis em andamento (libera as cópias).
+  let force = false;
+  try {
+    force = ((await req.json()) as { force?: unknown } | null)?.force === true;
+  } catch {
+    // sem corpo: exclusão normal
+  }
+  return deleteAccount(uid, admin.uid, { force });
 });
