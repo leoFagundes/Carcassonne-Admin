@@ -135,7 +135,9 @@ export default function OrderDetail({
     order.paymentMode === "online" &&
     (p?.status === "pending" ||
       p?.status === "rejected" ||
-      p?.status === "expired");
+      p?.status === "expired" ||
+      // Pago, mas sem a tarifa guardada (pedidos antigos): a consulta completa.
+      (!!p?.providerPaymentId && p.fee === undefined));
   const rentalOf = (rentalId: string) => rentals.find((r) => r.id === rentalId);
 
   return (
@@ -350,6 +352,12 @@ export default function OrderDetail({
                 {p.paidAt && <Row label="Pago em" value={dateTime(p.paidAt)} />}
 
                 <Row label="Valor" value={formatBRL(order.total)} />
+                {p.fee !== undefined && (
+                  <>
+                    <Row label="Taxa do Mercado Pago" value={`− ${formatBRL(p.fee)}`} />
+                    <Row label="Líquido recebido" value={<strong>{formatBRL(p.netAmount ?? order.total - p.fee)}</strong>} />
+                  </>
+                )}
 
                 {p.providerPaymentId && (
                   <Row label="Nº no Mercado Pago" value={p.providerPaymentId} />

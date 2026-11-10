@@ -655,6 +655,10 @@ export interface RentalOrderPayment {
   /** "other": saldo da conta Mercado Pago. */
   method?: "pix" | "card" | "other";
   paidAt?: number;
+  /** Tarifa do Mercado Pago sobre o pagamento (centavos), quando informada. */
+  fee?: number;
+  /** Líquido recebido pelo pub (centavos), quando informado. */
+  netAmount?: number;
   holdUntil: number;
   refunds: RentalRefund[];
   refundedTotal: number;

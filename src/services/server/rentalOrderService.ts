@@ -518,6 +518,8 @@ async function applyApproved(orderId: string, payment: ProviderPayment): Promise
       "payment.providerPaymentId": payment.id,
       "payment.method": payment.method,
       "payment.paidAt": payment.approvedAt ?? now,
+      ...(payment.fee !== undefined ? { "payment.fee": payment.fee } : {}),
+      ...(payment.net !== undefined ? { "payment.netAmount": payment.net } : {}),
     };
 
     switch (decision.kind) {
@@ -525,6 +527,13 @@ async function applyApproved(orderId: string, payment: ProviderPayment): Promise
         console.error(`Pagamento ${payment.id} do pedido ${orderId} não se aplica; ignorado.`);
         return { kind: "ignored" };
       case "already":
+        // Pedido pago antes de a tarifa ser guardada: completa (ex.: ao consultar no Mercado Pago).
+        if (order.payment?.fee === undefined && payment.fee !== undefined) {
+          tx.update(orderRef, {
+            "payment.fee": payment.fee,
+            ...(payment.net !== undefined ? { "payment.netAmount": payment.net } : {}),
+          });
+        }
         return { kind: "already" };
       case "duplicate":
         return { kind: "duplicate", summary };
@@ -830,6 +839,24 @@ export async function verifyOrderPayment(
       // Reembolso que falhou já ficou registrado no pedido; mostra o estado atual.
       if (!(error instanceof ProviderError)) throw error;
       console.error(`Erro do provedor ao aplicar o pagamento do pedido ${orderId}:`, error);
+    }
+  } else if (
+    order.paymentMode === "online" &&
+    order.payment?.providerPaymentId &&
+    order.payment.fee === undefined
+  ) {
+    // Pago antes de a tarifa ser guardada: busca no Mercado Pago só a tarifa e o líquido.
+    try {
+      const provider = getPaymentProvider();
+      const paid = provider ? await provider.getPayment(order.payment.providerPaymentId) : null;
+      if (paid?.fee !== undefined) {
+        await orderRef.update({
+          "payment.fee": paid.fee,
+          ...(paid.net !== undefined ? { "payment.netAmount": paid.net } : {}),
+        });
+      }
+    } catch (error) {
+      console.error(`Erro ao buscar a tarifa do pedido ${orderId}:`, error);
     }
   }
 

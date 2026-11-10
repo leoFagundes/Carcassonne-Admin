@@ -4,6 +4,7 @@ import {
   cancelBreakdown,
   monthlyRentals,
   paymentBreakdown,
+  paymentFees,
   periodStart,
   rentalSummary,
   rentalsFrom,
@@ -145,5 +146,32 @@ describe("paymentBreakdown", () => {
     expect(
       paymentBreakdown([{ paymentMode: "counter" }, online("pix"), online("pix"), online("card"), online(undefined), online("pix", false)]),
     ).toEqual({ counter: 1, pix: 2, card: 1, other: 1 });
+  });
+});
+
+describe("paymentFees", () => {
+  const paid = (total: number, fee?: number, netAmount?: number) =>
+    ({
+      paymentMode: "online",
+      total,
+      payment: {
+        status: "approved",
+        provider: "mercadopago",
+        checkoutUrl: "",
+        providerCheckoutId: "",
+        holdUntil: 0,
+        refunds: [],
+        refundedTotal: 0,
+        providerPaymentId: "p",
+        paidAt: 1,
+        ...(fee !== undefined ? { fee } : {}),
+        ...(netAmount !== undefined ? { netAmount } : {}),
+      },
+    }) as Pick<RentalOrderType, "paymentMode" | "payment" | "total">;
+
+  it("soma bruto, tarifa e líquido; conta os sem tarifa", () => {
+    expect(
+      paymentFees([paid(1000, 50, 950), paid(2000, 100), paid(500), { paymentMode: "counter", total: 9999 }]),
+    ).toEqual({ paidOnline: 3, gross: 3500, fees: 150, net: 2850, missing: 1, grossKnown: 3000 });
   });
 });

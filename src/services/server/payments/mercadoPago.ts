@@ -46,6 +46,8 @@ type MpPayment = {
   payment_type_id?: string;
   payment_method_id?: string;
   date_approved?: string | null;
+  fee_details?: { type?: string; amount?: number; fee_payer?: string }[];
+  transaction_details?: { net_received_amount?: number };
 };
 
 function mapPayment(p: MpPayment): ProviderPayment {
@@ -62,6 +64,11 @@ function mapPayment(p: MpPayment): ProviderPayment {
     method = "card";
   }
   const approvedMs = p.date_approved ? Date.parse(p.date_approved) : NaN;
+  // Tarifas pagas pelo pub (fee_payer "collector"); o que o comprador paga não conta.
+  const fees = (p.fee_details ?? []).filter((f) => f.fee_payer !== "payer" && typeof f.amount === "number");
+  const fee = fees.length ? toCents(fees.reduce((sum, f) => sum + (f.amount ?? 0), 0)) : undefined;
+  const netRaw = p.transaction_details?.net_received_amount;
+  const net = typeof netRaw === "number" && netRaw > 0 ? toCents(netRaw) : undefined;
   return {
     id: String(p.id),
     status,
@@ -70,6 +77,8 @@ function mapPayment(p: MpPayment): ProviderPayment {
     externalReference: p.external_reference ?? null,
     method,
     ...(Number.isFinite(approvedMs) ? { approvedAt: approvedMs } : {}),
+    ...(fee !== undefined ? { fee } : {}),
+    ...(net !== undefined ? { net } : {}),
   };
 }
 

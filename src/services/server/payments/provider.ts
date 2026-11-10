@@ -29,6 +29,10 @@ export interface ProviderPayment {
   externalReference: string | null;
   method: "pix" | "card" | "other";
   approvedAt?: number;
+  /** Tarifa cobrada do pub pelo Mercado Pago (centavos), quando informada. */
+  fee?: number;
+  /** Valor líquido que cai na conta do pub (centavos), quando informado. */
+  net?: number;
 }
 
 export interface PaymentProvider {

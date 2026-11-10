@@ -24,6 +24,7 @@ import {
   monthlyRentals,
   ordersFrom,
   paymentBreakdown,
+  paymentFees,
   periodStart,
   rentalSummary,
   rentalsFrom,
@@ -162,8 +163,10 @@ export default function RentalStats() {
     const status = statusBreakdown(inPeriod);
     const cancels = cancelBreakdown(inPeriod);
     const payment = paymentBreakdown(ordersInPeriod);
+    const fees = paymentFees(ordersInPeriod);
     return {
       summary: rentalSummary(inPeriod, orders, start),
+      fees,
       games: topGames(inPeriod, 8),
       customers: topCustomers(inPeriod, 5),
       status: [
@@ -288,6 +291,41 @@ export default function RentalStats() {
             sub={`${plural(stats.newCustomers, "conta nova", "contas novas")}`}
           />
         </div>
+
+        {stats.fees.paidOnline > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Kpi
+              icon={<LuBadgeDollarSign size={16} />}
+              label="Pago online"
+              value={formatBRL(stats.fees.gross)}
+              sub={plural(stats.fees.paidOnline, "pedido pago pelo site", "pedidos pagos pelo site")}
+            />
+            <Kpi
+              icon={<LuBadgeDollarSign size={16} />}
+              label="Taxas do Mercado Pago"
+              value={formatBRL(stats.fees.fees)}
+              sub={
+                stats.fees.grossKnown > 0
+                  ? `${((stats.fees.fees / stats.fees.grossKnown) * 100).toFixed(1).replace(".", ",")}% do valor pago${
+                      stats.fees.missing ? ` · ${stats.fees.missing} sem dado` : ""
+                    }`
+                  : plural(stats.fees.missing, "pedido sem a taxa guardada", "pedidos sem a taxa guardada")
+              }
+            />
+            <Kpi
+              icon={<LuBadgeDollarSign size={16} />}
+              label="Líquido recebido"
+              value={formatBRL(stats.fees.net)}
+              sub={stats.fees.missing ? "sem contar os pedidos sem taxa guardada" : "o que caiu na conta do pub"}
+            />
+          </div>
+        )}
+        {stats.fees.missing > 0 && (
+          <p className="text-[11px] text-primary-gold/40 -mt-1">
+            Pedidos pagos antes desta versão não têm a taxa guardada: abra o pedido e use “Consultar no Mercado Pago” para
+            completar.
+          </p>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Panel icon={<LuTrophy size={14} />} title="Jogos mais alugados">

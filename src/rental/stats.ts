@@ -192,3 +192,34 @@ export function paymentBreakdown(orders: Pick<RentalOrderType, "paymentMode" | "
 export function ordersFrom<T extends Pick<RentalOrderType, "startDate">>(orders: T[], start: string | null): T[] {
   return start ? orders.filter((o) => o.startDate >= start) : orders;
 }
+
+/**
+ * Tarifas do Mercado Pago nos pedidos pagos online: bruto pago, tarifa e
+ * líquido que caiu na conta. `missing` = pagos sem a tarifa guardada (pedidos
+ * antigos; o detalhe do pedido tem "Consultar no Mercado Pago" para completar).
+ */
+export function paymentFees(orders: Pick<RentalOrderType, "paymentMode" | "payment" | "total">[]): {
+  paidOnline: number;
+  gross: number;
+  fees: number;
+  net: number;
+  missing: number;
+  /** Bruto só dos pedidos com a tarifa guardada (base da porcentagem). */
+  grossKnown: number;
+} {
+  const out = { paidOnline: 0, gross: 0, fees: 0, net: 0, missing: 0, grossKnown: 0 };
+  for (const o of orders) {
+    const p = o.payment;
+    if (o.paymentMode !== "online" || !p?.providerPaymentId || !p.paidAt) continue;
+    out.paidOnline++;
+    out.gross += o.total;
+    if (p.fee === undefined) {
+      out.missing++;
+      continue;
+    }
+    out.fees += p.fee;
+    out.grossKnown += o.total;
+    out.net += p.netAmount ?? o.total - p.fee;
+  }
+  return out;
+}
