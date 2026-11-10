@@ -11,7 +11,7 @@ export const POST = withApi(async (req, ctx) => {
   const { id } = await ctx.params;
   if (!isDocId(id)) throw new ApiError(404, "not_found", "Pedido não encontrado.");
   const body = (await readJson<unknown>(req)) as
-    | { amount?: unknown; requestId?: unknown; reason?: unknown }
+    | { amount?: unknown; requestId?: unknown; reason?: unknown; cancelRentals?: unknown }
     | null;
-  return refundOrder(id, token.uid, body?.amount, body?.requestId, body?.reason);
+  return refundOrder(id, token.uid, body?.amount, body?.requestId, body?.reason, body?.cancelRentals);
 });

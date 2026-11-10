@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { RentalOrderType } from "@/types";
+import type { RentalOrderType, RentalType } from "@/types";
+import Checkbox from "@/components/checkbox";
 import Input from "@/components/input";
 import { useAlert } from "@/contexts/alertProvider";
 import { rentalApi, type ApiResult } from "@/services/rentalApi";
@@ -66,10 +67,15 @@ export function AmountField({
  * quando o valor muda (ou depois de um sucesso): repetir depois de um erro
  * reaproveita o mesmo, e o servidor não devolve duas vezes.
  */
-export function RefundForm({ order }: { order: Order }) {
+export function RefundForm({ order, rentals = [] }: { order: Order; rentals?: RentalType[] }) {
   const { addAlert } = useAlert();
   const left = refundableLeft(order);
   const [text, setText] = useState(centsToInput(left));
+  // Aluguéis que o reembolso pode cancelar (ainda não retirados) e os que já estão com o cliente.
+  const cancelable = rentals.filter((r) => r.status === "reserved" || r.status === "awaiting_payment");
+  const pickedUp = rentals.filter((r) => r.status === "picked_up");
+  // null = segue o padrão: cancelar quando o reembolso é do valor todo que resta.
+  const [cancelChoice, setCancelChoice] = useState<boolean | null>(null);
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -77,6 +83,7 @@ export function RefundForm({ order }: { order: Order }) {
 
   const cents = parseBRL(text);
   const valid = cents !== null && cents > 0 && cents <= left;
+  const cancelRentals = cancelable.length > 0 && (cancelChoice ?? cents === left);
 
   const changeAmount = (next: string) => {
     setText(next);
@@ -92,6 +99,7 @@ export function RefundForm({ order }: { order: Order }) {
       amount: cents,
       requestId: requestId.current,
       reason: reason.trim() || undefined,
+      cancelRentals,
     });
     setLoading(false);
     if (!result.ok) {
@@ -99,7 +107,13 @@ export function RefundForm({ order }: { order: Order }) {
       addAlert(result.message);
       return;
     }
-    addAlert(`Reembolso de ${formatBRL(result.data.amount)} feito.`);
+    const n = result.data.canceled ?? 0;
+    addAlert(
+      n > 0
+        ? `Reembolso de ${formatBRL(result.data.amount)} feito e ${n === 1 ? "1 aluguel cancelado" : `${n} aluguéis cancelados`}.`
+        : `Reembolso de ${formatBRL(result.data.amount)} feito.`,
+    );
+    setCancelChoice(null);
     requestId.current = crypto.randomUUID();
     setReason("");
     setText(centsToInput(Math.max(0, left - result.data.amount)));
@@ -130,6 +144,32 @@ export function RefundForm({ order }: { order: Order }) {
         variant
         width={`!w-full !min-w-0 ${reason.trim() ? "" : "!mt-1"}`}
       />
+      {cancelable.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <Checkbox
+            checked={cancelRentals}
+            setChecked={(e) => setCancelChoice(e.target.checked)}
+            label={
+              cancelable.length === 1
+                ? `Cancelar também o aluguel de ${cancelable[0].gameName} (ainda não retirado)`
+                : `Cancelar também os ${cancelable.length} aluguéis ainda não retirados`
+            }
+            variant
+            width="!max-w-none"
+          />
+          <span className="text-[11px] text-primary-gold/50">
+            {cancelRentals
+              ? "As cópias voltam a ficar livres para outros clientes. O cancelamento só acontece se o reembolso der certo."
+              : "Os aluguéis continuam reservados: use isto para devolver só uma parte (ex.: um desconto)."}
+          </span>
+        </div>
+      )}
+      {pickedUp.length > 0 && (
+        <p className="text-[11px] text-orange-300/90">
+          {pickedUp.length === 1 ? `${pickedUp[0].gameName} já foi retirado` : `${pickedUp.length} jogos já foram retirados`}: o reembolso
+          não muda esse aluguel. Registre a devolução quando o jogo voltar.
+        </p>
+      )}
       {error && <p className="text-xs text-invalid-color">{error}</p>}
       <button
         type="button"
@@ -137,7 +177,7 @@ export function RefundForm({ order }: { order: Order }) {
         disabled={!valid || loading}
         onClick={submit}
       >
-        {loading ? "Reembolsando..." : error ? "Tentar de novo" : "Reembolsar"}
+        {loading ? "Reembolsando..." : error ? "Tentar de novo" : cancelRentals ? "Reembolsar e cancelar" : "Reembolsar"}
       </button>
     </div>
   );

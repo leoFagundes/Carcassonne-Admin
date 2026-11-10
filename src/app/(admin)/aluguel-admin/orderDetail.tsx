@@ -452,6 +452,7 @@ export default function OrderDetail({
             <RefundForm
               key={`${order.id}:${refundableLeft(order)}`}
               order={order}
+              rentals={rentals}
             />
           </Section>
         )}

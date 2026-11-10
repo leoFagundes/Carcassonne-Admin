@@ -1,6 +1,6 @@
 import "server-only";
 import { FieldValue, type DocumentReference, type Transaction } from "firebase-admin/firestore";
-import { asBookings, asUnits } from "@/rental/bookings";
+import { asBookings, asUnits, removeBooking } from "@/rental/bookings";
 import { todaySP } from "@/rental/dates";
 import { mergeRentalSettings } from "@/rental/defaults";
 import { formatBRL } from "@/rental/money";
@@ -18,6 +18,7 @@ import {
   isOrderExpirable,
   isPaidOnline,
   isValidRefundAmount,
+  liveBookings,
   markPendingRefundFailed,
   orderPaymentView,
   paymentsToApply,
@@ -62,6 +63,49 @@ export const checkoutFailed = () =>
 
 function ordersCol() {
   return getAdminDb().collection("rentalOrders");
+}
+
+const CANCELABLE_AFTER_REFUND: RentalType["status"][] = ["awaiting_payment", "reserved"];
+
+/**
+ * Cancela os aluguéis do pedido que ainda não foram retirados (aguardando ou
+ * reservado) e libera as cópias. Não reembolsa nada: é chamado depois de um
+ * reembolso que já deu certo. Retirados ficam como estão (o jogo está com o
+ * cliente: registre a devolução quando voltar). Seguro para repetir.
+ */
+export async function cancelUnpickedRentals(orderId: string, adminUid: string, reason: string): Promise<number> {
+  const db = getAdminDb();
+  return db.runTransaction(async (tx) => {
+    const orderSnap = await tx.get(ordersCol().doc(orderId));
+    if (!orderSnap.exists) return 0;
+    const order = orderSnap.data() as RentalOrderType;
+    const refs = (order.rentalIds ?? []).filter(isDocId).map((id) => db.collection("rentals").doc(id));
+    const rentalSnaps = refs.length ? await tx.getAll(...refs) : [];
+    const targets = rentalSnaps.filter(
+      (s) => s.exists && CANCELABLE_AFTER_REFUND.includes((s.data() as RentalType).status),
+    );
+    if (!targets.length) return 0;
+    const gameIds = [...new Set(targets.map((s) => String((s.data() as RentalType).gameId)))].filter(isDocId);
+    const gameSnaps = gameIds.length ? await tx.getAll(...gameIds.map((id) => db.collection("rentalGames").doc(id))) : [];
+
+    // ---- escritas (todas as leituras acima) ----
+    const ids = new Set(targets.map((s) => s.id));
+    for (const snap of targets) {
+      tx.update(snap.ref, {
+        status: "canceled",
+        canceledAt: FieldValue.serverTimestamp(),
+        canceledBy: adminUid ? "admin" : "system",
+        cancelReason: reason,
+      });
+    }
+    for (const game of gameSnaps) {
+      if (!game.exists) continue;
+      const before = liveBookings(asBookings(game.data()?.bookings), Date.now());
+      const after = [...ids].reduce((list, id) => removeBooking(list, id), before);
+      tx.update(game.ref, { bookings: after, updatedAt: FieldValue.serverTimestamp() });
+    }
+    return targets.length;
+  });
 }
 
 type ReleaseMode =
@@ -977,7 +1021,8 @@ export async function refundOrder(
   amount: unknown,
   requestId: unknown,
   reason?: unknown,
-): Promise<{ amount: number; status: OrderPaymentStatus }> {
+  cancelRentals?: unknown,
+): Promise<{ amount: number; status: OrderPaymentStatus; canceled: number }> {
   if (typeof requestId !== "string" || !REQUEST_ID.test(requestId)) {
     throw new ApiError(400, "invalid_body", "Corpo da requisição inválido.");
   }
@@ -1018,8 +1063,13 @@ export async function refundOrder(
       summary: { code: order.code, customer: order.customer },
     };
   });
+  // Cancela os não retirados só depois que o dinheiro voltou (também numa repetição).
+  const cancelAfter = async () =>
+    cancelRentals === true
+      ? cancelUnpickedRentals(orderId, adminUid, note || "Reembolsado pelo Carcassonne Pub")
+      : 0;
   if (staged.step.kind === "done") {
-    return { amount: staged.step.refund.amount, status: staged.status };
+    return { amount: staged.step.refund.amount, status: staged.status, canceled: await cancelAfter() };
   }
 
   const { intent, paymentId } = staged.step;
@@ -1030,8 +1080,9 @@ export async function refundOrder(
     const status = commitRefund(tx, orderRef, order, intent, result);
     return { first: status !== null, status: status ?? order.payment?.status ?? "refunded" };
   });
+  const canceled = await cancelAfter();
   if (done.first) await sendRefundNotice(orderId, staged.summary, result.amount, ADMIN_REFUND_EMAIL);
-  return { amount: result.amount, status: done.status };
+  return { amount: result.amount, status: done.status, canceled };
 }
 
 export type ReviewResult = { kind: "approved"; amount: number } | { kind: "denied" };

@@ -70,8 +70,8 @@ export const rentalApi = {
     call<CancelOutcome>(rentalPath(id, "cancel"), { reason, refundAmount }),
 
   /** Admin. `requestId`: um por pedido de reembolso (repetir o mesmo não reembolsa duas vezes). */
-  refundOrder: (id: string, body: { amount: number; requestId: string; reason?: string }) =>
-    call<{ amount: number; status: OrderPaymentStatus }>(orderPath(id, "refund"), body),
+  refundOrder: (id: string, body: { amount: number; requestId: string; reason?: string; cancelRentals?: boolean }) =>
+    call<{ amount: number; status: OrderPaymentStatus; canceled: number }>(orderPath(id, "refund"), body),
 
   /** Admin: decide um cancelamento em análise. */
   reviewCancellation: (
