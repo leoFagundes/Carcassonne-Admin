@@ -5,6 +5,7 @@ import { Resend } from "resend";
 import { AccountActionEmail } from "@/components/react-email/accountActionEmail";
 import { getAdminAuth, getAdminDb } from "./firebaseAdmin";
 import { ApiError } from "./apiHelpers";
+import { loadEmailTemplate } from "./emailTemplatesServer";
 
 export type AccountFrom = "admin" | "aluguel";
 type ActionMode = "verifyEmail" | "resetPassword";
@@ -31,18 +32,15 @@ export function buildActionLink(
   return `${siteUrl()}/conta/acao?${query.toString()}`;
 }
 
-async function sendMail(
-  to: string,
-  subject: string,
-  kind: "verify" | "reset",
-  link: string,
-) {
+async function sendMail(to: string, kind: "verify" | "reset", link: string) {
   const resend = new Resend(process.env.RESEND_API_KEY);
+  // Assunto e textos editados em Configurações → E-mails (falha → o padrão).
+  const copy = await loadEmailTemplate(kind === "verify" ? "account-verify" : "account-reset");
   const result = await resend.emails.send({
     from: FROM_ADDRESS,
     to,
-    subject,
-    react: <AccountActionEmail kind={kind} link={link} />,
+    subject: copy.subject,
+    react: <AccountActionEmail kind={kind} link={link} copy={copy} />,
   });
   if (result.error) {
     throw new Error(`Falha ao enviar e-mail: ${result.error.message}`);
@@ -86,7 +84,7 @@ export async function sendVerificationEmail(
   }
   const firebaseLink = await auth.generateEmailVerificationLink(user.email);
   const link = buildActionLink(firebaseLink, "verifyEmail", from);
-  await sendMail(user.email, "Confirme seu e-mail - Carcassonne Pub", "verify", link);
+  await sendMail(user.email, "verify", link);
 }
 
 export async function sendPasswordResetEmail(
@@ -111,5 +109,5 @@ export async function sendPasswordResetEmail(
     throw error;
   }
   const link = buildActionLink(firebaseLink, "resetPassword", from);
-  await sendMail(normalized, "Redefinir sua senha - Carcassonne Pub", "reset", link);
+  await sendMail(normalized, "reset", link);
 }

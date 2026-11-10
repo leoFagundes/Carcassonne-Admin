@@ -12,6 +12,8 @@ import {
   Text,
 } from "@react-email/components";
 import type { CSSProperties } from "react";
+import { mergeTemplate, type TemplateValues } from "@/utils/emailTemplates";
+import { emailRich } from "./emailRich";
 
 // Mesma paleta clara do e-mail de reserva (clientResponseTemplate).
 const color = {
@@ -90,61 +92,36 @@ const small: CSSProperties = {
   wordBreak: "break-all",
 };
 
-type Copy = {
-  preview: string;
-  title: string;
-  lead: string;
-  button: string;
-  notice: string | null;
-  ignore: string;
-};
-
-const COPY: Record<"verify" | "reset", Copy> = {
-  verify: {
-    preview: "Confirme seu e-mail - Carcassonne Pub",
-    title: "Confirme seu e-mail ✉️",
-    lead: "Falta só um passo. Confirme seu e-mail para continuar usando sua conta no Carcassonne Pub.",
-    button: "Confirmar e-mail",
-    notice: null,
-    ignore: "Se você não criou uma conta, pode ignorar este e-mail.",
-  },
-  reset: {
-    preview: "Redefinir sua senha - Carcassonne Pub",
-    title: "Redefinir sua senha 🔑",
-    lead: "Recebemos um pedido para criar uma nova senha para a sua conta. Clique no botão abaixo para escolher uma nova.",
-    button: "Criar nova senha",
-    notice: "Este link vale por 1 hora e só pode ser usado uma vez.",
-    ignore:
-      "Se você não pediu isso, pode ignorar este e-mail. Sua senha continua a mesma.",
-  },
-};
-
 export const AccountActionEmail = ({
   kind,
   link,
+  copy,
 }: {
   kind: "verify" | "reset";
   link: string;
+  /** Textos editados em Configurações → E-mails; ausente = o padrão. */
+  copy?: TemplateValues;
 }) => {
-  const c = COPY[kind];
+  const c = mergeTemplate(kind === "verify" ? "account-verify" : "account-reset", copy);
+  const notice = kind === "reset" ? (c.noticeText ?? "").trim() : "";
   return (
     <Html lang="pt-BR">
       <Head />
-      <Preview>{c.preview}</Preview>
+      <Preview>{c.previewText}</Preview>
       <Body style={main}>
         <Container>
           <Section style={card}>
             <Text style={brand}>Carcassonne Pub</Text>
             <Section style={contentBox}>
-              <Heading style={heading}>{c.title}</Heading>
-              <Text style={lead}>{c.lead}</Text>
+              <Heading style={heading}>{c.heading}</Heading>
+              <Text style={lead}>{emailRich(c.intro)}</Text>
               <Section style={{ textAlign: "center" }}>
                 <Button href={link} style={button}>
-                  {c.button}
+                  {c.buttonLabel}
                 </Button>
               </Section>
-              {c.notice && <Text style={note}>{c.notice}</Text>}
-              <Text style={note}>{c.ignore}</Text>
+              {notice && <Text style={note}>{emailRich(notice)}</Text>}
+              {c.ignoreText.trim() && <Text style={note}>{emailRich(c.ignoreText)}</Text>}
               <Hr style={divider} />
               <Text style={small}>
                 Se o botão não funcionar, copie e cole este endereço no

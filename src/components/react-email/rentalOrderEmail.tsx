@@ -15,6 +15,8 @@ import {
 import type { CSSProperties } from "react";
 import { formatDateBR } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
+import { fillTemplate, gamesPhrase, mergeTemplate, type TemplateValues } from "@/utils/emailTemplates";
+import { emailRich, emailRichWith } from "./emailRich";
 
 export type RentalOrderEmailItem = {
   gameName: string;
@@ -39,6 +41,8 @@ export type RentalOrderEmailProps = {
   paymentNote?: string;
   /** O cliente já levou os jogos (aluguel criado no balcão com retirada na hora). */
   pickedUp?: boolean;
+  /** Textos editados em Configurações → E-mails; ausente = o padrão. */
+  copy?: TemplateValues;
   /** Endereço do pub (Configurações → Geral); ausente = o padrão. */
   address?: string;
 };
@@ -225,41 +229,29 @@ export const RentalOrderEmail = ({
   paidOnline,
   paymentNote,
   pickedUp,
-  address ="CLN 407 Bloco E Loja 37 — Asa Norte, Brasília/DF",
+  copy,
+  address = "CLN 407 Bloco E Loja 37 — Asa Norte, Brasília/DF",
 }: RentalOrderEmailProps) => {
   const count = items.length;
+  const c = mergeTemplate("rental-order", copy);
+  const values = rentalOrderValues({ customerName, code, count, total });
+  const fill = (text: string) => fillTemplate(text, values);
   return (
     <Html lang="pt-BR">
       <Head />
-      <Preview>{`Aluguel confirmado · código ${code}`}</Preview>
+      <Preview>{fill(c.previewText)}</Preview>
       <Body style={main}>
         <Container>
           <Section style={card}>
             <Text style={brand}>Carcassonne Pub</Text>
             <Section style={contentBox}>
-              <Heading style={heading}>Aluguel confirmado! 🎲</Heading>
-              <Text style={lead}>
-                Olá, <strong>{customerName}</strong>!{" "}
-                {pickedUp ? (
-                  <>
-                    Você já está com {count === 1 ? "o jogo" : `os ${count} jogos`}{" "}
-                    do pedido. Confira abaixo a data de devolução.
-                  </>
-                ) : (
-                  <>
-                    Separamos {count === 1 ? "o jogo" : `os ${count} jogos`} do
-                    seu pedido. Apresente o código abaixo no balcão na hora da
-                    retirada.
-                  </>
-                )}
-              </Text>
+              <Heading style={heading}>{fill(c.heading)}</Heading>
+              <Text style={lead}>{emailRich(fill(pickedUp ? c.introPickedUp : c.intro))}</Text>
 
               <Section style={codeBox}>
-                <Text style={codeLabel}>Código do aluguel</Text>
+                <Text style={codeLabel}>{fill(c.codeLabel)}</Text>
                 <Text style={codeValue}>{code}</Text>
-                <Text style={codeHint}>
-                  Toque e segure o código para copiar.
-                </Text>
+                <Text style={codeHint}>{fill(c.codeHint)}</Text>
               </Section>
 
               <Section style={itemsBox}>
@@ -300,18 +292,16 @@ export const RentalOrderEmail = ({
               <Hr style={divider} />
 
               <Text style={rulesText}>
-                Antes de retirar, confira as{" "}
-                <Link href={rulesUrl} style={{ color: color.gold }}>
-                  regras do aluguel
-                </Link>{" "}
-                (prazos, atrasos e cuidados com os jogos).
+                {emailRichWith(
+                  fill(c.rulesText),
+                  "{regras}",
+                  <Link href={rulesUrl} style={{ color: color.gold }}>
+                    regras do aluguel
+                  </Link>,
+                )}
               </Text>
 
-              <Text style={signOff}>
-                Bom jogo! 🎲
-                <br />
-                <strong>Equipe Carcassonne Pub</strong>
-              </Text>
+              <Text style={signOff}>{emailRich(fill(c.signOff))}</Text>
             </Section>
           </Section>
         </Container>
@@ -319,3 +309,14 @@ export const RentalOrderEmail = ({
     </Html>
   );
 };
+
+/** Valores das variáveis do e-mail de confirmação (assunto e textos). */
+export function rentalOrderValues(o: { customerName: string; code: string; count: number; total: number }): TemplateValues {
+  return {
+    nome: o.customerName,
+    codigo: o.code,
+    jogos: gamesPhrase(o.count),
+    quantidade: String(o.count),
+    total: formatBRL(o.total),
+  };
+}

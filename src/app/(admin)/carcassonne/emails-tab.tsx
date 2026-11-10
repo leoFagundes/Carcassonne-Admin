@@ -1,24 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LuLock, LuMailCheck, LuPencil } from "react-icons/lu";
+import { LuKeyRound, LuMailCheck, LuPackage, LuPencil, LuUndo2, LuUserCheck } from "react-icons/lu";
 import Modal from "@/components/modal";
 import ReservationEmailForms from "@/components/reservationEmailForms";
+import { EMAIL_TEMPLATES, type EmailTemplateId } from "@/utils/emailTemplates";
+import TemplateEmailEditor from "./template-email-editor";
 
-/** E-mails que o site envia e que não têm editor (o texto está no código). */
-const AUTOMATIC_EMAILS = [
-  {
-    title: "Confirmação do aluguel",
-    description: "Enviado ao cliente quando um pedido de aluguel é confirmado (código, jogos, datas e endereço).",
-  },
-  {
-    title: "Confirmação de e-mail",
-    description: "Enviado ao criar uma conta — de cliente do aluguel ou de administrador.",
-  },
-  {
-    title: "Redefinição de senha",
-    description: "Enviado pelo \"Esqueci minha senha\" do admin e do aluguel. O link vale por 1 hora.",
-  },
+/** Os outros e-mails automáticos: textos editáveis (o visual segue o do pub). */
+const EDITABLE: { id: EmailTemplateId; icon: React.ReactNode }[] = [
+  { id: "rental-order", icon: <LuPackage size={16} /> },
+  { id: "rental-refund", icon: <LuUndo2 size={16} /> },
+  { id: "account-verify", icon: <LuUserCheck size={16} /> },
+  { id: "account-reset", icon: <LuKeyRound size={16} /> },
 ];
 
 /**
@@ -34,6 +28,7 @@ export default function EmailsTab({
   onEditorOpened?: () => void;
 }) {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState<EmailTemplateId | null>(null);
 
   useEffect(() => {
     if (!openEditorOnLoad) return;
@@ -66,24 +61,32 @@ export default function EmailsTab({
         </button>
       </section>
 
-      <section className="flex flex-col gap-2 rounded-2xl border border-primary-gold/10 bg-secondary-black/30 p-4">
-        <div className="flex items-center gap-2 text-primary-gold/60">
-          <LuLock size={13} />
-          <span className="text-[11px] font-semibold uppercase tracking-widest">
-            E-mails automáticos
-          </span>
-        </div>
+      <section className="flex flex-col gap-2 rounded-2xl border border-primary-gold/15 bg-secondary-black/40 p-4">
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/60">
+          Outros e-mails automáticos
+        </span>
         <p className="text-xs text-primary-gold/45">
-          Saem com o visual do Carcassonne Pub e não têm editor por aqui.
+          Assunto e textos editáveis, com variáveis, prévia e teste. O visual segue o do Carcassonne Pub; os dados do
+          pedido (jogos, datas, valores, link) entram sozinhos.
         </p>
         <ul className="flex flex-col gap-1.5">
-          {AUTOMATIC_EMAILS.map((email) => (
+          {EDITABLE.map(({ id, icon }) => (
             <li
-              key={email.title}
-              className="flex flex-col gap-0.5 rounded-lg border border-primary-gold/10 px-3 py-2"
+              key={id}
+              className="flex items-center gap-3 rounded-lg border border-primary-gold/10 px-3 py-2.5"
             >
-              <span className="text-sm text-primary-gold/85">{email.title}</span>
-              <span className="text-xs text-primary-gold/45">{email.description}</span>
+              <span className="shrink-0 text-primary-gold/60">{icon}</span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-sm text-primary-gold/85">{EMAIL_TEMPLATES[id].title}</span>
+                <span className="text-xs text-primary-gold/45">{EMAIL_TEMPLATES[id].description}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setTemplateOpen(id)}
+                className="flex shrink-0 items-center gap-1.5 h-8 px-3 rounded-lg border border-primary-gold/25 text-xs text-primary-gold/80 hover:border-primary-gold/60 hover:text-primary-gold cursor-pointer"
+              >
+                <LuPencil size={12} /> Editar
+              </button>
             </li>
           ))}
         </ul>
@@ -97,6 +100,18 @@ export default function EmailsTab({
         patternCloseButton={false}
       >
         <ReservationEmailForms closeForms={() => setIsEditorOpen(false)} />
+      </Modal>
+
+      <Modal
+        isOpen={templateOpen !== null}
+        onClose={() => setTemplateOpen(null)}
+        noPadding
+        isFixed
+        patternCloseButton={false}
+      >
+        {templateOpen && (
+          <TemplateEmailEditor key={templateOpen} id={templateOpen} onClose={() => setTemplateOpen(null)} />
+        )}
       </Modal>
     </div>
   );

@@ -10,6 +10,8 @@ import {
 } from "@react-email/components";
 import type { CSSProperties } from "react";
 import { formatBRL } from "@/rental/money";
+import { fillTemplate, mergeTemplate, type TemplateValues } from "@/utils/emailTemplates";
+import { emailRich } from "./emailRich";
 
 export type RentalRefundEmailProps = {
   customerName: string;
@@ -18,7 +20,14 @@ export type RentalRefundEmailProps = {
   amount: number;
   /** Uma frase explicando o motivo do reembolso. */
   reason: string;
+  /** Textos editados em Configurações → E-mails; ausente = o padrão. */
+  copy?: TemplateValues;
 };
+
+/** Valores das variáveis do e-mail de reembolso (assunto e textos). */
+export function rentalRefundValues(p: Pick<RentalRefundEmailProps, "customerName" | "code" | "amount" | "reason">): TemplateValues {
+  return { nome: p.customerName, codigo: p.code, valor: formatBRL(p.amount), motivo: p.reason };
+}
 
 // Mesma paleta clara do e-mail de confirmação do aluguel (rentalOrderEmail).
 const color = {
@@ -115,40 +124,38 @@ const signOff: CSSProperties = {
   color: color.body,
 };
 
-export const RentalRefundEmail = ({ customerName, code, amount, reason }: RentalRefundEmailProps) => (
-  <Html lang="pt-BR">
-    <Head />
-    <Preview>{`Reembolso de ${formatBRL(amount)} do pedido ${code}`}</Preview>
-    <Body style={main}>
-      <Container>
-        <Section style={card}>
-          <Text style={brand}>Carcassonne Pub</Text>
-          <Section style={contentBox}>
-            <Heading style={heading}>Reembolso a caminho</Heading>
-            <Text style={lead}>
-              Olá, <strong>{customerName}</strong>! {reason}
-            </Text>
+export const RentalRefundEmail = ({ customerName, code, amount, reason, copy }: RentalRefundEmailProps) => {
+  const c = mergeTemplate("rental-refund", copy);
+  const fill = (text: string) => fillTemplate(text, rentalRefundValues({ customerName, code, amount, reason }));
+  return (
+    <Html lang="pt-BR">
+      <Head />
+      <Preview>{fill(c.previewText)}</Preview>
+      <Body style={main}>
+        <Container>
+          <Section style={card}>
+            <Text style={brand}>Carcassonne Pub</Text>
+            <Section style={contentBox}>
+              <Heading style={heading}>{fill(c.heading)}</Heading>
+              <Text style={lead}>{emailRich(fill(c.intro))}</Text>
 
-            <Section style={amountBox}>
-              <Text style={amountLabel}>Reembolso do pedido {code}</Text>
-              <Text style={amountValue}>{formatBRL(amount)}</Text>
-              <Text style={amountHint}>Devolvido na mesma forma de pagamento.</Text>
+              <Section style={amountBox}>
+                <Text style={amountLabel}>{fill(c.amountLabel)}</Text>
+                <Text style={amountValue}>{formatBRL(amount)}</Text>
+                <Text style={amountHint}>{fill(c.amountHint)}</Text>
+              </Section>
+
+              {c.infoText.trim() && (
+                <Section style={infoBox}>
+                  <Text style={infoText}>{emailRich(fill(c.infoText))}</Text>
+                </Section>
+              )}
+
+              <Text style={signOff}>{emailRich(fill(c.signOff))}</Text>
             </Section>
-
-            <Section style={infoBox}>
-              <Text style={infoText}>
-                ⏱️ <strong>Pix: na hora · cartão: conforme a operadora.</strong>
-              </Text>
-            </Section>
-
-            <Text style={signOff}>
-              Até a próxima! 🎲
-              <br />
-              <strong>Equipe Carcassonne Pub</strong>
-            </Text>
           </Section>
-        </Section>
-      </Container>
-    </Body>
-  </Html>
-);
+        </Container>
+      </Body>
+    </Html>
+  );
+};

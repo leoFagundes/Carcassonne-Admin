@@ -155,6 +155,14 @@ export const rentalApi = {
 };
 
 export const adminApi = {
+  /** Prévia (HTML) de um e-mail automático com os textos ainda não salvos. */
+  emailTemplatePreview: (id: import("@/utils/emailTemplates").EmailTemplateId, config: Record<string, string>) =>
+    call<{ html: string; subject: string }>("/api/email-templates/preview", { id, config }),
+
+  /** Envia o e-mail de exemplo (versão salva) para um endereço de teste. */
+  emailTemplateTest: (id: import("@/utils/emailTemplates").EmailTemplateId, to: string) =>
+    call<null>("/api/email-templates/test", { id, to }),
+
   /** Números dos e-mails enviados (Resend). */
   emailStats: (refresh = false) =>
     call<import("@/services/server/resendStats").EmailStatsResult>(
