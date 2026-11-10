@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { LuLink, LuPackage, LuPlus } from "react-icons/lu";
+import { LuLink, LuPackage, LuPackagePlus } from "react-icons/lu";
 import Tooltip from "@/components/Tooltip";
 import Modal from "@/components/modal";
 import NewRentalForm from "./newRentalForm";
@@ -54,32 +54,36 @@ function AluguelAdmin() {
   return (
     <section className="flex flex-col gap-5 w-full h-full overflow-y-auto py-2 px-0 sm:px-6">
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-center gap-3 sm:gap-4 w-full">
+        {/* Mesmo cabeçalho da página de Reservas: título e, ao lado, os botões em grupo. */}
+        <div className="flex items-center justify-center gap-4 w-full">
           <div className="flex items-center gap-2 min-w-0">
-            <LuPackage size={30} className="text-primary-gold/70 shrink-0" />
+            <LuPackage size={32} className="text-primary-gold/70 shrink-0" />
             <h1 className="text-2xl sm:text-3xl font-semibold text-primary-gold">
               Aluguel de Jogos
             </h1>
           </div>
-          <Tooltip direction="bottom" content="Novo aluguel no balcão">
-            <button
-              onClick={() => setNewOpen(true)}
-              aria-label="Novo aluguel no balcão"
-              className="p-2.5 rounded-lg border border-primary-gold/40 bg-primary-gold/10 hover:bg-primary-gold/20 hover:border-primary-gold/70 text-primary-gold transition-all cursor-pointer"
-            >
-              <LuPlus size={16} />
-            </button>
-          </Tooltip>
-          <Tooltip direction="bottom" content="Ir para visão do cliente">
-            <button
-              onClick={() =>
-                window.open("/aluguel", "_blank", "noopener,noreferrer")
-              }
-              className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
-            >
-              <LuLink size={16} />
-            </button>
-          </Tooltip>
+          <div className="flex items-center gap-2">
+            <Tooltip direction="bottom" content="Novo aluguel no balcão">
+              <button
+                onClick={() => setNewOpen(true)}
+                aria-label="Novo aluguel no balcão"
+                className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+              >
+                <LuPackagePlus size={16} />
+              </button>
+            </Tooltip>
+            <Tooltip direction="bottom" content="Ir para visão do cliente">
+              <button
+                onClick={() =>
+                  window.open("/aluguel", "_blank", "noopener,noreferrer")
+                }
+                aria-label="Ir para visão do cliente"
+                className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+              >
+                <LuLink size={16} />
+              </button>
+            </Tooltip>
+          </div>
         </div>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-gold/25 to-transparent" />
       </div>
