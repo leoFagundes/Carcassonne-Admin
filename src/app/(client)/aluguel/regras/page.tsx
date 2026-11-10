@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { RentalRulesType } from "@/types";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import { RichText } from "@/components/richText";
+import { formatRulesVersion } from "@/rental/rulesVersion";
 import RentalPageShell from "../rentalPageShell";
 import { useRentalCart } from "../useRentalCart";
 
@@ -20,7 +21,7 @@ export default function RegrasPage() {
     <RentalPageShell title="Regras do aluguel" cartCount={cart.gameIds.length}>
       {rules && (
         <p className="-mt-2 text-center text-xs text-primary-gold/45">
-          Versão {rules.version}
+          Versão {formatRulesVersion(rules.version)}
           {updated
             ? ` · atualizada em ${updated.toLocaleDateString("pt-BR")}`
             : ""}

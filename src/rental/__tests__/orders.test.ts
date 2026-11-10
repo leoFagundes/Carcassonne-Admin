@@ -155,3 +155,13 @@ describe("planOrder: devolução em dia fechado", () => {
     if (plan.ok) expect(plan.items[0].dueDate).toBe("2026-11-25");
   });
 });
+
+describe("planOrder: versão das regras com decimal", () => {
+  it("aceita a versão 2.1 quando é a atual e recusa a antiga", () => {
+    const ctx21 = { ...makeCtx(), rulesVersion: 2.1 };
+    expect(planOrder(input(["g1"], "2026-11-05", 2.1), ctx21)).toMatchObject({ ok: true });
+    expect(planOrder(input(["g1"], "2026-11-05", 2), ctx21)).toMatchObject({ ok: false, code: "rules_outdated" });
+    // 0.1 + 2.0 calculado no navegador vale como 2.1
+    expect(planOrder(input(["g1"], "2026-11-05", 2 + 0.1), ctx21)).toMatchObject({ ok: true });
+  });
+});

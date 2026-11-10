@@ -7,7 +7,6 @@ import {
   setDoc,
   onSnapshot,
   serverTimestamp,
-  increment,
 } from "firebase/firestore";
 import { RentalRuleSection, RentalRulesType, RentalSettingsType } from "@/types";
 import { DEFAULT_RENTAL_RULES, DEFAULT_RENTAL_SETTINGS, mergeRentalSettings } from "@/rental/defaults";
@@ -89,24 +88,18 @@ class RentalConfigRepository {
     }
   }
 
-  // Cada publicação sobe a versão; os pedidos guardam a versão aceita.
-  static async publishRules(sections: RentalRuleSection[]): Promise<boolean> {
+  /**
+   * Publica as regras com a versão escolhida no editor (normalmente a atual +
+   * 0.1). Os pedidos guardam a versão aceita; mudou a versão, o cliente aceita
+   * de novo no próximo pedido.
+   */
+  static async publishRules(sections: RentalRuleSection[], version: number): Promise<boolean> {
     try {
-      const ref = doc(db, this.collectionName, this.rulesDoc);
-      const existing = await getDoc(ref);
-      if (!existing.exists()) {
-        await setDoc(ref, {
-          sections,
-          version: DEFAULT_RENTAL_RULES.version + 1,
-          updatedAt: serverTimestamp(),
-        });
-      } else {
-        await setDoc(
-          ref,
-          { sections, version: increment(1), updatedAt: serverTimestamp() },
-          { merge: true }
-        );
-      }
+      await setDoc(doc(db, this.collectionName, this.rulesDoc), {
+        sections,
+        version,
+        updatedAt: serverTimestamp(),
+      });
       return true;
     } catch (error) {
       console.error("Erro ao publicar regras do aluguel: ", error);

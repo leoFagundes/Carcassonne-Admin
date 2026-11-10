@@ -7,6 +7,7 @@ import type { RentalRulesType } from "@/types";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import PanelSheet from "@/components/showcase/panelSheet";
 import { RichText } from "@/components/richText";
+import { formatRulesVersion } from "@/rental/rulesVersion";
 
 /** Regras do aluguel num painel por cima da página (o cliente não sai dela). */
 function RulesSheet({ onClosed }: { onClosed: () => void }) {
@@ -21,7 +22,7 @@ function RulesSheet({ onClosed }: { onClosed: () => void }) {
       title="Regras do aluguel"
       subtitle={
         rules
-          ? `Versão ${rules.version}${updated ? ` · atualizada em ${updated.toLocaleDateString("pt-BR")}` : ""}`
+          ? `Versão ${formatRulesVersion(rules.version)}${updated ? ` · atualizada em ${updated.toLocaleDateString("pt-BR")}` : ""}`
           : undefined
       }
       icon={<LuScrollText size={17} />}

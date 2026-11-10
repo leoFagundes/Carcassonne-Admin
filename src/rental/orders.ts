@@ -1,4 +1,5 @@
 import { availabilityOptions, bookingEnd, dueDateFor, pickUnit, type GameLike } from "./availability";
+import { sameRulesVersion } from "./rulesVersion";
 import { isValidCpf } from "./cpf";
 import { addDays, weekdayOf } from "./dates";
 import type {
@@ -89,7 +90,7 @@ export function planOrder(input: OrderInput, ctx: OrderContext): PlanResult {
   if (!ctx.emailVerified) return fail("email_not_verified");
   if (!isProfileComplete(ctx.customer, settings.requireCpf)) return fail("profile_incomplete");
   if (ctx.customer?.isBlocked === true) return fail("customer_blocked");
-  if (input.rulesVersion !== ctx.rulesVersion) return fail("rules_outdated");
+  if (!sameRulesVersion(input.rulesVersion, ctx.rulesVersion)) return fail("rules_outdated");
   if (gameIds.length === 0) return fail("empty_order");
   if (gameIds.length > settings.maxGamesPerOrder) return fail("too_many_games");
   if (new Set(gameIds).size !== gameIds.length) return fail("duplicate_game");

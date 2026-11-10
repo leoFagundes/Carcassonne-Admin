@@ -9,6 +9,7 @@ import RichTextEditor from "@/components/richTextEditor";
 import { useAlert } from "@/contexts/alertProvider";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import { formatStamp } from "./rentalShared";
+import { formatRulesVersion, nextRulesVersion, parseRulesVersion, sameRulesVersion } from "@/rental/rulesVersion";
 
 /** Como as seções vão para o banco (título sem espaços nas pontas). */
 const clean = (sections: RentalRuleSection[]) =>
@@ -31,6 +32,13 @@ export default function RulesTab() {
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState<"draft" | "publish" | "discard" | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  // Versão da próxima publicação: sugere a atual + 0.1; o admin pode trocar.
+  const [versionText, setVersionText] = useState("");
+  const [versionTouched, setVersionTouched] = useState(false);
+  useEffect(() => {
+    if (version !== null && !versionTouched) setVersionText(formatRulesVersion(nextRulesVersion(version)));
+  }, [version, versionTouched]);
+  const chosenVersion = parseRulesVersion(versionText);
 
   // Publicado ao vivo (versão e conteúdo); o editor só é preenchido uma vez.
   useEffect(
@@ -97,14 +105,16 @@ export default function RulesTab() {
     if (busy) return;
     if (sections.length === 0) return addAlert("Adicione pelo menos uma seção.");
     if (sections.some((s) => !s.title.trim())) return addAlert("Toda seção precisa de um título.");
+    if (chosenVersion === null) return addAlert("Versão inválida: use um número com até uma casa decimal (ex.: 3.1).");
     setBusy("publish");
     try {
-      const ok = await RentalConfigRepository.publishRules(clean(sections));
+      const ok = await RentalConfigRepository.publishRules(clean(sections), chosenVersion);
       if (!ok) return addAlert("Não foi possível publicar as regras. Tente novamente.");
       await RentalConfigRepository.deleteRulesDraft();
       setBaseline(sections);
       setDraftAt(null);
-      addAlert("Regras publicadas!");
+      setVersionTouched(false);
+      addAlert(`Regras publicadas na versão ${formatRulesVersion(chosenVersion)}!`);
     } finally {
       setBusy(null);
     }
@@ -127,7 +137,7 @@ export default function RulesTab() {
     if (!loaded) return { text: "Carregando...", warn: false };
     if (dirty) return { text: "Você tem alterações não salvas", warn: true };
     if (draftAt) return { text: "Rascunho salvo · ainda não publicado", warn: false };
-    return { text: `Publicado · versão ${version ?? "—"}`, warn: false };
+    return { text: `Publicado · versão ${version === null ? "—" : formatRulesVersion(version)}`, warn: false };
   }, [loaded, dirty, draftAt, version]);
 
   const iconBtn =
@@ -138,7 +148,7 @@ export default function RulesTab() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-lg font-semibold text-primary-gold">Regras do aluguel</h2>
         <span className="text-xs text-primary-gold/50">
-          {version === null ? "Carregando..." : `Versão publicada: ${version}`}
+          {version === null ? "Carregando..." : `Versão publicada: ${formatRulesVersion(version)}`}
         </span>
       </div>
 
@@ -149,7 +159,7 @@ export default function RulesTab() {
             <span>
               Você está editando um <strong>rascunho</strong>
               {draftAt !== "now" && formatStamp(draftAt) ? `, salvo em ${formatStamp(draftAt)}` : ""}. O cliente continua
-              vendo a versão {version ?? ""} publicada até você clicar em Publicar.
+              vendo a versão {version === null ? "" : formatRulesVersion(version)} publicada até você clicar em Publicar.
             </span>
           </p>
           {confirmDiscard ? (
@@ -243,9 +253,44 @@ export default function RulesTab() {
         <LuPlus size={14} /> Adicionar seção
       </button>
 
+      <div className="flex flex-col gap-1.5 rounded-xl border border-primary-gold/15 bg-primary-black/25 p-3.5">
+        <Input
+          labelSpace
+          label="Versão desta publicação"
+          placeholder="Versão desta publicação (ex.: 3.1)"
+          value={versionText}
+          setValue={(e) => {
+            setVersionText(e.target.value);
+            setVersionTouched(true);
+          }}
+          variant
+          width="!w-full sm:!w-[260px] !min-w-0"
+        />
+        <p className="text-[11px] leading-relaxed text-primary-gold/50">
+          {chosenVersion === null
+            ? "Use um número com até uma casa decimal, ex.: 3.1."
+            : version !== null && sameRulesVersion(chosenVersion, version)
+              ? "Mesma versão da atual: use para correções pequenas (erro de digitação). Os clientes não precisam aceitar as regras de novo."
+              : version !== null && chosenVersion < version
+                ? "Atenção: menor que a versão publicada agora. Os clientes vão aceitar as regras de novo no próximo pedido."
+                : `Sobe de 0.1 em 0.1 (2.9 → 3.0). Com a versão ${formatRulesVersion(chosenVersion)}, os clientes aceitam as regras de novo no próximo pedido.`}
+          {versionTouched && version !== null && (
+            <>
+              {" "}
+              <button
+                type="button"
+                onClick={() => setVersionTouched(false)}
+                className="underline underline-offset-2 hover:text-primary-gold cursor-pointer"
+              >
+                Usar a sugerida ({formatRulesVersion(nextRulesVersion(version))})
+              </button>
+            </>
+          )}
+        </p>
+      </div>
+
       <p className="text-xs text-primary-gold/50">
-        “Salvar rascunho” guarda sem mudar o que o cliente vê. “Publicar” cria a versão {(version ?? 0) + 1}: os clientes
-        aceitam as regras de novo no próximo pedido.
+        “Salvar rascunho” guarda sem mudar o que o cliente vê. “Publicar” coloca as regras no ar com a versão acima.
       </p>
 
       {/* Salvar sempre à mão */}
@@ -266,10 +311,17 @@ export default function RulesTab() {
           <button
             type="button"
             onClick={publish}
-            disabled={!loaded || busy !== null || (!differsFromPublished && !draftAt)}
+            // Também dá para publicar só para trocar a versão (mudada à mão).
+            disabled={
+              !loaded ||
+              busy !== null ||
+              (!differsFromPublished &&
+                !draftAt &&
+                !(versionTouched && chosenVersion !== null && version !== null && !sameRulesVersion(chosenVersion, version)))
+            }
             className="text-sm px-4 py-2 rounded-xl bg-primary-gold text-primary-black font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {busy === "publish" ? "Publicando..." : "Publicar"}
+            {busy === "publish" ? "Publicando..." : chosenVersion === null ? "Publicar" : `Publicar v${formatRulesVersion(chosenVersion)}`}
           </button>
         </div>
       </div>

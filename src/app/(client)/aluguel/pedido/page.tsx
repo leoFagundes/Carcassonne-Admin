@@ -43,6 +43,7 @@ import RentalPageShell from "../rentalPageShell";
 import RentalSteps from "../rentalSteps";
 import { CopyCode, NextSteps, dayLabel } from "../orderBits";
 import { RulesLink } from "../rulesSheet";
+import { formatRulesVersion } from "@/rental/rulesVersion";
 
 type Game = RentalGameType & { id: string };
 
@@ -686,7 +687,7 @@ export default function PedidoPage() {
                     <RulesLink className="underline text-primary-gold cursor-pointer">
                       regras do aluguel
                     </RulesLink>{" "}
-                    (versão {rules.version}).{" "}
+                    (versão {formatRulesVersion(rules.version)}).{" "}
                     {!accepted ? (
                       <span className="text-orange-400 animate-pulse">
                         (marque para continuar)

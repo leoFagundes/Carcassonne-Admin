@@ -1,6 +1,7 @@
 import { ApiError, isDocId, readJson, requireUser, withApi } from "@/services/server/apiHelpers";
 import { createOrder } from "@/services/server/rentalService";
 import type { OrderInput } from "@/rental/orders";
+import { isValidRulesVersion } from "@/rental/rulesVersion";
 
 const MAX_GAME_IDS = 20;
 
@@ -13,8 +14,8 @@ function parseOrderInput(body: unknown): OrderInput {
     gameIds.length > MAX_GAME_IDS ||
     !gameIds.every(isDocId) ||
     typeof startDate !== "string" ||
-    typeof rulesVersion !== "number" ||
-    !Number.isInteger(rulesVersion)
+    // Versão com uma casa decimal (ex.: 2.1)
+    !isValidRulesVersion(rulesVersion)
   ) {
     throw new ApiError(400, "invalid_body", "Corpo da requisição inválido.");
   }
