@@ -586,6 +586,12 @@ export interface RentalSettingsType {
    */
   allowQueue?: boolean;
   /**
+   * Com a fila ligada: "before" = só antes de quem já reservou (devolvendo
+   * antes), "after" = só depois de quem está com a cópia ou já reservou,
+   * "both" = os dois. Ausente = "both".
+   */
+  queueMode?: "before" | "after" | "both";
+  /**
    * Folga mínima, em dias, entre a devolução de um aluguel e a retirada do
    * próximo na mesma cópia (1 = no dia seguinte). Ausente = 1.
    */

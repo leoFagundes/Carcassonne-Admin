@@ -11,8 +11,13 @@ export type GameAvailability =
   | { state: "rented"; returnDate?: string; daysUntilReturn?: number }
   | { state: "unavailable" };
 
+/** Com a fila ligada: pode reservar antes de quem já reservou, depois de quem está com o jogo, ou os dois. */
+export type QueueMode = "before" | "after" | "both";
+
 export type AvailabilityOptions = {
   allowQueue?: boolean;
+  /** Só vale com a fila ligada; ausente = "both". */
+  queueMode?: QueueMode;
   /** Folga mínima entre a devolução e a próxima retirada da mesma cópia (1 = dia seguinte). */
   gapDays?: number;
   /** Dias da semana em que o pub atende (0 = domingo). A devolução que cair fora vai para o próximo dia aberto. */
@@ -21,7 +26,27 @@ export type AvailabilityOptions = {
 
 export const MAX_GAP_DAYS = 14;
 
-const noQueue = (opts?: AvailabilityOptions) => opts?.allowQueue === false;
+/**
+ * Pode reservar DEPOIS de outro cliente (atrás de quem está com a cópia ou já
+ * a reservou)? Só com a fila ligada e o modo "depois" ou "os dois".
+ */
+export const allowsAfter = (opts?: AvailabilityOptions) =>
+  opts?.allowQueue !== false && (opts?.queueMode ?? "both") !== "before";
+
+/**
+ * Pode reservar ANTES de uma reserva já marcada (devolvendo antes dela
+ * começar)? Com a fila desligada continua podendo (ninguém fica atrás de
+ * ninguém); ligada, só no modo "antes" ou "os dois".
+ */
+export const allowsBefore = (opts?: AvailabilityOptions) =>
+  opts?.allowQueue === false || (opts?.queueMode ?? "both") !== "after";
+
+/** Qualquer regra além de "antes e depois" (a busca pela próxima data muda). */
+const restricted = (opts?: AvailabilityOptions) => !allowsAfter(opts) || !allowsBefore(opts);
+
+const QUEUE_MODES: QueueMode[] = ["before", "after", "both"];
+export const queueModeOf = (mode: unknown): QueueMode =>
+  QUEUE_MODES.includes(mode as QueueMode) ? (mode as QueueMode) : "both";
 
 /** Folga válida: inteiro de 1 a 14; ausente ou inválido = 1 (dia seguinte, como sempre). */
 export function gapDaysOf(opts?: AvailabilityOptions): number {
@@ -31,9 +56,10 @@ export function gapDaysOf(opts?: AvailabilityOptions): number {
 
 /** Opções de disponibilidade a partir das configurações do aluguel. */
 export const availabilityOptions = (
-  s?: Pick<RentalSettingsType, "allowQueue" | "queueGapDays" | "pickupWeekdays"> | null,
+  s?: Pick<RentalSettingsType, "allowQueue" | "queueMode" | "queueGapDays" | "pickupWeekdays"> | null,
 ): AvailabilityOptions => ({
   allowQueue: s?.allowQueue,
+  queueMode: queueModeOf(s?.queueMode),
   gapDays: s?.queueGapDays,
   openWeekdays: s?.pickupWeekdays,
 });
@@ -79,8 +105,9 @@ export function isUnitFree(
 }
 
 /**
- * A cópia aceita uma reserva em [start, end]? Livre nessas datas e, com a fila
- * desligada, sem nenhuma reserva viva começando antes (ninguém na frente).
+ * A cópia aceita uma reserva em [start, end]? Livre nessas datas e dentro da
+ * regra da fila: sem "depois", ninguém pode estar na frente (reserva começando
+ * antes); sem "antes", ninguém pode estar atrás (reserva começando depois).
  */
 export function unitAccepts(
   unitId: string,
@@ -91,7 +118,10 @@ export function unitAccepts(
   opts?: AvailabilityOptions,
 ): boolean {
   if (!isUnitFree(unitId, bookings, start, end, today, gapDaysOf(opts))) return false;
-  return !noQueue(opts) || !bookings.some((b) => b.unitId === unitId && b.startDate < start);
+  const mine = bookings.filter((b) => b.unitId === unitId);
+  if (!allowsAfter(opts) && mine.some((b) => b.startDate < start)) return false;
+  if (!allowsBefore(opts) && mine.some((b) => b.startDate > start)) return false;
+  return true;
 }
 
 /** Primeira data ≥ `from` em que alguma cópia ativa aceita a reserva (até 120 dias à frente). */
@@ -136,7 +166,7 @@ export function gameAvailability(game: GameLike, today: string, opts?: Availabil
   const active = game.units.filter((u) => u.status === "active");
   if (active.length === 0) return { state: "unavailable" };
 
-  if (noQueue(opts)) {
+  if (!allowsAfter(opts)) {
     const end = dueDateFor(today, game.rentalDays, opts);
     if (active.some((u) => unitAccepts(u.id, game.bookings, today, end, today, opts))) return { state: "available" };
     // Ninguém livre agora: informa a devolução mais próxima (não dá para reservar antes dela).
@@ -147,6 +177,16 @@ export function gameAvailability(game: GameLike, today: string, opts?: Availabil
     if (next && next.dueDate < today && out.every((b) => b.dueDate < today)) return { state: "overdue" };
     const due = out.find((b) => b.dueDate >= today)?.dueDate;
     return due ? { state: "rented", returnDate: due, daysUntilReturn: diffDays(today, due) } : { state: "rented" };
+  }
+
+  if (restricted(opts)) {
+    // Só "depois": a próxima data é depois da última reserva de alguma cópia.
+    const end = dueDateFor(today, game.rentalDays, opts);
+    if (active.some((u) => unitAccepts(u.id, game.bookings, today, end, today, opts))) return { state: "available" };
+    const out = game.bookings.filter((b) => b.status === "picked_up" && active.some((u) => u.id === b.unitId));
+    if (out.length && out.every((b) => b.dueDate < today) && out.length >= active.length) return { state: "overdue" };
+    const first = firstAcceptedStart(game, today, today, opts);
+    return first ? { state: "from", start: first } : { state: "unavailable" };
   }
 
   let best: { start: string; blocking: RentalBooking | null } | null = null;
@@ -178,7 +218,7 @@ export function availabilityFor(
   const active = game.units.filter((u) => u.status === "active");
   if (active.some((u) => unitAccepts(u.id, game.bookings, start, end, today, opts))) return { ok: true };
   // Sem fila, a próxima data pode até ser antes da escolhida (antes de quem já reservou).
-  if (noQueue(opts)) return { ok: false, nextStart: firstAcceptedStart(game, today, today, opts) };
+  if (restricted(opts)) return { ok: false, nextStart: firstAcceptedStart(game, today, today, opts) };
   let next: string | null = null;
   for (const u of active) {
     const e = earliestStartForUnit(u.id, game.bookings, game.rentalDays, today, start, gapDaysOf(opts), opts?.openWeekdays);
@@ -218,7 +258,9 @@ export type BlockReason =
   /** Já reservada por outro cliente nesse período (contando a folga). */
   | { kind: "reserved"; from: string; to: string; copies: number }
   /** Sem fila: seria depois de outro cliente, e o pub não permite. */
-  | { kind: "behind"; from: string; to: string; copies: number };
+  | { kind: "behind"; from: string; to: string; copies: number }
+  /** Só "depois": seria antes de outra reserva já marcada, e o pub não permite. */
+  | { kind: "ahead"; from: string; to: string; copies: number };
 
 export function blockReason(
   game: GameLike,
@@ -250,9 +292,13 @@ export function blockReason(
           ? { kind: "with_customer", until: ends, copies: active.length }
           : { kind: "reserved", from: clash.startDate, to: clash.dueDate, copies: active.length };
     } else {
-      // Livre nas datas, mas atrás de outro cliente (fila desligada).
-      const ahead = [...mine].reverse().find((b) => b.startDate < start);
-      if (ahead) {
+      // Livre nas datas, mas atrás de outro cliente (sem "depois") ou na frente (sem "antes").
+      const ahead = allowsAfter(opts) ? undefined : [...mine].reverse().find((b) => b.startDate < start);
+      const behind = allowsBefore(opts) ? undefined : mine.find((b) => b.startDate > start);
+      if (!ahead && behind) {
+        ends = bookingEnd(behind, today);
+        reason = { kind: "ahead", from: behind.startDate, to: behind.dueDate, copies: active.length };
+      } else if (ahead) {
         ends = bookingEnd(ahead, today);
         reason =
           ahead.status === "picked_up"
@@ -263,4 +309,11 @@ export function blockReason(
     if (reason && (!best || ends < best.ends)) best = { reason, ends };
   }
   return best?.reason ?? null;
+}
+
+/** Onde a regra deixa encaixar um aluguel em volta de outra reserva (para os textos). */
+export function queueWindows(opts?: AvailabilityOptions): "before" | "after" | "both" {
+  const before = allowsBefore(opts);
+  const after = allowsAfter(opts);
+  return before && after ? "both" : after ? "after" : "before";
 }

@@ -242,3 +242,42 @@ describe("devolução em dia fechado (openWeekdays)", () => {
     expect(availabilityFor(game, "2026-11-16", today, OPEN).ok).toBe(false);
   });
 });
+
+describe("fila ligada: antes, depois ou os dois", () => {
+  // Hoje 05/11, cópia única reservada por outro cliente de 20/11 a 27/11; prazo 7 dias.
+  const reserved = { units: [unit("u1")], bookings: [bk("u1", "2026-11-20", "2026-11-27", "reserved")], rentalDays: 7 };
+  const both = { allowQueue: true, queueMode: "both" as const };
+  const before = { allowQueue: true, queueMode: "before" as const };
+  const after = { allowQueue: true, queueMode: "after" as const };
+
+  it("os dois (padrão): pega antes e reserva depois", () => {
+    expect(pickUnit(reserved, "2026-11-05", today, both)).toBe("u1");
+    expect(pickUnit(reserved, "2026-11-28", today, both)).toBe("u1");
+    expect(pickUnit(reserved, "2026-11-05", today, { allowQueue: true })).toBe("u1");
+  });
+
+  it("só antes: igual à fila desligada", () => {
+    expect(pickUnit(reserved, "2026-11-05", today, before)).toBe("u1");
+    expect(pickUnit(reserved, "2026-11-28", today, before)).toBeNull();
+    expect(blockReason(reserved, "2026-11-28", today, before)).toMatchObject({ kind: "behind" });
+  });
+
+  it("só depois: ninguém pega antes de uma reserva marcada", () => {
+    expect(pickUnit(reserved, "2026-11-05", today, after)).toBeNull();
+    expect(pickUnit(reserved, "2026-11-28", today, after)).toBe("u1");
+    expect(blockReason(reserved, "2026-11-05", today, after)).toEqual({
+      kind: "ahead",
+      from: "2026-11-20",
+      to: "2026-11-27",
+      copies: 1,
+    });
+    expect(gameAvailability(reserved, today, after)).toEqual({ state: "from", start: "2026-11-28" });
+    expect(availabilityFor(reserved, "2026-11-05", today, after)).toEqual({ ok: false, nextStart: "2026-11-28" });
+  });
+
+  it("só depois com a cópia livre e sem reservas: disponível", () => {
+    expect(gameAvailability({ units: [unit("u1")], bookings: [], rentalDays: 7 }, today, after)).toEqual({
+      state: "available",
+    });
+  });
+});

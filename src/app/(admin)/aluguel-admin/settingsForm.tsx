@@ -10,6 +10,25 @@ import { useAlert } from "@/contexts/alertProvider";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import { DEFAULT_RENTAL_SETTINGS } from "@/rental/defaults";
 import OnlinePaymentSection from "./onlinePaymentSettings";
+import { queueModeOf, type QueueMode } from "@/rental/availability";
+
+const QUEUE_MODE_OPTIONS: { value: QueueMode; label: string; text: string }[] = [
+  {
+    value: "both",
+    label: "Antes e depois",
+    text: "Padrão. Ex.: Ana reservou de 10 a 17. Outro cliente pode pegar antes (devolvendo até o dia 9, com a folga) ou reservar a partir do dia 18.",
+  },
+  {
+    value: "before",
+    label: "Só antes",
+    text: "Ex.: Ana reservou de 10 a 17. Outro cliente só pode pegar antes, devolvendo até o dia 9 (com a folga). Para depois dela, só quando a cópia voltar. Funciona igual a deixar esta opção desligada.",
+  },
+  {
+    value: "after",
+    label: "Só depois",
+    text: "Ex.: Ana reservou de 10 a 17. Outro cliente só pode reservar a partir do dia 18 (com a folga). Ninguém pega a cópia no meio do caminho antes da reserva dela.",
+  },
+];
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -104,6 +123,7 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
       requireCpf: local.requireCpf,
       onlinePayment: local.onlinePayment,
       allowQueue: local.allowQueue !== false,
+      queueMode: queueModeOf(local.queueMode),
       queueGapDays: local.queueGapDays ?? 1,
       ...(email ? { staffEmail: email } : {}),
     };
@@ -182,9 +202,38 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
         />
         <p className="-mt-1 text-[11px] text-primary-gold/45 leading-relaxed">
           {local.allowQueue !== false
-            ? "Ligado: o cliente pode reservar para depois da devolução de quem está com o jogo (se essa pessoa atrasar, a retirada atrasa junto)."
-            : "Desligado: com todas as cópias fora, o jogo aparece como “Alugado” e só pode ser alugado depois que uma cópia voltar. Ninguém fica na fila atrás de outro cliente."}
+            ? "Ligado: escolha abaixo se o cliente pode encaixar o aluguel antes de quem já reservou, depois de quem está com o jogo (se essa pessoa atrasar, a retirada atrasa junto), ou os dois."
+            : "Desligado: ninguém fica na fila atrás de outro cliente. Com todas as cópias fora, o jogo aparece como “Alugado” e só pode ser alugado depois que uma cópia voltar. Ainda dá para pegar uma cópia livre agora que tem reserva marcada mais para frente, desde que devolva antes (com a folga)."}
         </p>
+        {local.allowQueue !== false && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-gold/70">
+              Em volta de uma reserva já marcada, o cliente pode alugar
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {QUEUE_MODE_OPTIONS.map((o) => {
+                const on = queueModeOf(local.queueMode) === o.value;
+                return (
+                  <button
+                    key={o.value}
+                    type="button"
+                    onClick={() => set("queueMode", o.value)}
+                    className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors cursor-pointer ${
+                      on
+                        ? "border-primary-gold bg-primary-gold text-primary-black"
+                        : "border-primary-gold/20 text-primary-gold/60 hover:border-primary-gold/50 hover:text-primary-gold"
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-primary-gold/45 leading-relaxed">
+              {QUEUE_MODE_OPTIONS.find((o) => o.value === queueModeOf(local.queueMode))?.text}
+            </p>
+          </div>
+        )}
         <Input
           labelSpace
           label="Folga entre aluguéis da mesma cópia (dias)"

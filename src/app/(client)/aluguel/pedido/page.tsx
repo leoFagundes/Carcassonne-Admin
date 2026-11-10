@@ -16,6 +16,7 @@ import RentalGameRepository from "@/services/repositories/RentalGameRepository";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import { accountApi, rentalApi } from "@/services/rentalApi";
 import {
+  allowsAfter,
   availabilityFor,
   availabilityOptions,
   blockReason,
@@ -74,6 +75,9 @@ function reasonText(r: BlockReason, gapDays: number): string {
     return `${all}Está com outro cliente até ${formatDateBR(r.until)}.${gap}`;
   if (r.kind === "reserved") {
     return `${all}Já reservado por outro cliente de ${formatDateBR(r.from)} a ${formatDateBR(r.to)}.${gap}`;
+  }
+  if (r.kind === "ahead") {
+    return `${all}Outro cliente já reservou a partir de ${formatDateBR(r.from)}, e o pub só libera novas reservas para depois dele.`;
   }
   return `${all}Já reservado de ${formatDateBR(r.from)} a ${formatDateBR(r.to)}, e o pub não permite reservar para depois de outro cliente.`;
 }
@@ -453,7 +457,7 @@ export default function PedidoPage() {
                               {reasonText(reason, gapDaysOf(avOpts))}
                             </span>
                           )}
-                          {settings.allowQueue === false &&
+                          {!allowsAfter(avOpts) &&
                             !after &&
                             reason &&
                             reason.kind !== "no_copies" && (

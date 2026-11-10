@@ -11,7 +11,7 @@ import { auth } from "@/services/firebaseConfig";
 import AdminRepository from "@/services/repositories/AdminRepository";
 import RentalGameRepository from "@/services/repositories/RentalGameRepository";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
-import { availabilityOptions, gameAvailability } from "@/rental/availability";
+import { availabilityOptions, gameAvailability, queueWindows } from "@/rental/availability";
 import { withLiveBookings } from "@/rental/payments";
 import { todaySP } from "@/rental/dates";
 import ScrollUp from "@/components/scrollUp";
@@ -514,7 +514,7 @@ export default function RentalShowcase() {
               availabilityOptions(settings),
             )}
             inCart={cart.has(detail.game.id)}
-            allowQueue={settings?.allowQueue !== false}
+            windows={queueWindows(availabilityOptions(settings))}
             onAdd={() => cart.add(detail.game.id)}
             onClosed={() => setDetail(null)}
           />

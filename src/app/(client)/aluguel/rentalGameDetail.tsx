@@ -57,10 +57,10 @@ export default function RentalGameDetail({
   inCart,
   onAdd,
   onClosed,
-  allowQueue = true,
+  windows = "both",
 }: {
-  /** Fila desligada: só dá para pegar antes de quem já reservou. */
-  allowQueue?: boolean;
+  /** Onde dá para encaixar um aluguel em volta de uma reserva já marcada. */
+  windows?: "before" | "after" | "both";
   game: RentalGameWithId;
   origin: HTMLElement | null;
   availability: GameAvailability;
@@ -88,7 +88,7 @@ export default function RentalGameDetail({
     availability.state === "available" && everyCopyBooked
       ? `Já há reserva de ${formatDateBR(upcoming[0].startDate)} a ${formatDateBR(upcoming[0].dueDate)}${
           upcoming.length > 1 ? " (e outras datas)" : ""
-        }. ${allowQueue ? "Dá para alugar antes ou depois desse período" : "Dá para alugar só antes desse período"}: no pedido aparecem as datas livres.`
+        }. ${windows === "both" ? "Dá para alugar antes ou depois desse período" : windows === "after" ? "Dá para alugar só depois desse período" : "Dá para alugar só antes desse período"}: no pedido aparecem as datas livres.`
       : null;
 
   // Aviso logo acima do botão quando o jogo não está livre agora.
