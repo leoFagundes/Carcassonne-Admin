@@ -107,6 +107,8 @@ A aplicação estará disponível em [http://localhost:3000](http://localhost:30
 | `NEXT_PUBLIC_FIREBASE_APP_ID`              | ID do app no Firebase                                                    |
 | `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`      | ID do Google Analytics do Firebase                                       |
 | `RESEND_API_KEY`                           | Chave de API do [Resend](https://resend.com/), usada no envio de e-mails |
+| `RESEND_STATS_API_KEY`                     | (Opcional) Chave do Resend com **Full access**, só para Configurações → Estatísticas → E-mails ler a lista de envios. A chave de envio não lê. Somente servidor |
+| `RESEND_DAILY_LIMIT` / `RESEND_MONTHLY_LIMIT` | (Opcional) Limites do plano do Resend mostrados nas estatísticas (padrão: 100 / 3000, plano grátis) |
 | `FIREBASE_ADMIN_PROJECT_ID`                | `project_id` da conta de serviço (Admin SDK). Somente servidor           |
 | `FIREBASE_ADMIN_CLIENT_EMAIL`              | `client_email` da conta de serviço. Somente servidor                     |
 | `FIREBASE_ADMIN_PRIVATE_KEY`               | `private_key` da conta de serviço, entre aspas, com `\n`. Somente servidor |

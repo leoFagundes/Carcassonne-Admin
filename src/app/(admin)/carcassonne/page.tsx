@@ -37,6 +37,7 @@ import SiteThemeSettings from "./site-theme-settings";
 import EmailsTab from "./emails-tab";
 import RentalStats from "./rental-stats";
 import VisitorsChart from "./visitors-chart";
+import EmailStats from "./email-stats";
 import DatabaseStats from "./database-stats";
 import ReserveSettings from "./reserve-settings";
 import GeneralSettings from "./general-settings";
@@ -187,7 +188,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<
     "stats" | "settings" | "temas" | "emails" | "mural"
   >("stats");
-  const [statsTab, setStatsTab] = useState<"reservas" | "aluguel" | "links" | "banco">("reservas");
+  const [statsTab, setStatsTab] = useState<"reservas" | "aluguel" | "emails" | "links" | "banco">("reservas");
   const { pending: pendingThemeReminders } = useSiteThemeReminders();
   // Vindo da página Adicionar (?tab=emails), o editor do e-mail já abre.
   const [openEmailEditor, setOpenEmailEditor] = useState(false);
@@ -697,6 +698,7 @@ export default function SettingsPage() {
               [
                 { key: "reservas", label: "Reservas" },
                 { key: "aluguel", label: "Aluguel" },
+                { key: "emails", label: "E-mails" },
                 { key: "links", label: "Links" },
                 { key: "banco", label: "Banco de dados" },
               ] as const
@@ -1119,6 +1121,8 @@ export default function SettingsPage() {
           )}
 
           {statsTab === "aluguel" && <RentalStats />}
+
+          {statsTab === "emails" && <EmailStats />}
 
           {statsTab === "links" && (
             <div className="flex flex-col gap-4">

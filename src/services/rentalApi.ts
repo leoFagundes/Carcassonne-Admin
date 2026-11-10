@@ -113,6 +113,14 @@ export const rentalApi = {
 };
 
 export const adminApi = {
+  /** Números dos e-mails enviados (Resend). */
+  emailStats: (refresh = false) =>
+    call<import("@/services/server/resendStats").EmailStatsResult>(
+      `/api/admin/email-stats${refresh ? "?refresh=1" : ""}`,
+      undefined,
+      { method: "GET" },
+    ),
+
   /** Exclui de vez a conta (login, cadastro, acesso de admin e histórico de aluguéis). */
   deleteAccount: (uid: string) =>
     call<{ rentals: number }>(`/api/accounts/${encodeURIComponent(uid)}/delete`, {}),
