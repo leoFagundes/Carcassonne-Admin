@@ -93,6 +93,9 @@ export const rentalApi = {
   cancel: (id: string, reason?: string, refundAmount?: number) =>
     call<CancelOutcome>(rentalPath(id, "cancel"), { reason, refundAmount }),
 
+  /** Cliente cancela o próprio aluguel (vale a política de reembolso, mesmo numa conta de admin). */
+  cancelAsCustomer: (id: string) => call<CancelOutcome>(rentalPath(id, "cancel"), { as: "customer" }),
+
   /** Admin. `requestId`: um por pedido de reembolso (repetir o mesmo não reembolsa duas vezes). */
   refundOrder: (id: string, body: { amount: number; requestId: string; reason?: string; cancelRentals?: boolean }) =>
     call<{ amount: number; status: OrderPaymentStatus; canceled: number }>(orderPath(id, "refund"), body),

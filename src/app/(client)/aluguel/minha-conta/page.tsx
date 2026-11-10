@@ -221,7 +221,7 @@ function MinhaContaContent() {
     if (cancelingId) return;
     setCancelingId(rental.id);
     setCancelError(null);
-    const result = await rentalApi.cancel(rental.id);
+    const result = await rentalApi.cancelAsCustomer(rental.id);
     setCancelingId(null);
     if (!result.ok) {
       setCancelError({ id: rental.id, message: result.message });
