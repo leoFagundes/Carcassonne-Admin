@@ -4,6 +4,7 @@ import {
   UNPAID_ORDER_GRACE_MS,
   customerDeletionBlock,
   orderDeletionBlock,
+  paymentsAllowDeletion,
   rentalDeletionBlock,
   rentalEndedAt,
 } from "@/rental/deletion";
@@ -147,10 +148,20 @@ describe("exclusão forçada (admin)", () => {
     expect(rentalDeletionBlock(rentalOf("reserved"), order(), NOW, { force: true })).toBeNull();
   });
 
-  it("pedido não pago ainda no prazo do Mercado Pago sai quando forçado", () => {
-    const unpaid = order({}, { status: "expired", holdUntil: NOW - 60_000 });
+  it("pedido não pago no prazo só sai com o Mercado Pago confirmando que não há pagamento", () => {
+    const unpaid = { ...order({}, { status: "expired", holdUntil: NOW - 60_000 }), id: "o1" };
     expect(orderDeletionBlock(unpaid, NOW)).not.toBeNull();
-    expect(orderDeletionBlock(unpaid, NOW, "x", { force: true })).toBeNull();
+    expect(orderDeletionBlock(unpaid, NOW, "x", { force: true })).not.toBeNull();
+    expect(orderDeletionBlock(unpaid, NOW, "x", { verifiedUnpaid: new Set(["o1"]) })).toBeNull();
+    expect(orderDeletionBlock(unpaid, NOW, "x", { verifiedUnpaid: new Set(["outro"]) })).not.toBeNull();
+  });
+
+  it("pagamento aprovado ou em andamento no Mercado Pago segura; recusado/cancelado não", () => {
+    expect(paymentsAllowDeletion([])).toBe(true);
+    expect(paymentsAllowDeletion([{ status: "rejected" }, { status: "cancelled" }])).toBe(true);
+    expect(paymentsAllowDeletion([{ status: "rejected" }, { status: "in_process" }])).toBe(false);
+    expect(paymentsAllowDeletion([{ status: "pending" }])).toBe(false);
+    expect(paymentsAllowDeletion([{ status: "approved" }])).toBe(false);
   });
 
   it("reembolso em andamento continua segurando, mesmo forçado", () => {

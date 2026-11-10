@@ -169,7 +169,9 @@ export function CustomerDetail({
     const { deleted, skipped } = result.data;
     addAlert(
       skipped.length
-        ? `${plural(deleted, "aluguel apagado", "aluguéis apagados")}. ${skipped.length} ficaram: ${skipped[0].message}`
+        ? deleted
+          ? `${plural(deleted, "aluguel apagado", "aluguéis apagados")}; ${plural(skipped.length, "ficou", "ficaram")}: ${skipped[0].message}`
+          : `Nada foi apagado: ${skipped[0].message}`
         : deleted
           ? `${plural(deleted, "aluguel apagado", "aluguéis apagados")} do histórico de ${customer.name}`
           : "Nada para apagar.",

@@ -108,10 +108,11 @@ function ActionModal({
     onClose();
   };
 
-  // Exclusão (forçada: o admin pode apagar até o que está em andamento). Só
-  // reembolso/análise em aberto segura; a mesma regra do servidor.
+  // Exclusão (forçada: o admin pode apagar até o que está em andamento).
+  // Reembolso/análise em aberto segura aqui; pedido online não pago o servidor
+  // confere no Mercado Pago na hora.
   const deleteBlock =
-    kind === "delete" ? rentalDeletionBlock(rental, order, Date.now(), { force: true }) : null;
+    kind === "delete" ? rentalDeletionBlock(rental, order, Date.now(), { force: true, skipUnpaidGrace: true }) : null;
   const deletingActive = !isRentalFinished(rental);
   const removeRental = async () => {
     if (loading) return;

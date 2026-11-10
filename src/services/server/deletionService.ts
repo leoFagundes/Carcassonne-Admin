@@ -1,7 +1,15 @@
 import "server-only";
 import { FieldValue, type DocumentSnapshot } from "firebase-admin/firestore";
 import { asBookings, removeBooking } from "@/rental/bookings";
-import { customerDeletionBlock, isRentalFinished, rentalDeletionBlock, type DeletionOptions } from "@/rental/deletion";
+import {
+  customerDeletionBlock,
+  isRentalFinished,
+  paymentsAllowDeletion,
+  rentalDeletionBlock,
+  unpaidGraceApplies,
+  type DeletionOptions,
+} from "@/rental/deletion";
+import { getPaymentProvider, paymentsStatus } from "./payments";
 import type { RentalOrderType, RentalType } from "@/types";
 import { ApiError, isDocId } from "./apiHelpers";
 import { getAdminAuth, getAdminDb } from "./firebaseAdmin";
@@ -20,6 +28,30 @@ export interface DeleteRentalsResult {
 }
 
 const unique = <T,>(list: T[]) => [...new Set(list)];
+
+/** Consultas ao Mercado Pago por exclusão (o resto espera o prazo normal). */
+const MAX_PROVIDER_CHECKS = 40;
+
+/**
+ * Pedidos online não pagos ainda no prazo: pergunta ao Mercado Pago se há
+ * algum pagamento aprovado ou em andamento. Sem nenhum, o pedido pode sair já
+ * (nada vai chegar depois). Erro na consulta → continua no prazo, por garantia.
+ */
+async function verifyUnpaidOrders(orders: { id: string; order: RentalOrderType }[]): Promise<Set<string>> {
+  const verified = new Set<string>();
+  if (!paymentsStatus().configured) return verified;
+  const now = Date.now();
+  const candidates = orders.filter((o) => unpaidGraceApplies(o.order, now)).slice(0, MAX_PROVIDER_CHECKS);
+  for (const { id } of candidates) {
+    try {
+      const found = (await getPaymentProvider().findPaymentsByReference(id)).filter((p) => p.externalReference === id);
+      if (paymentsAllowDeletion(found)) verified.add(id);
+    } catch (error) {
+      console.error(`Exclusão: não foi possível consultar o pedido ${id} no Mercado Pago; fica no prazo:`, error);
+    }
+  }
+  return verified;
+}
 
 /**
  * Apaga aluguéis encerrados (devolvidos/cancelados) cujo pedido não tem
@@ -44,8 +76,18 @@ export async function deleteRentals(ids: string[], opts: DeletionOptions = {}): 
     groups.set(orderId, [...(groups.get(orderId) ?? []), snap.id]);
   }
 
+  // Pedido online não pago: o Mercado Pago confirma na hora se ainda pode chegar pagamento.
+  const orderIds = [...groups.keys()].filter(isDocId);
+  const orderSnaps = orderIds.length
+    ? await db.getAll(...orderIds.map((id) => db.collection("rentalOrders").doc(id)))
+    : [];
+  const verifiedUnpaid = await verifyUnpaidOrders(
+    orderSnaps.filter((s) => s.exists).map((s) => ({ id: s.id, order: s.data() as RentalOrderType })),
+  );
+  const withProvider: DeletionOptions = { ...opts, verifiedUnpaid };
+
   for (const [orderId, groupIds] of groups) {
-    const outcome = await deleteRentalGroup(orderId, groupIds, opts);
+    const outcome = await deleteRentalGroup(orderId, groupIds, withProvider);
     result.deleted += outcome.deleted;
     result.skipped.push(...outcome.skipped);
   }
@@ -62,7 +104,7 @@ async function deleteRentalGroup(orderId: string, ids: string[], opts: DeletionO
     const now = Date.now();
 
     const orderSnap = orderRef ? await tx.get(orderRef) : null;
-    const order = orderSnap?.exists ? (orderSnap.data() as RentalOrderType) : undefined;
+    const order = orderSnap?.exists ? { ...(orderSnap.data() as RentalOrderType), id: orderSnap.id } : undefined;
 
     const allIds = unique([...ids, ...(order?.rentalIds ?? [])]);
     const rentalSnaps = await tx.getAll(...allIds.map((id) => rentalsCol.doc(id)));
@@ -148,6 +190,11 @@ export async function deleteAccount(
   // Master só sai por outro master.
   const actorSnap = await adminRef.parent.doc(actorUid).get();
   const actorIsMaster = actorSnap.exists && actorSnap.data()?.role === "master";
+  // Pedidos online não pagos: confere no Mercado Pago antes (fora da transação).
+  const ownOrders = await db.collection("rentalOrders").where("customerUid", "==", uid).get();
+  const verifiedUnpaid = await verifyUnpaidOrders(
+    ownOrders.docs.map((d) => ({ id: d.id, order: d.data() as RentalOrderType })),
+  );
 
   const rentalsDeleted = await db.runTransaction(async (tx) => {
     const rentalsSnap = await tx.get(db.collection("rentals").where("customerUid", "==", uid));
@@ -161,8 +208,8 @@ export async function deleteAccount(
     const cpfSnap = cpfRef ? await tx.get(cpfRef) : null;
 
     const rentals = rentalsSnap.docs.map((d) => d.data() as RentalType);
-    const orders = ordersSnap.docs.map((d) => d.data() as RentalOrderType);
-    const block = customerDeletionBlock(rentals, orders, Date.now(), opts);
+    const orders = ordersSnap.docs.map((d) => ({ ...(d.data() as RentalOrderType), id: d.id }));
+    const block = customerDeletionBlock(rentals, orders, Date.now(), { ...opts, verifiedUnpaid });
     if (block) throw new ApiError(409, "account_busy", block);
 
     // Forçado com aluguel em andamento: a reserva sai do jogo e a cópia fica livre.

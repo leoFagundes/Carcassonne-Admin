@@ -43,7 +43,7 @@ function BulkDeleteForm({
     const ok: Rental[] = [];
     let held = 0;
     for (const r of finished) {
-      if (rentalDeletionBlock(r, orderById.get(r.orderId), now)) held++;
+      if (rentalDeletionBlock(r, orderById.get(r.orderId), now, { skipUnpaidGrace: true })) held++;
       else ok.push(r);
     }
     return { deletable: ok, blocked: held };
@@ -68,7 +68,9 @@ function BulkDeleteForm({
     setLoading(false);
     addAlert(
       skipped
-        ? `${plural(deleted, "aluguel excluído", "aluguéis excluídos")}; ${skipped} mudaram de situação e ficaram.`
+        ? deleted
+          ? `${plural(deleted, "aluguel excluído", "aluguéis excluídos")}; ${skipped} ficaram (pagamento em andamento no Mercado Pago ou mudaram de situação).`
+          : `Nada foi excluído: ${skipped === 1 ? "o aluguel ficou" : `os ${skipped} ficaram`} (pagamento em andamento no Mercado Pago ou mudaram de situação).`
         : plural(deleted, "aluguel excluído", "aluguéis excluídos"),
     );
     onClose();
@@ -115,13 +117,14 @@ function BulkDeleteForm({
           {deletable.length > 0 && <strong className="text-primary-gold">Não dá para desfazer.</strong>}
         </p>
         <p className="text-xs text-primary-gold/50">
-          Aluguéis em andamento nunca entram. Pedidos pagos online continuam registrados no painel do
-          Mercado Pago.
+          Aluguéis em andamento nunca entram. Pedidos online não pagos são conferidos no Mercado Pago na
+          hora: só ficam se houver um pagamento em andamento. Pedidos pagos online continuam registrados no
+          painel do Mercado Pago.
         </p>
         {blocked > 0 && (
           <p className="text-xs text-orange-300">
             {plural(blocked, "encerrado fica", "encerrados ficam")} por enquanto: o pedido tem reembolso
-            pendente ou um pagamento online que ainda pode ser confirmado.
+            pendente ou análise de cancelamento aberta.
           </p>
         )}
       </div>
