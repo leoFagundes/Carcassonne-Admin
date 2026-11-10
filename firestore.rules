@@ -11,6 +11,13 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
+    // Master: admin com role "master" (definido direto no banco). Só um master
+    // remove, exclui ou muda o papel de outro master.
+    function isMaster() {
+      return isAdmin()
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.get('role', 'admin') == 'master';
+    }
+
     function isSelf(uid) {
       return request.auth != null && request.auth.uid == uid;
     }
@@ -55,10 +62,17 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Cada um lê o próprio documento; só admin lista e altera.
+    // Cada um lê o próprio documento; só admin lista e altera. Master é protegido:
+    // admin normal não remove, não altera e não cria master, nem muda o papel de ninguém.
     match /admins/{uid} {
       allow read: if isSelf(uid) || isAdmin();
-      allow write: if isAdmin();
+      allow create: if isAdmin()
+        && (request.resource.data.get('role', 'admin') != 'master' || isMaster());
+      allow update: if isAdmin()
+        && (resource.data.get('role', 'admin') != 'master' || isMaster())
+        && (request.resource.data.get('role', 'admin') == resource.data.get('role', 'admin') || isMaster());
+      allow delete: if isAdmin()
+        && (resource.data.get('role', 'admin') != 'master' || isMaster());
     }
 
     // Pedido criado no /signup pela própria conta, com o e-mail dela.

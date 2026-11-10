@@ -123,10 +123,17 @@ export async function deleteAccount(uid: string, actorUid: string): Promise<{ re
   const adminRef = db.collection("admins").doc(uid);
   const requestRef = db.collection("adminRequests").doc(uid);
 
+  // Master só sai por outro master.
+  const actorSnap = await adminRef.parent.doc(actorUid).get();
+  const actorIsMaster = actorSnap.exists && actorSnap.data()?.role === "master";
+
   const rentalsDeleted = await db.runTransaction(async (tx) => {
     const rentalsSnap = await tx.get(db.collection("rentals").where("customerUid", "==", uid));
     const ordersSnap = await tx.get(db.collection("rentalOrders").where("customerUid", "==", uid));
     const [customerSnap, adminSnap, requestSnap] = await tx.getAll(customerRef, adminRef, requestRef);
+    if (adminSnap.exists && adminSnap.data()?.role === "master" && !actorIsMaster) {
+      throw new ApiError(403, "master_protected", "Esta conta é master: só outro master pode excluí-la.");
+    }
     const cpf = String(customerSnap.data()?.cpf ?? "");
     const cpfRef = cpf && isDocId(cpf) ? db.collection("rentalCpfIndex").doc(cpf) : null;
     const cpfSnap = cpfRef ? await tx.get(cpfRef) : null;

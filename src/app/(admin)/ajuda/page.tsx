@@ -593,7 +593,7 @@ const helpCards: HelpCard[] = [
     category: "usuarios",
     title: "Como excluir uma conta de vez",
     description:
-      "Em Usuários, o botão de lixeira ao lado de um administrador ou de um pedido de acesso apaga a conta de vez: o login e todos os dados dela. Se a pessoa também alugou jogos, o histórico de aluguéis encerrados sai junto; com aluguel em andamento ou reembolso pendente a exclusão é recusada com o motivo. Ninguém exclui a própria conta. Não pode ser desfeito.",
+      "Em Usuários, o botão de lixeira ao lado de um administrador ou de um pedido de acesso apaga a conta de vez: o login e todos os dados dela. Se a pessoa também alugou jogos, o histórico de aluguéis encerrados sai junto; com aluguel em andamento ou reembolso pendente a exclusão é recusada com o motivo. Ninguém exclui a própria conta. Não pode ser desfeito. Contas master (marcadas com a coroa) são protegidas: só outro master remove o acesso ou exclui — para um admin normal aparece 'Protegido'. Quem é master é definido direto no banco (campo role = 'master' no documento do admin).",
   },
   {
     category: "usuarios",

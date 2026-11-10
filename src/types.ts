@@ -9,7 +9,8 @@ export interface User {
 /** Documento em /admins/{uid} — quem tem esse documento é administrador. */
 export interface AdminType {
   id?: string; // = UID da conta no Firebase Auth
-  role: "admin";
+  /** "master": não pode ter o acesso removido nem a conta excluída por um admin normal (definido no banco). */
+  role: "admin" | "master";
   email?: string;
   createdAt?: Timestamp;
 }

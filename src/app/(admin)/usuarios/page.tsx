@@ -13,6 +13,7 @@ import {
   LuCheck,
   LuClock,
   LuInfo,
+  LuCrown,
   LuShieldCheck,
   LuTrash2,
   LuUserMinus,
@@ -128,6 +129,8 @@ Apaga o login e todos os dados da conta (inclusive aluguéis encerrados, se ela 
   );
 
   const loading = !adminsLoaded || !requestsLoaded;
+  // Master só é removido/excluído por outro master (também garantido nas regras do banco).
+  const currentIsMaster = admins.some((a) => a.id === currentUid && a.role === "master");
 
   return (
     <section className="flex flex-col gap-6 w-full h-full overflow-y-auto outline-none relative">
@@ -197,6 +200,8 @@ Apaga o login e todos os dados da conta (inclusive aluguéis encerrados, se ela 
           </div>
           {admins.map((admin) => {
             const isSelf = admin.id === currentUid;
+            const isMasterRow = admin.role === "master";
+            const protectedRow = isMasterRow && !currentIsMaster;
             return (
               <div
                 key={admin.id}
@@ -212,6 +217,14 @@ Apaga o login e todos os dados da conta (inclusive aluguéis encerrados, se ela 
                         você
                       </span>
                     )}
+                    {isMasterRow && (
+                      <span
+                        title="Master: só outro master remove o acesso ou exclui esta conta"
+                        className="shrink-0 flex items-center gap-1 text-[9px] uppercase tracking-wider border border-primary-gold/50 text-primary-gold font-bold px-1.5 py-0.5 rounded-full"
+                      >
+                        <LuCrown size={10} /> master
+                      </span>
+                    )}
                   </div>
                   {admin.createdAt && (
                     <span className="text-xs text-primary-gold/35">
@@ -220,7 +233,10 @@ Apaga o login e todos os dados da conta (inclusive aluguéis encerrados, se ela 
                   )}
                 </div>
                 {/* Ninguém remove o próprio acesso — evita ficar sem nenhum admin */}
-                {!isSelf && (
+                {!isSelf && protectedRow && (
+                  <span className="shrink-0 text-[11px] text-primary-gold/40">Protegido</span>
+                )}
+                {!isSelf && !protectedRow && (
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => handleRevoke(admin)}
@@ -241,7 +257,8 @@ Apaga o login e todos os dados da conta (inclusive aluguéis encerrados, se ela 
           <span>
             Remover o acesso ou recusar um pedido não apaga a conta — a pessoa só deixa de
             entrar no admin. Para apagar a conta de vez (login e dados), use o botão de lixeira.
-            Ninguém exclui a própria conta.
+            Ninguém exclui a própria conta. Contas <strong>master</strong> só podem ter o acesso removido ou ser
+            excluídas por outro master.
           </span>
         </div>
       </div>
