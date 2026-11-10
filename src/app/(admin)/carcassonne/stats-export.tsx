@@ -110,19 +110,42 @@ export function ExportButtons({ targetRef, label }: { targetRef: RefObject<HTMLE
     if (!el) return;
     setBusy("pdf");
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const html2pdf = (await import("html2pdf.js" as any)).default;
-      await html2pdf()
-        .set({
-          margin: 8,
-          filename: `estatisticas-${slug}-${stamp}.pdf`,
-          image: { type: "jpeg", quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#141414", logging: false },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          pagebreak: { mode: ["avoid-all", "css"] },
-        })
-        .from(el)
-        .save();
+      // html2canvas-pro entende as cores novas do CSS (oklch/oklab do Tailwind 4),
+      // que o html2canvas do html2pdf.js não lê ("unsupported color function").
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import("html2canvas-pro"),
+        import("jspdf"),
+      ]);
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#141414",
+        logging: false,
+        ignoreElements: (node) => node instanceof HTMLElement && node.dataset.html2canvasIgnore === "true",
+      });
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+      const margin = 8;
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgW = pageW - margin * 2;
+      // Fatia a imagem em páginas A4 (altura da página em pixels do canvas).
+      const sliceH = Math.floor((canvas.width * (pageH - margin * 2)) / imgW);
+      for (let y = 0, page = 0; y < canvas.height; y += sliceH, page++) {
+        const h = Math.min(sliceH, canvas.height - y);
+        const slice = document.createElement("canvas");
+        slice.width = canvas.width;
+        slice.height = h;
+        const ctx = slice.getContext("2d");
+        if (!ctx) throw new Error("Canvas indisponível.");
+        ctx.fillStyle = "#141414";
+        ctx.fillRect(0, 0, slice.width, h);
+        ctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
+        if (page > 0) pdf.addPage();
+        pdf.setFillColor(20, 20, 20);
+        pdf.rect(0, 0, pageW, pageH, "F");
+        pdf.addImage(slice.toDataURL("image/jpeg", 0.92), "JPEG", margin, margin, imgW, (h * imgW) / canvas.width);
+      }
+      pdf.save(`estatisticas-${slug}-${stamp}.pdf`);
     } catch (error) {
       console.error(error);
       addAlert("Não foi possível gerar o PDF. Tente novamente.");
