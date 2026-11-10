@@ -293,6 +293,16 @@ export default function PedidoPage() {
   const firstReturn = returnDates.length
     ? [...returnDates].sort()[0]
     : undefined;
+  // Período do aluguel no calendário: da retirada até a última devolução.
+  const lastReturn = returnDates.length ? [...returnDates].sort().at(-1) : undefined;
+  const returnSet = new Set(returnDates);
+  // Passou da antecedência máxima: mais dias, sem clique, só para mostrar o período.
+  const extraDates: string[] = [];
+  if (lastReturn && dates.length) {
+    for (let d = addDays(dates[dates.length - 1].date, 1); d <= lastReturn; d = addDays(d, 1)) {
+      extraDates.push(d);
+    }
+  }
   const showSteps =
     !redirecting && !done && dataReady && cart.gameIds.length > 0;
 
@@ -544,9 +554,16 @@ export default function PedidoPage() {
                   role="radiogroup"
                   aria-label="Data de retirada"
                 >
-                  {dates.map(({ date, enabled }) => {
+                  {[
+                    ...dates.map((d) => ({ ...d, extra: false })),
+                    ...extraDates.map((date) => ({ date, enabled: false, extra: true })),
+                  ].map(({ date, enabled, extra }) => {
                     const selected = date === startDate;
                     const busy = enabled && busyDates.has(date);
+                    const isReturn = returnSet.has(date);
+                    // Com você: depois da retirada até a última devolução.
+                    const withYou = !!startDate && !!lastReturn && date > startDate && date <= lastReturn;
+                    const tag = selected ? "retira" : isReturn ? "devolve" : withYou ? "com você" : null;
                     return (
                       <button
                         key={date}
@@ -556,18 +573,26 @@ export default function PedidoPage() {
                         disabled={!enabled}
                         onClick={() => changeDate(date)}
                         title={
-                          !enabled
-                            ? "Sem retirada neste dia"
-                            : busy
-                              ? "Algum jogo do pedido já está reservado nesse período"
-                              : undefined
+                          extra
+                            ? "Fora do período de retirada: só mostra até quando o jogo fica com você"
+                            : !enabled
+                              ? "Sem retirada neste dia"
+                              : busy
+                                ? "Algum jogo do pedido já está reservado nesse período"
+                                : undefined
                         }
                         className={`relative flex flex-col items-center py-2 rounded-lg border text-xs transition-colors ${
+                          extra ? "border-dashed" : ""
+                        } ${
                           selected
                             ? "border-primary-gold bg-primary-gold text-primary-black"
-                            : enabled
-                              ? "border-primary-gold/20 text-primary-gold/80 hover:border-primary-gold/50 cursor-pointer"
-                              : "border-primary-gold/5 text-primary-gold/20 cursor-not-allowed"
+                            : isReturn
+                              ? `border-primary-gold/70 bg-primary-gold/15 text-primary-gold ${enabled ? "hover:border-primary-gold cursor-pointer" : "cursor-default"}`
+                              : withYou
+                                ? `border-primary-gold/25 bg-primary-gold/[0.08] text-primary-gold/80 ${enabled ? "hover:border-primary-gold/50 cursor-pointer" : "cursor-default"}`
+                                : enabled
+                                  ? "border-primary-gold/20 text-primary-gold/80 hover:border-primary-gold/50 cursor-pointer"
+                                  : "border-primary-gold/5 text-primary-gold/20 cursor-not-allowed"
                         }`}
                       >
                         <span className="uppercase text-[10px]">
@@ -578,6 +603,15 @@ export default function PedidoPage() {
                         >
                           {formatDateBR(date)}
                         </span>
+                        {tag && (
+                          <span
+                            className={`mt-0.5 text-[9px] font-semibold uppercase tracking-wide leading-none ${
+                              selected ? "text-primary-black/70" : isReturn ? "text-primary-gold" : "text-primary-gold/55"
+                            }`}
+                          >
+                            {tag}
+                          </span>
+                        )}
                         {busy && (
                           <span
                             aria-label="Ocupado para algum jogo do pedido"
@@ -587,6 +621,22 @@ export default function PedidoPage() {
                       </button>
                     );
                   })}
+                </div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-primary-gold/55">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-primary-gold/25 bg-primary-gold/[0.08]" />
+                    Com você
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-primary-gold/70 bg-primary-gold/15" />
+                    Dia de devolver
+                  </span>
+                  {extraDates.length > 0 && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-dashed border-primary-gold/40" />
+                      Só para mostrar o período (sem retirada)
+                    </span>
+                  )}
                 </div>
                 {busyDates.size > 0 && (
                   <p className="flex items-center gap-1.5 text-[11px] text-primary-gold/55">
