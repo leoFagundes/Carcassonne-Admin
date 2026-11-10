@@ -516,7 +516,7 @@ function ItemGrid({ items }: { items: MenuItemType[] }) {
 /* ─── Menu item ─── */
 function MenuItem({ item }: { item: MenuItemType }) {
   const { G, G2, BG2, TEXT } = usePDFPalette();
-  const imgSrc = item.image || "/images/placeholder-menu-square.png";
+  const imgSrc = item.image || "/images/[oficial]-pattern-menu-image.png";
 
   return (
     <div
@@ -546,7 +546,7 @@ function MenuItem({ item }: { item: MenuItemType }) {
         }}
         onError={(e) => {
           (e.target as HTMLImageElement).src =
-            "/images/placeholder-menu-square.png";
+            "/images/[oficial]-pattern-menu-image.png";
         }}
       />
 

@@ -6,7 +6,7 @@ import ShowcaseImage from "@/components/showcase/showcaseImage";
 import { Highlight } from "@/components/showcase/search";
 import { CatalogBadge, CatalogView, QuickToggle } from "@/components/adminCatalog";
 
-const PLACEHOLDER = "/images/placeholder-menu.svg";
+const PLACEHOLDER = "/images/[oficial]-pattern-menu-image.png";
 
 /**
  * Item do cardápio no admin. Tocar abre a edição; os botões de baixo

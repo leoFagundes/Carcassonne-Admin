@@ -8,7 +8,7 @@ import { useBackToClose } from "@/components/useBackToClose";
 import { Highlight, foldText, searchWords } from "@/components/showcase/search";
 import type { MenuItemType } from "@/types";
 
-const PLACEHOLDER_IMAGE = "/images/placeholder-menu.svg";
+const PLACEHOLDER_IMAGE = "/images/[oficial]-pattern-menu-image.png";
 
 /**
  * Itens com todas as palavras buscadas (no nome, na descrição ou na

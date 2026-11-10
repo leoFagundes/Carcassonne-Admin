@@ -28,7 +28,7 @@ import { unitStatus } from "./unitsEditor";
 
 type Status = "all" | "active" | "inactive" | "soldout";
 
-const PLACEHOLDER = "/images/placeholder-boardgame.svg";
+const PLACEHOLDER = "/images/[oficial]-pattern-boardgame-image.png";
 
 function Total({ label, value }: { label: string; value: number }) {
   return (
