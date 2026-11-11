@@ -108,10 +108,12 @@ export default function UnitsEditor({
             content="Cada cópia é um exemplar físico do jogo na prateleira. Com 2 cópias, dois clientes podem alugar o mesmo jogo ao mesmo tempo. Marque uma cópia como Indisponível (ex.: peça faltando, caixa danificada) para ela não ser alugada até voltar. A observação é só para a equipe. Cópia com aluguel em aberto não pode ser removida."
           >
             <span
+              role="img"
+              tabIndex={0}
               aria-label="O que são as cópias?"
-              className="flex items-center justify-center w-4 h-4 rounded-full border border-primary-gold/40 text-primary-gold/70 cursor-help normal-case tracking-normal"
+              className="flex items-center text-primary-gold/40 transition-colors hover:text-primary-gold focus-visible:text-primary-gold focus-visible:outline-none cursor-help normal-case tracking-normal"
             >
-              <LuInfo size={10} />
+              <LuInfo size={14} strokeWidth={2.25} />
             </span>
           </Tooltip>
         </span>
