@@ -6,10 +6,9 @@ import { InfoToggle } from "../carcassonne/settings-ui";
 // Peças das configurações do aluguel: cartão de seção, liga/desliga, escolha
 // em pílulas e uma linha de explicação. Mesmo visual em todas as seções.
 
-/** Cartão de uma seção: número, ícone, título, uma frase do que faz e o "i" com a explicação longa. */
+/** Cartão de uma seção: ícone, título, uma frase do que faz e o "i" com a explicação longa. */
 export function SettingsSection({
   id,
-  n,
   icon,
   title,
   summary,
@@ -18,7 +17,8 @@ export function SettingsSection({
   children,
 }: {
   id?: string;
-  n: number;
+  /** Posição da seção na página (não aparece mais na tela). */
+  n?: number;
   icon: ReactNode;
   title: string;
   /** Uma frase: o que esta seção decide. */
@@ -35,11 +35,8 @@ export function SettingsSection({
       className="scroll-mt-4 flex flex-col gap-4 rounded-2xl border border-primary-gold/15 bg-secondary-black/50 p-4 sm:p-5 min-w-0"
     >
       <header className="flex items-start gap-3">
-        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary-gold/25 bg-gradient-to-br from-primary-gold/15 to-primary-gold/[0.03] text-primary-gold">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary-gold/25 bg-gradient-to-br from-primary-gold/15 to-primary-gold/[0.03] text-primary-gold">
           {icon}
-          <span className="absolute -top-1.5 -left-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary-gold text-[9px] font-bold text-primary-black">
-            {n}
-          </span>
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
