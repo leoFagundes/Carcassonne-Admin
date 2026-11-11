@@ -528,7 +528,7 @@ export default function NewRentalForm({ onClose, onAgain }: { onClose: () => voi
                     <span className="block truncate text-xs font-medium text-primary-gold/90">{g.name}</span>
                     <span className="block truncate text-[11px] text-primary-gold/45">
                       {free
-                        ? `Livre · devolve ${formatDateBR(due)} (${plural(g.rentalDays, "dia", "dias")})`
+                        ? `Cópia livre · se sair em ${formatDateBR(startDate)}, volta até ${formatDateBR(due)} (${plural(g.rentalDays, "dia", "dias")})`
                         : `Ocupado nesta data · ${availabilityLabel(gameAvailability(g, today, opts))}`}
                     </span>
                   </span>

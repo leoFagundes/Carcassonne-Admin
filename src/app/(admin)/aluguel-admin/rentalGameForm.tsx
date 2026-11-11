@@ -50,10 +50,16 @@ export default function RentalGameForm({
   game,
   closeForms,
   pendingCheck,
+  live,
 }: {
   /** Sem `id` = novo jogo. */
   game: RentalGameType;
   closeForms: VoidFunction;
+  /**
+   * O mesmo jogo como está agora no banco (atualiza sozinho). As reservas mudam
+   * com o formulário aberto, e uma devolução pode tirar uma cópia de circulação.
+   */
+  live?: RentalGameType;
   /** Cópias devolvidas e ainda sem conferir (id da cópia → texto). */
   pendingCheck?: ReadonlyMap<string, string>;
 }) {
@@ -115,6 +121,14 @@ export default function RentalGameForm({
   };
 
   const handleSubmit = async () => {
+    // Salvar grava as cópias inteiras: se elas mudaram por fora (ex.: devolução
+    // com avaria marcou uma cópia como indisponível), salvar desfaria isso.
+    if (isEdit && live && JSON.stringify(live.units) !== JSON.stringify(game.units)) {
+      addAlert(
+        "As cópias deste jogo mudaram enquanto o formulário estava aberto (ex.: uma devolução tirou uma cópia de circulação). Feche e abra o jogo de novo para não desfazer essa mudança.",
+      );
+      return;
+    }
     const price = parseBRL(priceText);
     if (!local.name.trim() || !local.description.trim() || !local.difficulty) {
       addAlert("Preencha todos os campos.");
@@ -174,7 +188,7 @@ export default function RentalGameForm({
   };
 
   const handleDelete = async () => {
-    if (withLiveBookings(game, Date.now()).bookings.length > 0) {
+    if (withLiveBookings(live ?? game, Date.now()).bookings.length > 0) {
       addAlert("Há aluguéis em aberto para este jogo.");
       return;
     }
@@ -398,7 +412,7 @@ export default function RentalGameForm({
           <UnitsEditor
             units={local.units}
             setUnits={(units) => set("units", units)}
-            bookings={local.bookings}
+            bookings={live?.bookings ?? local.bookings}
             today={todaySP()}
             pendingCheck={pendingCheck}
           />

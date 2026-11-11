@@ -300,6 +300,7 @@ export default function GamesTab() {
           <RentalGameForm
             key={editing.id ?? "new"}
             game={editing}
+            live={editing.id ? games.find((g) => g.id === editing.id) : undefined}
             closeForms={() => setEditing(null)}
             pendingCheck={
               new Map(

@@ -3,6 +3,7 @@ import { FieldValue, type DocumentReference, type Transaction } from "firebase-a
 import { asBookings, asUnits, removeBooking } from "@/rental/bookings";
 import { todaySP } from "@/rental/dates";
 import { mergeRentalSettings } from "@/rental/defaults";
+import { availabilityOptions, gapDaysOf } from "@/rental/availability";
 import { formatBRL } from "@/rental/money";
 import { payerEmailFor } from "@/rental/adminOrders";
 import {
@@ -534,9 +535,10 @@ async function applyApproved(orderId: string, payment: ProviderPayment): Promise
     // Leituras antes de qualquer escrita.
     const rentalIds = (Array.isArray(order.rentalIds) ? order.rentalIds : []).filter(isDocId);
     const gameIds = [...new Set(Array.isArray(order.gameIds) ? order.gameIds : [])].filter(isDocId);
-    const [rentalSnaps, gameSnaps] = await Promise.all([
+    const [rentalSnaps, gameSnaps, settingsSnap] = await Promise.all([
       Promise.all(rentalIds.map((id) => tx.get(db.collection("rentals").doc(id)))),
       Promise.all(gameIds.map((id) => tx.get(db.collection("rentalGames").doc(id)))),
+      tx.get(db.collection("rental-config").doc("settings")),
     ]);
     const rentals = rentalSnaps
       .filter((s) => s.exists)
@@ -550,7 +552,17 @@ async function applyApproved(orderId: string, payment: ProviderPayment): Promise
     const now = Date.now();
     const decision = decideApproval(
       order,
-      { paymentId: payment.id, today: todaySP(), rentals, games },
+      {
+        paymentId: payment.id,
+        today: todaySP(),
+        rentals,
+        games,
+        gapDays: gapDaysOf(
+          availabilityOptions(
+            mergeRentalSettings(settingsSnap.exists ? (settingsSnap.data() as Partial<RentalSettingsType>) : undefined),
+          ),
+        ),
+      },
       now,
     );
     const summary: OrderSummary = {

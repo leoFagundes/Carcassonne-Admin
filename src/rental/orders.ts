@@ -266,16 +266,41 @@ export function buildRentalOrderDoc(
 }
 
 /** Nova devolução ≥ início e sem cruzar outro booking da mesma unidade. */
-export function canChangeDueDate(game: GameLike, rentalId: string, newDue: string, today: string): boolean {
+/**
+ * Reserva da mesma cópia que impede a nova devolução, contando a folga entre
+ * aluguéis (`gapDays`, 1 = o próximo retira no dia seguinte). null = livre.
+ */
+export function dueDateBlocker(
+  game: GameLike,
+  rentalId: string,
+  newDue: string,
+  today: string,
+  gapDays = 1,
+): RentalBooking | null {
+  const own = game.bookings.find((b) => b.rentalId === rentalId);
+  if (!own) return null;
+  const extra = Math.max(0, gapDays - 1);
+  return (
+    game.bookings.find(
+      (b) =>
+        b !== own &&
+        b.unitId === own.unitId &&
+        b.startDate <= addDays(newDue, extra) &&
+        addDays(bookingEnd(b, today), extra) >= own.startDate,
+    ) ?? null
+  );
+}
+
+export function canChangeDueDate(
+  game: GameLike,
+  rentalId: string,
+  newDue: string,
+  today: string,
+  gapDays = 1,
+): boolean {
   const own = game.bookings.find((b) => b.rentalId === rentalId);
   if (!own || newDue < own.startDate) return false;
-  return !game.bookings.some(
-    (b) =>
-      b !== own &&
-      b.unitId === own.unitId &&
-      b.startDate <= newDue &&
-      bookingEnd(b, today) >= own.startDate
-  );
+  return dueDateBlocker(game, rentalId, newDue, today, gapDays) === null;
 }
 
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";

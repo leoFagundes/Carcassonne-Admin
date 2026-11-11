@@ -541,6 +541,8 @@ export interface ApprovalContext {
   rentals: ApprovalRental[];
   /** Jogos do pedido que ainda existem (bookings como estão gravados). */
   games: Record<string, { units: RentalUnit[]; bookings: RentalBooking[] }>;
+  /** Folga entre aluguéis da mesma cópia (regras); ausente = 1. */
+  gapDays?: number;
 }
 
 export type ApprovalDecision =
@@ -612,7 +614,7 @@ export function decideApproval(
       });
     } else {
       const unitActive = game.units.some((u) => u.id === r.unitId && u.status === "active");
-      if (!unitActive || !isUnitFree(r.unitId, list, r.startDate, r.dueDate, ctx.today)) {
+      if (!unitActive || !isUnitFree(r.unitId, list, r.startDate, r.dueDate, ctx.today, ctx.gapDays ?? 1)) {
         return { kind: "late_refund", reason: "expired" };
       }
       next = [

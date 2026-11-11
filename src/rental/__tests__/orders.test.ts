@@ -3,6 +3,7 @@ import { DEFAULT_RENTAL_RULES, DEFAULT_RENTAL_SETTINGS } from "../defaults";
 import {
   ORDER_ERROR_MESSAGES,
   canChangeDueDate,
+  dueDateBlocker,
   generateOrderCode,
   isProfileComplete,
   planOrder,
@@ -103,6 +104,14 @@ describe("canChangeDueDate", () => {
     expect(canChangeDueDate(g, "r1", "2026-10-31", today)).toBe(false);
     expect(canChangeDueDate(g, "r1", "2026-11-01", today)).toBe(true);
     expect(canChangeDueDate(g, "nope", "2026-11-11", today)).toBe(false);
+  });
+
+  it("respeita a folga entre aluguéis das regras", () => {
+    // Próximo retira em 12/11. Folga de 2 dias: a devolução precisa ser até 10/11.
+    expect(canChangeDueDate(g, "r1", "2026-11-10", today, 2)).toBe(true);
+    expect(canChangeDueDate(g, "r1", "2026-11-11", today, 2)).toBe(false);
+    expect(dueDateBlocker(g, "r1", "2026-11-11", today, 2)?.rentalId).toBe("r2");
+    expect(dueDateBlocker(g, "r1", "2026-11-10", today, 2)).toBeNull();
   });
 });
 

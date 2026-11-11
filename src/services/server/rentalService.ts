@@ -18,12 +18,14 @@ import { isValidCpf, normalizeCpf } from "@/rental/cpf";
 import { checkGuest, counterHoldMinutes, guestMatches } from "@/rental/adminOrders";
 import { formatDateBR, todaySP } from "@/rental/dates";
 import { pendingCheckMode, returnDayError, returnDayOf } from "@/rental/returns";
+import { availabilityOptions, gapDaysOf } from "@/rental/availability";
 import { DEFAULT_RENTAL_RULES, mergeRentalSettings } from "@/rental/defaults";
 import {
   ORDER_ERROR_MESSAGES,
   buildOrderRecords,
   buildRentalOrderDoc,
   canChangeDueDate,
+  dueDateBlocker,
   generateOrderCode,
   planOrder,
   type OrderInput,
@@ -816,10 +818,13 @@ export async function changeDueDate(rentalId: string, dueDate: string): Promise<
   const db = getAdminDb();
   await db.runTransaction(async (tx) => {
     const { rentalRef, rental, gameRef, gameSnap } = await readRentalAndGame(db, tx, rentalId);
+    const settingsSnap = await tx.get(settingsRef(db));
     if (rental.status !== "reserved" && rental.status !== "picked_up") throw invalidStatus();
     if (dueDate < rental.startDate) {
       throw new ApiError(400, "invalid_body", "Corpo da requisição inválido.");
     }
+    // Folga entre aluguéis da mesma cópia, como nas reservas novas
+    const gap = gapDaysOf(availabilityOptions(readSettings(settingsSnap)));
 
     if (gameSnap.exists) {
       const data = gameSnap.data();
@@ -830,11 +835,16 @@ export async function changeDueDate(rentalId: string, dueDate: string): Promise<
         bookings,
         rentalDays: Number(data?.rentalDays ?? 0),
       };
-      if (!canChangeDueDate(game, rentalId, dueDate, todaySP())) {
+      if (!canChangeDueDate(game, rentalId, dueDate, todaySP(), gap)) {
+        const blocker = dueDateBlocker(game, rentalId, dueDate, todaySP(), gap);
         throw new ApiError(
           409,
           "due_date_conflict",
-          "A nova data cruza com outra reserva desta cópia.",
+          blocker
+            ? gap > 1
+              ? `A nova data não deixa a folga de ${gap} dias antes da próxima reserva desta cópia (retirada em ${formatDateBR(blocker.startDate)}).`
+              : `A nova data cruza com a próxima reserva desta cópia (retirada em ${formatDateBR(blocker.startDate)}).`
+            : "A nova data cruza com outra reserva desta cópia.",
         );
       }
       tx.update(gameRef, {

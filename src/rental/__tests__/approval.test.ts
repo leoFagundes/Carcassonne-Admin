@@ -88,6 +88,19 @@ describe("decideApproval", () => {
     expect(d).toEqual({ kind: "late_refund", reason: "expired" });
   });
 
+  it("pedido expirado: reativa só se sobrar a folga das regras até a próxima reserva", () => {
+    // Este aluguel vai até 12/11; o próximo retira em 14/11 (um dia livre no meio).
+    const next = booking({ rentalId: "other", status: "reserved", startDate: "2026-11-14", dueDate: "2026-11-20" });
+    delete next.holdUntil;
+    const base = {
+      rentals: [rental({ status: "canceled" as const })],
+      games: { g1: { units: [unit("u1")], bookings: [next] } },
+    };
+    const expired = order({ payment: pay({ status: "expired", closedBy: "system", holdUntil: NOW - 1 }) });
+    expect(decideApproval(expired, ctx({ ...base, gapDays: 2 }), NOW).kind).toBe("confirm");
+    expect(decideApproval(expired, ctx({ ...base, gapDays: 3 }), NOW)).toEqual({ kind: "late_refund", reason: "expired" });
+  });
+
   it("cópia ocupada por hold válido de outro pedido → late_refund", () => {
     const d = decideApproval(
       order({ payment: pay({ holdUntil: NOW - 1 }) }),

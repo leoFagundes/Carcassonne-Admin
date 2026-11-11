@@ -20,7 +20,7 @@ import Input from "@/components/input";
 import Checkbox from "@/components/checkbox";
 import { useAlert } from "@/contexts/alertProvider";
 import { rentalApi, type ApiResult } from "@/services/rentalApi";
-import { diffDays, formatDateBR, todaySP } from "@/rental/dates";
+import { diffDays, formatDateBR, todaySP, weekdayOf } from "@/rental/dates";
 import { canPickUp } from "@/rental/bookings";
 import { formatBRL, parseBRL } from "@/rental/money";
 import { isPaidOnline, refundableLeft, rentalPrice } from "@/rental/payments";
@@ -48,7 +48,11 @@ type ActionKind = "pickup" | "return" | "check" | "dueDate" | "cancel" | "delete
 export const RentalListContext = createContext<{
   rentals: Rental[];
   pendingCheckMode: PendingCheckPickup;
+  /** Dias em que o pub atende o aluguel (0 = domingo), para avisar na nova devolução. */
+  pickupWeekdays?: number[];
 } | null>(null);
+
+const WEEKDAY_NAMES = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
 const CONDITIONS: { value: RentalReturnCondition; label: string }[] = (
   ["ok", "damaged", "missing_parts"] as const
@@ -313,6 +317,12 @@ function ActionModal({
 
   const checkDay = kind === "check" ? returnDayOf(rental) : null;
 
+  // Nova devolução: dia sem atendimento ou data que já passou
+  const validDue = kind === "dueDate" && /^\d{4}-\d{2}-\d{2}$/.test(dueDate) && dueDate >= rental.startDate;
+  const open = list?.pickupWeekdays;
+  const closedDay = validDue && !!open?.length && !open.includes(weekdayOf(dueDate)) ? weekdayOf(dueDate) : null;
+  const duePassed = validDue && rental.status === "picked_up" && dueDate < today;
+
   return (
     <FormCard
       title={config.title}
@@ -453,6 +463,22 @@ function ActionModal({
             placeholder="Nova data de devolução"
             label="Nova data de devolução"
           />
+          {closedDay !== null && (
+            <p className="text-[11px] leading-relaxed text-orange-300">
+              O pub não atende aluguel às {WEEKDAY_NAMES[closedDay]}s (Regras → Retirada e devolução). Confirme com o
+              cliente se ele consegue devolver nesse dia.
+            </p>
+          )}
+          {duePassed && (
+            <p className="text-[11px] leading-relaxed text-orange-300">
+              Essa data já passou: o aluguel passa a contar como atrasado{" "}
+              {plural(diffDays(dueDate, today), "dia", "dias")}.
+            </p>
+          )}
+          <p className="text-[11px] leading-relaxed text-primary-gold/45">
+            A nova data aparece na hora para o cliente (Minha conta e página do pedido) e em todo o admin. O cliente não
+            recebe e-mail: avise pelo WhatsApp.
+          </p>
         </>
       )}
 

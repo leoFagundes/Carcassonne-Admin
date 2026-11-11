@@ -582,6 +582,7 @@ export default function RentalsTab() {
   const now = useNow();
   const [onlineEnabled, setOnlineEnabled] = useState(false);
   const [checkMode, setCheckMode] = useState<PendingCheckPickup>("block");
+  const [pickupWeekdays, setPickupWeekdays] = useState<number[] | undefined>(undefined);
 
   useEffect(() => {
     const unsub = RentalRepository.subscribeToAll((list) => {
@@ -600,6 +601,7 @@ export default function RentalsTab() {
     const unsub = RentalConfigRepository.subscribeSettings((s) => {
       setOnlineEnabled(s.onlinePayment.enabled);
       setCheckMode(pendingCheckMode(s));
+      setPickupWeekdays(s.pickupWeekdays);
     });
     return () => unsub();
   }, []);
@@ -645,7 +647,10 @@ export default function RentalsTab() {
     [rentals, today],
   );
 
-  const listContext = useMemo(() => ({ rentals, pendingCheckMode: checkMode }), [rentals, checkMode]);
+  const listContext = useMemo(
+    () => ({ rentals, pendingCheckMode: checkMode, pickupWeekdays }),
+    [rentals, checkMode, pickupWeekdays],
+  );
 
   const words = useMemo(() => searchWords(search), [search]);
   const searched = useMemo(
