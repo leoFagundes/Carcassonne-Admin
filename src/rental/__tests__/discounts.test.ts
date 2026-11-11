@@ -178,3 +178,17 @@ describe("rascunho do desconto (formulário)", () => {
     expect(discountFromDraft({ on: false, kind: "percent", text: "x", until: "" }, TODAY)).toEqual({ ok: true, discount: null });
   });
 });
+
+describe("desconto que não muda o preço", () => {
+  it("jogo de R$ 1,00 não aceita desconto; desconto pequeno demais é recusado", async () => {
+    const { discountFromDraft } = await import("../discounts");
+    const r1 = discountFromDraft({ on: true, kind: "amount", text: "0,90", until: "" }, TODAY, { price: 100 });
+    expect(r1.ok).toBe(false);
+    if (!r1.ok) expect(r1.error).toContain("preço mínimo com desconto");
+    expect(discountFromDraft({ on: true, kind: "percent", text: "50", until: "" }, TODAY, { price: 100 }).ok).toBe(false);
+    // R$ 1,50 com 10%: tira R$ 0,15 → R$ 1,35, vale
+    expect(discountFromDraft({ on: true, kind: "percent", text: "10", until: "" }, TODAY, { price: 150 }).ok).toBe(true);
+    // R$ 1,50 com R$ 1,00 de desconto: fica no mínimo R$ 1,00, ainda reduz
+    expect(discountFromDraft({ on: true, kind: "amount", text: "1,00", until: "" }, TODAY, { price: 150 }).ok).toBe(true);
+  });
+});

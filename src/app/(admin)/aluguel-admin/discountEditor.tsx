@@ -4,7 +4,7 @@ import { LuBadgePercent } from "react-icons/lu";
 import Input from "@/components/input";
 import { formatBRL } from "@/rental/money";
 import { formatDateBR } from "@/rental/dates";
-import { applyDiscount, discountFromDraft, type DiscountDraft } from "@/rental/discounts";
+import { MIN_DISCOUNTED_PRICE, applyDiscount, discountFromDraft, type DiscountDraft } from "@/rental/discounts";
 
 const pill = (on: boolean) =>
   `h-8 min-w-[52px] px-3 rounded-full border text-xs transition-colors cursor-pointer ${
@@ -44,6 +44,14 @@ export default function DiscountEditor({
   const base = price && price > 0 ? price : 5000;
   const empty = draft.text.trim() === "";
   const preview = result.ok && result.discount ? applyDiscount(base, result.discount) : null;
+  // O desconto passaria do mínimo e o preço ficou travado em R$ 1,00
+  const atFloor =
+    result.ok &&
+    !!result.discount &&
+    preview === MIN_DISCOUNTED_PRICE &&
+    (result.discount.kind === "amount"
+      ? base - result.discount.value < MIN_DISCOUNTED_PRICE
+      : base - Math.round((base * result.discount.value) / 100) < MIN_DISCOUNTED_PRICE);
 
   return (
     <div className={`flex flex-col gap-3 rounded-xl border p-3 transition-colors ${draft.on ? "border-emerald-400/30 bg-emerald-400/[0.04]" : "border-primary-gold/15"}`}>
@@ -115,6 +123,7 @@ export default function DiscountEditor({
                     <span className="line-through">{formatBRL(base)}</span> por{" "}
                     <strong className="text-emerald-300">{formatBRL(preview)}</strong>
                     {withUntil && draft.until ? ` até ${formatDateBR(draft.until)}` : withUntil ? ", sem data para acabar" : ""}.
+                    {atFloor && ` O preço não fica abaixo de ${formatBRL(MIN_DISCOUNTED_PRICE)}.`}
                   </>
                 )}
           </p>

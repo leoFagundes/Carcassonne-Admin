@@ -162,6 +162,16 @@ export function discountFromDraft(
       return { ok: false, error: "O desconto em valor precisa ser menor que o preço do jogo." };
     }
   }
+  // Com o mínimo de R$ 1,00, um desconto pode não mudar nada (ex.: jogo de R$ 1,00)
+  if (opts.price !== undefined && applyDiscount(opts.price, { kind: draft.kind, value }) >= opts.price) {
+    return {
+      ok: false,
+      error:
+        opts.price <= MIN_DISCOUNTED_PRICE
+          ? `Este jogo custa ${formatBRL(opts.price)}, o preço mínimo com desconto: não dá para dar desconto nele.`
+          : `Esse desconto não muda o preço (o mínimo com desconto é ${formatBRL(MIN_DISCOUNTED_PRICE)}).`,
+    };
+  }
   const until = opts.withUntil === false ? "" : draft.until.trim();
   if (until && !isRealDate(until)) return { ok: false, error: "Data final da promoção inválida." };
   if (until && until < today) return { ok: false, error: "A data final da promoção já passou." };
