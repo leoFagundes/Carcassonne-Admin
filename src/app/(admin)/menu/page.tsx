@@ -1,6 +1,12 @@
 "use client";
 
-import { ComboType, DescriptionTypeProps, InfoType, MenuItemType, TypeOrderType } from "@/types";
+import {
+  ComboType,
+  DescriptionTypeProps,
+  InfoType,
+  MenuItemType,
+  TypeOrderType,
+} from "@/types";
 import { useEffect, useMemo, useState } from "react";
 import {
   LuBoxes,
@@ -167,21 +173,28 @@ export default function MenuPage() {
       createtipos: () => setIsTypesOrderModalOpen(true),
       createpopup: () => setIsPopupModalOpen(true),
     };
-    const key = Object.keys(shortcuts).find((name) => params.get(name) === "true");
+    const key = Object.keys(shortcuts).find(
+      (name) => params.get(name) === "true",
+    );
     if (!key) return;
     shortcuts[key]();
     window.history.replaceState(null, "", window.location.pathname);
   }, []);
 
   /** Liga/desliga na hora; se o banco recusar, volta como estava. */
-  const updateItem = async (item: MenuItemType, patch: Partial<MenuItemType>) => {
+  const updateItem = async (
+    item: MenuItemType,
+    patch: Partial<MenuItemType>,
+  ) => {
     if (!item.id) {
       addAlert("ID inválido");
       return;
     }
     const updated = { ...item, ...patch };
     const replace = (next: MenuItemType) =>
-      setMenuItems((list) => list.map((current) => (current.id === item.id ? next : current)));
+      setMenuItems((list) =>
+        list.map((current) => (current.id === item.id ? next : current)),
+      );
     replace(updated);
     const ok = await MenuItemRepository.update(item.id, patch);
     if (!ok) {
@@ -190,11 +203,17 @@ export default function MenuPage() {
       return;
     }
     if ("isVisible" in patch) {
-      addAlert(`${item.name} ${updated.isVisible ? "está visível no cardápio" : "foi ocultado do cardápio"}`);
+      addAlert(
+        `${item.name} ${updated.isVisible ? "está visível no cardápio" : "foi ocultado do cardápio"}`,
+      );
     } else if ("isFocus" in patch) {
-      addAlert(`${item.name} ${updated.isFocus ? "agora está em destaque" : "não está mais em destaque"}`);
+      addAlert(
+        `${item.name} ${updated.isFocus ? "agora está em destaque" : "não está mais em destaque"}`,
+      );
     } else if ("isVegan" in patch) {
-      addAlert(`${item.name} ${updated.isVegan ? "agora é vegano" : "não é mais vegano"}`);
+      addAlert(
+        `${item.name} ${updated.isVegan ? "agora é vegano" : "não é mais vegano"}`,
+      );
     }
   };
 
@@ -215,8 +234,9 @@ export default function MenuPage() {
   }, [menuItems, typesOrder]);
 
   const subtypeOrder = (type: string, subtype?: string) =>
-    typesOrder.find((entry) => entry.type.name === type)?.type.subtypes.find((s) => s.name === subtype)
-      ?.order ?? 999;
+    typesOrder
+      .find((entry) => entry.type.name === type)
+      ?.type.subtypes.find((s) => s.name === subtype)?.order ?? 999;
 
   const matchesStatus = (item: MenuItemType) =>
     status === "all" ||
@@ -225,11 +245,15 @@ export default function MenuPage() {
     (status === "vegan" && item.isVegan);
 
   const searchedItems = menuItems.filter((item) =>
-    matches(`${item.name} ${item.description} ${item.type} ${item.subtype ?? ""}`),
+    matches(
+      `${item.name} ${item.description} ${item.type} ${item.subtype ?? ""}`,
+    ),
   );
   const filteredItems = searchedItems.filter(matchesStatus);
   const filteredInfos = infos
-    .filter((info) => matches(`${info.name} ${info.description} ${info.values.join(" ")}`))
+    .filter((info) =>
+      matches(`${info.name} ${info.description} ${info.values.join(" ")}`),
+    )
     .sort((a, b) => (a.orderPriority ?? 0) - (b.orderPriority ?? 0));
   const filteredCombos = combos.filter((combo) =>
     matches(`${combo.name} ${combo.description} ${combo.value}`),
@@ -237,7 +261,8 @@ export default function MenuPage() {
 
   // Avisos e combos não têm situação (oculto, destaque, vegano)
   const showInfos = status === "all" && (category === "" || category === INFOS);
-  const showCombos = status === "all" && (category === "" || category === COMBOS);
+  const showCombos =
+    status === "all" && (category === "" || category === COMBOS);
 
   const sections = typeNames
     .filter((type) => category === "" || category === type)
@@ -268,7 +293,8 @@ export default function MenuPage() {
   };
 
   // Buscando ou numa categoria só: tudo aberto, para nada ficar escondido
-  const isCollapsed = (key: string) => !words.length && !category && collapsed.has(key);
+  const isCollapsed = (key: string) =>
+    !words.length && !category && collapsed.has(key);
   const toggleSection = (key: string) =>
     setCollapsed((current) => {
       const next = new Set(current);
@@ -277,7 +303,8 @@ export default function MenuPage() {
       return next;
     });
 
-  const countBy = (predicate: (item: MenuItemType) => boolean) => menuItems.filter(predicate).length;
+  const countBy = (predicate: (item: MenuItemType) => boolean) =>
+    menuItems.filter(predicate).length;
 
   return (
     <section className="flex flex-col gap-5 w-full h-full overflow-y-auto py-2 px-6">
@@ -298,9 +325,24 @@ export default function MenuPage() {
               tooltip="Adicionar"
               icon={<LuPlus size={14} />}
               options={[
-                { label: "Item", description: "Prato, bebida ou petisco", icon: <LuPizza size={15} />, onSelect: openNewItem },
-                { label: "Combo", description: "Conjunto de itens com preço", icon: <LuBoxes size={15} />, onSelect: openNewCombo },
-                { label: "Aviso", description: "Texto informativo no cardápio", icon: <LuClipboardPenLine size={15} />, onSelect: openNewInfo },
+                {
+                  label: "Item",
+                  description: "Prato, bebida ou petisco",
+                  icon: <LuPizza size={15} />,
+                  onSelect: openNewItem,
+                },
+                {
+                  label: "Combo",
+                  description: "Conjunto de itens com preço",
+                  icon: <LuBoxes size={15} />,
+                  onSelect: openNewCombo,
+                },
+                {
+                  label: "Aviso",
+                  description: "Texto informativo no cardápio",
+                  icon: <LuClipboardPenLine size={15} />,
+                  onSelect: openNewInfo,
+                },
               ]}
             />
             <HeaderMenu
@@ -308,14 +350,15 @@ export default function MenuPage() {
               icon={<LuSlidersHorizontal size={14} />}
               options={[
                 {
-                  label: "Descrições dos tipos",
+                  label: "Descrições por Categoria",
                   description: "Texto exibido no topo de cada tipo",
                   icon: <LuText size={15} />,
                   onSelect: () => setIsDescriptionModalOpen(true),
                 },
                 {
                   label: "Categorias e avisos",
-                  description: "Criar e ordenar categorias, imagens dos itens sem foto e ordem dos avisos",
+                  description:
+                    "Criar e ordenar categorias, imagens dos itens sem foto e ordem dos avisos",
                   icon: <LuListOrdered size={15} />,
                   onSelect: () => setIsTypesOrderModalOpen(true),
                 },
@@ -394,8 +437,18 @@ export default function MenuPage() {
             onChange={setCategory}
             options={[
               { value: "", label: "Todas" },
-              { value: INFOS, label: INFOS, icon: LuMegaphone, count: infos.length },
-              { value: COMBOS, label: COMBOS, icon: LuBoxes, count: combos.length },
+              {
+                value: INFOS,
+                label: INFOS,
+                icon: LuMegaphone,
+                count: infos.length,
+              },
+              {
+                value: COMBOS,
+                label: COMBOS,
+                icon: LuBoxes,
+                count: combos.length,
+              },
               ...typeNames.map((type) => ({
                 value: type,
                 label: type,
@@ -428,7 +481,11 @@ export default function MenuPage() {
         ) : totalVisible === 0 ? (
           <CatalogEmpty
             icon={LuPizza}
-            title={hasFilters ? "Nenhum item com essa busca e filtros." : "O cardápio está vazio."}
+            title={
+              hasFilters
+                ? "Nenhum item com essa busca e filtros."
+                : "O cardápio está vazio."
+            }
             onClear={hasFilters ? clearFilters : undefined}
           />
         ) : (
@@ -518,7 +575,12 @@ export default function MenuPage() {
       </div>
 
       {currentItem && (
-        <Modal isOpen={isMenuModalOpen} onClose={closeMenuModal} noPadding patternCloseButton={false}>
+        <Modal
+          isOpen={isMenuModalOpen}
+          onClose={closeMenuModal}
+          noPadding
+          patternCloseButton={false}
+        >
           <MenuForms
             currentItem={currentItem}
             setCurrentItem={setCurrentItem}
@@ -528,7 +590,12 @@ export default function MenuPage() {
         </Modal>
       )}
       {currentInfo && (
-        <Modal isOpen={isInfoModalOpen} onClose={closeInfoModal} noPadding patternCloseButton={false}>
+        <Modal
+          isOpen={isInfoModalOpen}
+          onClose={closeInfoModal}
+          noPadding
+          patternCloseButton={false}
+        >
           <InfoForms
             currentInfo={currentInfo}
             setCurrentInfo={setCurrentInfo}
@@ -538,7 +605,12 @@ export default function MenuPage() {
         </Modal>
       )}
       {currentCombo && (
-        <Modal isOpen={isComboModalOpen} onClose={closeComboModal} noPadding patternCloseButton={false}>
+        <Modal
+          isOpen={isComboModalOpen}
+          onClose={closeComboModal}
+          noPadding
+          patternCloseButton={false}
+        >
           <ComboForms
             currentCombo={currentCombo}
             setCurrentCombo={setCurrentCombo}
@@ -548,15 +620,28 @@ export default function MenuPage() {
         </Modal>
       )}
 
-      <Modal isOpen={isDescriptionModalOpen} onClose={closeDescriptionModal} noPadding patternCloseButton={false}>
+      <Modal
+        isOpen={isDescriptionModalOpen}
+        onClose={closeDescriptionModal}
+        noPadding
+        patternCloseButton={false}
+      >
         <DescriptionTypeForms
           currentDescriptionType={currentDescription}
           setcurrentDescriptionType={setCurrentDescription}
           closeForms={closeDescriptionModal}
         />
       </Modal>
-      <Modal isOpen={isTypesOrderModalOpen} onClose={closeTypesOrderModal} noPadding patternCloseButton={false}>
-        <TypesOrderForms currentTypeOrder={patternTypeOrder} closeForms={closeTypesOrderModal} />
+      <Modal
+        isOpen={isTypesOrderModalOpen}
+        onClose={closeTypesOrderModal}
+        noPadding
+        patternCloseButton={false}
+      >
+        <TypesOrderForms
+          currentTypeOrder={patternTypeOrder}
+          closeForms={closeTypesOrderModal}
+        />
       </Modal>
       <Modal
         isOpen={isPopupModalOpen}
