@@ -1,10 +1,13 @@
 import type { RentalOrderType, RentalPendingRefund, RentalType } from "@/types";
+import { isCheckPending } from "./returns";
 
 export interface RentalAttention {
   pickupsToday: number;
   returnsToday: number;
   overdue: number;
   notPickedUp: number;
+  /** Devolvidos que a equipe ainda não conferiu. */
+  toCheck: number;
   /** Pedidos que pedem decisão ou socorro do admin (análise de cancelamento, reembolso com falha). */
   refundReviews: number;
 }
@@ -48,6 +51,7 @@ export function rentalAttention(
     returnsToday: 0,
     overdue: 0,
     notPickedUp: 0,
+    toCheck: 0,
     refundReviews: 0,
   };
   for (const rental of rentals) {
@@ -57,6 +61,8 @@ export function rentalAttention(
     } else if (rental.status === "picked_up") {
       if (rental.dueDate === today) result.returnsToday++;
       else if (rental.dueDate < today) result.overdue++;
+    } else if (isCheckPending(rental)) {
+      result.toCheck++;
     }
   }
   result.refundReviews = orders.filter(orderNeedsAttention).length;

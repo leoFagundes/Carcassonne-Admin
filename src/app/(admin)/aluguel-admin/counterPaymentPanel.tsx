@@ -60,6 +60,8 @@ export default function CounterPaymentPanel({
   const [busy, setBusy] = useState<"abort" | "pickup" | null>(null);
   const [confirmAbort, setConfirmAbort] = useState(false);
   const [pickedUp, setPickedUp] = useState(false);
+  // Regra "só avisar": cópia ainda sem conferir pede confirmação antes de entregar.
+  const [checkWarning, setCheckWarning] = useState<{ ids: string[]; message: string } | null>(null);
 
   useEffect(() => RentalOrderRepository.subscribe(orderId, (o) => o && setOrder(o)), [orderId]);
 
@@ -106,13 +108,23 @@ export default function CounterPaymentPanel({
     if (!r.ok) addAlert(r.message);
   };
 
-  const pickupAll = async () => {
+  const pickupAll = async (ids: string[] = order.rentalIds, ignorePendingCheck = false) => {
     setBusy("pickup");
-    const results = await Promise.all(order.rentalIds.map((id) => rentalApi.pickup(id)));
+    const results = await Promise.all(ids.map((id) => rentalApi.pickup(id, ignorePendingCheck)));
     setBusy(null);
-    const failed = results.find((r) => !r.ok);
+    const warned = ids.filter((_, i) => {
+      const r = results[i];
+      return !r.ok && r.code === "pending_check_warn";
+    });
+    const failed = results.find((r) => !r.ok && r.code !== "pending_check_warn");
     if (failed && !failed.ok) addAlert(failed.message);
-    else setPickedUp(true);
+    if (warned.length > 0) {
+      const first = results[ids.indexOf(warned[0])];
+      setCheckWarning({ ids: warned, message: !first.ok ? first.message : "" });
+    } else {
+      setCheckWarning(null);
+      if (!failed) setPickedUp(true);
+    }
   };
 
   const message = pix
@@ -232,10 +244,23 @@ export default function CounterPaymentPanel({
               : "Cliente desistiu: cancelar pedido"}
         </button>
       )}
-      {canPickupToday && (
+      {canPickupToday && checkWarning && (
+        <div className="flex flex-col gap-2 rounded-xl border border-orange-400/35 bg-orange-400/[0.06] p-3">
+          <p className="text-xs leading-relaxed text-orange-200">{checkWarning.message}</p>
+          <button
+            type="button"
+            onClick={() => pickupAll(checkWarning.ids, true)}
+            disabled={busy !== null}
+            className={`${btn} border-orange-400/50 text-orange-200 hover:bg-orange-400/10`}
+          >
+            {busy === "pickup" ? "Registrando..." : "Entregar mesmo assim"}
+          </button>
+        </div>
+      )}
+      {canPickupToday && !checkWarning && (
         <button
           type="button"
-          onClick={pickupAll}
+          onClick={() => pickupAll()}
           disabled={busy !== null}
           className={`${btn} border-primary-gold bg-primary-gold text-primary-black font-semibold hover:bg-primary-gold/90`}
         >

@@ -17,6 +17,7 @@ import {
 import { isValidCpf, normalizeCpf } from "@/rental/cpf";
 import { checkGuest, counterHoldMinutes, guestMatches } from "@/rental/adminOrders";
 import { formatDateBR, todaySP } from "@/rental/dates";
+import { pendingCheckMode, returnDayError, returnDayOf } from "@/rental/returns";
 import { DEFAULT_RENTAL_RULES, mergeRentalSettings } from "@/rental/defaults";
 import {
   ORDER_ERROR_MESSAGES,
@@ -629,11 +630,50 @@ async function readRentalAndGame(db: Firestore, tx: Transaction, rentalId: strin
   return { rentalRef, rental, gameRef, gameSnap };
 }
 
+/**
+ * Aluguel devolvido e ainda sem conferir na mesma cópia (lido na transação).
+ * Só igualdades: o Firestore resolve com os índices simples, sem índice composto.
+ */
+export async function pendingCheckInTx(
+  db: Firestore,
+  tx: Transaction,
+  unit: { gameId: string; unitId: string },
+  exceptId?: string,
+): Promise<(RentalType & { id: string }) | null> {
+  const snap = await tx.get(
+    db
+      .collection("rentals")
+      .where("gameId", "==", unit.gameId)
+      .where("unitId", "==", unit.unitId)
+      .where("checkPending", "==", true)
+      .limit(2),
+  );
+  const doc = snap.docs.find((d) => d.id !== exceptId);
+  return doc ? { id: doc.id, ...(doc.data() as RentalType) } : null;
+}
+
+/** Mensagem da cópia ainda não conferida (para retirada bloqueada ou com aviso). */
+export function pendingCheckMessage(pending: RentalType, mode: "block" | "warn"): string {
+  const day = returnDayOf(pending);
+  const since = day ? ` desde a devolução de ${formatDateBR(day)}` : "";
+  return mode === "block"
+    ? `A ${pending.unitLabel} ainda não foi conferida${since} (aluguel ${pending.code}). Confira antes de entregar.`
+    : `A ${pending.unitLabel} ainda não foi conferida${since} (aluguel ${pending.code}). Entregar mesmo assim?`;
+}
+
 /** Registra a retirada (reserved para picked_up). */
-export async function pickupRental(rentalId: string, adminUid: string): Promise<void> {
+export async function pickupRental(
+  rentalId: string,
+  adminUid: string,
+  opts: { ignorePendingCheck?: boolean } = {},
+): Promise<void> {
   const db = getAdminDb();
   await db.runTransaction(async (tx) => {
     const { rentalRef, rental, gameRef, gameSnap } = await readRentalAndGame(db, tx, rentalId);
+    const [settingsSnap, pending] = await Promise.all([
+      tx.get(settingsRef(db)),
+      pendingCheckInTx(db, tx, rental, rentalId),
+    ]);
     if (rental.status === "awaiting_payment") {
       throw new ApiError(409, "awaiting_payment", "Este pedido ainda não foi pago.");
     }
@@ -652,6 +692,19 @@ export async function pickupRental(rentalId: string, adminUid: string): Promise<
         "too_early",
         `A retirada só pode ser registrada a partir de ${formatDateBR(rental.startDate)}.`,
       );
+    }
+    if (pending) {
+      const mode = pendingCheckMode(readSettings(settingsSnap));
+      if (mode === "block") {
+        throw new ApiError(409, "pending_check", pendingCheckMessage(pending, "block"), {
+          pendingRentalId: pending.id,
+        });
+      }
+      if (!opts.ignorePendingCheck) {
+        throw new ApiError(409, "pending_check_warn", pendingCheckMessage(pending, "warn"), {
+          pendingRentalId: pending.id,
+        });
+      }
     }
 
     tx.update(rentalRef, {
@@ -678,37 +731,80 @@ const DEFAULT_UNAVAILABLE_NOTES: Record<RentalReturnCondition, string> = {
   missing_parts: "Devolvido com peças faltando",
 };
 
-/** Registra a devolução (picked_up para returned); opcionalmente tira a unidade de circulação. */
+export type ReturnCheck = { condition: RentalReturnCondition; note?: string; markUnitUnavailable: boolean };
+
+/** Campos da conferência gravados no aluguel. */
+function checkFields(adminUid: string, check: ReturnCheck) {
+  return {
+    checkPending: false,
+    checkedAt: FieldValue.serverTimestamp(),
+    checkedBy: adminUid,
+    returnCondition: check.condition,
+    ...(check.note ? { returnNote: check.note } : {}),
+  };
+}
+
+/**
+ * Registra a devolução (picked_up para returned) no dia em que o cliente
+ * devolveu (`returnedOn`, pode ser antes de hoje). Com `check`, já registra a
+ * conferência; sem, o aluguel fica "para conferir". A cópia volta a ficar livre
+ * para reservas nos dois casos.
+ */
 export async function returnRental(
   rentalId: string,
   adminUid: string,
-  input: { condition: RentalReturnCondition; note?: string; markUnitUnavailable: boolean },
+  input: { returnedOn: string; check: ReturnCheck | null },
 ): Promise<void> {
   const db = getAdminDb();
   await db.runTransaction(async (tx) => {
     const { rentalRef, rental, gameRef, gameSnap } = await readRentalAndGame(db, tx, rentalId);
     if (rental.status !== "picked_up") throw invalidStatus();
+    const dayError = returnDayError(input.returnedOn, rental, todaySP());
+    if (dayError) throw new ApiError(400, "invalid_return_day", dayError);
 
     tx.update(rentalRef, {
       status: "returned",
       returnedAt: FieldValue.serverTimestamp(),
+      returnedOn: input.returnedOn,
       returnedBy: adminUid,
-      returnCondition: input.condition,
-      ...(input.note ? { returnNote: input.note } : {}),
+      ...(input.check ? checkFields(adminUid, input.check) : { checkPending: true }),
     });
     if (gameSnap.exists) {
       const data = gameSnap.data();
+      const check = input.check;
       tx.update(gameRef, {
         bookings: removeBooking(liveBookings(asBookings(data?.bookings), Date.now()), rentalId),
-        ...(input.markUnitUnavailable
+        ...(check?.markUnitUnavailable
           ? {
               units: markUnitUnavailable(
                 asUnits(data?.units),
                 rental.unitId,
-                input.note || DEFAULT_UNAVAILABLE_NOTES[input.condition],
+                check.note || DEFAULT_UNAVAILABLE_NOTES[check.condition],
               ),
             }
           : {}),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+  });
+}
+
+/** Conclui a conferência de um aluguel devolvido; opcionalmente tira a cópia de circulação. */
+export async function checkRental(rentalId: string, adminUid: string, check: ReturnCheck): Promise<void> {
+  const db = getAdminDb();
+  await db.runTransaction(async (tx) => {
+    const { rentalRef, rental, gameRef, gameSnap } = await readRentalAndGame(db, tx, rentalId);
+    if (rental.status !== "returned" || rental.checkPending !== true) {
+      throw new ApiError(409, "not_pending_check", "Este aluguel não está esperando conferência. Atualize a página.");
+    }
+    tx.update(rentalRef, checkFields(adminUid, check));
+    if (check.markUnitUnavailable && gameSnap.exists) {
+      tx.update(gameRef, {
+        units: markUnitUnavailable(
+          asUnits(gameSnap.data()?.units),
+          rental.unitId,
+          check.note || DEFAULT_UNAVAILABLE_NOTES[check.condition],
+        ),
         updatedAt: FieldValue.serverTimestamp(),
       });
     }

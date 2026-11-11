@@ -535,8 +535,19 @@ export interface RentalType {
   status: RentalStatus;
   pickedUpAt?: Timestamp;
   pickedUpBy?: string;
+  /** Quando a devolução foi registrada no sistema. */
   returnedAt?: Timestamp;
   returnedBy?: string;
+  /**
+   * Dia em que o cliente devolveu ("YYYY-MM-DD"); pode ser antes do registro.
+   * É por ele que se mede o atraso. Ausente (aluguéis antigos) = dia de `returnedAt`.
+   */
+  returnedOn?: string;
+  /** Devolvido, mas a equipe ainda não conferiu as peças. */
+  checkPending?: boolean;
+  checkedAt?: Timestamp;
+  checkedBy?: string;
+  /** Estado do jogo, informado na conferência. */
   returnCondition?: RentalReturnCondition;
   returnNote?: string;
   canceledAt?: Timestamp;
@@ -606,6 +617,11 @@ export interface RentalSettingsType {
    * próximo na mesma cópia (1 = no dia seguinte). Ausente = 1.
    */
   queueGapDays?: number;
+  /**
+   * Cópia devolvida e ainda não conferida: "block" impede a próxima retirada
+   * dela até alguém conferir; "warn" só avisa e deixa entregar. Ausente = "block".
+   */
+  pendingCheckPickup?: "block" | "warn";
 }
 
 export interface RentalRuleSection {

@@ -1,5 +1,6 @@
 "use client";
 
+import { isCheckPending, returnDayOf, returnedLate } from "@/rental/returns";
 import { useEffect, useMemo, useState } from "react";
 import { LuBan, LuEraser, LuPencil, LuTrash2, LuUser } from "react-icons/lu";
 import { FaWhatsapp } from "react-icons/fa";
@@ -33,10 +34,7 @@ export function customerStats(rentals: Rental[], today: string): CustomerStats {
     late: rentals.filter(
       (r) =>
         (r.status === "picked_up" && r.dueDate < today) ||
-        (r.status === "returned" &&
-          r.returnedAt !== undefined &&
-          r.returnedAt.toDate().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) >
-            r.dueDate),
+        returnedLate(r),
     ).length,
   };
 }
@@ -69,10 +67,11 @@ function situation(r: Rental, today: string): { label: string; tone: string } {
       };
     }
     case "returned": {
-      const back = r.returnedAt?.toDate?.().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
-      const late = back !== undefined && back > r.dueDate;
+      const back = returnDayOf(r);
+      const late = returnedLate(r);
+      const check = isCheckPending(r) ? " · para conferir" : "";
       return {
-        label: back ? `Devolvido ${formatDateBR(back)}${late ? " · com atraso" : ""}` : "Devolvido",
+        label: back ? `Devolvido ${formatDateBR(back)}${late ? " · com atraso" : ""}${check}` : `Devolvido${check}`,
         tone: late ? "text-orange-300 border-orange-400/30" : "text-emerald-300 border-emerald-400/30",
       };
     }

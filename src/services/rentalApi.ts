@@ -5,9 +5,12 @@ import type { CancelOutcome } from "@/rental/payments";
 
 export type ApiResult<T> =
   | { ok: true; data: T }
-  | { ok: false; code: string; message: string; gameId?: string };
+  | { ok: false; code: string; message: string; gameId?: string; pendingRentalId?: string };
 
 const INTERNAL_ERROR = "Erro inesperado. Tente novamente.";
+
+/** Conferência da devolução: estado do jogo, observação e se a cópia sai de circulação. */
+export type RentalCheckInput = { condition: RentalReturnCondition; note?: string; markUnitUnavailable: boolean };
 
 async function call<T>(
   path: string,
@@ -113,12 +116,16 @@ export const rentalApi = {
       method: "GET",
     }),
 
-  pickup: (id: string) => call<null>(rentalPath(id, "pickup"), {}),
+  /** `ignorePendingCheck`: entregar mesmo com a cópia ainda sem conferir (regra "só avisar"). */
+  pickup: (id: string, ignorePendingCheck = false) =>
+    call<null>(rentalPath(id, "pickup"), ignorePendingCheck ? { ignorePendingCheck: true } : {}),
 
-  returnRental: (
-    id: string,
-    body: { condition: RentalReturnCondition; note?: string; markUnitUnavailable: boolean }
-  ) => call<null>(rentalPath(id, "return"), body),
+  /** Devolução no dia em que o cliente devolveu; `check: null` deixa para conferir depois. */
+  returnRental: (id: string, body: { returnedOn: string; check: RentalCheckInput | null }) =>
+    call<null>(rentalPath(id, "return"), body),
+
+  /** Conclui a conferência de um aluguel devolvido. */
+  checkRental: (id: string, body: RentalCheckInput) => call<null>(rentalPath(id, "check"), body),
 
   changeDueDate: (id: string, dueDate: string) =>
     call<null>(rentalPath(id, "due-date"), { dueDate }),

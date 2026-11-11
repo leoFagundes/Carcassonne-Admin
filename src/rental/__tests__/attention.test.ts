@@ -31,8 +31,21 @@ describe("rentalAttention", () => {
       returnsToday: 0,
       overdue: 0,
       notPickedUp: 0,
+      toCheck: 0,
       refundReviews: 0,
     });
+  });
+
+  it("conta devolvidos sem conferir (e só eles)", () => {
+    const r = rentalAttention(
+      [
+        rental({ status: "returned", checkPending: true }),
+        rental({ status: "returned", checkPending: false }),
+        rental({ status: "returned" }),
+      ],
+      TODAY,
+    );
+    expect(r.toCheck).toBe(1);
   });
 
   it("conta retiradas de hoje (reserved com início hoje)", () => {
@@ -72,7 +85,7 @@ describe("rentalAttention", () => {
       ],
       TODAY,
     );
-    expect(r).toEqual({ pickupsToday: 0, returnsToday: 0, overdue: 0, notPickedUp: 0, refundReviews: 0 });
+    expect(r).toEqual({ pickupsToday: 0, returnsToday: 0, overdue: 0, notPickedUp: 0, toCheck: 0, refundReviews: 0 });
   });
 });
 

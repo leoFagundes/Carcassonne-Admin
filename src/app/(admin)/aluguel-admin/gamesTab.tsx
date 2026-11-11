@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { LuChevronRight, LuEye, LuEyeOff, LuPackage, LuPencil, LuPlus } from "react-icons/lu";
-import type { RentalGameType } from "@/types";
+import type { RentalGameType, RentalType } from "@/types";
 import Modal from "@/components/modal";
 import ShowcaseImage from "@/components/showcase/showcaseImage";
 import { Highlight, foldText, searchWords } from "@/components/showcase/search";
@@ -19,10 +19,12 @@ import {
 } from "@/components/adminCatalog";
 import { useAlert } from "@/contexts/alertProvider";
 import RentalGameRepository from "@/services/repositories/RentalGameRepository";
+import RentalRepository from "@/services/repositories/RentalRepository";
+import { isCheckPending, returnDayOf } from "@/rental/returns";
 import { gameAvailability } from "@/rental/availability";
 import { withLiveBookings } from "@/rental/payments";
 import { formatBRL } from "@/rental/money";
-import { todaySP } from "@/rental/dates";
+import { formatDateBR, todaySP } from "@/rental/dates";
 import RentalGameForm, { emptyRentalGame } from "./rentalGameForm";
 import { unitStatus } from "./unitsEditor";
 import { BOARDGAME_PLACEHOLDER } from "@/utils/menuIllustrations";
@@ -46,6 +48,9 @@ export default function GamesTab() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<Status>("all");
   const [editing, setEditing] = useState<RentalGameType | null>(null);
+  // Devolvidos e ainda sem conferir: a cópia aparece como "Para conferir" no formulário
+  const [toCheck, setToCheck] = useState<RentalType[]>([]);
+  useEffect(() => RentalRepository.subscribeToAll((list) => setToCheck(list.filter(isCheckPending))), []);
   const [view, setView] = useCatalogView("carcassonne-admin-rental-games-view");
   const { addAlert } = useAlert();
   const today = todaySP();
@@ -292,7 +297,21 @@ export default function GamesTab() {
 
       <Modal isOpen={!!editing} onClose={() => setEditing(null)} noPadding patternCloseButton={false}>
         {editing && (
-          <RentalGameForm key={editing.id ?? "new"} game={editing} closeForms={() => setEditing(null)} />
+          <RentalGameForm
+            key={editing.id ?? "new"}
+            game={editing}
+            closeForms={() => setEditing(null)}
+            pendingCheck={
+              new Map(
+                toCheck
+                  .filter((r) => r.gameId === editing.id)
+                  .map((r) => {
+                    const day = returnDayOf(r);
+                    return [r.unitId, `Para conferir${day ? ` · devolvida ${formatDateBR(day)}` : ""}`] as const;
+                  }),
+              )
+            }
+          />
         )}
       </Modal>
     </div>

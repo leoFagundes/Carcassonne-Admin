@@ -238,7 +238,7 @@ const helpCards: HelpCard[] = [
     category: "aluguel",
     title: "Visão geral da aba Aluguéis",
     description:
-      "No topo, o quadro 'Hoje' mostra só o que pede ação: 'Atrasados' (com os dias de atraso), 'Devoluções de hoje', 'Retiradas de hoje' e 'Não retirados' (a data passou e o cliente não apareceu) — cada linha com o jogo, o cliente, o WhatsApp e o botão 'Registrar retirada' ou 'Registrar devolução' direto. Sem pendências, aparece 'Nada pendente para hoje'. Abaixo, a lista de aluguéis abre em 'Em andamento', dos pedidos mais recentes para os mais antigos; os filtros mudam para Aguardando pagamento, Reservados, Retirados, Devolvidos, Cancelados ou Todos, e a busca acha por cliente, código ou jogo. Cada cartão mostra o jogo, uma situação colorida, o cliente, as datas, o valor, o pagamento (quando online) e o código do pedido. A aba 'Aluguéis' tem um selo laranja com as pendências do dia, igual ao contador do menu lateral.",
+      "No topo, o quadro 'Hoje' mostra só o que pede ação: 'Atrasados' (com os dias de atraso), 'Devoluções de hoje', 'Retiradas de hoje', 'Não retirados' (a data passou e o cliente não apareceu) e 'Para conferir' (devolvidos cujas peças ainda não foram contadas) — cada linha com o jogo, o cliente, o WhatsApp e o botão 'Registrar retirada', 'Registrar devolução' ou 'Conferir' direto. Sem pendências, aparece 'Nada pendente para hoje'. Abaixo, a lista de aluguéis abre em 'Em andamento', dos pedidos mais recentes para os mais antigos; os filtros mudam para Aguardando pagamento, Reservados, Retirados, Devolvidos, Cancelados ou Todos, e a busca acha por cliente, código ou jogo. Cada cartão mostra o jogo, uma situação colorida, o cliente, as datas, o valor, o pagamento (quando online) e o código do pedido. A aba 'Aluguéis' tem um selo laranja com as pendências do dia, igual ao contador do menu lateral.",
   },
   {
     category: "aluguel",
@@ -248,9 +248,9 @@ const helpCards: HelpCard[] = [
   },
   {
     category: "aluguel",
-    title: "Como registrar a devolução e marcar avarias",
+    title: "Como registrar a devolução, conferir as peças e marcar avarias",
     description:
-      "Na aba 'Aluguéis', no aluguel retirado, clique em 'Registrar devolução' e informe o estado do jogo: OK, Com avaria ou Peça faltando, com uma observação opcional. Quando o estado não é OK, a opção 'Marcar cópia como indisponível' já vem marcada — assim aquela cópia sai do estoque até você reativá-la no cadastro do jogo. Ao registrar, a cópia fica livre na hora (se não foi marcada como indisponível) e o catálogo atualiza sozinho.",
+      "Na aba 'Aluguéis', no aluguel retirado, clique em 'Registrar devolução'. Primeiro informe 'Devolvido em': vem com hoje, mas se o cliente devolveu outro dia (e alguém esqueceu de marcar), escolha a data certa — o atraso é contado por ela, tanto para o cliente quanto no histórico e nas estatísticas. Depois escolha 'Conferir agora' ou 'Conferir depois'. Conferir agora: informe o estado do jogo (OK, Com avaria ou Peça faltando) e uma observação opcional; quando o estado não é OK, 'Marcar cópia como indisponível' já vem marcada, e a cópia sai do estoque até você reativá-la no cadastro do jogo. Conferir depois: o aluguel vai para 'Para conferir' no quadro Hoje (e entra no contador do menu); quando a equipe contar as peças, clique em 'Conferir' e informe o estado. Nos dois casos o cliente já vê o aluguel como devolvido (ele não vê a conferência) e a cópia volta a aceitar reservas. Enquanto a cópia não for conferida, a próxima retirada dela segue a regra 'Cópia devolvida e ainda não conferida' (Regras → Retirada e devolução): 'Bloquear a próxima retirada' (padrão) só deixa entregar depois da conferência, com o botão 'Conferir agora' na própria tela da retirada; 'Só avisar' mostra o aviso e deixa entregar mesmo assim. No cadastro do jogo, a cópia aparece com o selo 'Para conferir'.",
   },
   {
     category: "aluguel",

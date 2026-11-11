@@ -25,7 +25,15 @@ import { paymentsStatus } from "./payments";
 import { ProviderError } from "./payments/mercadoPago";
 import { rentalRulesUrl, sendOrderConfirmation } from "./rentalEmails";
 import { abortUnpaidOrder, checkoutFailed, createOrderCheckout, createOrderPix, pixFailed } from "./rentalOrderService";
-import { MAX_CODE_ATTEMPTS, readRulesVersion, readSettings, settingsRef } from "./rentalService";
+import {
+  MAX_CODE_ATTEMPTS,
+  pendingCheckInTx,
+  pendingCheckMessage,
+  readRulesVersion,
+  readSettings,
+  settingsRef,
+} from "./rentalService";
+import { pendingCheckMode } from "@/rental/returns";
 
 export type AdminCustomerRef = { kind: "existing"; uid: string } | { kind: "new"; guest: GuestInput };
 
@@ -168,6 +176,21 @@ export async function createAdminOrder(token: DecodedIdToken, body: AdminOrderBo
     }
     if (body.pickupNow && !canPickupNow(choice, body.startDate, today)) {
       throw new ApiError(400, "pickup_not_allowed", "Só dá para registrar a retirada agora em aluguéis que começam hoje e já estão pagos.");
+    }
+    // Entregar na hora uma cópia devolvida e ainda sem conferir: com a regra
+    // "bloquear", não deixa (crie sem "levando agora" e confira antes).
+    if (body.pickupNow && pendingCheckMode(settings) === "block") {
+      for (const item of plan.items) {
+        const pending = await pendingCheckInTx(db, tx, { gameId: item.gameId, unitId: item.unitId });
+        if (pending) {
+          throw new ApiError(
+            409,
+            "pending_check",
+            `${pendingCheckMessage(pending, "block")} Ou crie o aluguel sem "levando agora".`,
+            { pendingRentalId: pending.id },
+          );
+        }
+      }
     }
 
     let code = "";

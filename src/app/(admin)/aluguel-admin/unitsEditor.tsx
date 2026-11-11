@@ -63,11 +63,14 @@ export default function UnitsEditor({
   setUnits,
   bookings,
   today,
+  pendingCheck,
 }: {
   units: RentalUnit[];
   setUnits: (units: RentalUnit[]) => void;
   bookings: RentalBooking[];
   today: string;
+  /** Cópias devolvidas e ainda sem conferir: id da cópia → texto (ex.: "Para conferir · devolvida 10/11"). */
+  pendingCheck?: ReadonlyMap<string, string>;
 }) {
   const { addAlert } = useAlert();
   // Reserva temporária vencida (pagamento não concluído) já não ocupa a cópia.
@@ -166,11 +169,18 @@ export default function UnitsEditor({
               value={unit.note ?? ""}
               onChange={(e) => patch(unit.id, { note: e.target.value })}
             />
-            <span
-              className={`self-start text-[11px] px-2 py-0.5 rounded-md border ${STATUS_STYLE[status]}`}
-            >
-              {unitStatusText(game, unit, today)}
-            </span>
+            <div className="flex flex-wrap gap-1.5">
+              <span
+                className={`text-[11px] px-2 py-0.5 rounded-md border ${STATUS_STYLE[status]}`}
+              >
+                {unitStatusText(game, unit, today)}
+              </span>
+              {pendingCheck?.get(unit.id) && (
+                <span className="text-[11px] px-2 py-0.5 rounded-md border text-violet-300 border-violet-400/40">
+                  {pendingCheck.get(unit.id)}
+                </span>
+              )}
+            </div>
           </div>
         );
       })}

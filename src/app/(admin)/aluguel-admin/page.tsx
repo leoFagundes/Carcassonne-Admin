@@ -29,6 +29,7 @@ function usePendingCount(): number {
     a.returnsToday +
     a.overdue +
     a.notPickedUp +
+    a.toCheck +
     a.refundReviews
   );
 }

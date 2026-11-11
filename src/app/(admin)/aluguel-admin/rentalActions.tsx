@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import {
   LuCalendarClock,
+  LuClipboardCheck,
   LuPackageCheck,
   LuPackageOpen,
   LuTrash2,
@@ -19,44 +20,128 @@ import Input from "@/components/input";
 import Checkbox from "@/components/checkbox";
 import { useAlert } from "@/contexts/alertProvider";
 import { rentalApi, type ApiResult } from "@/services/rentalApi";
-import { formatDateBR, todaySP } from "@/rental/dates";
+import { diffDays, formatDateBR, todaySP } from "@/rental/dates";
 import { canPickUp } from "@/rental/bookings";
 import { formatBRL, parseBRL } from "@/rental/money";
 import { isPaidOnline, refundableLeft, rentalPrice } from "@/rental/payments";
 import { isRentalFinished, rentalDeletionBlock } from "@/rental/deletion";
+import {
+  CONDITION_LABEL,
+  earliestReturnDay,
+  isCheckPending,
+  pendingCheckOnUnit,
+  returnDayError,
+  returnDayOf,
+  type PendingCheckPickup,
+} from "@/rental/returns";
 import { AmountField, centsToInput } from "./refundForms";
-import { STATUS_LABEL } from "./rentalShared";
+import { STATUS_LABEL, plural } from "./rentalShared";
 
+type Rental = RentalType & { id: string };
 type Order = RentalOrderType & { id: string };
-type ActionKind = "pickup" | "return" | "dueDate" | "cancel" | "delete";
+type ActionKind = "pickup" | "return" | "check" | "dueDate" | "cancel" | "delete";
 
-const CONDITIONS: { value: RentalReturnCondition; label: string }[] = [
-  { value: "ok", label: "OK" },
-  { value: "damaged", label: "Com avaria" },
-  { value: "missing_parts", label: "Peça faltando" },
-];
+/**
+ * Aluguéis carregados na aba e a regra da cópia sem conferir: a retirada usa
+ * para avisar antes de chamar o servidor (que confere de novo).
+ */
+export const RentalListContext = createContext<{
+  rentals: Rental[];
+  pendingCheckMode: PendingCheckPickup;
+} | null>(null);
+
+const CONDITIONS: { value: RentalReturnCondition; label: string }[] = (
+  ["ok", "damaged", "missing_parts"] as const
+).map((value) => ({ value, label: CONDITION_LABEL[value] }));
 
 const buttonClass =
   "flex items-center gap-1.5 h-8 px-3 rounded-lg border text-xs font-medium transition-colors cursor-pointer disabled:opacity-40";
+
+const pillClass = (on: boolean) =>
+  `h-8 px-3 rounded-full border text-xs transition-colors cursor-pointer ${
+    on
+      ? "border-primary-gold/60 bg-primary-gold/15 text-primary-gold font-semibold"
+      : "border-primary-gold/15 text-primary-gold/60 hover:border-primary-gold/40"
+  }`;
+
+/** Estado do jogo, observação e tirar a cópia: igual na devolução e na conferência. */
+function CheckFields({
+  condition,
+  onCondition,
+  note,
+  onNote,
+  markUnavailable,
+  onMarkUnavailable,
+}: {
+  condition: RentalReturnCondition;
+  onCondition: (value: RentalReturnCondition) => void;
+  note: string;
+  onNote: (value: string) => void;
+  markUnavailable: boolean;
+  onMarkUnavailable: (value: boolean) => void;
+}) {
+  return (
+    <>
+      <div role="radiogroup" aria-label="Estado do jogo" className="flex flex-wrap gap-1.5">
+        {CONDITIONS.map((c) => (
+          <button
+            key={c.value}
+            type="button"
+            role="radio"
+            aria-checked={condition === c.value}
+            onClick={() => onCondition(c.value)}
+            className={pillClass(condition === c.value)}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+      <Input
+        labelSpace
+        value={note}
+        setValue={(e) => onNote(e.target.value)}
+        placeholder="Observação (opcional)"
+        label="Observação"
+        multiline
+        rows={3}
+      />
+      <Checkbox
+        checked={markUnavailable}
+        setChecked={(e) => onMarkUnavailable(e.target.checked)}
+        label="Marcar cópia como indisponível"
+        variant
+      />
+    </>
+  );
+}
 
 function ActionModal({
   rental,
   kind,
   order,
   onClose,
+  onCheckOther,
 }: {
-  rental: RentalType & { id: string };
+  rental: Rental;
   kind: ActionKind;
   order?: Order;
   onClose: VoidFunction;
+  /** Abre a conferência de outro aluguel (a cópia que trava esta retirada). */
+  onCheckOther: (other: Rental) => void;
 }) {
   const { addAlert } = useAlert();
+  const list = useContext(RentalListContext);
+  const today = todaySP();
   const [loading, setLoading] = useState(false);
   const [condition, setCondition] = useState<RentalReturnCondition>("ok");
   const [note, setNote] = useState("");
   const [markUnavailable, setMarkUnavailable] = useState(false);
   const [dueDate, setDueDate] = useState(rental.dueDate);
   const [reason, setReason] = useState("");
+  const [returnedOn, setReturnedOn] = useState(today);
+  const [checkNow, setCheckNow] = useState(true);
+  // Resposta do servidor quando a lista da tela estava desatualizada
+  const [serverPending, setServerPending] = useState<{ code: string; message: string; id?: string } | null>(null);
 
   // Aluguel de pedido pago online: cancelar pergunta quanto devolver (padrão: o valor do jogo).
   const paid = isPaidOnline(order);
@@ -101,6 +186,10 @@ function ActionModal({
     const result = await request();
     setLoading(false);
     if (!result.ok) {
+      if (result.code === "pending_check" || result.code === "pending_check_warn") {
+        setServerPending({ code: result.code, message: result.message, id: result.pendingRentalId });
+        return;
+      }
       addAlert(result.message);
       return;
     }
@@ -138,31 +227,51 @@ function ActionModal({
     setCondition(value);
     setMarkUnavailable(value !== "ok");
   };
+  const check = { condition, note: note.trim() || undefined, markUnitUnavailable: markUnavailable };
+
+  // Retirada: cópia devolvida por outro cliente e ainda sem conferir
+  const localPending = kind === "pickup" && list ? pendingCheckOnUnit(list.rentals, rental) : undefined;
+  const serverPendingRental = serverPending?.id ? list?.rentals.find((r) => r.id === serverPending.id) : undefined;
+  const pendingRental = localPending ?? serverPendingRental;
+  const pendingMode: PendingCheckPickup | null = serverPending
+    ? serverPending.code === "pending_check"
+      ? "block"
+      : "warn"
+    : localPending
+      ? (list?.pendingCheckMode ?? "block")
+      : null;
+  const pendingDay = pendingRental ? returnDayOf(pendingRental) : null;
+
+  // Devolução: data em que o cliente devolveu
+  const dayError = kind === "return" ? returnDayError(returnedOn, rental, today) : null;
+  const lateDays = !dayError && returnedOn > rental.dueDate ? diffDays(rental.dueDate, returnedOn) : 0;
 
   const config = {
     pickup: {
       title: "Registrar retirada",
-      submitLabel: "Registrar retirada",
+      submitLabel: pendingMode === "warn" ? "Entregar mesmo assim" : "Registrar retirada",
       icon: <LuPackageOpen size={18} />,
-      disabled: false,
+      disabled: pendingMode === "block",
       submit: () =>
-        run(() => rentalApi.pickup(rental.id), "Retirada registrada"),
+        run(() => rentalApi.pickup(rental.id, pendingMode === "warn"), "Retirada registrada"),
     },
     return: {
       title: "Registrar devolução",
-      submitLabel: "Registrar devolução",
+      submitLabel: checkNow ? "Registrar devolução" : "Registrar e conferir depois",
       icon: <LuPackageCheck size={18} />,
-      disabled: false,
+      disabled: !!dayError,
       submit: () =>
         run(
-          () =>
-            rentalApi.returnRental(rental.id, {
-              condition,
-              note: note.trim() || undefined,
-              markUnitUnavailable: markUnavailable,
-            }),
-          "Devolução registrada",
+          () => rentalApi.returnRental(rental.id, { returnedOn, check: checkNow ? check : null }),
+          checkNow ? "Devolução registrada" : "Devolução registrada. Falta conferir",
         ),
+    },
+    check: {
+      title: "Conferir devolução",
+      submitLabel: "Concluir conferência",
+      icon: <LuClipboardCheck size={18} />,
+      disabled: false,
+      submit: () => run(() => rentalApi.checkRental(rental.id, check), "Conferência registrada"),
     },
     dueDate: {
       title: "Alterar devolução",
@@ -202,6 +311,8 @@ function ActionModal({
     },
   }[kind];
 
+  const checkDay = kind === "check" ? returnDayOf(rental) : null;
+
   return (
     <FormCard
       title={config.title}
@@ -214,49 +325,115 @@ function ActionModal({
       loading={loading}
     >
       {kind === "pickup" && (
-        <p className="text-sm text-primary-gold/70">
-          Confirma que {rental.customer.name} retirou {rental.gameName}?
-        </p>
+        <>
+          <p className="text-sm text-primary-gold/70">
+            Confirma que {rental.customer.name} retirou {rental.gameName}?
+          </p>
+          {pendingMode && (
+            <div
+              className={`flex flex-col gap-2 rounded-xl border p-3 text-xs leading-relaxed ${
+                pendingMode === "block"
+                  ? "border-invalid-color/35 bg-invalid-color/[0.06] text-invalid-color/90"
+                  : "border-orange-400/35 bg-orange-400/[0.06] text-orange-200"
+              }`}
+            >
+              <p>
+                {pendingRental ? (
+                  <>
+                    A <strong>{rental.unitLabel}</strong> ainda não foi conferida
+                    {pendingDay ? ` desde a devolução de ${formatDateBR(pendingDay)}` : ""} (aluguel{" "}
+                    {pendingRental.code}, de {pendingRental.customer.name}).{" "}
+                    {pendingMode === "block"
+                      ? "Pela regra do aluguel, confira as peças antes de entregar para o próximo cliente."
+                      : "Pela regra do aluguel, você pode entregar mesmo assim, mas o ideal é conferir antes."}
+                  </>
+                ) : (
+                  serverPending?.message
+                )}
+              </p>
+              {pendingRental && (
+                <button
+                  type="button"
+                  onClick={() => onCheckOther(pendingRental)}
+                  className="flex items-center gap-1.5 self-start rounded-lg border border-current/40 px-3 py-1.5 font-semibold hover:bg-white/5 cursor-pointer"
+                >
+                  <LuClipboardCheck size={13} /> Conferir agora
+                </button>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {kind === "return" && (
         <>
-          <div
-            role="radiogroup"
-            aria-label="Estado do jogo"
-            className="flex flex-wrap gap-1.5"
-          >
-            {CONDITIONS.map((c) => (
-              <button
-                key={c.value}
-                type="button"
-                role="radio"
-                aria-checked={condition === c.value}
-                onClick={() => pickChoice(c.value)}
-                className={`h-8 px-3 rounded-full border text-xs transition-colors cursor-pointer ${
-                  condition === c.value
-                    ? "border-primary-gold/60 bg-primary-gold/15 text-primary-gold font-semibold"
-                    : "border-primary-gold/15 text-primary-gold/60 hover:border-primary-gold/40"
-                }`}
-              >
-                {c.label}
-              </button>
-            ))}
+          <div className="flex flex-col gap-1">
+            <Input
+              labelSpace
+              type="date"
+              min={earliestReturnDay(rental)}
+              max={today}
+              value={returnedOn}
+              setValue={(e) => setReturnedOn(e.target.value)}
+              placeholder="Devolvido em"
+              label="Devolvido em"
+            />
+            <p className={`text-[11px] leading-relaxed ${dayError ? "text-invalid-color" : lateDays ? "text-orange-300" : "text-primary-gold/50"}`}>
+              {dayError ??
+                (lateDays
+                  ? `Prazo era ${formatDateBR(rental.dueDate)}: conta como ${plural(lateDays, "dia", "dias")} de atraso.`
+                  : `Dentro do prazo (até ${formatDateBR(rental.dueDate)}). Se o cliente devolveu outro dia, troque a data: o atraso vale por ela.`)}
+            </p>
           </div>
-          <Input
-            labelSpace
-            value={note}
-            setValue={(e) => setNote(e.target.value)}
-            placeholder="Observação (opcional)"
-            label="Observação"
-            multiline
-            rows={3}
-          />
-          <Checkbox
-            checked={markUnavailable}
-            setChecked={(e) => setMarkUnavailable(e.target.checked)}
-            label="Marcar cópia como indisponível"
-            variant
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-gold/45">
+              Conferência das peças
+            </span>
+            <div role="radiogroup" aria-label="Quando conferir" className="flex flex-wrap gap-1.5">
+              <button type="button" role="radio" aria-checked={checkNow} onClick={() => setCheckNow(true)} className={pillClass(checkNow)}>
+                Conferir agora
+              </button>
+              <button type="button" role="radio" aria-checked={!checkNow} onClick={() => setCheckNow(false)} className={pillClass(!checkNow)}>
+                Conferir depois
+              </button>
+            </div>
+          </div>
+
+          {checkNow ? (
+            <CheckFields
+              condition={condition}
+              onCondition={pickChoice}
+              note={note}
+              onNote={setNote}
+              markUnavailable={markUnavailable}
+              onMarkUnavailable={setMarkUnavailable}
+            />
+          ) : (
+            <p className="rounded-xl border border-primary-gold/15 bg-primary-gold/[0.04] px-3 py-2.5 text-xs leading-relaxed text-primary-gold/65">
+              O aluguel vai para &quot;Para conferir&quot; no quadro Hoje. Para o cliente ele já aparece como
+              devolvido, sem atraso se a data acima estiver no prazo.{" "}
+              {list?.pendingCheckMode === "warn"
+                ? "Até alguém conferir, a próxima retirada desta cópia mostra um aviso."
+                : "Até alguém conferir, a próxima retirada desta cópia fica bloqueada."}
+            </p>
+          )}
+        </>
+      )}
+
+      {kind === "check" && (
+        <>
+          <p className="text-xs leading-relaxed text-primary-gold/55">
+            {rental.customer.name} devolveu{checkDay ? ` em ${formatDateBR(checkDay, true)}` : ""}. Conte as peças e
+            informe como o jogo voltou.
+          </p>
+          <CheckFields
+            condition={condition}
+            onCondition={pickChoice}
+            note={note}
+            onNote={setNote}
+            markUnavailable={markUnavailable}
+            onMarkUnavailable={setMarkUnavailable}
           />
         </>
       )}
@@ -387,18 +564,22 @@ export default function RentalActions({
   order,
   compact = false,
 }: {
-  rental: RentalType & { id: string };
+  rental: Rental;
   order?: Order;
   /** Só a ação principal do dia — usado na agenda de hoje. */
   compact?: boolean;
 }) {
-  const [kind, setKind] = useState<ActionKind | null>(null);
+  // A ação aberta e de qual aluguel: "Conferir agora" na retirada troca para a
+  // conferência da outra devolução e, ao terminar, volta para a retirada.
+  const [open, setOpen] = useState<{ kind: ActionKind; target: Rental; back?: boolean } | null>(null);
+  const setKind = (kind: ActionKind | null) => setOpen(kind ? { kind, target: rental } : null);
 
   const reserved = rental.status === "reserved";
   const pickedUp = rental.status === "picked_up";
   const awaiting = rental.status === "awaiting_payment";
   const today = todaySP();
   const finished = isRentalFinished(rental);
+  const toCheck = isCheckPending(rental);
   const pickupAvailable = reserved && canPickUp(rental, today);
 
   if (!reserved && !pickedUp && !awaiting && !finished) return null;
@@ -407,20 +588,24 @@ export default function RentalActions({
   const secondary = `${buttonClass} border-primary-gold/15 bg-transparent text-primary-gold/60 hover:border-primary-gold/35 hover:bg-primary-gold/5 hover:text-primary-gold`;
   const danger = `${buttonClass} border-invalid-color/25 bg-transparent text-invalid-color/75 hover:border-invalid-color/40 hover:bg-invalid-color/10 hover:text-invalid-color`;
 
+  const close = () => setOpen((prev) => (prev?.back ? { kind: "pickup", target: rental } : null));
+
   const modal = (
     <Modal
-      isOpen={!!kind}
-      onClose={() => setKind(null)}
+      isOpen={!!open}
+      onClose={() => setOpen(null)}
       noPadding
       isFixed
       patternCloseButton={false}
     >
-      {kind && (
+      {open && (
         <ActionModal
-          rental={rental}
-          order={order}
-          kind={kind}
-          onClose={() => setKind(null)}
+          key={`${open.kind}:${open.target.id}`}
+          rental={open.target}
+          order={open.target.id === rental.id ? order : undefined}
+          kind={open.kind}
+          onClose={close}
+          onCheckOther={(other) => setOpen({ kind: "check", target: other, back: true })}
         />
       )}
     </Modal>
@@ -429,9 +614,11 @@ export default function RentalActions({
   if (compact) {
     const action: ActionKind | null = pickedUp
       ? "return"
-      : pickupAvailable
-        ? "pickup"
-        : null;
+      : toCheck
+        ? "check"
+        : pickupAvailable
+          ? "pickup"
+          : null;
 
     if (!action) return null;
 
@@ -442,7 +629,7 @@ export default function RentalActions({
           className={`${primary} shrink-0 whitespace-nowrap`}
           onClick={() => setKind(action)}
         >
-          {action === "pickup" ? "Registrar retirada" : "Registrar devolução"}
+          {action === "pickup" ? "Registrar retirada" : action === "check" ? "Conferir" : "Registrar devolução"}
         </button>
 
         {modal}
@@ -453,15 +640,22 @@ export default function RentalActions({
   if (finished) {
     return (
       <>
-        <button
-          type="button"
-          aria-label="Excluir aluguel"
-          title="Excluir aluguel"
-          onClick={() => setKind("delete")}
-          className="inline-flex items-center justify-center rounded-lg border border-transparent p-1.5 text-primary-gold/35 transition-colors hover:border-invalid-color/15 hover:bg-invalid-color/10 hover:text-invalid-color"
-        >
-          <LuTrash2 size={14} />
-        </button>
+        <div className="flex items-center gap-1.5">
+          {toCheck && (
+            <button type="button" className={primary} onClick={() => setKind("check")}>
+              <LuClipboardCheck size={13} /> Conferir
+            </button>
+          )}
+          <button
+            type="button"
+            aria-label="Excluir aluguel"
+            title="Excluir aluguel"
+            onClick={() => setKind("delete")}
+            className="inline-flex items-center justify-center rounded-lg border border-transparent p-1.5 text-primary-gold/35 transition-colors hover:border-invalid-color/15 hover:bg-invalid-color/10 hover:text-invalid-color"
+          >
+            <LuTrash2 size={14} />
+          </button>
+        </div>
 
         {modal}
       </>

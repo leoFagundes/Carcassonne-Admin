@@ -17,6 +17,7 @@ import RentalConfigRepository from "@/services/repositories/RentalConfigReposito
 import { DEFAULT_RENTAL_SETTINGS } from "@/rental/defaults";
 import { queueModeOf, type QueueMode } from "@/rental/availability";
 import { weekdaysText } from "@/rental/settingsText";
+import { pendingCheckMode } from "@/rental/returns";
 import OnlinePaymentSection from "./onlinePaymentSettings";
 import { FieldNote, PillChoice, SettingsSection, ToggleRow } from "./settingsBlocks";
 
@@ -184,6 +185,7 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
       allowQueue: local.allowQueue !== false,
       queueMode: queueModeOf(local.queueMode),
       queueGapDays: local.queueGapDays ?? 1,
+      pendingCheckPickup: pendingCheckMode(local),
       ...(email ? { staffEmail: email } : {}),
     };
 
@@ -256,6 +258,11 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
             <p>
               Quantos dias o cliente fica com o jogo é definido em cada jogo (campo “Prazo”), na aba {jogosLink}.
             </p>
+            <p>
+              <strong>Conferência:</strong> ao registrar a devolução, dá para informar o dia em que o cliente devolveu e
+              deixar a contagem das peças para depois. O aluguel fica em “Para conferir” no quadro Hoje até alguém
+              concluir.
+            </p>
           </>
         }
       >
@@ -280,6 +287,23 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
           {local.maxAdvanceDays === 0
             ? "0: o cliente só pode marcar para retirar no mesmo dia."
             : `O cliente pode marcar a retirada de hoje até daqui a ${local.maxAdvanceDays} ${local.maxAdvanceDays === 1 ? "dia" : "dias"}.`}
+        </FieldNote>
+
+        <PillChoice
+          label="Cópia devolvida e ainda não conferida"
+          options={[
+            { value: "block", label: "Bloquear a próxima retirada" },
+            { value: "warn", label: "Só avisar" },
+          ]}
+          value={pendingCheckMode(local)}
+          onChange={(v) => set("pendingCheckPickup", v)}
+        />
+        <FieldNote tone="box">
+          {pendingCheckMode(local) === "block"
+            ? "Quando uma devolução fica para conferir depois, a próxima retirada daquela cópia só é registrada depois que alguém conferir as peças. A tela da retirada mostra o botão “Conferir agora”. Evita entregar um jogo incompleto para o próximo cliente."
+            : "Quando uma devolução fica para conferir depois, a próxima retirada daquela cópia mostra um aviso, mas dá para entregar mesmo assim. Use se a equipe confere na hora da entrega."}{" "}
+          Em qualquer caso, o cliente que devolveu já vê o aluguel como devolvido, e o atraso conta pela data em que ele
+          devolveu, não pela conferência.
         </FieldNote>
       </SettingsSection>
 

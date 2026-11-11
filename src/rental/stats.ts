@@ -1,3 +1,4 @@
+import { returnedLate } from "./returns";
 import type { RentalOrderType, RentalType } from "@/types";
 
 /**
@@ -7,8 +8,6 @@ import type { RentalOrderType, RentalType } from "@/types";
  */
 
 export type RentalStatsPeriod = "30d" | "3m" | "6m" | "1y" | "all";
-
-type Stamp = { toMillis: () => number } | undefined;
 
 const PERIOD_DAYS: Record<Exclude<RentalStatsPeriod, "all">, number> = {
   "30d": 30,
@@ -20,10 +19,6 @@ const PERIOD_DAYS: Record<Exclude<RentalStatsPeriod, "all">, number> = {
 /** Data SP ("YYYY-MM-DD") de um instante em ms. */
 export function spDate(ms: number): string {
   return new Date(ms).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
-}
-
-function stampDate(stamp: Stamp): string | null {
-  return stamp && typeof stamp.toMillis === "function" ? spDate(stamp.toMillis()) : null;
 }
 
 /** Primeiro dia do período (inclusive), ou null para "desde o início". */
@@ -59,16 +54,14 @@ export interface RentalSummary {
 }
 
 export function rentalSummary(
-  rentals: Pick<RentalType, "status" | "price" | "dueDate" | "returnedAt" | "customerUid">[],
+  rentals: Pick<RentalType, "status" | "price" | "dueDate" | "returnedAt" | "returnedOn" | "customerUid">[],
   orders: Pick<RentalOrderType, "payment">[],
   start: string | null,
 ): RentalSummary {
   const active = rentals.filter((r) => !isCanceled(r));
   const returned = rentals.filter((r) => r.status === "returned");
-  const lateReturns = returned.filter((r) => {
-    const back = stampDate(r.returnedAt as Stamp);
-    return back !== null && back > r.dueDate;
-  }).length;
+  // Pela data em que o cliente devolveu (a conferência pode ser dias depois).
+  const lateReturns = returned.filter(returnedLate).length;
   const refunded = orders
     .flatMap((o) => o.payment?.refunds ?? [])
     .filter((f) => !start || spDate(f.at) >= start)

@@ -1,5 +1,6 @@
 "use client";
 
+import { returnDayOf } from "@/rental/returns";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
@@ -112,8 +113,10 @@ function statusInfo(rental: Rental, today: string): { label: string; detail: str
         tone: "text-green-400",
       };
     }
-    case "returned":
-      return { label: "Devolvido", detail: "", tone: "text-primary-gold/60" };
+    case "returned": {
+      const day = returnDayOf(rental);
+      return { label: "Devolvido", detail: day ? `em ${formatDateBR(day)}` : "", tone: "text-primary-gold/60" };
+    }
     default:
       return { label: "Cancelado", detail: "", tone: "text-primary-gold/50" };
   }

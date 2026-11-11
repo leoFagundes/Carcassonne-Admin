@@ -49,10 +49,13 @@ export const emptyRentalGame: RentalGameType = {
 export default function RentalGameForm({
   game,
   closeForms,
+  pendingCheck,
 }: {
   /** Sem `id` = novo jogo. */
   game: RentalGameType;
   closeForms: VoidFunction;
+  /** Cópias devolvidas e ainda sem conferir (id da cópia → texto). */
+  pendingCheck?: ReadonlyMap<string, string>;
 }) {
   const isEdit = !!game.id;
   const { addAlert } = useAlert();
@@ -397,6 +400,7 @@ export default function RentalGameForm({
             setUnits={(units) => set("units", units)}
             bookings={local.bookings}
             today={todaySP()}
+            pendingCheck={pendingCheck}
           />
         </Section>
       </div>

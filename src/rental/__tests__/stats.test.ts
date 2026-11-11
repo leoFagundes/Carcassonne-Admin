@@ -91,6 +91,16 @@ describe("rentalSummary", () => {
     });
     expect(rentalSummary([], [], null)).toMatchObject({ rentals: 0, lateRate: 0, refunded: 0 });
   });
+
+  it("atraso pela data em que o cliente devolveu, não pelo dia do registro/conferência", () => {
+    const rentals = [
+      // devolveu no prazo, registrado dois dias depois
+      rental({ status: "returned", returnedOn: "2026-11-08", returnedAt: ts("2026-11-11T15:00:00Z") }),
+      // devolveu depois do prazo
+      rental({ status: "returned", returnedOn: "2026-11-09", returnedAt: ts("2026-11-09T15:00:00Z") }),
+    ];
+    expect(rentalSummary(rentals, [], null)).toMatchObject({ returned: 2, lateReturns: 1, lateRate: 50 });
+  });
 });
 
 describe("rankings e distribuições", () => {

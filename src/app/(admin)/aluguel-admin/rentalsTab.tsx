@@ -42,7 +42,14 @@ import { rentalAttention } from "@/rental/attention";
 import { counterPaymentText } from "@/rental/adminOrders";
 import { diffDays, formatDateBR } from "@/rental/dates";
 import { formatBRL } from "@/rental/money";
-import RentalActions from "./rentalActions";
+import RentalActions, { RentalListContext } from "./rentalActions";
+import {
+  isCheckPending,
+  pendingCheckMode,
+  returnDayOf,
+  returnedLate,
+  type PendingCheckPickup,
+} from "@/rental/returns";
 import { CustomerModal } from "./customerDetail";
 import {
   formatStamp,
@@ -103,7 +110,7 @@ function TodayAgenda({
       </div>
       {visible.length === 0 ? (
         <p className="text-sm text-emerald-300/90">
-          Nada pendente para hoje: nenhuma retirada, devolução ou atraso.
+          Nada pendente para hoje: nenhuma retirada, devolução, atraso ou conferência.
         </p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -209,7 +216,10 @@ function rentalSituation(
           }
         : { label: "Retirado", tone: "sky" };
     case "returned":
-      return { label: "Devolvido", tone: "green" };
+      if (isCheckPending(rental)) return { label: "Para conferir", tone: "violet" };
+      return returnedLate(rental)
+        ? { label: "Devolvido com atraso", tone: "orange" }
+        : { label: "Devolvido", tone: "green" };
     case "canceled":
       return { label: "Cancelado", tone: "muted" };
   }
@@ -219,6 +229,10 @@ function rentalSituation(
 function dateHint(rental: Rental, today: string): string | null {
   if (rental.status === "reserved" && rental.startDate === today)
     return "retira hoje";
+  if (rental.status === "returned") {
+    const day = returnDayOf(rental);
+    return day ? `devolvido ${formatDateBR(day)}` : null;
+  }
   if (rental.status !== "picked_up" || rental.dueDate < today) return null;
   const left = diffDays(today, rental.dueDate);
   return left === 0 ? "devolve hoje" : `faltam ${plural(left, "dia", "dias")}`;
@@ -567,6 +581,7 @@ export default function RentalsTab() {
   const [orderOpen, setOrderOpen] = useState<string | null>(null);
   const now = useNow();
   const [onlineEnabled, setOnlineEnabled] = useState(false);
+  const [checkMode, setCheckMode] = useState<PendingCheckPickup>("block");
 
   useEffect(() => {
     const unsub = RentalRepository.subscribeToAll((list) => {
@@ -582,9 +597,10 @@ export default function RentalsTab() {
   }, []);
 
   useEffect(() => {
-    const unsub = RentalConfigRepository.subscribeSettings((s) =>
-      setOnlineEnabled(s.onlinePayment.enabled),
-    );
+    const unsub = RentalConfigRepository.subscribeSettings((s) => {
+      setOnlineEnabled(s.onlinePayment.enabled);
+      setCheckMode(pendingCheckMode(s));
+    });
     return () => unsub();
   }, []);
 
@@ -624,9 +640,12 @@ export default function RentalsTab() {
       notPickedUp: rentals.filter(
         (r) => r.status === "reserved" && r.startDate < today,
       ),
+      toCheck: rentals.filter(isCheckPending),
     }),
     [rentals, today],
   );
+
+  const listContext = useMemo(() => ({ rentals, pendingCheckMode: checkMode }), [rentals, checkMode]);
 
   const words = useMemo(() => searchWords(search), [search]);
   const searched = useMemo(
@@ -660,6 +679,7 @@ export default function RentalsTab() {
     ).length;
 
   return (
+    <RentalListContext.Provider value={listContext}>
     <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto">
       <RefundBand orders={attentionOrders} onOpen={(o) => setOrderOpen(o.id)} />
 
@@ -693,6 +713,16 @@ export default function RentalsTab() {
             tone: "border-orange-400/35 text-orange-200",
             rentals: bands.notPickedUp,
             note: (r) => `desde ${formatDateBR(r.startDate)}`,
+          },
+          {
+            key: "toCheck",
+            title: "Para conferir",
+            tone: "border-violet-400/35 text-violet-200",
+            rentals: bands.toCheck,
+            note: (r) => {
+              const day = returnDayOf(r);
+              return day ? `devolvido ${formatDateBR(day)}` : "devolvido";
+            },
           },
         ]}
       />
@@ -839,5 +869,6 @@ export default function RentalsTab() {
         )}
       </Modal>
     </div>
+    </RentalListContext.Provider>
   );
 }

@@ -51,7 +51,7 @@ interface ItemProps {
   /** Pedidos de acesso de admin aguardando aprovação (Usuários). */
   pendingRequests?: number;
   /** Aluguéis que pedem atenção hoje (Aluguel). */
-  rentalCounts?: { pickups: number; returns: number; overdue: number; refunds: number };
+  rentalCounts?: { pickups: number; returns: number; overdue: number; toCheck: number; refunds: number };
 }
 
 function Item({
@@ -134,14 +134,14 @@ function Item({
       )}
       {path === "/aluguel-admin" &&
         !!rentalCounts &&
-        rentalCounts.pickups + rentalCounts.returns + rentalCounts.overdue + rentalCounts.refunds > 0 && (
+        rentalCounts.pickups + rentalCounts.returns + rentalCounts.overdue + rentalCounts.toCheck + rentalCounts.refunds > 0 && (
           <Tooltip
-            content={`${rentalCounts.pickups} ${rentalCounts.pickups === 1 ? "retirada" : "retiradas"}, ${rentalCounts.returns} ${rentalCounts.returns === 1 ? "devolução" : "devoluções"}, ${rentalCounts.overdue} ${rentalCounts.overdue === 1 ? "atrasado" : "atrasados"}${rentalCounts.refunds > 0 ? `, ${rentalCounts.refunds} ${rentalCounts.refunds === 1 ? "reembolso a decidir" : "reembolsos a decidir"}` : ""}`}
+            content={`${rentalCounts.pickups} ${rentalCounts.pickups === 1 ? "retirada" : "retiradas"}, ${rentalCounts.returns} ${rentalCounts.returns === 1 ? "devolução" : "devoluções"}, ${rentalCounts.overdue} ${rentalCounts.overdue === 1 ? "atrasado" : "atrasados"}${rentalCounts.toCheck > 0 ? `, ${rentalCounts.toCheck} para conferir` : ""}${rentalCounts.refunds > 0 ? `, ${rentalCounts.refunds} ${rentalCounts.refunds === 1 ? "reembolso a decidir" : "reembolsos a decidir"}` : ""}`}
             direction="right"
             portal
           >
             <div className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary-gold text-primary-black text-[10px] font-bold animate-pulse">
-              {rentalCounts.pickups + rentalCounts.returns + rentalCounts.overdue + rentalCounts.refunds}
+              {rentalCounts.pickups + rentalCounts.returns + rentalCounts.overdue + rentalCounts.toCheck + rentalCounts.refunds}
             </div>
           </Tooltip>
         )}
@@ -156,7 +156,7 @@ export default function Sidebar() {
   >([]);
   const [activeEventsCount, setActiveEventsCount] = useState(0);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
-  const [rentalCounts, setRentalCounts] = useState({ pickups: 0, returns: 0, overdue: 0, refunds: 0 });
+  const [rentalCounts, setRentalCounts] = useState({ pickups: 0, returns: 0, overdue: 0, toCheck: 0, refunds: 0 });
 
   const { addAlert } = useAlert();
   const router = useRouter();
@@ -215,12 +215,14 @@ export default function Sidebar() {
         prev.pickups === a.pickupsToday &&
         prev.returns === a.returnsToday &&
         prev.overdue === a.overdue &&
+        prev.toCheck === a.toCheck &&
         prev.refunds === a.refundReviews
           ? prev
           : {
               pickups: a.pickupsToday,
               returns: a.returnsToday,
               overdue: a.overdue,
+              toCheck: a.toCheck,
               refunds: a.refundReviews,
             },
       );
