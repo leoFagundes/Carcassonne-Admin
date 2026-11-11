@@ -373,13 +373,13 @@ const helpCards: HelpCard[] = [
     category: "cardapio",
     title: "Como reordenar tipos e subtipos do cardápio",
     description:
-      "Na página Cardápio, clique no ícone de ajustes (tooltip: 'Organizar e popups') no cabeçalho e escolha 'Ordenar tipos e subtipos'. Aqui você cria, edita e reordena os tipos (ex: 'Pratos Quentes') e subtipos (ex: 'Massas') que organizam o cardápio. A ordem definida aqui reflete diretamente na exibição do site.",
+      "Na página Cardápio, clique no ícone de ajustes (tooltip: 'Organizar e popups') no cabeçalho e escolha 'Ordenar tipos e subtipos'. O modal 'Organizar cardápio' tem duas abas. Em 'Categorias' você adiciona tipos (ex: 'Pratos Quentes'), arrasta pela alça (⋮⋮) para mudar a ordem e toca no nome para abrir os subtipos (ex: 'Massas'), que também se arrastam. Categorias usadas nos itens mas fora da lista aparecem como sugestões para adicionar com um toque. Em 'Avisos' você arrasta os avisos. Adicionar e excluir um tipo vale na hora; o resto só vale depois de 'Salvar' (o rodapé mostra 'Alterações não salvas' e pergunta antes de sair sem salvar). Excluir um tipo pede confirmação e não apaga os itens. A ordem definida aqui reflete diretamente na exibição do site.",
   },
   {
     category: "cardapio",
     title: "Como escolher a imagem dos itens sem foto",
     description:
-      "Na página Cardápio, abra 'Ordenar tipos e subtipos' (ícone de ajustes no cabeçalho). Em cada tipo e subtipo há um botão com a ilustração atual: toque nele e escolha uma das oito (chope, drinks, vinhos, sem álcool, pizzas, porções, lanches, sobremesas) ou 'Padrão'. Depois clique em 'Salvar ordem e ilustrações'. A ilustração aparece nos itens sem foto, no site, no admin e no PDF. A do subtipo vale antes da do tipo; sem nenhuma, fica a imagem geral do cardápio. Só aparecem aqui os tipos já adicionados nessa lista. Os jogos sem foto usam sempre a mesma ilustração (peão e dado).",
+      "Na página Cardápio, abra 'Ordenar tipos e subtipos' (ícone de ajustes no cabeçalho). Em cada tipo e subtipo há uma miniatura com a ilustração atual (tracejada quando é a padrão): toque nela e escolha uma das oito (chope, drinks, vinhos, sem álcool, pizzas, porções, lanches, sobremesas) ou 'Padrão'. Depois clique em 'Salvar'. A ilustração aparece nos itens sem foto, no site, no admin e no PDF. A do subtipo vale antes da do tipo; sem nenhuma, fica a imagem geral do cardápio. Só aparecem aqui os tipos já adicionados nessa lista. Os jogos sem foto usam sempre a mesma ilustração (um peão).",
   },
   {
     category: "cardapio",

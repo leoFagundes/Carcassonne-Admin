@@ -315,7 +315,7 @@ export default function MenuPage() {
                 },
                 {
                   label: "Ordenar tipos e subtipos",
-                  description: "Ordem das seções no cardápio",
+                  description: "Ordem, imagens dos itens sem foto e avisos",
                   icon: <LuListOrdered size={15} />,
                   onSelect: () => setIsTypesOrderModalOpen(true),
                 },

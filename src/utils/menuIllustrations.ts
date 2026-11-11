@@ -6,14 +6,14 @@ import type { TypeOrderType } from "@/types";
  * usam sempre a mesma.
  */
 export const MENU_ILLUSTRATIONS = [
-  { id: "chope", label: "Chope e cerveja" },
-  { id: "drink", label: "Drinks" },
-  { id: "vinho", label: "Vinhos" },
-  { id: "sem-alcool", label: "Sem álcool" },
-  { id: "pizza", label: "Pizzas" },
-  { id: "porcao", label: "Porções" },
-  { id: "lanche", label: "Lanches" },
-  { id: "sobremesa", label: "Sobremesas" },
+  { id: "chope", label: "Chope e cerveja", short: "Chope" },
+  { id: "drink", label: "Drinks", short: "Drinks" },
+  { id: "vinho", label: "Vinhos", short: "Vinhos" },
+  { id: "sem-alcool", label: "Sem álcool", short: "Sem álcool" },
+  { id: "pizza", label: "Pizzas", short: "Pizzas" },
+  { id: "porcao", label: "Porções", short: "Porções" },
+  { id: "lanche", label: "Lanches", short: "Lanches" },
+  { id: "sobremesa", label: "Sobremesas", short: "Sobremesas" },
 ] as const;
 
 export type MenuIllustrationId = (typeof MENU_ILLUSTRATIONS)[number]["id"];

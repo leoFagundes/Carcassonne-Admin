@@ -1,6 +1,7 @@
 "use client";
 
 import React, { ReactNode, useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { LuTrash, LuX } from "react-icons/lu";
 
 interface FormCardProps {
@@ -20,6 +21,10 @@ interface FormCardProps {
   loading?: boolean;
   /** Oculta o rodapé por completo (forms com ações próprias no corpo) */
   hideFooter?: boolean;
+  /** Texto ou ações à esquerda do rodapé (ex.: "Alterações não salvas") */
+  footerNote?: ReactNode;
+  /** Corpo com rolagem que listas arrastáveis (Reorder) conseguem medir */
+  layoutScroll?: boolean;
 }
 
 export default function FormCard({
@@ -35,6 +40,8 @@ export default function FormCard({
   onDelete,
   loading = false,
   hideFooter = false,
+  footerNote,
+  layoutScroll = false,
 }: FormCardProps) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
@@ -88,9 +95,15 @@ export default function FormCard({
       />
 
       {/* ── Body ── */}
-      <div className="relative flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-6 flex flex-col gap-4">
-        {children}
-      </div>
+      {layoutScroll ? (
+        <motion.div layoutScroll className="relative flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-6 flex flex-col gap-4">
+          {children}
+        </motion.div>
+      ) : (
+        <div className="relative flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-6 flex flex-col gap-4">
+          {children}
+        </div>
+      )}
 
       {/* ── Footer ── */}
       {!hideFooter && (
@@ -112,7 +125,7 @@ export default function FormCard({
               {confirmingDelete ? "Confirmar exclusão?" : "Excluir"}
             </button>
           )}
-          <div className="flex-1" />
+          {footerNote ? <div className="flex-1 min-w-0">{footerNote}</div> : <div className="flex-1" />}
           <button
             onClick={onClose}
             disabled={loading}
