@@ -119,11 +119,12 @@ export default function TypesOrderForms({
     try {
       setLoading(true);
 
-      // Atualiza cada item individualmente no Firestore
+      // Atualiza cada item individualmente no Firestore (ordem e ilustrações)
+      const failed: string[] = [];
       for (const item of typesOrder) {
         if (!item.id) continue;
 
-        await TypesOrderRepository.update(item.id, {
+        const saved = await TypesOrderRepository.update(item.id, {
           type: {
             ...item.type,
             order: item.type.order,
@@ -133,9 +134,14 @@ export default function TypesOrderForms({
             })),
           },
         });
+        if (!saved) failed.push(item.type.name);
       }
 
-      addAlert("Ordem salva com sucesso!");
+      addAlert(
+        failed.length
+          ? `Não foi possível salvar: ${failed.join(", ")}. Tente novamente.`
+          : "Ordem e ilustrações salvas!",
+      );
     } catch (error) {
       console.error("Erro ao salvar ordenação:", error);
       addAlert("Erro ao salvar a ordem. Tente novamente.");
@@ -164,7 +170,7 @@ export default function TypesOrderForms({
   return (
     <FormCard
       title="Ordenação do cardápio"
-      subtitle="Adicione tipos e arraste para definir a ordem de exibição"
+      subtitle="Adicione tipos, arraste para definir a ordem e escolha a imagem dos itens sem foto"
       icon={<LuListOrdered size={18} />}
       onClose={closeForms}
       maxWidth="sm:max-w-[680px]"
@@ -209,6 +215,10 @@ export default function TypesOrderForms({
             <span className="text-[11px] font-semibold uppercase tracking-widest text-primary-gold/45">
               Ordenar Tipos e Subtipos
             </span>
+            <p className="max-w-[420px] text-center text-[11px] leading-relaxed text-primary-gold/50">
+              A ilustração aparece nos itens sem foto. A da subcategoria vale antes da do tipo; sem nenhuma, fica a
+              imagem geral do cardápio.
+            </p>
             <RecorderTypesOrderList
               items={typesOrder}
               subItemOptions={subtypes}
@@ -223,7 +233,7 @@ export default function TypesOrderForms({
                 <Loader />
               ) : (
                 <>
-                  <LuSave size={13} /> Salvar ordem
+                  <LuSave size={13} /> Salvar ordem e ilustrações
                 </>
               )}
             </button>

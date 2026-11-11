@@ -6,7 +6,7 @@ import ShowcaseImage from "@/components/showcase/showcaseImage";
 import { Highlight } from "@/components/showcase/search";
 import { CatalogBadge, CatalogView, QuickToggle } from "@/components/adminCatalog";
 
-const PLACEHOLDER = "/images/[oficial]-pattern-menu-image.png";
+import { MENU_PLACEHOLDER } from "@/utils/menuIllustrations";
 
 /**
  * Item do cardápio no admin. Tocar abre a edição; os botões de baixo
@@ -18,8 +18,11 @@ export default function MenuCard({
   words,
   onEdit,
   onUpdate,
+  placeholder = MENU_PLACEHOLDER,
 }: {
   item: MenuItemType;
+  /** Imagem quando o item não tem foto (ilustração da categoria). */
+  placeholder?: string;
   view: CatalogView;
   /** Palavras buscadas (destacadas no nome). */
   words: string[];
@@ -62,7 +65,7 @@ export default function MenuCard({
       >
         <ShowcaseImage
           src={item.image}
-          placeholder={PLACEHOLDER}
+          placeholder={placeholder}
           className={`w-12 h-12 rounded-lg shrink-0 ${isHidden ? "opacity-40 grayscale" : ""}`}
         />
         <div className={`flex flex-col gap-0.5 flex-1 min-w-0 ${isHidden ? "opacity-60" : ""}`}>
@@ -98,7 +101,7 @@ export default function MenuCard({
       <div className="relative">
         <ShowcaseImage
           src={item.image}
-          placeholder={PLACEHOLDER}
+          placeholder={placeholder}
           className={`w-full aspect-[4/3] ${isHidden ? "opacity-40 grayscale" : ""}`}
         />
         <div className="absolute top-2 left-2 flex flex-col items-start gap-1">

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <!-- Ilustração padrão (Porções) para itens sem foto. Sem tamanho próprio: ocupa a <img>
+       inteira e o desenho fica centralizado, sem corte. O traço afina nas caixas grandes. -->
+  <style>
+    .l { fill: none; stroke: #e6c56b; stroke-width: 2.25; stroke-linecap: round; stroke-linejoin: round; }
+    .f { fill: #e6c56b; }
+    @media (max-width: 72px), (max-height: 72px) { .l { stroke-width: 2.8; } }
+    @media (min-width: 200px) and (min-height: 200px) { .l { stroke-width: 1.7; } }
+    @media (min-width: 360px) and (min-height: 360px) { .l { stroke-width: 1.3; } }
+  </style>
+  <svg width="100%" height="100%" viewBox="0 0 120 120" preserveAspectRatio="xMidYMid meet">
+    <g class="l">
+      <path d="M45 60 V34 Q45 31 47.5 31 Q50 31 50 34 V61"/>
+      <path d="M52 61.3 V26 Q52 23 54.5 23 Q57 23 57 26 V61.8"/>
+      <path d="M59 62 V31 Q59 28 61.5 28 Q64 28 64 31 V61.9"/>
+      <path d="M66 61.6 V24 Q66 21 68.5 21 Q71 21 71 24 V60.9"/>
+      <path d="M73 60.5 V36 Q73 33 75.5 33 Q78 33 78 36 V59.5"/>
+      <path d="M40 58 Q60 66 80 58 L74 98 H46 Z"/>
+      <path d="M43.6 76 Q60 82 76.4 76"/>
+    </g>
+  </svg>
+</svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <!-- Ilustração padrão (Sobremesas) para itens sem foto. Sem tamanho próprio: ocupa a <img>
+       inteira e o desenho fica centralizado, sem corte. O traço afina nas caixas grandes. -->
+  <style>
+    .l { fill: none; stroke: #e6c56b; stroke-width: 2.25; stroke-linecap: round; stroke-linejoin: round; }
+    .f { fill: #e6c56b; }
+    @media (max-width: 72px), (max-height: 72px) { .l { stroke-width: 2.8; } }
+    @media (min-width: 200px) and (min-height: 200px) { .l { stroke-width: 1.7; } }
+    @media (min-width: 360px) and (min-height: 360px) { .l { stroke-width: 1.3; } }
+  </style>
+  <svg width="100%" height="100%" viewBox="0 0 120 120" preserveAspectRatio="xMidYMid meet">
+    <g class="l">
+      <path d="M40 62 A20 18 0 0 1 80 62"/>
+      <path d="M36 62 H84 Q84 86 60 86 Q36 86 36 62 Z"/>
+      <path d="M53 86 L51 96 H69 L67 86"/>
+      <circle cx="60" cy="38.5" r="5"/>
+      <path d="M61.5 33.8 Q63.5 26 71 24"/>
+      <path d="M49 53 Q51 48.5 56 47.5"/>
+      <path d="M74 50 L86 34 M78 52.5 L89 37.6"/>
+    </g>
+  </svg>
+</svg>

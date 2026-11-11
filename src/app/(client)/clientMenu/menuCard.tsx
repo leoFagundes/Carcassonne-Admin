@@ -4,13 +4,16 @@ import React, { ComponentProps } from "react";
 import { FaStar } from "react-icons/fa";
 import { LuVegan } from "react-icons/lu";
 import ShowcaseImage from "@/components/showcase/showcaseImage";
+import { MENU_PLACEHOLDER } from "@/utils/menuIllustrations";
 
 interface MenuCardProps extends ComponentProps<"div"> {
   item: MenuItemType;
   index: number;
+  /** Imagem quando o item não tem foto (ilustração da categoria). */
+  placeholder?: string;
 }
 
-export default function MenuCard({ item, index, ...props }: MenuCardProps) {
+export default function MenuCard({ item, index, placeholder = MENU_PLACEHOLDER, ...props }: MenuCardProps) {
   return (
     <div
       {...props}
@@ -20,7 +23,7 @@ export default function MenuCard({ item, index, ...props }: MenuCardProps) {
     >
       <div className="relative h-fit w-fit shrink-0">
         <ShowcaseImage
-          placeholder="/images/[oficial]-pattern-menu-image.png"
+          placeholder={placeholder}
           src={item.image}
           className="w-[100px] h-[100px] rounded-md shadow-card transition-shadow duration-200 sm:group-hover:shadow-none"
         />

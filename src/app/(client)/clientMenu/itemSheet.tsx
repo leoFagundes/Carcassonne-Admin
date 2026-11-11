@@ -3,16 +3,18 @@
 import { LuVegan } from "react-icons/lu";
 import DetailSheet from "@/components/showcase/detailSheet";
 import type { MenuItemType } from "@/types";
-
-const PLACEHOLDER_IMAGE = "/images/[oficial]-pattern-menu-image.png";
+import { MENU_PLACEHOLDER } from "@/utils/menuIllustrations";
 
 /** Detalhe de um item do cardápio (gaveta no celular, cartão no computador). */
 export default function ItemSheet({
   item,
   origin,
   onClosed,
+  placeholder = MENU_PLACEHOLDER,
 }: {
   item: MenuItemType;
+  /** Imagem quando o item não tem foto (ilustração da categoria). */
+  placeholder?: string;
   /** Foto do card tocado — de onde a foto sai voando. */
   origin: HTMLElement | null;
   onClosed: () => void;
@@ -20,7 +22,7 @@ export default function ItemSheet({
   return (
     <DetailSheet
       image={item.image}
-      placeholder={PLACEHOLDER_IMAGE}
+      placeholder={placeholder}
       title={item.name}
       subtitle={item.value || undefined}
       origin={origin}

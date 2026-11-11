@@ -10,6 +10,7 @@ import {
 } from "@/types";
 import { LuVegan, LuStar } from "react-icons/lu";
 import { usePubInfo } from "@/contexts/siteConfigProvider";
+import { menuPlaceholderFor } from "@/utils/menuIllustrations";
 
 export type PDFTheme = "black" | "white";
 
@@ -34,6 +35,8 @@ export const PDF_PALETTES: Record<PDFTheme, Palette> = {
 
 const PDFPaletteContext = createContext<Palette>(PDF_PALETTES.black);
 const usePDFPalette = () => useContext(PDFPaletteContext);
+/** Ordenação dos tipos: dela sai a ilustração de quem não tem foto. */
+const PDFTypesOrderContext = createContext<TypeOrderType[]>([]);
 
 type Props = {
   items?: MenuItemType[];
@@ -68,6 +71,7 @@ export default function MenuPDF({
 
   return (
     <PDFPaletteContext.Provider value={PDF_PALETTES[theme]}>
+    <PDFTypesOrderContext.Provider value={typesOrder}>
     <div
       id="cardapio-pdf"
       style={{
@@ -426,6 +430,7 @@ export default function MenuPDF({
         </div>
       </footer>
     </div>
+    </PDFTypesOrderContext.Provider>
     </PDFPaletteContext.Provider>
   );
 }
@@ -516,7 +521,8 @@ function ItemGrid({ items }: { items: MenuItemType[] }) {
 /* ─── Menu item ─── */
 function MenuItem({ item }: { item: MenuItemType }) {
   const { G, G2, BG2, TEXT } = usePDFPalette();
-  const imgSrc = item.image || "/images/[oficial]-pattern-menu-image.png";
+  const placeholder = menuPlaceholderFor(item, useContext(PDFTypesOrderContext), "png");
+  const imgSrc = item.image || placeholder;
 
   return (
     <div
@@ -545,8 +551,8 @@ function MenuItem({ item }: { item: MenuItemType }) {
           backgroundColor: "#0a0a0a",
         }}
         onError={(e) => {
-          (e.target as HTMLImageElement).src =
-            "/images/[oficial]-pattern-menu-image.png";
+          const image = e.target as HTMLImageElement;
+          if (!image.src.endsWith(encodeURI(placeholder))) image.src = placeholder;
         }}
       />
 

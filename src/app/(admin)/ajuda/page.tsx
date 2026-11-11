@@ -377,6 +377,12 @@ const helpCards: HelpCard[] = [
   },
   {
     category: "cardapio",
+    title: "Como escolher a imagem dos itens sem foto",
+    description:
+      "Na página Cardápio, abra 'Ordenar tipos e subtipos' (ícone de ajustes no cabeçalho). Em cada tipo e subtipo há um botão com a ilustração atual: toque nele e escolha uma das oito (chope, drinks, vinhos, sem álcool, pizzas, porções, lanches, sobremesas) ou 'Padrão'. Depois clique em 'Salvar ordem e ilustrações'. A ilustração aparece nos itens sem foto, no site, no admin e no PDF. A do subtipo vale antes da do tipo; sem nenhuma, fica a imagem geral do cardápio. Só aparecem aqui os tipos já adicionados nessa lista. Os jogos sem foto usam sempre a mesma ilustração (peão e dado).",
+  },
+  {
+    category: "cardapio",
     title: "Como exportar o cardápio em PDF",
     description:
       "Na página Cardápio, clique no botão 'PDF' no cabeçalho. Uma versão formatada do cardápio abrirá em uma nova aba, pronta para impressão. Use Ctrl+P no navegador para salvar como PDF ou imprimir diretamente.",

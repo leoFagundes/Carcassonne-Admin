@@ -256,9 +256,13 @@ export interface TypeOrderType {
   type: {
     name: string;
     order: number;
+    /** Ilustração para itens sem foto (id de MENU_ILLUSTRATIONS). */
+    illustration?: string;
     subtypes: {
       name: string;
       order: number;
+      /** Ilustração da subcategoria; vale antes da categoria. */
+      illustration?: string;
     }[];
   };
 }

@@ -8,6 +8,16 @@ import Input from "./input";
 import Button from "./button";
 import { useAlert } from "@/contexts/alertProvider";
 import TypesOrderRepository from "@/services/repositories/TypesOrderRepository";
+import IllustrationPicker, { withIllustration } from "./illustrationPicker";
+import { MENU_ILLUSTRATIONS, illustrationSrc, isMenuIllustration } from "@/utils/menuIllustrations";
+
+/** O que a subcategoria herda quando não tem ilustração própria. */
+function inheritedFrom(type: TypeOrderType["type"]) {
+  const id = type.illustration;
+  if (!isMenuIllustration(id)) return undefined;
+  const label = MENU_ILLUSTRATIONS.find((o) => o.id === id)?.label ?? "";
+  return { src: illustrationSrc(id), label };
+}
 
 interface RecorderListProps {
   items: TypeOrderType[];
@@ -30,6 +40,29 @@ export default function RecorderTypesOrderList({
       order: index,
     }));
     setItems(updatedItems);
+  };
+
+  // Ilustração dos itens sem foto: vai junto quando salvar a ordem
+  const setTypeIllustration = (typeIndex: number, id: string | undefined) => {
+    setItems(
+      items.map((item, i) => (i === typeIndex ? { ...item, type: withIllustration(item.type, id) } : item)),
+    );
+  };
+
+  const setSubtypeIllustration = (typeIndex: number, subIndex: number, id: string | undefined) => {
+    setItems(
+      items.map((item, i) =>
+        i === typeIndex
+          ? {
+              ...item,
+              type: {
+                ...item.type,
+                subtypes: item.type.subtypes.map((s, j) => (j === subIndex ? withIllustration(s, id) : s)),
+              },
+            }
+          : item,
+      ),
+    );
   };
 
   const handleAddSubtype = (typeIndex: number, name: string) => {
@@ -122,6 +155,14 @@ export default function RecorderTypesOrderList({
             </div>
           </div>
 
+          <div className="mt-1">
+            <IllustrationPicker
+              name={item.type.name}
+              value={item.type.illustration}
+              onChange={(id) => setTypeIllustration(typeIndex, id)}
+            />
+          </div>
+
           <div className="mt-2 ml-4">
             <Reorder.Group
               axis="y"
@@ -134,17 +175,25 @@ export default function RecorderTypesOrderList({
                 <Reorder.Item
                   key={sub.name + subIndex}
                   value={sub}
-                  className="pl-2 my-1 text-sm border-l-4 border-primary-gold text-primary-gold py-1 px-2 rounded hover:cursor-grab flex justify-between items-center"
+                  className="pl-2 my-1 text-sm border-l-4 border-primary-gold text-primary-gold py-1 px-2 rounded hover:cursor-grab flex flex-col gap-1"
                 >
-                  <span>
-                    {sub.order}. {sub.name}
-                  </span>
-                  <button
-                    className="p-1 cursor-pointer hover:text-invalid-color transition-all duration-100 ease-in"
-                    onClick={() => handleDeleteSubtype(typeIndex, subIndex)}
-                  >
-                    <LuDelete size={14} />
-                  </button>
+                  <div className="flex justify-between items-center">
+                    <span>
+                      {sub.order}. {sub.name}
+                    </span>
+                    <button
+                      className="p-1 cursor-pointer hover:text-invalid-color transition-all duration-100 ease-in"
+                      onClick={() => handleDeleteSubtype(typeIndex, subIndex)}
+                    >
+                      <LuDelete size={14} />
+                    </button>
+                  </div>
+                  <IllustrationPicker
+                    name={sub.name}
+                    value={sub.illustration}
+                    inherited={inheritedFrom(item.type)}
+                    onChange={(id) => setSubtypeIllustration(typeIndex, subIndex, id)}
+                  />
                 </Reorder.Item>
               ))}
             </Reorder.Group>

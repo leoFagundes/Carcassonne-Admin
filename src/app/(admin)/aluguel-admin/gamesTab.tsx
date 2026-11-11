@@ -25,10 +25,11 @@ import { formatBRL } from "@/rental/money";
 import { todaySP } from "@/rental/dates";
 import RentalGameForm, { emptyRentalGame } from "./rentalGameForm";
 import { unitStatus } from "./unitsEditor";
+import { BOARDGAME_PLACEHOLDER } from "@/utils/menuIllustrations";
 
 type Status = "all" | "active" | "inactive" | "soldout";
 
-const PLACEHOLDER = "/images/[oficial]-pattern-boardgame-image.png";
+const PLACEHOLDER = BOARDGAME_PLACEHOLDER;
 
 function Total({ label, value }: { label: string; value: number }) {
   return (

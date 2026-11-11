@@ -42,6 +42,7 @@ import { useAlert } from "@/contexts/alertProvider";
 import ComboRepository from "@/services/repositories/ComboRepository";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import TypesOrderRepository from "@/services/repositories/TypesOrderRepository";
+import { menuPlaceholderFor } from "@/utils/menuIllustrations";
 import { useRouter } from "next/navigation";
 import Tooltip from "@/components/Tooltip";
 import { foldText, searchWords } from "@/components/showcase/search";
@@ -500,6 +501,7 @@ export default function MenuPage() {
                       item={item}
                       view={view}
                       words={words}
+                      placeholder={menuPlaceholderFor(item, typesOrder)}
                       onEdit={() => {
                         setFormType("edit");
                         setCurrentItem(item);

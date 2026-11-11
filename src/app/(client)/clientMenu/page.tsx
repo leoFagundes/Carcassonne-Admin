@@ -35,6 +35,7 @@ import InfoRepository from "@/services/repositories/InfoRepository";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import Popup from "@/components/popup";
 import TypesOrderRepository from "@/services/repositories/TypesOrderRepository";
+import { menuPlaceholderFor } from "@/utils/menuIllustrations";
 import PopupRepository from "@/services/repositories/PopupRepository";
 import { pickActivePopup } from "@/utils/popupSchedule";
 import ThemeBand from "@/components/siteTheme/ThemeBand";
@@ -372,6 +373,7 @@ export default function ClientMenuPage() {
       data-reveal
       index={index}
       item={item}
+      placeholder={menuPlaceholderFor(item, typesOrder)}
       onClick={(event) =>
         openItem(item, event.currentTarget.querySelector<HTMLElement>(".cm-img"))
       }
@@ -526,6 +528,7 @@ export default function ClientMenuPage() {
           onClose={closeSearch}
           items={searchableItems}
           onPick={goToItem}
+          placeholderFor={(item) => menuPlaceholderFor(item, typesOrder)}
         />
 
         {loading ? (
@@ -668,6 +671,7 @@ export default function ClientMenuPage() {
             item={sheet.item}
             origin={sheet.origin}
             onClosed={closeItem}
+            placeholder={menuPlaceholderFor(sheet.item, typesOrder)}
           />
         )}
         <ScrollUp onSearch={openSearch} searchHintReady={!loading && !isPopupOpen} />

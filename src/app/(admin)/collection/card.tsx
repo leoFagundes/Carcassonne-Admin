@@ -5,8 +5,9 @@ import type { BoardgameType } from "@/types";
 import ShowcaseImage from "@/components/showcase/showcaseImage";
 import { Highlight } from "@/components/showcase/search";
 import { CatalogBadge, CatalogView, QuickToggle } from "@/components/adminCatalog";
+import { BOARDGAME_PLACEHOLDER } from "@/utils/menuIllustrations";
 
-const PLACEHOLDER = "/images/[oficial]-pattern-boardgame-image.png";
+const PLACEHOLDER = BOARDGAME_PLACEHOLDER;
 
 const playersLabel = (game: BoardgameType) =>
   game.minPlayers === game.maxPlayers ? `${game.maxPlayers}` : `${game.minPlayers}–${game.maxPlayers}`;

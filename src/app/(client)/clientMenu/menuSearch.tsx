@@ -8,7 +8,7 @@ import { useBackToClose } from "@/components/useBackToClose";
 import { Highlight, foldText, searchWords } from "@/components/showcase/search";
 import type { MenuItemType } from "@/types";
 
-const PLACEHOLDER_IMAGE = "/images/[oficial]-pattern-menu-image.png";
+import { MENU_PLACEHOLDER } from "@/utils/menuIllustrations";
 
 /**
  * Itens com todas as palavras buscadas (no nome, na descrição ou na
@@ -55,11 +55,14 @@ export default function MenuSearch({
   onClose,
   items,
   onPick,
+  placeholderFor = () => MENU_PLACEHOLDER,
 }: {
   isOpen: boolean;
   onClose: () => void;
   items: MenuItemType[];
   onPick: (item: MenuItemType) => void;
+  /** Imagem de um item sem foto (ilustração da categoria). */
+  placeholderFor?: (item: MenuItemType) => string;
 }) {
   // Fica guardada entre uma abertura e outra (dá para ir de item em item)
   const [query, setQuery] = useState("");
@@ -153,7 +156,7 @@ export default function MenuSearch({
                     className="w-full flex items-start gap-3 p-2 rounded-xl text-left hover:bg-primary-gold/5 active:bg-primary-gold/10 transition-colors cursor-pointer"
                   >
                     <img
-                      src={item.image || PLACEHOLDER_IMAGE}
+                      src={item.image || placeholderFor(item)}
                       alt=""
                       loading="lazy"
                       className="w-14 h-14 rounded-lg object-cover shrink-0 border border-primary-gold/10"
