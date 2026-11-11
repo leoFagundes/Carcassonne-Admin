@@ -25,7 +25,15 @@ service cloud.firestore {
     match /reserves/{docId} {
       allow create: if true;
       allow read: if true;
-      allow update, delete: if isAdmin();
+      // O cliente (sem login) só pode cancelar a reserva em /cancelreserve:
+      // muda apenas status/canceledAt/canceledBy/canceledReason, para "canceled".
+      allow update: if isAdmin()
+        || (resource.data.status != 'canceled'
+            && request.resource.data.status == 'canceled'
+            && request.resource.data.canceledBy == 'user'
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['status', 'canceledAt', 'canceledBy', 'canceledReason']));
+      allow delete: if isAdmin();
     }
 
     match /musicRecommendations/{docId} {
