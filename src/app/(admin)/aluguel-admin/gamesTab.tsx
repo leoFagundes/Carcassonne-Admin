@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { LuChevronRight, LuEye, LuEyeOff, LuPackage, LuPencil, LuPlus } from "react-icons/lu";
-import type { RentalGameType, RentalType } from "@/types";
+import { LuBadgePercent, LuChevronRight, LuEye, LuEyeOff, LuPackage, LuPencil, LuPlus } from "react-icons/lu";
+import type { RentalGameType, RentalSettingsType, RentalType } from "@/types";
+import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
+import { gamePricing } from "@/rental/discounts";
 import Modal from "@/components/modal";
 import ShowcaseImage from "@/components/showcase/showcaseImage";
 import { Highlight, foldText, searchWords } from "@/components/showcase/search";
@@ -50,6 +52,9 @@ export default function GamesTab() {
   const [editing, setEditing] = useState<RentalGameType | null>(null);
   // Devolvidos e ainda sem conferir: a cópia aparece como "Para conferir" no formulário
   const [toCheck, setToCheck] = useState<RentalType[]>([]);
+  // Promoção em todos os jogos (Regras) também aparece no preço dos cartões
+  const [settings, setSettings] = useState<RentalSettingsType | null>(null);
+  useEffect(() => RentalConfigRepository.subscribeSettings(setSettings), []);
   useEffect(() => RentalRepository.subscribeToAll((list) => setToCheck(list.filter(isCheckPending))), []);
   const [view, setView] = useCatalogView("carcassonne-admin-rental-games-view");
   const { addAlert } = useAlert();
@@ -150,15 +155,24 @@ export default function GamesTab() {
         onToggle={() => toggleActive(game)}
       />
     );
+    const pricing = gamePricing(game, settings, today);
     const badges = (
       <>
         {inactive && <CatalogBadge icon={LuEyeOff}>Inativo</CatalogBadge>}
         {soldOut && <CatalogBadge icon={LuPackage}>Esgotado</CatalogBadge>}
+        {pricing.listPrice !== undefined && (
+          <CatalogBadge icon={LuBadgePercent} tone="gold">
+            Promoção {pricing.label}
+          </CatalogBadge>
+        )}
       </>
     );
     const details = (
       <span className="flex items-center gap-2.5 text-[11px] text-primary-gold/55">
-        <span className="font-semibold text-primary-gold/80">{formatBRL(game.price)}</span>
+        {pricing.listPrice !== undefined && <span className="line-through text-primary-gold/40">{formatBRL(pricing.listPrice)}</span>}
+        <span className={`font-semibold ${pricing.listPrice !== undefined ? "text-emerald-300" : "text-primary-gold/80"}`}>
+          {formatBRL(pricing.price)}
+        </span>
         <span>prazo {game.rentalDays} {game.rentalDays === 1 ? "dia" : "dias"}</span>
         <span>{unitsLabel(game)}</span>
       </span>

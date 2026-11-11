@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   LuArrowLeftRight,
+  LuBadgePercent,
   LuCalendarDays,
   LuGauge,
   LuPower,
@@ -18,6 +19,17 @@ import { DEFAULT_RENTAL_SETTINGS } from "@/rental/defaults";
 import { queueModeOf, type QueueMode } from "@/rental/availability";
 import { weekdaysText } from "@/rental/settingsText";
 import { pendingCheckMode } from "@/rental/returns";
+import {
+  MAX_PROMO_MESSAGE,
+  discountFromDraft,
+  discountLabel,
+  draftFromDiscount,
+  isActiveUntil,
+  sanitizePromotion,
+  type DiscountDraft,
+} from "@/rental/discounts";
+import { formatDateBR, todaySP } from "@/rental/dates";
+import DiscountEditor from "./discountEditor";
 import OnlinePaymentSection from "./onlinePaymentSettings";
 import { FieldNote, PillChoice, SettingsSection, ToggleRow } from "./settingsBlocks";
 
@@ -41,7 +53,31 @@ const QUEUE_MODE_OPTIONS: { value: QueueMode; label: string; text: string }[] = 
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-type Draft = Omit<RentalSettingsType, "staffEmail"> & { staffEmail: string };
+/** Promoção como o admin edita: mensagem, desconto em todos os jogos e data final. */
+type PromoDraft = { message: string; all: DiscountDraft; until: string };
+
+type Draft = Omit<RentalSettingsType, "staffEmail" | "promotion"> & { staffEmail: string; promo: PromoDraft };
+
+function toDraft(s: RentalSettingsType): Draft {
+  const { promotion, staffEmail, ...rest } = s;
+  const p = sanitizePromotion(promotion);
+  return {
+    ...rest,
+    staffEmail: staffEmail ?? "",
+    promo: { message: p?.message ?? "", all: draftFromDiscount(p?.allGames), until: p?.until ?? "" },
+  };
+}
+
+/** Resumo da promoção para o cartão do topo. */
+function promoSummary(promo: PromoDraft, today: string): string {
+  const all = discountFromDraft(promo.all, today, { withUntil: false });
+  const parts: string[] = [];
+  if (all.ok && all.discount) parts.push(`${discountLabel(all.discount)} em todos`);
+  if (promo.message.trim()) parts.push("mensagem no topo");
+  if (parts.length === 0) return "Sem promoção geral";
+  if (promo.until && !isActiveUntil(promo.until, today)) return "Promoção vencida";
+  return parts.join(" · ") + (promo.until ? ` · até ${formatDateBR(promo.until)}` : "");
+}
 
 const POLICY_SHORT = { full: "reembolso integral", fee: "reembolso com taxa", manual: "análise manual" } as const;
 
@@ -71,6 +107,7 @@ function Summary({ local }: { local: Draft }) {
       label: "Limites",
       value: `${local.maxGamesPerOrder} por pedido · ${local.maxActiveGamesPerCustomer} por cliente`,
     },
+    { href: "#cfg-promocao", label: "Promoção", value: promoSummary(local.promo, todaySP()) },
     {
       href: "#cfg-pagamento",
       label: "Pagamento",
@@ -109,7 +146,7 @@ const numberWidth = "!w-full sm:!w-[260px] !min-w-0";
 
 export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunction }) {
   const { addAlert } = useAlert();
-  const [local, setLocal] = useState<Draft>({ ...DEFAULT_RENTAL_SETTINGS, staffEmail: "" });
+  const [local, setLocal] = useState<Draft>(() => toDraft(DEFAULT_RENTAL_SETTINGS));
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   // Último estado salvo: para avisar de alterações pendentes.
@@ -120,8 +157,8 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
     const unsub = RentalConfigRepository.subscribeSettings((s) => {
       if (!first) return;
       first = false;
-      setLocal({ ...s, staffEmail: s.staffEmail ?? "" });
-      setSaved({ ...s, staffEmail: s.staffEmail ?? "" });
+      setLocal(toDraft(s));
+      setSaved(toDraft(s));
       setLoaded(true);
     });
     return () => unsub();
@@ -172,6 +209,23 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
       addAlert("Informe um e-mail da equipe válido.");
       return;
     }
+    // Promoção: desconto geral válido, data final que não passou
+    const today = todaySP();
+    const promoAll = discountFromDraft(local.promo.all, today, { withUntil: false });
+    if (!promoAll.ok) {
+      addAlert(promoAll.error);
+      return;
+    }
+    const promoUntil = local.promo.until.trim();
+    if (promoUntil && promoUntil < today) {
+      addAlert("A data final da promoção já passou. Apague a data ou escolha outra.");
+      return;
+    }
+    const promotion = sanitizePromotion({
+      message: local.promo.message,
+      ...(promoAll.discount ? { allGames: { kind: promoAll.discount.kind, value: promoAll.discount.value } } : {}),
+      ...(promoUntil ? { until: promoUntil } : {}),
+    });
 
     // Firestore recusa `undefined`: staffEmail só entra quando preenchido
     const payload: RentalSettingsType = {
@@ -186,6 +240,7 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
       queueMode: queueModeOf(local.queueMode),
       queueGapDays: local.queueGapDays ?? 1,
       pendingCheckPickup: pendingCheckMode(local),
+      ...(promotion ? { promotion } : {}),
       ...(email ? { staffEmail: email } : {}),
     };
 
@@ -406,6 +461,72 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
             width="!w-full !max-w-none !min-w-0"
           />
         </div>
+      </SettingsSection>
+
+      {/* Promoção */}
+      <SettingsSection
+        id="cfg-promocao"
+        icon={<LuBadgePercent size={18} />}
+        title="Promoção"
+        summary="Mensagem no topo da página de jogos e desconto em todos os jogos de uma vez."
+        info={
+          <>
+            <p>
+              A <strong>mensagem</strong> aparece num aviso no topo da página de jogos do cliente (ex.: “Semana do
+              jogo de cartas: 20% em todos”).
+            </p>
+            <p>
+              O <strong>desconto em todos os jogos</strong> vale para os pedidos feitos enquanto ele estiver ligado. Cada
+              jogo também pode ter a própria promoção (no cadastro do jogo); quando as duas valem, o cliente paga a que
+              deixar o jogo mais barato. Os descontos não se somam e nenhum jogo fica abaixo de R$ 1,00.
+            </p>
+            <p>
+              Com <strong>Vale até</strong>, a mensagem e o desconto geral somem sozinhos depois desse dia. Aluguéis já
+              feitos mantêm o preço que o cliente pagou.
+            </p>
+          </>
+        }
+      >
+        <Input
+          labelSpace
+          label="Mensagem no topo da página de jogos"
+          placeholder="Ex.: Semana do jogo de cartas: 20% de desconto em todos os jogos!"
+          value={local.promo.message}
+          setValue={(e) => set("promo", { ...local.promo, message: e.target.value.slice(0, MAX_PROMO_MESSAGE) })}
+          multiline
+          rows={2}
+          variant
+          width="!w-full !max-w-none !min-w-0"
+        />
+        <FieldNote>
+          {local.promo.message.trim()
+            ? `Aparece para o cliente no topo da página de jogos. ${local.promo.message.length}/${MAX_PROMO_MESSAGE} caracteres.`
+            : "Vazio: nenhum aviso de promoção aparece para o cliente."}
+        </FieldNote>
+        <DiscountEditor
+          draft={local.promo.all}
+          onChange={(all) => set("promo", { ...local.promo, all })}
+          today={todaySP()}
+          withUntil={false}
+          title="Desconto em todos os jogos"
+          description="Vale para todos os jogos do catálogo. Jogo com promoção própria maior continua com a dele."
+        />
+        <Input
+          labelSpace
+          type="date"
+          label="Vale até (opcional)"
+          placeholder="Vale até"
+          min={todaySP()}
+          value={local.promo.until}
+          setValue={(e) => set("promo", { ...local.promo, until: e.target.value })}
+          variant
+          width="!w-full sm:!w-[220px] !min-w-0"
+        />
+        <FieldNote>
+          {local.promo.until
+            ? `A mensagem e o desconto geral valem até ${formatDateBR(local.promo.until)} (inclusive) e depois somem sozinhos.`
+            : "Sem data: valem até você desligar."}
+        </FieldNote>
       </SettingsSection>
 
       {/* 5. Cadastro e avisos */}

@@ -14,6 +14,8 @@ import RentalConfigRepository from "@/services/repositories/RentalConfigReposito
 import { availabilityOptions, gameAvailability, queueWindows } from "@/rental/availability";
 import { withLiveBookings } from "@/rental/payments";
 import { todaySP } from "@/rental/dates";
+import { gamePricing, promotionMessage } from "@/rental/discounts";
+import { PromoBanner } from "./priceTag";
 import ScrollUp from "@/components/scrollUp";
 import ThemeBand from "@/components/siteTheme/ThemeBand";
 import Counter from "@/components/mage-ui/text/counter";
@@ -356,6 +358,11 @@ export default function RentalShowcase() {
                   Serviço desativado — só você está vendo
                 </div>
               )}
+              {!loading && promotionMessage(settings, today) && (
+                <div className="mt-4 flex w-full justify-center">
+                  <PromoBanner message={promotionMessage(settings, today)!} />
+                </div>
+              )}
 
               <div className="gc-collapse w-full max-w-6xl" data-open={chips.length > 0}>
                 <div>
@@ -479,6 +486,7 @@ export default function RentalShowcase() {
                       view={view}
                       words={words}
                       availability={gameAvailability(withLiveBookings(game, Date.now()), today, availabilityOptions(settings))}
+                      pricing={gamePricing(game, settings, today)}
                       onOpen={(item, origin) => setDetail({ game: item, origin })}
                     />
                   ))}
@@ -513,6 +521,7 @@ export default function RentalShowcase() {
               today,
               availabilityOptions(settings),
             )}
+            pricing={gamePricing(active.find((game) => game.id === detail.game.id) ?? detail.game, settings, today)}
             inCart={cart.has(detail.game.id)}
             windows={queueWindows(availabilityOptions(settings))}
             onAdd={() => cart.add(detail.game.id)}
@@ -522,7 +531,10 @@ export default function RentalShowcase() {
 
         <CartBar
           count={cart.gameIds.length}
-          total={cart.gameIds.reduce((sum, id) => sum + (active.find((g) => g.id === id)?.price ?? 0), 0)}
+          total={cart.gameIds.reduce((sum, id) => {
+            const game = active.find((g) => g.id === id);
+            return sum + (game ? gamePricing(game, settings, today).price : 0);
+          }, 0)}
         />
 
         <ScrollUp onlyScrollTop />

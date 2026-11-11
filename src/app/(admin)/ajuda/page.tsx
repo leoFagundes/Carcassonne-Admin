@@ -254,6 +254,12 @@ const helpCards: HelpCard[] = [
   },
   {
     category: "aluguel",
+    title: "Como colocar jogos em promoção",
+    description:
+      "Num jogo só: em Aluguel → Jogos, abra o jogo e ligue 'Em promoção' (abaixo do preço). Escolha % (1 a 90) ou R$ (valor que sai do preço), e se quiser uma data em 'Vale até' — depois desse dia a promoção some sozinha. A prévia mostra o preço de/por. Em todos os jogos: em Aluguel → Regras → Configurações do serviço → 'Promoção', ligue 'Desconto em todos os jogos'. Ali também fica a 'Mensagem no topo da página de jogos', um aviso que o cliente vê no alto do catálogo (ex.: 'Semana do jogo de cartas: 20% em todos'); o 'Vale até' dessa seção vale para a mensagem e para o desconto geral. Os descontos não se somam: quando o jogo tem promoção própria e há desconto geral, o cliente paga o que deixar o jogo mais barato. Nenhum jogo fica abaixo de R$ 1,00. O cliente vê o preço cheio riscado, o novo preço e o selo com o desconto no catálogo, no detalhe, no carrinho e no pedido. O desconto vale para os pedidos feitos enquanto a promoção estiver ativa (também no aluguel pelo balcão); aluguéis já feitos mantêm o preço pago, e na lista de aluguéis o preço cheio aparece riscado ao lado do valor pago.",
+  },
+  {
+    category: "aluguel",
     title: "Como alterar a data de devolução (estender o prazo)",
     description:
       "Na aba 'Aluguéis', use 'Alterar devolução' num aluguel reservado ou retirado para combinar um prazo diferente com o cliente. A nova data não pode ser anterior à retirada nem cruzar a próxima reserva da mesma cópia — nesse caso aparece 'A nova data cruza com outra reserva desta cópia.'.",

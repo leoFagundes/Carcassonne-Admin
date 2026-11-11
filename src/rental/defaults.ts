@@ -1,5 +1,6 @@
 import type { RentalRulesType, RentalSettingsType } from "@/types";
 import { clampFeePercent } from "./payments";
+import { sanitizePromotion } from "./discounts";
 
 export const DEFAULT_RENTAL_SETTINGS: RentalSettingsType = {
   isEnabled: false,
@@ -27,9 +28,14 @@ function clampNumber(value: unknown, min: number, max: number, fallback: number)
  */
 export function mergeRentalSettings(saved?: Partial<RentalSettingsType>): RentalSettingsType {
   const onlinePayment = { ...DEFAULT_RENTAL_SETTINGS.onlinePayment, ...saved?.onlinePayment };
+  // Promoção editada à mão ou vazia: só fica o que é válido (nada útil = sem promoção).
+  const promotion = sanitizePromotion(saved?.promotion);
+  const { promotion: _rawPromotion, ...rest } = saved ?? {};
+  void _rawPromotion;
   return {
     ...DEFAULT_RENTAL_SETTINGS,
-    ...saved,
+    ...rest,
+    ...(promotion ? { promotion } : {}),
     // Folga entre aluguéis da mesma cópia: 1 a 14 dias (inválida → 1).
     queueGapDays: clampNumber(Math.round(Number(saved?.queueGapDays ?? 1)), 1, 14, 1),
     onlinePayment: {

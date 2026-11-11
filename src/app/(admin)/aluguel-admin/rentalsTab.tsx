@@ -411,10 +411,16 @@ function RentalRow({
           <span className="block text-[10px] uppercase tracking-wide text-primary-gold/35">
             Valor
           </span>
+          {rental.listPrice !== undefined && rental.listPrice > rental.price && (
+            <span className="block text-[10px] text-primary-gold/40 line-through">
+              {formatBRL(rental.listPrice)}
+            </span>
+          )}
           <span
             className={`text-sm font-semibold text-primary-gold/90 ${
               canceled ? "line-through" : ""
             }`}
+            title={rental.listPrice !== undefined && rental.listPrice > rental.price ? "Alugado em promoção" : undefined}
           >
             {formatBRL(rental.price)}
           </span>

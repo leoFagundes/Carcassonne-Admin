@@ -2,6 +2,7 @@ import { availabilityOptions, bookingEnd, dueDateFor, pickUnit, type GameLike } 
 import { sameRulesVersion } from "./rulesVersion";
 import { isValidCpf } from "./cpf";
 import { addDays, weekdayOf } from "./dates";
+import { gamePricing } from "./discounts";
 import type {
   RentalBooking,
   RentalCustomerType,
@@ -51,7 +52,10 @@ export type PlannedItem = {
   unitLabel: string;
   startDate: string;
   dueDate: string;
+  /** O que o cliente paga (com a promoção que valer hoje). */
   price: number;
+  /** Preço cheio, só quando há desconto. */
+  listPrice?: number;
   rentalDays: number;
 };
 
@@ -131,13 +135,16 @@ export function planItems(
     const unitId = pickUnit(game, startDate, today, availabilityOptions(settings));
     if (unitId === null) return fail("game_unavailable", gameId);
     const unitLabel = game.units.find((u) => u.id === unitId)?.label ?? unitId;
+    // Promoção do dia do pedido (do jogo ou de todos): o servidor decide o preço.
+    const pricing = gamePricing(game, settings, today);
     items.push({
       gameId,
       unitId,
       unitLabel,
       startDate,
       dueDate: dueDateFor(startDate, game.rentalDays, availabilityOptions(settings)),
-      price: game.price,
+      price: pricing.price,
+      ...(pricing.listPrice !== undefined ? { listPrice: pricing.listPrice } : {}),
       rentalDays: game.rentalDays,
     });
   }
@@ -195,6 +202,7 @@ export function buildOrderRecords(items: PlannedItem[], meta: OrderRecordsMeta):
       unitId: item.unitId,
       unitLabel: item.unitLabel,
       price: item.price,
+      ...(item.listPrice !== undefined ? { listPrice: item.listPrice } : {}),
       rentalDays: item.rentalDays,
       startDate: item.startDate,
       dueDate: item.dueDate,

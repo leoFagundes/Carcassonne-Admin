@@ -397,6 +397,11 @@ function MinhaContaContent() {
                               {rental.gameName}
                             </span>
                             <span className={`shrink-0 text-xs ${canceled ? "line-through text-primary-gold/40" : "text-primary-gold/70"}`}>
+                              {!canceled && rental.listPrice !== undefined && rental.listPrice > rental.price && (
+                                <span className="mr-1 text-[10px] text-primary-gold/40 line-through">
+                                  {formatBRL(rental.listPrice)}
+                                </span>
+                              )}
                               {formatBRL(rental.price)}
                             </span>
                           </div>

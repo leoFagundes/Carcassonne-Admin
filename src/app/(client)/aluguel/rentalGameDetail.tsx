@@ -22,10 +22,11 @@ import {
   playersLabel,
 } from "@/app/(client)/clientCollection/collectionUtils";
 import type { GameAvailability } from "@/rental/availability";
-import { formatBRL } from "@/rental/money";
 import { formatDateBR, todaySP } from "@/rental/dates";
 import { liveBookings } from "@/rental/payments";
 import AvailabilityBadge from "./availabilityBadge";
+import type { GamePricing } from "@/rental/discounts";
+import { PriceTag, PromoBadge } from "./priceTag";
 import { asBoardgame, type RentalGameWithId } from "./rentalGameCard";
 
 function Stat({
@@ -54,6 +55,7 @@ export default function RentalGameDetail({
   game,
   origin,
   availability,
+  pricing,
   inCart,
   onAdd,
   onClosed,
@@ -64,6 +66,8 @@ export default function RentalGameDetail({
   game: RentalGameWithId;
   origin: HTMLElement | null;
   availability: GameAvailability;
+  /** Preço de hoje (com a promoção que valer). */
+  pricing: GamePricing;
   inCart: boolean;
   onAdd: () => void;
   onClosed: () => void;
@@ -118,14 +122,17 @@ export default function RentalGameDetail({
       title={game.name}
       subtitle={
         <span className="flex items-center gap-1.5 text-lg font-bold">
-          <LuTag size={15} /> {formatBRL(game.price)}
+          <LuTag size={15} /> <PriceTag pricing={pricing} variant="large" />
         </span>
       }
       badges={
-        <AvailabilityBadge
-          availability={availability}
-          className="!text-xs !px-2.5 !py-1"
-        />
+        <>
+          <AvailabilityBadge
+            availability={availability}
+            className="!text-xs !px-2.5 !py-1"
+          />
+          <PromoBadge pricing={pricing} className="!text-xs !px-2.5 !py-1" />
+        </>
       }
       origin={origin}
       onClosed={onClosed}

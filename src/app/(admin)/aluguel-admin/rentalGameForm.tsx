@@ -29,6 +29,8 @@ import { formatBRL, parseBRL } from "@/rental/money";
 import { todaySP } from "@/rental/dates";
 import { withLiveBookings } from "@/rental/payments";
 import UnitsEditor from "./unitsEditor";
+import DiscountEditor from "./discountEditor";
+import { discountFromDraft, draftFromDiscount } from "@/rental/discounts";
 
 export const emptyRentalGame: RentalGameType = {
   name: "",
@@ -69,6 +71,7 @@ export default function RentalGameForm({
     isEdit ? game : { ...game, units: [{ ...game.units[0], id: crypto.randomUUID() }] },
   );
   const [priceText, setPriceText] = useState(game.price > 0 ? formatBRL(game.price) : "");
+  const [promo, setPromo] = useState(() => draftFromDiscount(game.discount));
   const [loading, setLoading] = useState(false);
   const [pubGames, setPubGames] = useState<BoardgameType[]>([]);
   const [importId, setImportId] = useState("");
@@ -146,6 +149,11 @@ export default function RentalGameForm({
       addAlert("O prazo deve ser um número inteiro de 1 a 60 dias.");
       return;
     }
+    const promoResult = discountFromDraft(promo, todaySP(), { price });
+    if (!promoResult.ok) {
+      addAlert(promoResult.error);
+      return;
+    }
 
     // Firestore recusa `undefined`: monta o payload só com chaves definidas
     const units = local.units.map((u) => {
@@ -166,6 +174,8 @@ export default function RentalGameForm({
       rentalDays: local.rentalDays,
       isActive: local.isActive,
       units,
+      // null = sem promoção própria (apaga a anterior)
+      discount: promoResult.discount,
       ...(local.sourceBoardgameId ? { sourceBoardgameId: local.sourceBoardgameId } : {}),
     };
 
@@ -393,6 +403,14 @@ export default function RentalGameForm({
               com o jogo.
             </p>
           )}
+          <DiscountEditor
+            draft={promo}
+            onChange={setPromo}
+            today={todaySP()}
+            price={pricePreview}
+            title="Em promoção"
+            description="O cliente vê o preço cheio riscado e o novo preço, com o selo de promoção. Se houver promoção em todos os jogos (Regras), vale a que deixar o jogo mais barato."
+          />
           <Checkbox
             checked={local.isActive}
             setChecked={() => set("isActive", !local.isActive)}

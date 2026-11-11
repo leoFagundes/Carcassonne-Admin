@@ -46,6 +46,8 @@ import RentalSteps from "../rentalSteps";
 import { CopyCode, NextSteps, dayLabel } from "../orderBits";
 import { RulesLink } from "../rulesSheet";
 import { formatRulesVersion } from "@/rental/rulesVersion";
+import { gamePricing } from "@/rental/discounts";
+import { PriceTag } from "../priceTag";
 
 type Game = RentalGameType & { id: string };
 
@@ -164,7 +166,9 @@ export default function PedidoPage() {
   const validGames = items.flatMap((i) => (i.game ? [i.game] : []));
   const hasInvalid = items.some((i) => !i.game);
   const tooMany = !!settings && cart.gameIds.length > settings.maxGamesPerOrder;
-  const total = validGames.reduce((sum, g) => sum + g.price, 0);
+  // Mesmo cálculo do servidor: a promoção que valer hoje (do jogo ou de todos)
+  const total = validGames.reduce((sum, g) => sum + gamePricing(g, settings, today).price, 0);
+  const fullTotal = validGames.reduce((sum, g) => sum + g.price, 0);
 
   function changeDate(date: string) {
     setChosenDate(date);
@@ -455,11 +459,7 @@ export default function PedidoPage() {
                         >
                           {game ? game.name : "Jogo removido"}
                         </span>
-                        {game && (
-                          <span className="shrink-0 text-sm font-semibold">
-                            {formatBRL(game.price)}
-                          </span>
-                        )}
+                        {game && <PriceTag pricing={gamePricing(game, settings, today)} variant="inline" />}
                       </div>
                       {!game ? (
                         <span className="text-xs text-orange-200">
@@ -824,7 +824,12 @@ export default function PedidoPage() {
             <div className="sticky bottom-3 z-30 flex items-center gap-3 rounded-2xl border border-primary-gold/30 bg-primary-black/90 backdrop-blur p-3 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
               <div className="flex flex-col leading-tight">
                 <span className="text-[11px] text-primary-gold/55">Total</span>
-                <span className="text-lg font-bold">{formatBRL(total)}</span>
+                <span className="flex items-baseline gap-1.5">
+                  {fullTotal > total && (
+                    <span className="text-xs text-primary-gold/45 line-through">{formatBRL(fullTotal)}</span>
+                  )}
+                  <span className="text-lg font-bold">{formatBRL(total)}</span>
+                </span>
               </div>
               <button
                 type="button"

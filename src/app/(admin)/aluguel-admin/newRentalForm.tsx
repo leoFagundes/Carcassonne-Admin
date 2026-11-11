@@ -1,5 +1,6 @@
 "use client";
 
+import { gamePricing } from "@/rental/discounts";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   LuBanknote,
@@ -183,7 +184,8 @@ export default function NewRentalForm({ onClose, onAgain }: { onClose: () => voi
   );
 
   const pickedGames = games.filter((g) => picked.includes(g.id));
-  const fullTotal = pickedGames.reduce((sum, g) => sum + g.price, 0);
+  // Mesmo preço do servidor: a promoção que valer hoje
+  const fullTotal = pickedGames.reduce((sum, g) => sum + gamePricing(g, settings, today).price, 0);
   const choice: AdminPaymentChoice =
     kind === "paid" ? { kind, method } : kind === "courtesy" ? { kind, reason } : { kind };
   const pickupAllowed = canPickupNow(choice, startDate, today);
@@ -532,7 +534,19 @@ export default function NewRentalForm({ onClose, onAgain }: { onClose: () => voi
                         : `Ocupado nesta data · ${availabilityLabel(gameAvailability(g, today, opts))}`}
                     </span>
                   </span>
-                  <span className="shrink-0 text-xs font-semibold text-primary-gold/80">{formatBRL(g.price)}</span>
+                  {(() => {
+                    const p = gamePricing(g, settings, today);
+                    return (
+                      <span className="flex shrink-0 flex-col items-end leading-tight">
+                        {p.listPrice !== undefined && (
+                          <span className="text-[10px] text-primary-gold/40 line-through">{formatBRL(p.listPrice)}</span>
+                        )}
+                        <span className={`text-xs font-semibold ${p.listPrice !== undefined ? "text-emerald-300" : "text-primary-gold/80"}`}>
+                          {formatBRL(p.price)}
+                        </span>
+                      </span>
+                    );
+                  })()}
                 </button>
               </li>
             );

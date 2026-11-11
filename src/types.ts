@@ -495,6 +495,24 @@ export interface RentalBooking {
   holdUntil?: number;
 }
 
+/** Desconto do aluguel: percentual (1 a 90) ou valor em centavos. */
+export interface RentalDiscount {
+  kind: "percent" | "amount";
+  value: number;
+  /** Último dia da promoção ("YYYY-MM-DD", inclusive); ausente = até desligar. */
+  until?: string;
+}
+
+/** Promoção das configurações: mensagem no topo do catálogo e/ou desconto em todos os jogos. */
+export interface RentalPromotion {
+  /** Mensagem no topo da página de jogos do cliente. */
+  message?: string;
+  /** Desconto em todos os jogos (o `until` vale para tudo). */
+  allGames?: Pick<RentalDiscount, "kind" | "value">;
+  /** Último dia da mensagem e do desconto geral ("YYYY-MM-DD"). */
+  until?: string;
+}
+
 export interface RentalGameType {
   id?: string;
   name: string;
@@ -510,6 +528,8 @@ export interface RentalGameType {
   isActive: boolean;
   units: RentalUnit[];
   bookings: RentalBooking[];
+  /** Promoção deste jogo; null/ausente = sem desconto próprio. */
+  discount?: RentalDiscount | null;
   sourceBoardgameId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
@@ -528,7 +548,10 @@ export interface RentalType {
   gameName: string;
   unitId: string;
   unitLabel: string;
+  /** O que o cliente paga por este jogo (já com desconto). */
   price: number;
+  /** Preço cheio, quando o aluguel saiu com desconto. */
+  listPrice?: number;
   rentalDays: number;
   startDate: string;
   dueDate: string;
@@ -622,6 +645,8 @@ export interface RentalSettingsType {
    * dela até alguém conferir; "warn" só avisa e deixa entregar. Ausente = "block".
    */
   pendingCheckPickup?: "block" | "warn";
+  /** Promoção: mensagem no topo do catálogo e desconto em todos os jogos. */
+  promotion?: RentalPromotion;
 }
 
 export interface RentalRuleSection {

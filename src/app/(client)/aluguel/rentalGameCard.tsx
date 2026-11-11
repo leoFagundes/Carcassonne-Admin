@@ -13,8 +13,9 @@ import {
   playersLabel,
 } from "@/app/(client)/clientCollection/collectionUtils";
 import type { GameAvailability } from "@/rental/availability";
-import { formatBRL } from "@/rental/money";
+import type { GamePricing } from "@/rental/discounts";
 import AvailabilityBadge from "./availabilityBadge";
+import { PriceTag, PromoBadge } from "./priceTag";
 
 export type RentalGameWithId = RentalGameType & { id: string };
 
@@ -29,12 +30,15 @@ export default function RentalGameCard({
   view,
   words,
   availability,
+  pricing,
   onOpen,
 }: {
   game: RentalGameWithId;
   view: CollectionView;
   words: string[];
   availability: GameAvailability;
+  /** Preço de hoje (com a promoção que valer). */
+  pricing: GamePricing;
   onOpen: (game: RentalGameWithId, origin: HTMLElement | null) => void;
 }) {
   const open = (event: MouseEvent<HTMLElement>) =>
@@ -68,10 +72,11 @@ export default function RentalGameCard({
           </span>
           <span className="flex items-center gap-2 flex-wrap">
             <AvailabilityBadge availability={availability} short />
+            <PromoBadge pricing={pricing} />
             <DifficultyMeter difficulty={game.difficulty} />
           </span>
         </div>
-        <span className="text-sm font-bold text-primary-gold shrink-0">{formatBRL(game.price)}</span>
+        <PriceTag pricing={pricing} variant="inline" />
         <LuChevronRight size={16} className="text-primary-gold/30 shrink-0" />
       </article>
     );
@@ -92,8 +97,9 @@ export default function RentalGameCard({
         />
         <div className="absolute inset-0 rounded-t-[11px] bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
         <AvailabilityBadge availability={availability} short className="absolute top-2 left-2 max-w-[calc(100%-1rem)]" />
-        <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-lg bg-primary-gold text-primary-black text-xs font-bold shadow-card">
-          {formatBRL(game.price)}
+        <PromoBadge pricing={pricing} className="absolute bottom-2 left-2" />
+        <span className="absolute bottom-2 right-2">
+          <PriceTag pricing={pricing} variant="chip" />
         </span>
       </div>
       <div className="flex flex-col gap-1.5 p-2.5 sm:p-3 flex-1">
