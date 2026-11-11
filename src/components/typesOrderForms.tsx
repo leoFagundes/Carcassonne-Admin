@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Reorder } from "framer-motion";
+import { MotionConfig, Reorder } from "framer-motion";
 import { LuInfo, LuLayers, LuListOrdered, LuPlus } from "react-icons/lu";
 import { useAlert } from "@/contexts/alertProvider";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
@@ -45,7 +45,10 @@ function moved<T>(list: readonly T[], index: number, delta: -1 | 1): T[] {
  * dos itens sem foto) e ordem dos avisos. Adicionar e excluir uma categoria
  * grava na hora; o resto fica pendente até "Salvar".
  */
-export default function TypesOrderForms({ currentTypeOrder, closeForms }: TypesOrderFormsProps) {
+export default function TypesOrderForms({
+  currentTypeOrder,
+  closeForms,
+}: TypesOrderFormsProps) {
   const { addAlert } = useAlert();
   const [tab, setTab] = useState<Tab>("categorias");
   const [loadingData, setLoadingData] = useState(true);
@@ -101,16 +104,26 @@ export default function TypesOrderForms({ currentTypeOrder, closeForms }: TypesO
   }, [dirty]);
 
   const counts = useMemo(() => countItems(menuItems), [menuItems]);
-  const missing = useMemo(() => missingTypes(menuItems, types), [menuItems, types]);
+  const missing = useMemo(
+    () => missingTypes(menuItems, types),
+    [menuItems, types],
+  );
 
   async function addType(raw: string) {
-    const error = nameError(raw, types.map((t) => t.type.name), "categoria");
+    const error = nameError(
+      raw,
+      types.map((t) => t.type.name),
+      "categoria",
+    );
     if (error) return addAlert(error);
     const name = raw.trim();
     setAdding(true);
-    const created = await TypesOrderRepository.create({ type: { name, order: types.length, subtypes: [] } });
+    const created = await TypesOrderRepository.create({
+      type: { name, order: types.length, subtypes: [] },
+    });
     setAdding(false);
-    if (!created) return addAlert(`Não foi possível adicionar "${name}". Tente novamente.`);
+    if (!created)
+      return addAlert(`Não foi possível adicionar "${name}". Tente novamente.`);
     setTypes((prev) => [...prev, created]);
     setSavedTypes((prev) => [...prev, created]);
     setBaselineTypes((prev) => [...prev, created]);
@@ -120,18 +133,24 @@ export default function TypesOrderForms({ currentTypeOrder, closeForms }: TypesO
 
   async function deleteType(entry: TypeOrderType) {
     if (!entry.id) {
-      addAlert("Categoria não encontrada no banco. Recarregue a página e tente de novo.");
+      addAlert(
+        "Categoria não encontrada no banco. Recarregue a página e tente de novo.",
+      );
       return;
     }
     const ok = await TypesOrderRepository.delete(entry.id);
     if (!ok) {
-      addAlert(`Não foi possível excluir "${entry.type.name}". Tente novamente.`);
+      addAlert(
+        `Não foi possível excluir "${entry.type.name}". Tente novamente.`,
+      );
       return;
     }
     setTypes((prev) => prev.filter((e) => e.id !== entry.id));
     setSavedTypes((prev) => prev.filter((e) => e.id !== entry.id));
     setBaselineTypes((prev) => prev.filter((e) => e.id !== entry.id));
-    addAlert(`"${entry.type.name}" saiu da organização. Os itens continuam no cardápio.`);
+    addAlert(
+      `"${entry.type.name}" saiu da organização. Os itens continuam no cardápio.`,
+    );
   }
 
   async function save() {
@@ -147,10 +166,16 @@ export default function TypesOrderForms({ currentTypeOrder, closeForms }: TypesO
           else failed.push(type.name);
         }
         const before = new Map(savedTypes.map((e) => [e.id, e]));
-        const failedIds = new Set(pending.filter((p) => !okIds.has(p.id)).map((p) => p.id));
+        const failedIds = new Set(
+          pending.filter((p) => !okIds.has(p.id)).map((p) => p.id),
+        );
         setTypes(nextTypes);
         // O que falhou continua como estava no banco, e a tela segue pendente
-        setSavedTypes(nextTypes.map((e) => (e.id && failedIds.has(e.id) ? (before.get(e.id) ?? e) : e)));
+        setSavedTypes(
+          nextTypes.map((e) =>
+            e.id && failedIds.has(e.id) ? (before.get(e.id) ?? e) : e,
+          ),
+        );
         if (failedIds.size === 0) setBaselineTypes(nextTypes);
       }
 
@@ -171,7 +196,11 @@ export default function TypesOrderForms({ currentTypeOrder, closeForms }: TypesO
         }
       }
 
-      addAlert(failed.length ? `Não foi possível salvar: ${failed.join(", ")}. Tente novamente.` : "Organização salva!");
+      addAlert(
+        failed.length
+          ? `Não foi possível salvar: ${failed.join(", ")}. Tente novamente.`
+          : "Organização salva!",
+      );
     } catch (error) {
       addAlert(`Erro ao salvar: ${error}`);
     } finally {
@@ -205,164 +234,217 @@ export default function TypesOrderForms({ currentTypeOrder, closeForms }: TypesO
   );
 
   return (
-    <FormCard
-      title="Organizar cardápio"
-      subtitle="Ordem das categorias, imagens dos itens sem foto e avisos"
-      icon={<LuListOrdered size={18} />}
-      onClose={requestClose}
-      maxWidth="sm:max-w-[720px]"
-      onSubmit={save}
-      submitLabel="Salvar"
-      submitDisabled={!dirty || loadingData}
-      loading={saving}
-      footerNote={footerNote}
-      layoutScroll
-    >
-      <div
-        role="tablist"
-        aria-label="O que organizar"
-        className="grid grid-cols-2 gap-1 rounded-xl border border-primary-gold/15 bg-primary-black/40 p-1"
+    // Quem pede menos movimento no aparelho não vê as animações de abrir/fechar
+    <MotionConfig reducedMotion="user">
+      <FormCard
+        title="Organizar cardápio"
+        subtitle="Ordem das categorias, imagens dos itens sem foto e avisos"
+        icon={<LuListOrdered size={18} />}
+        onClose={requestClose}
+        maxWidth="sm:max-w-[720px]"
+        onSubmit={save}
+        submitLabel="Salvar"
+        submitDisabled={!dirty || loadingData}
+        loading={saving}
+        footerNote={footerNote}
+        layoutScroll
       >
-        {(
-          [
-            { key: "categorias", label: "Categorias", count: types.length, changed: typesDirty, icon: <LuLayers size={14} /> },
-            { key: "avisos", label: "Avisos", count: infos.length, changed: infosDirty, icon: <LuInfo size={14} /> },
-          ] as const
-        ).map((t) => {
-          const on = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              role="tab"
-              aria-selected={on}
-              onClick={() => setTab(t.key)}
-              className={`flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition-colors cursor-pointer ${
-                on ? "bg-primary-gold/15 text-primary-gold" : "text-primary-gold/50 hover:text-primary-gold/80"
-              }`}
-            >
-              {t.icon}
-              {t.label}
-              {!loadingData && <span className="tabular-nums text-primary-gold/40">{t.count}</span>}
-              {t.changed && <span aria-label="com alterações" className="h-1.5 w-1.5 rounded-full bg-orange-300" />}
-            </button>
-          );
-        })}
-      </div>
-
-      {loadingData ? (
-        <div className="flex flex-col gap-2" aria-label="Carregando">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-[58px] animate-pulse rounded-xl border border-primary-gold/10 bg-primary-gold/[0.04]" />
-          ))}
-        </div>
-      ) : tab === "categorias" ? (
-        <div role="tabpanel" className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Input
-                label="Nova categoria"
-                placeholder="Nova categoria (ex.: Pizzas)"
-                value={newType}
-                setValue={(e) => setNewType(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !adding) {
-                    e.preventDefault();
-                    addType(newType);
-                  }
-                }}
-                options={missing}
-                variant
-                smallInput
-                width="!w-full !max-w-none"
-              />
+        <div
+          role="tablist"
+          aria-label="O que organizar"
+          className="grid grid-cols-2 gap-1 rounded-xl border border-primary-gold/15 bg-primary-black/40 p-1"
+        >
+          {(
+            [
+              {
+                key: "categorias",
+                label: "Categorias",
+                count: types.length,
+                changed: typesDirty,
+                icon: <LuLayers size={14} />,
+              },
+              {
+                key: "avisos",
+                label: "Avisos",
+                count: infos.length,
+                changed: infosDirty,
+                icon: <LuInfo size={14} />,
+              },
+            ] as const
+          ).map((t) => {
+            const on = tab === t.key;
+            return (
               <button
+                key={t.key}
                 type="button"
-                onClick={() => addType(newType)}
-                disabled={adding}
-                className="mt-2 flex h-[34px] shrink-0 items-center gap-1 rounded-lg border border-primary-gold/35 bg-primary-gold/10 px-3 text-xs font-semibold text-primary-gold hover:bg-primary-gold/20 disabled:opacity-40 cursor-pointer"
+                role="tab"
+                aria-selected={on}
+                onClick={() => setTab(t.key)}
+                className={`flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition-colors cursor-pointer ${
+                  on
+                    ? "bg-primary-gold/15 text-primary-gold"
+                    : "text-primary-gold/50 hover:text-primary-gold/80"
+                }`}
               >
-                <LuPlus size={13} /> Adicionar
+                {t.icon}
+                {t.label}
+                {!loadingData && (
+                  <span className="tabular-nums text-primary-gold/40">
+                    {t.count}
+                  </span>
+                )}
+                {t.changed && (
+                  <span
+                    aria-label="com alterações"
+                    className="h-1.5 w-1.5 rounded-full bg-orange-300"
+                  />
+                )}
               </button>
+            );
+          })}
+        </div>
+
+        {loadingData ? (
+          <div className="flex flex-col gap-2" aria-label="Carregando">
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-[58px] animate-pulse rounded-xl border border-primary-gold/10 bg-primary-gold/[0.04]"
+              />
+            ))}
+          </div>
+        ) : tab === "categorias" ? (
+          <div role="tabpanel" className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Input
+                  label="Nova categoria"
+                  placeholder="Nova categoria (ex.: Pizzas)"
+                  value={newType}
+                  setValue={(e) => setNewType(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !adding) {
+                      e.preventDefault();
+                      addType(newType);
+                    }
+                  }}
+                  options={missing}
+                  variant
+                  smallInput
+                  width="!w-full !max-w-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => addType(newType)}
+                  disabled={adding}
+                  className="mt-2 flex h-[34px] shrink-0 items-center gap-1 rounded-lg border border-primary-gold/35 bg-primary-gold/10 px-3 text-xs font-semibold text-primary-gold hover:bg-primary-gold/20 disabled:opacity-40 cursor-pointer"
+                >
+                  <LuPlus size={13} /> Adicionar
+                </button>
+              </div>
+
+              {missing.length > 0 && (
+                <div className="flex flex-col gap-1.5 rounded-xl border border-dashed border-primary-gold/20 p-3">
+                  <span className="text-[11px] leading-relaxed text-primary-gold/55">
+                    Estas categorias estão nos itens, mas fora da lista:
+                    aparecem no fim do cardápio e sem ilustração.
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {missing.map((name) => (
+                      <button
+                        key={name}
+                        type="button"
+                        disabled={adding}
+                        onClick={() => addType(name)}
+                        className="flex items-center gap-1 rounded-full border border-primary-gold/30 px-2.5 py-0.5 text-[11px] text-primary-gold/75 hover:border-primary-gold/60 hover:text-primary-gold disabled:opacity-40 cursor-pointer"
+                      >
+                        <LuPlus size={11} /> {name}
+                        <span className="tabular-nums text-primary-gold/40">
+                          {counts.byType.get(name) ?? 0}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {missing.length > 0 && (
-              <div className="flex flex-col gap-1.5 rounded-xl border border-dashed border-primary-gold/20 p-3">
-                <span className="text-[11px] leading-relaxed text-primary-gold/55">
-                  Estas categorias estão nos itens, mas fora da lista: aparecem no fim do cardápio e sem ilustração.
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {missing.map((name) => (
-                    <button
-                      key={name}
-                      type="button"
-                      disabled={adding}
-                      onClick={() => addType(name)}
-                      className="flex items-center gap-1 rounded-full border border-primary-gold/30 px-2.5 py-0.5 text-[11px] text-primary-gold/75 hover:border-primary-gold/60 hover:text-primary-gold disabled:opacity-40 cursor-pointer"
-                    >
-                      <LuPlus size={11} /> {name}
-                      <span className="tabular-nums text-primary-gold/40">{counts.byType.get(name) ?? 0}</span>
-                    </button>
+            {types.length === 0 ? (
+              <p className="rounded-xl border border-primary-gold/10 px-4 py-6 text-center text-xs text-primary-gold/50">
+                Nenhuma categoria ainda. Adicione a primeira acima, na ordem em
+                que deve aparecer no cardápio.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <p className="text-[11px] leading-relaxed text-primary-gold/45">
+                  Arraste pela alça para mudar a ordem. Toque no nome para ver
+                  as subcategorias e na imagem para escolher a ilustração dos
+                  itens sem foto (a da subcategoria vale antes da categoria).
+                </p>
+                <Reorder.Group
+                  axis="y"
+                  values={types}
+                  onReorder={setTypes}
+                  className="flex flex-col gap-2"
+                >
+                  {types.map((entry, index) => (
+                    <CategoryRow
+                      key={entry.id ?? entry.type.name}
+                      entry={entry}
+                      position={index + 1}
+                      itemCount={counts.byType.get(entry.type.name) ?? 0}
+                      subtypeCounts={counts.bySubtype}
+                      menuItems={menuItems}
+                      onChange={(next) =>
+                        setTypes((prev) =>
+                          prev.map((e, i) => (i === index ? next : e)),
+                        )
+                      }
+                      onMove={(delta) =>
+                        setTypes((prev) => moved(prev, index, delta))
+                      }
+                      onDelete={() => deleteType(entry)}
+                      onError={addAlert}
+                    />
                   ))}
-                </div>
+                </Reorder.Group>
               </div>
             )}
           </div>
-
-          {types.length === 0 ? (
-            <p className="rounded-xl border border-primary-gold/10 px-4 py-6 text-center text-xs text-primary-gold/50">
-              Nenhuma categoria ainda. Adicione a primeira acima, na ordem em que deve aparecer no cardápio.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <p className="text-[11px] leading-relaxed text-primary-gold/45">
-                Arraste pela alça para mudar a ordem. Toque no nome para ver as subcategorias e na imagem para escolher a
-                ilustração dos itens sem foto (a da subcategoria vale antes da categoria).
+        ) : (
+          <div role="tabpanel" className="flex flex-col gap-2">
+            {infos.length === 0 ? (
+              <p className="rounded-xl border border-primary-gold/10 px-4 py-6 text-center text-xs text-primary-gold/50">
+                Nenhum aviso cadastrado. Crie em Cardápio → + → Aviso.
               </p>
-              <Reorder.Group axis="y" values={types} onReorder={setTypes} className="flex flex-col gap-2">
-                {types.map((entry, index) => (
-                  <CategoryRow
-                    key={entry.id ?? entry.type.name}
-                    entry={entry}
-                    position={index + 1}
-                    itemCount={counts.byType.get(entry.type.name) ?? 0}
-                    subtypeCounts={counts.bySubtype}
-                    menuItems={menuItems}
-                    onChange={(next) => setTypes((prev) => prev.map((e, i) => (i === index ? next : e)))}
-                    onMove={(delta) => setTypes((prev) => moved(prev, index, delta))}
-                    onDelete={() => deleteType(entry)}
-                    onError={addAlert}
-                  />
-                ))}
-              </Reorder.Group>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div role="tabpanel" className="flex flex-col gap-2">
-          {infos.length === 0 ? (
-            <p className="rounded-xl border border-primary-gold/10 px-4 py-6 text-center text-xs text-primary-gold/50">
-              Nenhum aviso cadastrado. Crie em Cardápio → + → Aviso.
-            </p>
-          ) : (
-            <>
-              <p className="text-[11px] leading-relaxed text-primary-gold/45">
-                Arraste pela alça para definir a ordem em que os avisos aparecem no cardápio.
-              </p>
-              <Reorder.Group axis="y" values={infos} onReorder={setInfos} className="flex flex-col gap-2">
-                {infos.map((info, index) => (
-                  <InfoRow
-                    key={info.id ?? info.name}
-                    info={info}
-                    position={index + 1}
-                    onMove={(delta) => setInfos((prev) => moved(prev, index, delta))}
-                  />
-                ))}
-              </Reorder.Group>
-            </>
-          )}
-        </div>
-      )}
-    </FormCard>
+            ) : (
+              <>
+                <p className="text-[11px] leading-relaxed text-primary-gold/45">
+                  Arraste pela alça para definir a ordem em que os avisos
+                  aparecem no cardápio.
+                </p>
+                <Reorder.Group
+                  axis="y"
+                  values={infos}
+                  onReorder={setInfos}
+                  className="flex flex-col gap-2"
+                >
+                  {infos.map((info, index) => (
+                    <InfoRow
+                      key={info.id ?? info.name}
+                      info={info}
+                      position={index + 1}
+                      onMove={(delta) =>
+                        setInfos((prev) => moved(prev, index, delta))
+                      }
+                    />
+                  ))}
+                </Reorder.Group>
+              </>
+            )}
+          </div>
+        )}
+      </FormCard>
+    </MotionConfig>
   );
 }

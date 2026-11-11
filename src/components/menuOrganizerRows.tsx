@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { Reorder, useDragControls, type DragControls } from "framer-motion";
+import { useEffect, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { AnimatePresence, Reorder, motion, useDragControls, type DragControls } from "framer-motion";
 import { LuChevronDown, LuGripVertical, LuPlus, LuTrash2, LuX } from "react-icons/lu";
 import type { InfoType, MenuItemType, TypeOrderType } from "@/types";
 import Input from "./input";
@@ -18,6 +18,30 @@ type Entry = TypeOrderType;
 type Sub = TypeOrderType["type"]["subtypes"][number];
 
 const DRAG_STYLE = { scale: 1.015, boxShadow: "0 14px 34px rgba(0,0,0,0.55)", zIndex: 10 };
+
+/**
+ * Abre e fecha animando a altura. As linhas da lista animam só a posição
+ * (layout="position"): animar o tamanho delas esticava o conteúdo ao abrir.
+ * O overflow só fica escondido durante a animação, para não cortar as
+ * sugestões do campo de texto.
+ */
+function Collapse({ open, children }: { open: boolean; children: ReactNode }) {
+  return (
+    <AnimatePresence initial={false}>
+      {open && (
+        <motion.div
+          key="collapse"
+          initial={{ height: 0, opacity: 0, overflow: "hidden" }}
+          animate={{ height: "auto", opacity: 1, transitionEnd: { overflow: "visible" } }}
+          exit={{ height: 0, opacity: 0, overflow: "hidden" }}
+          transition={{ height: { duration: 0.24, ease: [0.32, 0.72, 0, 1] }, opacity: { duration: 0.18 } }}
+        >
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
@@ -132,6 +156,7 @@ export function CategoryRow({
   return (
     <Reorder.Item
       value={entry}
+      layout="position"
       dragListener={false}
       dragControls={controls}
       whileDrag={DRAG_STYLE}
@@ -169,7 +194,7 @@ export function CategoryRow({
         <ConfirmDelete label={name} onConfirm={onDelete} />
       </div>
 
-      {picking && (
+      <Collapse open={picking}>
         <div className="px-2 pb-2">
           <IllustrationOptions
             value={entry.type.illustration}
@@ -181,9 +206,9 @@ export function CategoryRow({
             }}
           />
         </div>
-      )}
+      </Collapse>
 
-      {expanded && (
+      <Collapse open={expanded}>
         <SubtypesPanel
           entry={entry}
           counts={subtypeCounts}
@@ -191,7 +216,7 @@ export function CategoryRow({
           onSubtypes={(next) => setType({ subtypes: next })}
           onError={onError}
         />
-      )}
+      </Collapse>
     </Reorder.Item>
   );
 }
@@ -321,6 +346,7 @@ function SubtypeRow({
   return (
     <Reorder.Item
       value={sub}
+      layout="position"
       dragListener={false}
       dragControls={controls}
       whileDrag={DRAG_STYLE}
@@ -348,7 +374,7 @@ function SubtypeRow({
           <LuX size={14} />
         </button>
       </div>
-      {picking && (
+      <Collapse open={picking}>
         <div className="px-1.5 pb-1.5">
           <IllustrationOptions
             value={sub.illustration}
@@ -360,7 +386,7 @@ function SubtypeRow({
             }}
           />
         </div>
-      )}
+      </Collapse>
     </Reorder.Item>
   );
 }
@@ -380,6 +406,7 @@ export function InfoRow({
   return (
     <Reorder.Item
       value={info}
+      layout="position"
       dragListener={false}
       dragControls={controls}
       whileDrag={DRAG_STYLE}
