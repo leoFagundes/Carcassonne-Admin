@@ -105,8 +105,8 @@ const GROUPS: { title: string; shortcuts: Shortcut[] }[] = [
         destination: "Cardápio",
       },
       {
-        title: "Ordenar Tipos",
-        description: "Adicione e ordene os tipos e subtipos dos itens.",
+        title: "Categorias e Avisos",
+        description: "Crie e ordene categorias e subcategorias, e ordene os avisos.",
         icon: icon(LuListOrdered),
         href: "/menu?createtipos=true",
         destination: "Cardápio",

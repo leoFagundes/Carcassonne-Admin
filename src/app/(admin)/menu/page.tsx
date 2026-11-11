@@ -314,8 +314,8 @@ export default function MenuPage() {
                   onSelect: () => setIsDescriptionModalOpen(true),
                 },
                 {
-                  label: "Ordenar tipos e subtipos",
-                  description: "Ordem, imagens dos itens sem foto e avisos",
+                  label: "Categorias e avisos",
+                  description: "Criar e ordenar categorias, imagens dos itens sem foto e ordem dos avisos",
                   icon: <LuListOrdered size={15} />,
                   onSelect: () => setIsTypesOrderModalOpen(true),
                 },

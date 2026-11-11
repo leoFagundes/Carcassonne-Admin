@@ -1,7 +1,7 @@
 import type { InfoType, MenuItemType, TypeOrderType } from "@/types";
 
 /**
- * Regras do modal "Organizar cardápio": ordem de categorias, subcategorias e
+ * Regras do modal "Categorias e avisos": ordem de categorias, subcategorias e
  * avisos. Tudo aqui é puro (sem Firestore) para poder ser testado.
  */
 

@@ -237,8 +237,8 @@ export default function TypesOrderForms({
     // Quem pede menos movimento no aparelho não vê as animações de abrir/fechar
     <MotionConfig reducedMotion="user">
       <FormCard
-        title="Organizar cardápio"
-        subtitle="Ordem das categorias, imagens dos itens sem foto e avisos"
+        title="Categorias e avisos"
+        subtitle="Crie e ordene categorias, escolha as imagens dos itens sem foto e ordene os avisos"
         icon={<LuListOrdered size={18} />}
         onClose={requestClose}
         maxWidth="sm:max-w-[720px]"
