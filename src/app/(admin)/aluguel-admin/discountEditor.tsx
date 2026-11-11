@@ -42,6 +42,7 @@ export default function DiscountEditor({
     withUntil,
   });
   const base = price && price > 0 ? price : 5000;
+  const empty = draft.text.trim() === "";
   const preview = result.ok && result.discount ? applyDiscount(base, result.discount) : null;
 
   return (
@@ -101,8 +102,12 @@ export default function DiscountEditor({
               />
             )}
           </div>
-          <p className={`text-[11px] leading-relaxed ${result.ok ? "text-primary-gold/60" : "text-invalid-color"}`}>
-            {!result.ok
+          <p className={`text-[11px] leading-relaxed ${result.ok || empty ? "text-primary-gold/60" : "text-invalid-color"}`}>
+            {empty
+              ? draft.kind === "percent"
+                ? "Digite a porcentagem de desconto (de 1 a 90)."
+                : "Digite quanto sai do preço (ex.: 10,00)."
+              : !result.ok
               ? result.error
               : preview !== null && (
                   <>

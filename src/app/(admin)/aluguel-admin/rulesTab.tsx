@@ -227,7 +227,7 @@ export default function RulesTab() {
           <Input
             labelSpace
             label="Título"
-            placeholder="Título da seção"
+            placeholder="Ex.: Atrasos"
             value={section.title}
             setValue={(e) => update(section.id, { title: e.target.value })}
             variant
@@ -257,7 +257,7 @@ export default function RulesTab() {
         <Input
           labelSpace
           label="Versão desta publicação"
-          placeholder="Versão desta publicação (ex.: 3.1)"
+          placeholder="Ex.: 3.1"
           value={versionText}
           setValue={(e) => {
             setVersionText(e.target.value);

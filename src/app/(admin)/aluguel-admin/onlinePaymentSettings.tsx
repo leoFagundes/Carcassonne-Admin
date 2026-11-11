@@ -194,7 +194,7 @@ export default function OnlinePaymentSection({
               labelSpace
               label="Tempo para pagar (minutos)"
               type="number"
-              placeholder="Tempo para pagar (15 a 60 minutos)"
+              placeholder="15 a 60"
               value={String(value.holdMinutes)}
               setValue={(e) => set({ holdMinutes: Number(e.target.value) })}
               variant
@@ -236,7 +236,7 @@ export default function OnlinePaymentSection({
                 labelSpace
                 label="Taxa de cancelamento (%)"
                 type="number"
-                placeholder="Taxa de cancelamento (0 a 50%)"
+                placeholder="0 a 50"
                 value={String(value.feePercent)}
                 setValue={(e) => set({ feePercent: Number(e.target.value) })}
                 variant

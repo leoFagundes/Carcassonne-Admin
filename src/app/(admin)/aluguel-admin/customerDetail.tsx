@@ -338,8 +338,8 @@ export function CustomerDetail({
               labelSpace
               value={reason}
               setValue={(e) => setReason(e.target.value)}
-              placeholder="Motivo do bloqueio (obrigatório)"
-              label="Motivo"
+              placeholder="Obrigatório. Ex.: atrasou várias devoluções"
+              label="Motivo do bloqueio"
             />
             <div className="flex gap-2">
               <button
@@ -409,16 +409,16 @@ export function CustomerDetail({
             <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
               <Input
                 labelSpace
-                label="Nome"
-                placeholder="Nome completo"
+                label="Nome completo"
+                placeholder="Ex.: Ana Souza"
                 value={form.name}
                 setValue={(e) => setForm({ ...form, name: e.target.value })}
                 width="!w-full !max-w-none !min-w-0"
               />
               <Input
                 labelSpace
-                label="WhatsApp"
-                placeholder="WhatsApp com DDD"
+                label="WhatsApp com DDD"
+                placeholder="(61) 99999-9999"
                 value={form.phone}
                 setValue={(e) => setForm({ ...form, phone: e.target.value })}
                 width="!w-full !max-w-none !min-w-0"
@@ -426,7 +426,7 @@ export function CustomerDetail({
               <Input
                 labelSpace
                 label="CPF"
-                placeholder="CPF"
+                placeholder="000.000.000-00"
                 value={form.cpf}
                 setValue={(e) => setForm({ ...form, cpf: e.target.value })}
                 width="!w-full !max-w-none !min-w-0"
@@ -435,7 +435,7 @@ export function CustomerDetail({
                 <Input
                   labelSpace
                   label="E-mail (opcional)"
-                  placeholder="E-mail (opcional)"
+                  placeholder="nome@email.com"
                   value={form.email}
                   setValue={(e) => setForm({ ...form, email: e.target.value })}
                   width="!w-full !max-w-none !min-w-0"

@@ -262,7 +262,7 @@ export default function RentalGameForm({
               <Input
                 labelSpace
                 label="Nome"
-                placeholder="Nome"
+                placeholder="Ex.: Catan"
                 value={local.name}
                 setValue={(e) => set("name", e.target.value)}
                 variant
@@ -272,7 +272,7 @@ export default function RentalGameForm({
               <Input
                 labelSpace
                 label="Descrição"
-                placeholder="Descrição (o que o cliente lê no detalhe do jogo)"
+                placeholder="O que o cliente lê no detalhe do jogo"
                 value={local.description}
                 setValue={(e) => set("description", e.target.value)}
                 variant
@@ -327,7 +327,7 @@ export default function RentalGameForm({
               labelSpace
               label="Tempo de jogo (min)"
               type="number"
-              placeholder="Tempo de jogo (min)"
+              placeholder="Ex.: 60"
               value={String(local.playTime)}
               setValue={(e) => set("playTime", Number(e.target.value))}
               variant
@@ -338,7 +338,7 @@ export default function RentalGameForm({
               labelSpace
               label="Mínimo de jogadores"
               type="number"
-              placeholder="Mínimo de jogadores"
+              placeholder="Ex.: 2"
               value={String(local.minPlayers)}
               setValue={(e) => set("minPlayers", Number(e.target.value))}
               variant
@@ -349,7 +349,7 @@ export default function RentalGameForm({
               labelSpace
               label="Máximo de jogadores"
               type="number"
-              placeholder="Máximo de jogadores"
+              placeholder="Ex.: 4"
               value={String(local.maxPlayers)}
               setValue={(e) => set("maxPlayers", Number(e.target.value))}
               variant
@@ -375,7 +375,7 @@ export default function RentalGameForm({
             <Input
               labelSpace
               label="Preço do aluguel"
-              placeholder="Preço do aluguel (ex.: 45,00)"
+              placeholder="Ex.: 45,00"
               value={priceText}
               setValue={(e) => setPriceText(e.target.value)}
               variant
@@ -384,9 +384,9 @@ export default function RentalGameForm({
             />
             <Input
               labelSpace
-              label="Prazo: dias com o cliente"
+              label="Prazo (dias com o cliente)"
               type="number"
-              placeholder="Prazo (dias com o cliente)"
+              placeholder="Ex.: 7"
               value={String(local.rentalDays)}
               setValue={(e) => set("rentalDays", Number(e.target.value))}
               variant

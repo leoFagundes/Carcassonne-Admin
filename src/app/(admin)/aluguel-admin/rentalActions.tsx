@@ -104,7 +104,7 @@ function CheckFields({
         labelSpace
         value={note}
         setValue={(e) => onNote(e.target.value)}
-        placeholder="Observação (opcional)"
+        placeholder="Opcional. Ex.: faltou um dado"
         label="Observação"
         multiline
         rows={3}
@@ -528,8 +528,8 @@ function ActionModal({
             labelSpace
             value={reason}
             setValue={(e) => setReason(e.target.value)}
-            placeholder="Motivo do cancelamento (obrigatório)"
-            label="Motivo"
+            placeholder="Obrigatório. Ex.: cliente desistiu"
+            label="Motivo do cancelamento"
             multiline
             rows={3}
           />

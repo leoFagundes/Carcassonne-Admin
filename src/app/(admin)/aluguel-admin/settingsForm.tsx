@@ -332,7 +332,7 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
           labelSpace
           label="Antecedência máxima (dias)"
           type="number"
-          placeholder="Antecedência máxima (0 a 90 dias)"
+          placeholder="0 a 90"
           value={String(local.maxAdvanceDays)}
           setValue={(e) => set("maxAdvanceDays", Number(e.target.value))}
           variant
@@ -413,7 +413,7 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
           labelSpace
           label="Folga entre aluguéis da mesma cópia (dias)"
           type="number"
-          placeholder="Folga entre aluguéis (1 a 14 dias)"
+          placeholder="1 a 14"
           value={String(local.queueGapDays ?? 1)}
           setValue={(e) => set("queueGapDays", Number(e.target.value))}
           variant
@@ -444,7 +444,7 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
             labelSpace
             label="Máx. de jogos por pedido"
             type="number"
-            placeholder="Máx. de jogos por pedido (1 a 10)"
+            placeholder="1 a 10"
             value={String(local.maxGamesPerOrder)}
             setValue={(e) => set("maxGamesPerOrder", Number(e.target.value))}
             variant
@@ -454,7 +454,7 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
             labelSpace
             label="Máx. de jogos ao mesmo tempo por cliente"
             type="number"
-            placeholder="Máx. de jogos por cliente (1 a 10)"
+            placeholder="1 a 10"
             value={String(local.maxActiveGamesPerCustomer)}
             setValue={(e) => set("maxActiveGamesPerCustomer", Number(e.target.value))}
             variant
@@ -551,7 +551,7 @@ export default function SettingsForm({ onOpenRules }: { onOpenRules: VoidFunctio
           labelSpace
           label="E-mail da equipe (opcional)"
           type="email"
-          placeholder="E-mail da equipe (opcional)"
+          placeholder="equipe@email.com"
           value={local.staffEmail}
           setValue={(e) => set("staffEmail", e.target.value)}
           variant

@@ -18,8 +18,8 @@ interface InputProps extends ComponentProps<"input"> {
   width?: string;
   smallInput?: boolean;
   /**
-   * Reserva acima do campo o espaço do rótulo flutuante (que aparece quando há
-   * valor), para ele não encostar no que vem antes nem nos campos da linha de cima.
+   * Rótulo fixo acima do campo, sempre à mostra (com o espaço dele reservado).
+   * Sem isso, o rótulo só aparece flutuando quando o campo tem valor.
    */
   labelSpace?: boolean;
 }
@@ -78,8 +78,8 @@ export default function Input({
           : "py-2.5 sm:py-3 px-3 sm:px-3.5 min-w-[200px]"
       } ${multiline ? "items-start" : "items-center"}`}
     >
-      {label && value && (
-        <span className={`ui-float-label absolute bottom-[calc(100%+5px)] left-1 ${labelSpace ? "right-1 truncate" : ""} text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-gold/70 pointer-events-none`}>
+      {label && (value || labelSpace) && (
+        <span className={`${labelSpace ? "right-1 truncate" : "ui-float-label"} absolute bottom-[calc(100%+5px)] left-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-gold/70 pointer-events-none`}>
           {label}
         </span>
       )}

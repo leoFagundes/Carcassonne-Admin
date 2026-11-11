@@ -434,15 +434,15 @@ export default function NewRentalForm({ onClose, onAgain }: { onClose: () => voi
             <Input
               labelSpace
               label="Nome completo"
-              placeholder="Nome completo"
+              placeholder="Ex.: Ana Souza"
               value={guest.name}
               setValue={(e) => setGuest({ ...guest, name: e.target.value })}
               width="!w-full !max-w-none !min-w-0"
             />
             <Input
               labelSpace
-              label="WhatsApp"
-              placeholder="WhatsApp com DDD"
+              label="WhatsApp com DDD"
+              placeholder="(61) 99999-9999"
               inputMode="tel"
               value={guest.phone}
               setValue={(e) => setGuest({ ...guest, phone: e.target.value })}
@@ -451,7 +451,7 @@ export default function NewRentalForm({ onClose, onAgain }: { onClose: () => voi
             <Input
               labelSpace
               label={settings?.requireCpf ? "CPF" : "CPF (opcional)"}
-              placeholder={settings?.requireCpf ? "CPF" : "CPF (opcional)"}
+              placeholder="000.000.000-00"
               inputMode="numeric"
               value={guest.cpf}
               setValue={(e) => setGuest({ ...guest, cpf: e.target.value })}
@@ -460,7 +460,7 @@ export default function NewRentalForm({ onClose, onAgain }: { onClose: () => voi
             <Input
               labelSpace
               label="E-mail (opcional)"
-              placeholder="E-mail (opcional)"
+              placeholder="nome@email.com"
               type="email"
               value={guest.email}
               setValue={(e) => setGuest({ ...guest, email: e.target.value })}
@@ -494,7 +494,7 @@ export default function NewRentalForm({ onClose, onAgain }: { onClose: () => voi
           <Input
             labelSpace
             label="Buscar jogo"
-            placeholder="Buscar jogo"
+            placeholder="Nome do jogo"
             icon={<LuSearch size={14} />}
             value={gameQuery}
             setValue={(e) => setGameQuery(e.target.value)}
@@ -597,7 +597,7 @@ export default function NewRentalForm({ onClose, onAgain }: { onClose: () => voi
           <Input
             labelSpace
             label="Motivo da cortesia"
-            placeholder="Motivo da cortesia (ex.: aniversário, parceria)"
+            placeholder="Ex.: aniversário, parceria"
             value={reason}
             setValue={(e) => setReason(e.target.value)}
             width="!w-full !max-w-none !min-w-0"

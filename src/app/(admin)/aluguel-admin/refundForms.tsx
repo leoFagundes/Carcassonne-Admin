@@ -44,7 +44,7 @@ export function AmountField({
       <Input
         labelSpace
         label={label}
-        placeholder={label}
+        placeholder="0,00"
         inputMode="decimal"
         value={value}
         setValue={(e) => onChange(e.target.value)}
@@ -138,7 +138,7 @@ export function RefundForm({ order, rentals = [] }: { order: Order; rentals?: Re
       <Input
         labelSpace
         label="Motivo (opcional)"
-        placeholder="Motivo (opcional)"
+        placeholder="Ex.: cliente desistiu"
         value={reason}
         setValue={(e) => setReason(e.target.value)}
         variant
@@ -298,7 +298,7 @@ export function ReviewForm({ order }: { order: Order }) {
           <Input
             labelSpace
             label="Motivo da recusa"
-            placeholder="Motivo da recusa (obrigatório)"
+            placeholder="Obrigatório. O cliente recebe este motivo"
             value={denyReason}
             setValue={(e) => setDenyReason(e.target.value)}
             variant
