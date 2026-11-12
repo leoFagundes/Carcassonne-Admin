@@ -4,11 +4,21 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { LuMaximize, LuMinus, LuPlus } from "react-icons/lu";
 import { KINDS, tableTitle } from "@/floorplan/catalog";
 import { boundsOf, formatMeters, handleLocal, HANDLES, toWorld, type Handle, type Pt } from "@/floorplan/geometry";
-import type { PlanElement, TableState } from "@/floorplan/types";
+import type { LevelBackground, PlanElement, TableState } from "@/floorplan/types";
 import { STATE_META } from "@/floorplan/day";
 import { PlanDefs, Shape2D, tableFill, U } from "./shapes2d";
 
-export type HandleId = Handle | "rot";
+/** Alças: tamanho, giro, ponto do polígono (v0…) e "criar ponto" no meio da aresta (m0…). */
+export type HandleId = Handle | "rot" | `v${number}` | `m${number}`;
+
+/** Linha da régua (ou da calibração do fundo). */
+export interface MeasureOverlay {
+  a?: Pt;
+  b?: Pt;
+  label?: string;
+}
+
+export const BG_ID = "__bg__";
 
 export interface GroupOutline {
   key: string;
@@ -47,6 +57,18 @@ export interface PlanCanvasProps {
   hint?: React.ReactNode;
   /** Recebe o centro da tela (em metros), para adicionar peças ali. */
   centerRef?: React.MutableRefObject<Pt>;
+  /** Imagem de fundo do andar. */
+  background?: LevelBackground;
+  /** O fundo pode ser arrastado (id BG_ID em onMoveStart). */
+  backgroundDraggable?: boolean;
+  /** Toques viram pontos (régua, calibração): nada é escolhido nem arrastado. */
+  pointMode?: boolean;
+  onTapPoint?: (p: Pt) => void;
+  measure?: MeasureOverlay;
+  /** Texto curto embaixo da mesa (ex.: "19:30", a próxima reserva). */
+  tableNotes?: ReadonlyMap<string, string>;
+  /** Botões extras na coluna do zoom (ex.: régua). */
+  extraControls?: React.ReactNode;
 }
 
 interface View {
@@ -89,6 +111,12 @@ export default function PlanCanvas(props: PlanCanvasProps) {
     fitKey,
     hint,
     centerRef,
+    background,
+    backgroundDraggable,
+    pointMode,
+    measure,
+    tableNotes,
+    extraControls,
   } = props;
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -123,12 +151,14 @@ export default function PlanCanvas(props: PlanCanvasProps) {
   }, []);
 
   const fit = useCallback(() => {
-    const b = boundsOf(levelEls);
+    const b =
+      boundsOf(levelEls) ??
+      (background ? { minX: background.x, minY: background.y, maxX: background.x + background.w, maxY: background.y + background.h } : null);
     if (!b || !size.w || !size.h) return;
     const pad = 28;
     const s = Math.min((size.w - pad * 2) / Math.max(1, b.maxX - b.minX), (size.h - pad * 2) / Math.max(1, b.maxY - b.minY));
     setView({ cx: (b.minX + b.maxX) / 2, cy: (b.minY + b.maxY) / 2, s: Math.min(MAX_S, Math.max(MIN_S, s)) });
-  }, [levelEls, size.w, size.h]);
+  }, [levelEls, size.w, size.h, background]);
 
   // Reenquadra ao trocar de andar/modo e quando o tamanho aparece
   const fitted = useRef("");
@@ -198,6 +228,10 @@ export default function PlanCanvas(props: PlanCanvasProps) {
     }
     if (pointers.current.size > 2) return;
     const target = e.target as Element;
+    if (cb.current.pointMode) {
+      gesture.current = { kind: "pending", id: null, x: e.clientX, y: e.clientY, additive: false, pan: viewRef.current };
+      return;
+    }
     const handle = target.closest("[data-handle]")?.getAttribute("data-handle") as HandleId | null;
     if (handle && cb.current.onHandleStart) {
       cb.current.onHandleStart(handle);
@@ -263,7 +297,10 @@ export default function PlanCanvas(props: PlanCanvasProps) {
       return;
     }
     if (pointers.current.size > 0) return;
-    if (g.kind === "pending") cb.current.onTap(g.id, { additive: g.additive });
+    if (g.kind === "pending") {
+      if (cb.current.pointMode) cb.current.onTapPoint?.(toWorldPt(g.x, g.y));
+      else cb.current.onTap(g.id, { additive: g.additive });
+    }
     if (g.kind === "move") cb.current.onMoveEnd(e.type === "pointercancel");
     if (g.kind === "handle") cb.current.onHandleEnd?.(e.type === "pointercancel");
     gesture.current = { kind: "none" };
@@ -273,7 +310,18 @@ export default function PlanCanvas(props: PlanCanvasProps) {
   const k = view.s / U;
   const px = (n: number) => n / k; // n pixels de tela em unidades da planta
   const transform = `translate(${size.w / 2} ${size.h / 2}) scale(${k}) translate(${-view.cx * U} ${-view.cy * U})`;
-  const b = useMemo(() => boundsOf(levelEls), [levelEls]);
+  const b = useMemo(() => {
+    const els = boundsOf(levelEls);
+    if (!background) return els;
+    const bg = { minX: background.x, minY: background.y, maxX: background.x + background.w, maxY: background.y + background.h };
+    if (!els) return bg;
+    return {
+      minX: Math.min(els.minX, bg.minX),
+      minY: Math.min(els.minY, bg.minY),
+      maxX: Math.max(els.maxX, bg.maxX),
+      maxY: Math.max(els.maxY, bg.maxY),
+    };
+  }, [levelEls, background]);
 
   const labelEls = levelEls.filter(
     (el) =>
@@ -303,6 +351,20 @@ export default function PlanCanvas(props: PlanCanvasProps) {
         <svg width={size.w} height={size.h} className="block" role="img" aria-label="Planta do andar">
           <PlanDefs />
           <g transform={transform}>
+            {background && (
+              <image
+                href={background.url}
+                x={background.x * U}
+                y={background.y * U}
+                width={background.w * U}
+                height={background.h * U}
+                preserveAspectRatio="none"
+                opacity={background.opacity}
+                data-id={backgroundDraggable ? BG_ID : undefined}
+                pointerEvents={backgroundDraggable ? "visiblePainted" : "none"}
+                style={{ cursor: backgroundDraggable ? "move" : undefined }}
+              />
+            )}
             {showGrid && b && (
               <rect
                 x={(Math.floor(b.minX) - 3) * U}
@@ -314,7 +376,7 @@ export default function PlanCanvas(props: PlanCanvasProps) {
               />
             )}
             {levelEls.map((el) => {
-              const interactive = isInteractive(el);
+              const interactive = !backgroundDraggable && !pointMode && isInteractive(el);
               const state = mode === "day" && el.kind === "table" ? tableStates?.get(el.id) : undefined;
               const dim = mode === "day" && el.kind !== "table" && el.kind !== "room" && !KINDS[el.kind].structural;
               return (
@@ -324,6 +386,7 @@ export default function PlanCanvas(props: PlanCanvasProps) {
                   transform={`translate(${el.x * U} ${el.y * U}) rotate(${el.rot})`}
                   style={{ cursor: interactive ? (mode === "day" ? "pointer" : "move") : undefined }}
                   pointerEvents={interactive ? "visiblePainted" : "none"}
+                  opacity={background && el.kind === "room" ? 0.4 : undefined}
                 >
                   <Shape2D el={el} state={state} dim={dim} />
                 </g>
@@ -361,6 +424,18 @@ export default function PlanCanvas(props: PlanCanvasProps) {
                 const pad = px(3);
                 const linear = KINDS[el.kind].linear;
                 const w = el.w * U + (linear ? el.d * U : 0);
+                if (el.points && el.points.length >= 3)
+                  return (
+                    <g key={`sel-${el.id}`} transform={`translate(${el.x * U} ${el.y * U}) rotate(${el.rot})`} pointerEvents="none">
+                      <polygon
+                        points={el.points.map((p) => `${p.x * U},${p.y * U}`).join(" ")}
+                        fill="none"
+                        stroke="#ffffff"
+                        strokeWidth={px(2)}
+                        strokeDasharray={`${px(6)} ${px(4)}`}
+                      />
+                    </g>
+                  );
                 return (
                   <g key={`sel-${el.id}`} transform={`translate(${el.x * U} ${el.y * U}) rotate(${el.rot})`} pointerEvents="none">
                     <rect
@@ -425,6 +500,14 @@ export default function PlanCanvas(props: PlanCanvasProps) {
                           {el.seats} lug.
                         </text>
                       )}
+                      {tableNotes?.get(el.id) && (
+                        <g transform={`translate(${el.x * U} ${boundsOf([el])!.maxY * U + px(9)})`}>
+                          <rect x={-px(22)} y={-px(8)} width={px(44)} height={px(16)} rx={px(8)} fill="#14110e" stroke="#e6c56b" strokeOpacity={0.6} strokeWidth={px(1)} />
+                          <text textAnchor="middle" dominantBaseline="central" fontSize={px(10)} fontWeight={800} fill="#e6c56b">
+                            {tableNotes.get(el.id)}
+                          </text>
+                        </g>
+                      )}
                       {badge > 0 && !inGroup && (
                         <g transform={`translate(${el.x * U + (el.w * U) / 2 - 2} ${el.y * U - (el.d * U) / 2 + 2})`}>
                           <circle r={px(9)} fill="#14110e" stroke={ink} strokeWidth={px(1.2)} />
@@ -436,7 +519,8 @@ export default function PlanCanvas(props: PlanCanvasProps) {
                     </g>
                   );
                 }
-                const small = el.kind !== "text" || el.variant === "small";
+                // Texto: pequeno 14, normal 18, grande 30 (cm na planta)
+                const textSize = el.variant === "small" ? 14 : el.variant === "big" ? 30 : 18;
                 return (
                   <text
                     key={`l-${el.id}`}
@@ -444,7 +528,7 @@ export default function PlanCanvas(props: PlanCanvasProps) {
                     y={el.y * U}
                     textAnchor="middle"
                     dominantBaseline="central"
-                    fontSize={el.kind === "text" ? (small ? 16 : 26) : 12}
+                    fontSize={el.kind === "text" ? textSize : 12}
                     fontWeight={el.kind === "text" ? 700 : 600}
                     fill={el.kind === "text" ? "#e6c56b" : "#f3ead8"}
                     fillOpacity={el.kind === "text" ? 0.55 : 0.9}
@@ -479,6 +563,42 @@ export default function PlanCanvas(props: PlanCanvasProps) {
               })}
             </g>
 
+            {/* Régua / calibração */}
+            {measure?.a && (
+              <g pointerEvents="none">
+                {measure.b && (
+                  <line
+                    x1={measure.a.x * U}
+                    y1={measure.a.y * U}
+                    x2={measure.b.x * U}
+                    y2={measure.b.y * U}
+                    stroke="#ffffff"
+                    strokeWidth={px(2.5)}
+                    strokeDasharray={`${px(8)} ${px(4)}`}
+                  />
+                )}
+                {[measure.a, measure.b].filter(Boolean).map((p, i) => (
+                  <circle key={i} cx={p!.x * U} cy={p!.y * U} r={px(6)} fill="#e6c56b" stroke="#14110e" strokeWidth={px(2)} />
+                ))}
+                {measure.b && measure.label && (
+                  <text
+                    x={((measure.a.x + measure.b.x) / 2) * U}
+                    y={((measure.a.y + measure.b.y) / 2) * U - px(14)}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fontSize={px(14)}
+                    fontWeight={800}
+                    fill="#ffffff"
+                    stroke="#14110e"
+                    strokeWidth={px(4)}
+                    paintOrder="stroke"
+                  >
+                    {measure.label}
+                  </text>
+                )}
+              </g>
+            )}
+
             {/* Alças do elemento selecionado */}
             {handlesFor && handlesFor.level === level && (
               <SelectionHandles el={handlesFor} px={px} />
@@ -506,6 +626,11 @@ export default function PlanCanvas(props: PlanCanvasProps) {
             {b.icon}
           </button>
         ))}
+        {extraControls && (
+          <div className="flex flex-col gap-1" onPointerDown={(e) => e.stopPropagation()}>
+            {extraControls}
+          </div>
+        )}
       </div>
 
       {/* Escala */}
@@ -523,7 +648,8 @@ export default function PlanCanvas(props: PlanCanvasProps) {
 function SelectionHandles({ el, px }: { el: PlanElement; px: (n: number) => number }) {
   const linear = KINDS[el.kind].linear;
   const r = px(7);
-  const handles = HANDLES.filter((h) => !linear || h === "e" || h === "w");
+  const poly = el.points && el.points.length >= 3 ? el.points : null;
+  const handles = poly ? [] : HANDLES.filter((h) => !linear || h === "e" || h === "w");
   const topY = (-el.d * U) / 2;
   const knobY = topY - px(30);
   const below = boundsOf([el])!.maxY * U;
@@ -547,6 +673,26 @@ function SelectionHandles({ el, px }: { el: PlanElement; px: (n: number) => numb
             </g>
           );
         })}
+        {poly &&
+          poly.map((p, i) => {
+            const q = poly[(i + 1) % poly.length];
+            const mx = ((p.x + q.x) / 2) * U;
+            const my = ((p.y + q.y) / 2) * U;
+            return (
+              <g key={`m${i}`} data-handle={`m${i}`} style={{ cursor: "copy" }}>
+                <circle cx={mx} cy={my} r={px(13)} fill="transparent" />
+                <circle cx={mx} cy={my} r={px(6)} fill="#14110e" stroke="#e6c56b" strokeWidth={px(1.5)} />
+                <path d={`M ${mx - px(3)} ${my} H ${mx + px(3)} M ${mx} ${my - px(3)} V ${my + px(3)}`} stroke="#e6c56b" strokeWidth={px(1.5)} />
+              </g>
+            );
+          })}
+        {poly &&
+          poly.map((p, i) => (
+            <g key={`v${i}`} data-handle={`v${i}`} style={{ cursor: "move" }}>
+              <circle cx={p.x * U} cy={p.y * U} r={px(15)} fill="transparent" />
+              <circle cx={p.x * U} cy={p.y * U} r={px(7)} fill="#ffffff" stroke="#14110e" strokeWidth={px(2)} />
+            </g>
+          ))}
       </g>
       <text
         x={el.x * U}

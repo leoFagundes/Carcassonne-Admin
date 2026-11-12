@@ -1,4 +1,4 @@
-import type { PlanElement, Pose } from "./types";
+import type { LocalPt, PlanElement, Pose } from "./types";
 
 export interface Pt {
   x: number;
@@ -50,7 +50,11 @@ export function toLocal(el: Pose, px: number, py: number): Pt {
   return { x: dx * c + dy * s, y: -dx * s + dy * c };
 }
 
-export function corners(el: Pick<PlanElement, "x" | "y" | "w" | "d" | "rot">): Pt[] {
+type Shaped = Pick<PlanElement, "x" | "y" | "w" | "d" | "rot"> & { points?: LocalPt[] };
+
+/** Contorno do elemento na planta (os pontos do polígono, ou os 4 cantos). */
+export function corners(el: Shaped): Pt[] {
+  if (el.points && el.points.length >= 3) return el.points.map((p) => toWorld(el, p.x, p.y));
   const hw = el.w / 2;
   const hd = el.d / 2;
   return [
@@ -61,16 +65,91 @@ export function corners(el: Pick<PlanElement, "x" | "y" | "w" | "d" | "rot">): P
   ];
 }
 
-export function containsPoint(
-  el: Pick<PlanElement, "x" | "y" | "w" | "d" | "rot">,
-  p: Pt,
-  pad = 0,
-): boolean {
+export function containsPoint(el: Shaped, p: Pt, pad = 0): boolean {
   const l = toLocal(el, p.x, p.y);
+  if (el.points && el.points.length >= 3) return pointInPolygon(el.points, l);
   return Math.abs(l.x) <= el.w / 2 + pad && Math.abs(l.y) <= el.d / 2 + pad;
 }
 
-export function boundsOf(els: Pick<PlanElement, "x" | "y" | "w" | "d" | "rot">[]): Bounds | null {
+/** Ponto dentro do polígono (regra par/ímpar). */
+export function pointInPolygon(poly: LocalPt[], p: Pt): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i];
+    const b = poly[j];
+    if (a.y > p.y !== b.y > p.y && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+  }
+  return inside;
+}
+
+/** Retângulo w × d como polígono de 4 pontos (para começar a desenhar o formato). */
+export function rectPoints(w: number, d: number): LocalPt[] {
+  return [
+    { x: cm(-w / 2), y: cm(-d / 2) },
+    { x: cm(w / 2), y: cm(-d / 2) },
+    { x: cm(w / 2), y: cm(d / 2) },
+    { x: cm(-w / 2), y: cm(d / 2) },
+  ];
+}
+
+/**
+ * Recentraliza o polígono: o centro do elemento vira o centro do contorno e
+ * w × d passam a ser o tamanho do contorno (mantendo o desenho no lugar).
+ */
+export function normalizePolygon<T extends PlanElement>(el: T): T {
+  if (!el.points || el.points.length < 3) return el;
+  const xs = el.points.map((p) => p.x);
+  const ys = el.points.map((p) => p.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  const c = toWorld(el, cx, cy);
+  return {
+    ...el,
+    x: cm(c.x),
+    y: cm(c.y),
+    w: cm(Math.max(MIN_SIZE, maxX - minX)),
+    d: cm(Math.max(MIN_SIZE, maxY - minY)),
+    points: el.points.map((p) => ({ x: cm(p.x - cx), y: cm(p.y - cy) })),
+  };
+}
+
+/** Muda o tamanho do polígono esticando os pontos. */
+export function scalePolygon<T extends PlanElement>(el: T, w: number, d: number): T {
+  if (!el.points || el.points.length < 3) return { ...el, w, d };
+  const sx = el.w ? w / el.w : 1;
+  const sy = el.d ? d / el.d : 1;
+  return { ...el, w: cm(w), d: cm(d), points: el.points.map((p) => ({ x: cm(p.x * sx), y: cm(p.y * sy) })) };
+}
+
+/** Move um ponto do polígono para `p` (da planta). */
+export function moveVertex<T extends PlanElement>(el: T, i: number, p: Pt, step: number): T {
+  if (!el.points?.[i]) return el;
+  const l = toLocal(el, p.x, p.y);
+  const pts = el.points.map((q, k) => (k === i ? { x: cm(snap(l.x, step)), y: cm(snap(l.y, step)) } : q));
+  return normalizePolygon({ ...el, points: pts });
+}
+
+/** Cria um ponto no meio da aresta i → i+1. */
+export function insertVertex<T extends PlanElement>(el: T, i: number): T {
+  if (!el.points || el.points.length < 3) return el;
+  const a = el.points[i];
+  const b = el.points[(i + 1) % el.points.length];
+  const pts = [...el.points];
+  pts.splice(i + 1, 0, { x: cm((a.x + b.x) / 2), y: cm((a.y + b.y) / 2) });
+  return { ...el, points: pts };
+}
+
+/** Apaga um ponto (o polígono continua com pelo menos 3). */
+export function removeVertex<T extends PlanElement>(el: T, i: number): T {
+  if (!el.points || el.points.length <= 3) return el;
+  return normalizePolygon({ ...el, points: el.points.filter((_, k) => k !== i) });
+}
+
+export function boundsOf(els: Shaped[]): Bounds | null {
   if (!els.length) return null;
   let minX = Infinity;
   let minY = Infinity;
@@ -167,6 +246,10 @@ export function handleLocal(el: Pick<PlanElement, "w" | "d">, h: Handle): Pt {
  * fica parado; o tamanho encaixa na grade `step`.
  */
 export function resizeTo(el: PlanElement, h: Handle, p: Pt, step: number): PlanElement {
+  if (el.points && el.points.length >= 3) {
+    const r = resizeTo({ ...el, points: undefined }, h, p, step);
+    return { ...scalePolygon(el, r.w, r.d), x: r.x, y: r.y };
+  }
   const l = toLocal(el, p.x, p.y);
   let left = -el.w / 2;
   let right = el.w / 2;

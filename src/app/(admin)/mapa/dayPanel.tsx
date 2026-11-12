@@ -5,13 +5,20 @@ import {
   LuArrowLeftRight,
   LuChevronLeft,
   LuChevronRight,
+  LuClock,
   LuCombine,
+  LuCopy,
   LuEyeOff,
   LuHand,
+  LuLayoutTemplate,
   LuMove,
+  LuPrinter,
+  LuRefreshCw,
   LuRotateCcw,
   LuRotateCw,
+  LuSparkles,
   LuSplit,
+  LuTrash2,
   LuTriangleAlert,
   LuUndo2,
   LuUserCheck,
@@ -19,15 +26,18 @@ import {
   LuUsers,
   LuX,
 } from "react-icons/lu";
-import { addDays, todaySP, weekdayOf } from "@/rental/dates";
+import { addDays, formatDateBR, todaySP, weekdayOf } from "@/rental/dates";
 import { tableTitle } from "@/floorplan/catalog";
-import { STATE_META, type DayStatus, type SeatUnit } from "@/floorplan/day";
-import type { ManualState, MapReserve, PlanElement, TableState } from "@/floorplan/types";
+import { formatMinutes, minutesOf, STATE_META, type DayStatus, type SeatUnit, type TableSuggestion } from "@/floorplan/day";
+import type { DayTemplate, ManualState, MapReserve, MapSettings, PlanElement, TableState } from "@/floorplan/types";
 import { Btn, Section, TextField } from "./ui";
 
 const WEEKDAYS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
 export type DayTool = { kind: "select" } | { kind: "join"; tables: string[] } | { kind: "assign"; reserve: MapReserve };
+
+/** O que o mapa mostra: o dia todo, agora, ou um horário (minutos). */
+export type TimeScope = "day" | "now" | number;
 
 export interface DayActions {
   setManual: (unit: SeatUnit, state: ManualState | null) => void;
@@ -39,9 +49,15 @@ export interface DayActions {
   rotateTable: (tableId: string, delta: number) => void;
   split: (unit: SeatUnit) => void;
   assign: (reserve: MapReserve, unit: SeatUnit) => void;
+  /** Grava o campo "mesa" com o texto da sugestão ("8, 9"). */
+  assignName: (reserve: MapReserve, reserveName: string) => void;
   unassign: (reserve: MapReserve) => void;
   setArrived: (reserve: MapReserve, arrived: boolean) => void;
   resetDay: () => void;
+  copyFrom: (date: string) => void;
+  applyTemplate: (t: DayTemplate) => void;
+  saveTemplate: (name: string) => void;
+  deleteTemplate: (t: DayTemplate) => void;
 }
 
 export function unitTitle(u: SeatUnit): string {
@@ -62,6 +78,9 @@ function StatePill({ state }: { state: TableState }) {
   );
 }
 
+const STAYS = [90, 120, 150, 180, 210, 240, 300, 720];
+const stayLabel = (m: number) => (m >= 720 ? "a noite toda" : m % 60 ? `${Math.floor(m / 60)}h${String(m % 60).padStart(2, "0")}` : `${m / 60}h`);
+
 export default function DayPanel({
   date,
   setDate,
@@ -79,6 +98,15 @@ export default function DayPanel({
   baseNameOf,
   levelName,
   loadingReserves,
+  settings,
+  setSettings,
+  scope,
+  setScope,
+  nowMinutes,
+  reservationTimes,
+  suggestionsFor,
+  templates,
+  onPrint,
   actions,
 }: {
   date: string;
@@ -97,22 +125,46 @@ export default function DayPanel({
   baseNameOf: (tableId: string) => string;
   levelName: (id: string) => string;
   loadingReserves: boolean;
+  settings: MapSettings;
+  setSettings: (patch: Partial<MapSettings>) => void;
+  scope: TimeScope;
+  setScope: (s: TimeScope) => void;
+  nowMinutes: number;
+  reservationTimes: string[];
+  suggestionsFor: (r: MapReserve) => TableSuggestion[];
+  templates: DayTemplate[];
+  onPrint: () => void;
   actions: DayActions;
 }) {
   const [confirmReset, setConfirmReset] = useState(false);
   const today = todaySP();
   const c = status.counts;
-  const confirmed = status.units.flatMap((u) => u.reservations);
   const allReserves = [
-    ...new Map([...confirmed, ...status.unassigned, ...status.unmatched.map((m) => m.reserve)].map((r) => [r.id, r])).values(),
+    ...new Map(
+      [...status.units.flatMap((u) => u.dayReservations), ...status.unassigned, ...status.unmatched.map((m) => m.reserve)].map((r) => [r.id, r]),
+    ).values(),
   ].sort((a, b) => a.time.localeCompare(b.time));
   const totalPeople = allReserves.reduce((s, r) => s + people(r), 0);
-  const unitOfReserve = (r: MapReserve) => status.units.filter((u) => u.reservations.some((x) => x.id === r.id));
+  const unitOfReserve = (r: MapReserve) => status.units.filter((u) => u.dayReservations.some((x) => x.id === r.id));
+  const scopeOptions: { id: TimeScope; label: string }[] = [
+    { id: "day", label: "Dia todo" },
+    ...(date === today ? [{ id: "now" as TimeScope, label: `Agora (${formatMinutes(nowMinutes)})` }] : []),
+    ...reservationTimes
+      .map((t) => ({ id: minutesOf(t), label: t }))
+      .filter((o): o is { id: number; label: string } => o.id !== null),
+  ];
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Dia */}
-      <Section title="Dia">
+      {/* Dia e horário */}
+      <Section
+        title="Dia"
+        aside={
+          <Btn tone="ghost" onClick={onPrint} title="Imprimir o mapa e a lista do dia">
+            <LuPrinter size={14} /> Imprimir
+          </Btn>
+        }
+      >
         <div className="flex items-center gap-1.5">
           <Btn tone="ghost" title="Dia anterior" onClick={() => setDate(addDays(date, -1))}>
             <LuChevronLeft size={16} />
@@ -139,6 +191,44 @@ export default function DayPanel({
             </Btn>
           )}
         </div>
+
+        <div className="flex flex-col gap-1.5">
+          <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-gold/50">
+            <LuClock size={11} /> Horário
+          </span>
+          <div className="flex flex-wrap gap-1">
+            {scopeOptions.map((o) => (
+              <button
+                key={String(o.id)}
+                type="button"
+                aria-pressed={scope === o.id}
+                onClick={() => setScope(o.id)}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                  scope === o.id ? "bg-primary-gold text-primary-black" : "border border-primary-gold/20 text-primary-gold/65 hover:text-primary-gold"
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+            <input
+              type="time"
+              aria-label="Outro horário"
+              value={typeof scope === "number" ? formatMinutes(scope) : ""}
+              onChange={(e) => {
+                const m = minutesOf(e.target.value);
+                if (m !== null) setScope(m);
+              }}
+              className="rounded-full border border-primary-gold/20 bg-primary-black/70 px-2 py-0.5 text-[11px] text-primary-gold outline-none [color-scheme:dark] focus:border-primary-gold/60"
+            />
+          </div>
+          {scope !== "day" && (
+            <span className="text-[11px] leading-snug text-primary-gold/50">
+              Conta cada reserva da chegada até {stayLabel(settings.stayMinutes)} depois. A etiqueta embaixo da mesa mostra a próxima
+              reserva.
+            </span>
+          )}
+        </div>
+
         <div className="grid grid-cols-4 gap-1.5">
           {(["free", "reserved", "occupied", "blocked"] as TableState[]).map((s) => (
             <div key={s} className="flex flex-col items-center rounded-xl border border-primary-gold/10 bg-primary-black/40 px-1 py-1.5">
@@ -151,16 +241,55 @@ export default function DayPanel({
         </div>
         <p className="text-xs text-primary-gold/65">
           <strong className="text-primary-gold">{c.seatsFree}</strong> de {c.seatsTotal} lugares livres ·{" "}
-          {loadingReserves ? "carregando reservas…" : `${allReserves.length} ${allReserves.length === 1 ? "reserva" : "reservas"} (${totalPeople} pessoas)`}
+          {loadingReserves ? "carregando reservas…" : `${allReserves.length} ${allReserves.length === 1 ? "reserva" : "reservas"} no dia (${totalPeople} pessoas)`}
         </p>
+      </Section>
+
+      {/* Sincronização */}
+      <Section title="Reservas e mesas">
+        <label className="flex items-start justify-between gap-3 text-xs text-primary-gold/80">
+          <span className="flex flex-col gap-0.5">
+            <span className="flex items-center gap-1.5 font-semibold text-primary-gold">
+              <LuRefreshCw size={13} /> Sincronizar com o campo &quot;mesa&quot;
+            </span>
+            <span className="text-[11px] leading-snug text-primary-gold/50">
+              Ligado, as mesas seguem o que está escrito em cada reserva: &quot;8, 9&quot; aparece como a 8 e a 9 juntas e &quot;salas&quot;
+              junta as mesas das salas (24 e 42).
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={settings.autoSync}
+            onChange={(e) => setSettings({ autoSync: e.target.checked })}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[#e6c56b]"
+            aria-label="Sincronizar mesas com as reservas"
+          />
+        </label>
+        <label className="flex items-center justify-between gap-2 text-xs text-primary-gold/75">
+          Uma reserva costuma ficar
+          <select
+            value={settings.stayMinutes}
+            onChange={(e) => setSettings({ stayMinutes: Number(e.target.value) })}
+            className="rounded-lg border border-primary-gold/20 bg-primary-black/70 px-2 py-1 text-xs text-primary-gold outline-none focus:border-primary-gold/60"
+          >
+            {[...new Set([...STAYS, settings.stayMinutes])]
+              .sort((a, b) => a - b)
+              .map((m) => (
+                <option key={m} value={m} className="bg-primary-black">
+                  {stayLabel(m)}
+                </option>
+              ))}
+          </select>
+        </label>
+        <span className="-mt-1 text-[11px] text-primary-gold/45">Usado para ver por horário, achar conflitos e sugerir mesas. Vale para todo mundo.</span>
       </Section>
 
       {/* Ferramentas */}
       <div className="flex flex-wrap gap-1.5">
         <Btn
           active={tool.kind === "join"}
-          onClick={() => setTool(tool.kind === "join" ? { kind: "select" } : { kind: "join", tables: selected?.tableIds ?? [] })}
-          title="Juntar mesas"
+          onClick={() => setTool(tool.kind === "join" ? { kind: "select" } : { kind: "join", tables: selected && !selected.isAuto ? selected.tableIds : [] })}
+          title="Juntar mesas à mão (ex.: cliente sem reserva)"
         >
           <LuCombine size={14} /> Juntar mesas
         </Btn>
@@ -175,8 +304,8 @@ export default function DayPanel({
       </div>
       {confirmReset && (
         <div className="flex flex-col gap-2 rounded-xl border border-invalid-color/30 bg-invalid-color/[0.06] p-3 text-xs text-primary-gold/80">
-          Voltar todas as mesas deste dia para a planta? Posições, nomes, mesas retiradas e mesas juntadas voltam ao normal.
-          As reservas e os estados marcados continuam.
+          Voltar todas as mesas deste dia para a planta? Posições, nomes, mesas retiradas e mesas juntadas à mão voltam ao normal. As
+          reservas e os estados marcados continuam.
           <div className="flex justify-end gap-1.5">
             <Btn tone="ghost" onClick={() => setConfirmReset(false)}>
               Cancelar
@@ -200,10 +329,8 @@ export default function DayPanel({
             <LuHand size={14} /> Toque nas mesas que vão ficar juntas
           </span>
           <span>
-            {tool.tables.length
-              ? `Escolhidas: ${tool.tables.map(baseNameOf).join(", ")}`
-              : "Nenhuma mesa escolhida ainda."}{" "}
-            Elas passam a valer como uma mesa só neste dia (mesmo estado e as mesmas reservas).
+            {tool.tables.length ? `Escolhidas: ${tool.tables.map(baseNameOf).join(", ")}` : "Nenhuma mesa escolhida ainda."} Elas passam a
+            valer como uma mesa só neste dia (mesmo estado e as mesmas reservas).
           </span>
           <div className="flex justify-end gap-1.5">
             <Btn tone="ghost" onClick={() => setTool({ kind: "select" })}>
@@ -221,9 +348,16 @@ export default function DayPanel({
             <LuHand size={14} /> Toque na mesa de {tool.reserve.name || "esta reserva"}
           </span>
           <span>
-            {tool.reserve.time} · {people(tool.reserve)} {people(tool.reserve) === 1 ? "pessoa" : "pessoas"}. A mesa escolhida é gravada na reserva
-            (aparece em Reservas também).
+            {tool.reserve.time} · {people(tool.reserve)} {people(tool.reserve) === 1 ? "pessoa" : "pessoas"}. A mesa escolhida é gravada no
+            campo &quot;mesa&quot; da reserva (aparece em Reservas também).
           </span>
+          <Suggestions
+            list={suggestionsFor(tool.reserve)}
+            onPick={(s) => {
+              actions.assignName(tool.reserve, s.reserveName);
+              setTool({ kind: "select" });
+            }}
+          />
           <div className="flex justify-end">
             <Btn tone="ghost" onClick={() => setTool({ kind: "select" })}>
               Cancelar
@@ -241,6 +375,7 @@ export default function DayPanel({
           baseName={selected.isGroup ? "" : baseNameOf(selected.tableIds[0])}
           allReserves={allReserves}
           unitOfReserve={unitOfReserve}
+          scoped={scope !== "day"}
           onClose={() => onSelect(null)}
           actions={actions}
         />
@@ -250,12 +385,44 @@ export default function DayPanel({
         </p>
       )}
 
+      {/* Conflitos */}
+      {status.conflicts.length > 0 && (
+        <Section title="Conflitos de mesa">
+          <ul className="flex flex-col gap-1.5">
+            {status.conflicts.map((cf) => {
+              const unit = status.unitOfTable.get(cf.tableId);
+              return (
+                <li key={`${cf.a.id}-${cf.b.id}`} className="flex items-start gap-2 rounded-lg border border-amber-300/25 bg-amber-300/[0.06] px-2 py-1.5 text-xs text-amber-100/90">
+                  <LuTriangleAlert size={14} className="mt-0.5 shrink-0 text-amber-300" />
+                  <span className="min-w-0 flex-1">
+                    <button type="button" className="font-semibold text-amber-200 underline-offset-2 hover:underline" onClick={() => unit && onSelect(unit.key)}>
+                      {tableTitle(baseNameOf(cf.tableId))}
+                    </button>{" "}
+                    tem {cf.a.name || "uma reserva"} ({cf.a.time}) e {cf.b.name || "outra"} ({cf.b.time}) ao mesmo tempo.
+                  </span>
+                  <Btn onClick={() => setTool({ kind: "assign", reserve: cf.b })} title="Escolher outra mesa para a segunda reserva">
+                    Trocar
+                  </Btn>
+                </li>
+              );
+            })}
+          </ul>
+        </Section>
+      )}
+
       {/* Sem mesa e avisos */}
       {(status.unassigned.length > 0 || status.unmatched.length > 0) && (
         <Section title="Precisa de mesa">
           <ul className="flex flex-col gap-1.5">
             {status.unassigned.map((r) => (
-              <ReserveRow key={r.id} r={r} note="Sem mesa" onPlace={() => setTool({ kind: "assign", reserve: r })} />
+              <ReserveRow
+                key={r.id}
+                r={r}
+                note="Sem mesa"
+                suggestions={suggestionsFor(r)}
+                onSuggest={(s) => actions.assignName(r, s.reserveName)}
+                onPlace={() => setTool({ kind: "assign", reserve: r })}
+              />
             ))}
             {status.unmatched.map(({ reserve, missing }) => (
               <ReserveRow
@@ -263,6 +430,8 @@ export default function DayPanel({
                 r={reserve}
                 warn
                 note={`"${reserve.table}": ${missing.map((m) => (/^\d/.test(m) ? `mesa ${m}` : m)).join(", ")} não ${missing.length === 1 ? "está" : "estão"} no mapa`}
+                suggestions={suggestionsFor(reserve)}
+                onSuggest={(s) => actions.assignName(reserve, s.reserveName)}
                 onPlace={() => setTool({ kind: "assign", reserve })}
               />
             ))}
@@ -302,7 +471,11 @@ export default function DayPanel({
                       {r.name || "Sem nome"} <span className="text-primary-gold/45">· {people(r)}p</span>
                     </span>
                     {r.isArrived && <LuUserCheck size={13} className="shrink-0 text-emerald-300" aria-label="Chegou" />}
-                    <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${units.length ? "bg-primary-gold/15 text-primary-gold" : "bg-invalid-color/15 text-invalid-color"}`}>
+                    <span
+                      className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                        units.length ? "bg-primary-gold/15 text-primary-gold" : "bg-invalid-color/15 text-invalid-color"
+                      }`}
+                    >
                       {units.length ? units.map((u) => u.reserveName).join(" + ") : r.table || "sem mesa"}
                     </span>
                   </button>
@@ -312,24 +485,149 @@ export default function DayPanel({
           </ul>
         </Section>
       )}
+
+      <ArrangementSection date={date} templates={templates} hasLayoutChanges={hasLayoutChanges} actions={actions} />
     </div>
   );
 }
 
-function ReserveRow({ r, note, warn, onPlace }: { r: MapReserve; note: string; warn?: boolean; onPlace: () => void }) {
+function Suggestions({ list, onPick }: { list: TableSuggestion[]; onPick: (s: TableSuggestion) => void }) {
+  if (!list.length) return <span className="text-[11px] text-primary-gold/45">Nenhuma mesa livre comporta o grupo nesse horário.</span>;
   return (
-    <li className="flex items-center gap-2 rounded-lg border border-primary-gold/10 bg-primary-black/40 px-2 py-1.5 text-xs">
-      {warn ? <LuTriangleAlert size={14} className="shrink-0 text-amber-300" /> : <LuUsers size={14} className="shrink-0 text-primary-gold/50" />}
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-semibold text-primary-gold/90">
-          {r.time} · {r.name || "Sem nome"} · {people(r)}p
-        </span>
-        <span className={`truncate text-[11px] ${warn ? "text-amber-200/80" : "text-primary-gold/50"}`}>{note}</span>
+    <span className="flex flex-wrap items-center gap-1.5">
+      <span className="flex items-center gap-1 text-[11px] text-primary-gold/55">
+        <LuSparkles size={12} /> Sugestões:
       </span>
-      <Btn onClick={onPlace} title="Escolher a mesa no mapa">
-        Escolher mesa
-      </Btn>
+      {list.map((s) => (
+        <Btn key={s.reserveName} onClick={() => onPick(s)} title={s.join ? "Juntar as duas mesas para esta reserva" : "Usar esta mesa"}>
+          {s.tableIds.length > 1 ? `Mesas ${s.reserveName}` : tableTitle(s.reserveName)} · {s.seats} lug.
+        </Btn>
+      ))}
+    </span>
+  );
+}
+
+function ReserveRow({
+  r,
+  note,
+  warn,
+  suggestions,
+  onSuggest,
+  onPlace,
+}: {
+  r: MapReserve;
+  note: string;
+  warn?: boolean;
+  suggestions: TableSuggestion[];
+  onSuggest: (s: TableSuggestion) => void;
+  onPlace: () => void;
+}) {
+  return (
+    <li className="flex flex-col gap-1.5 rounded-lg border border-primary-gold/10 bg-primary-black/40 px-2 py-1.5 text-xs">
+      <span className="flex items-center gap-2">
+        {warn ? <LuTriangleAlert size={14} className="shrink-0 text-amber-300" /> : <LuUsers size={14} className="shrink-0 text-primary-gold/50" />}
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate font-semibold text-primary-gold/90">
+            {r.time} · {r.name || "Sem nome"} · {people(r)}p
+          </span>
+          <span className={`truncate text-[11px] ${warn ? "text-amber-200/80" : "text-primary-gold/50"}`}>{note}</span>
+        </span>
+        <Btn onClick={onPlace} title="Escolher a mesa no mapa">
+          Escolher no mapa
+        </Btn>
+      </span>
+      <Suggestions list={suggestions.slice(0, 3)} onPick={onSuggest} />
     </li>
+  );
+}
+
+function ArrangementSection({
+  date,
+  templates,
+  hasLayoutChanges,
+  actions,
+}: {
+  date: string;
+  templates: DayTemplate[];
+  hasLayoutChanges: boolean;
+  actions: DayActions;
+}) {
+  const [from, setFrom] = useState(addDays(date, -7));
+  const [name, setName] = useState("");
+  const [confirmDel, setConfirmDel] = useState<string | null>(null);
+  return (
+    <Section title="Arrumação do dia">
+      <span className="text-[11px] leading-snug text-primary-gold/50">
+        Posições, nomes, mesas retiradas e mesas juntadas à mão. Copiar ou aplicar troca a arrumação deste dia (as reservas e os estados
+        continuam).
+      </span>
+      <div className="flex items-end gap-1.5">
+        <label className="flex flex-1 flex-col gap-1">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-gold/50">Copiar de outro dia</span>
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => e.target.value && setFrom(e.target.value)}
+            className="w-full rounded-lg border border-primary-gold/20 bg-primary-black/70 px-2 py-1.5 text-xs text-primary-gold outline-none [color-scheme:dark] focus:border-primary-gold/60"
+          />
+        </label>
+        <Btn disabled={from === date} onClick={() => actions.copyFrom(from)} title={`Copiar a arrumação de ${formatDateBR(from, true)}`}>
+          <LuCopy size={13} /> Copiar
+        </Btn>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-gold/50">
+          <LuLayoutTemplate size={11} /> Modelos
+        </span>
+        {templates.length === 0 && <span className="text-[11px] text-primary-gold/45">Nenhum modelo ainda. Arrume as mesas e salve aqui.</span>}
+        <ul className="flex flex-col gap-1">
+          {templates.map((t) => (
+            <li key={t.id} className="flex items-center gap-1.5 rounded-lg border border-primary-gold/10 bg-primary-black/40 px-2 py-1 text-xs">
+              <span className="min-w-0 flex-1 truncate font-semibold text-primary-gold/85">{t.name}</span>
+              {confirmDel === t.id ? (
+                <>
+                  <Btn tone="ghost" onClick={() => setConfirmDel(null)}>
+                    Não
+                  </Btn>
+                  <Btn
+                    tone="danger"
+                    onClick={() => {
+                      setConfirmDel(null);
+                      actions.deleteTemplate(t);
+                    }}
+                  >
+                    Excluir
+                  </Btn>
+                </>
+              ) : (
+                <>
+                  <Btn onClick={() => actions.applyTemplate(t)}>Aplicar</Btn>
+                  <Btn tone="ghost" title={`Excluir o modelo ${t.name}`} onClick={() => setConfirmDel(t.id)}>
+                    <LuTrash2 size={13} />
+                  </Btn>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+        <div className="flex items-end gap-1.5">
+          <div className="flex-1">
+            <TextField label="Salvar a arrumação deste dia como" value={name} placeholder="Ex.: Noite de evento" onCommit={setName} />
+          </div>
+          <Btn
+            disabled={!name.trim() || !hasLayoutChanges}
+            title={hasLayoutChanges ? "Salvar como modelo" : "Mude alguma mesa neste dia para salvar um modelo"}
+            onClick={() => {
+              actions.saveTemplate(name.trim());
+              setName("");
+            }}
+          >
+            Salvar
+          </Btn>
+        </div>
+      </div>
+    </Section>
   );
 }
 
@@ -340,6 +638,7 @@ function UnitCard({
   baseName,
   allReserves,
   unitOfReserve,
+  scoped,
   onClose,
   actions,
 }: {
@@ -349,6 +648,7 @@ function UnitCard({
   baseName: string;
   allReserves: MapReserve[];
   unitOfReserve: (r: MapReserve) => SeatUnit[];
+  scoped: boolean;
   onClose: () => void;
   actions: DayActions;
 }) {
@@ -359,8 +659,10 @@ function UnitCard({
     { id: "blocked", label: "Indisponível" },
   ];
   const current = unit.manual?.state ?? "auto";
-  const others = allReserves.filter((r) => !unit.reservations.some((x) => x.id === r.id));
+  const others = allReserves.filter((r) => !unit.dayReservations.some((x) => x.id === r.id));
   const tableId = unit.tableIds[0];
+  const list = scoped ? unit.reservations : unit.dayReservations;
+  const autoField = unit.reservations[0]?.table ?? unit.dayReservations[0]?.table;
 
   return (
     <section className="flex flex-col gap-3 rounded-2xl border border-primary-gold/35 bg-secondary-black/60 p-3">
@@ -378,6 +680,13 @@ function UnitCard({
         </Btn>
       </header>
 
+      {unit.isAuto && (
+        <p className="flex items-start gap-1.5 rounded-lg border border-primary-gold/15 bg-primary-gold/[0.05] px-2 py-1.5 text-[11px] leading-snug text-primary-gold/70">
+          <LuRefreshCw size={12} className="mt-0.5 shrink-0" />
+          Juntadas pela reserva (campo mesa &quot;{autoField}&quot;). Para separar, mude a mesa na reserva ou desligue a sincronização.
+        </p>
+      )}
+
       <div className="flex flex-col gap-1.5">
         <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-gold/50">Estado</span>
         <div className="grid grid-cols-2 gap-1.5">
@@ -391,24 +700,24 @@ function UnitCard({
                 current === ch.id ? "border-primary-gold bg-primary-gold/15 text-primary-gold" : "border-primary-gold/15 text-primary-gold/65 hover:border-primary-gold/40"
               } ${ch.id === "auto" ? "col-span-2" : ""}`}
             >
-              {ch.id !== "auto" && (
-                <span className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle" style={{ background: STATE_META[ch.id].color }} />
-              )}
+              {ch.id !== "auto" && <span className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle" style={{ background: STATE_META[ch.id].color }} />}
               {ch.label}
             </button>
           ))}
         </div>
         <span className="text-[11px] leading-snug text-primary-gold/45">
-          No automático, a mesa fica reservada quando tem reserva no dia e ocupada quando a reserva chega.
-          {unit.manual ? ` Marcado à mão às ${new Date(unit.manual.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.` : ""}
+          No automático, a mesa fica reservada quando tem reserva e ocupada quando a reserva chega. A marcação à mão vale o dia todo.
+          {unit.manual ? ` Marcado às ${new Date(unit.manual.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.` : ""}
         </span>
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-gold/50">Reservas nesta mesa</span>
-        {unit.reservations.length === 0 && <span className="text-xs text-primary-gold/50">Nenhuma reserva neste dia.</span>}
+        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-gold/50">
+          {scoped ? "Reservas neste horário" : "Reservas nesta mesa"}
+        </span>
+        {list.length === 0 && <span className="text-xs text-primary-gold/50">{scoped ? "Nenhuma neste horário." : "Nenhuma reserva neste dia."}</span>}
         <ul className="flex flex-col gap-1.5">
-          {unit.reservations.map((r) => {
+          {list.map((r) => {
             const shared = unitOfReserve(r).length > 1;
             return (
               <li key={r.id} className="flex flex-col gap-1 rounded-lg border border-primary-gold/10 bg-primary-black/40 px-2 py-1.5 text-xs">
@@ -438,6 +747,11 @@ function UnitCard({
             );
           })}
         </ul>
+        {scoped && unit.upcoming.length > 0 && (
+          <span className="text-[11px] text-primary-gold/60">
+            Depois: {unit.upcoming.map((r) => `${r.time} ${r.name.split(" ")[0] || "reserva"} (${people(r)}p)`).join(" · ")}
+          </span>
+        )}
         {others.length > 0 && (
           <select
             value=""
@@ -461,44 +775,41 @@ function UnitCard({
         )}
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-primary-gold/10 pt-3">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-gold/50">Só neste dia</span>
-        {unit.isGroup ? (
-          <>
-            <TextField
-              label="Nome do grupo"
-              value={unit.name === unit.reserveName ? "" : unit.name}
-              placeholder={unit.reserveName}
-              onCommit={(v) => actions.renameGroup(unit, v)}
-            />
-            <div className="flex flex-wrap gap-1.5">
-              <Btn onClick={() => actions.split(unit)}>
-                <LuSplit size={13} /> Separar as mesas
-              </Btn>
-            </div>
-          </>
-        ) : (
-          <>
-            <TextField label="Nome neste dia" value={unit.name === baseName ? "" : unit.name} placeholder={baseName} onCommit={(v) => actions.renameTable(tableId, v)} />
-            <div className="flex flex-wrap gap-1.5">
-              <Btn onClick={() => actions.rotateTable(tableId, -90)} title="Girar 90° para a esquerda">
-                <LuRotateCcw size={13} />
-              </Btn>
-              <Btn onClick={() => actions.rotateTable(tableId, 90)} title="Girar 90° para a direita">
-                <LuRotateCw size={13} />
-              </Btn>
-              {moved && (
-                <Btn onClick={() => actions.resetPose(tableId)} title="Voltar para o lugar da planta">
-                  <LuArrowLeftRight size={13} /> Voltar ao lugar
+      {!unit.isAuto && (
+        <div className="flex flex-col gap-2 border-t border-primary-gold/10 pt-3">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-gold/50">Só neste dia</span>
+          {unit.isGroup ? (
+            <>
+              <TextField label="Nome do grupo" value={unit.name === unit.reserveName ? "" : unit.name} placeholder={unit.reserveName} onCommit={(v) => actions.renameGroup(unit, v)} />
+              <div className="flex flex-wrap gap-1.5">
+                <Btn onClick={() => actions.split(unit)}>
+                  <LuSplit size={13} /> Separar as mesas
                 </Btn>
-              )}
-              <Btn tone="ghost" onClick={() => actions.hideTable(tableId)} title="Tirar a mesa do mapa só neste dia">
-                <LuEyeOff size={13} /> Retirar hoje
-              </Btn>
-            </div>
-          </>
-        )}
-      </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <TextField label="Nome neste dia" value={unit.name === baseName ? "" : unit.name} placeholder={baseName} onCommit={(v) => actions.renameTable(tableId, v)} />
+              <div className="flex flex-wrap gap-1.5">
+                <Btn onClick={() => actions.rotateTable(tableId, -90)} title="Girar 90° para a esquerda">
+                  <LuRotateCcw size={13} />
+                </Btn>
+                <Btn onClick={() => actions.rotateTable(tableId, 90)} title="Girar 90° para a direita">
+                  <LuRotateCw size={13} />
+                </Btn>
+                {moved && (
+                  <Btn onClick={() => actions.resetPose(tableId)} title="Voltar para o lugar da planta">
+                    <LuArrowLeftRight size={13} /> Voltar ao lugar
+                  </Btn>
+                )}
+                <Btn tone="ghost" onClick={() => actions.hideTable(tableId)} title="Tirar a mesa do mapa só neste dia">
+                  <LuEyeOff size={13} /> Retirar hoje
+                </Btn>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </section>
   );
 }

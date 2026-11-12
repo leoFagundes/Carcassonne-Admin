@@ -18,11 +18,14 @@ export type ElementKind =
   | "window"
   | "curtain"
   | "stair"
+  | "pillar"
+  | "stage"
   // Lugares
   | "table"
   | "bench"
   | "sofa"
   | "pouf"
+  | "chair"
   // Móveis e equipamentos
   | "shelf"
   | "cabinet"
@@ -38,6 +41,14 @@ export type ElementKind =
   | "plant"
   | "deco"
   | "text";
+
+export interface LocalPt {
+  x: number;
+  y: number;
+}
+
+/** Formato da mesa: retangular (padrão) ou redonda/oval. */
+export type TableShape = "rect" | "round";
 
 export interface PlanElement {
   id: string;
@@ -58,6 +69,13 @@ export interface PlanElement {
   count?: number;
   /** Preso a outro elemento (banco preso à mesa): acompanha quando ele move. */
   parent?: string;
+  /** Mesa redonda/oval (o tamanho vira os diâmetros). */
+  shape?: TableShape;
+  /**
+   * Ambiente ou área fechada com formato livre: pontos nos eixos do elemento
+   * (relativos ao centro). Sem isso, é o retângulo w × d.
+   */
+  points?: LocalPt[];
   /** Ambiente sem o nome escrito no mapa. */
   hideLabel?: boolean;
   /** Posição do nome do ambiente em relação ao centro (eixos do ambiente). */
@@ -65,11 +83,26 @@ export interface PlanElement {
   ly?: number;
 }
 
+/** Imagem de fundo do andar (foto ou planta), para desenhar por cima. */
+export interface LevelBackground {
+  url: string;
+  /** Caminho no Storage (para apagar ao trocar). */
+  path?: string;
+  /** Canto superior esquerdo e tamanho, em metros. */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** 0 a 1. */
+  opacity: number;
+}
+
 export interface PlanLevel {
   id: string;
   name: string;
   /** 0 = mais baixo. */
   order: number;
+  bg?: LevelBackground;
 }
 
 export interface FloorPlan {
@@ -114,6 +147,25 @@ export interface DayPlan {
   groups: Record<string, TableGroup>;
   /** Estado marcado à mão, por mesa ou por grupo. */
   manual: Record<string, ManualMark>;
+}
+
+/** Configurações do mapa: /floorPlan/settings. */
+export interface MapSettings {
+  /** As mesas seguem o campo "mesa" das reservas ("8, 9" junta a 8 e a 9). */
+  autoSync: boolean;
+  /** Quanto tempo uma reserva costuma ocupar a mesa (para ver por horário). */
+  stayMinutes: number;
+}
+
+/** Arrumação guardada para reusar (ex.: "Noite de evento"). */
+export interface DayTemplate {
+  id: string;
+  name: string;
+  moves: Record<string, Pose>;
+  names: Record<string, string>;
+  hidden: Record<string, boolean>;
+  groups: Record<string, TableGroup>;
+  createdAt: number;
 }
 
 /** O pedaço de uma reserva que o mapa usa. */

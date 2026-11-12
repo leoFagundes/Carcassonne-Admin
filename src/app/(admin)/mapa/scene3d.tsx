@@ -29,6 +29,8 @@ export interface Scene3DProps {
 // ───────────────────────── materiais e caixas compartilhados ─────────────────────────
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
+/** Cilindro de diâmetro 1 e altura 1 (escala vira elipse: mesa oval). */
+const CYL = new THREE.CylinderGeometry(0.5, 0.5, 1, 40);
 const MATS = new Map<string, THREE.MeshStandardMaterial>();
 type MatOpts = { metalness?: number; roughness?: number; emissive?: number; emissiveIntensity?: number };
 function mat(color: number | string, o: MatOpts = {}): THREE.MeshStandardMaterial {
@@ -79,6 +81,25 @@ function Cyl({ r, h, p, c, o, seg = 16, r2 }: { r: number; h: number; p: [number
 }
 
 const FLOOR: Record<string, number> = { wood: 0x7b5236, tile: 0xcfc8ba, granite: 0x8f9296 };
+
+/** Polígono da planta (y para baixo) no plano do three, para deitar com -90° em x. */
+function polyShape(points: { x: number; y: number }[]): THREE.Shape {
+  const sh = new THREE.Shape();
+  points.forEach((p, i) => (i ? sh.lineTo(p.x, -p.y) : sh.moveTo(p.x, -p.y)));
+  sh.closePath();
+  return sh;
+}
+
+/** Piso (h = 0) ou bloco extrudado (h > 0) com o formato livre. */
+function PolyMesh({ points, h, y = 0, c, o }: { points: { x: number; y: number }[]; h: number; y?: number; c: number; o?: MatOpts }) {
+  const key = points.map((p) => `${p.x},${p.y}`).join(";");
+  const geo = useMemo(
+    () => (h > 0 ? new THREE.ExtrudeGeometry(polyShape(points), { depth: h, bevelEnabled: false }) : new THREE.ShapeGeometry(polyShape(points))),
+    [key, h],
+  );
+  useEffect(() => () => geo.dispose(), [geo]);
+  return <mesh geometry={geo} material={mat(c, o)} rotation={[-Math.PI / 2, 0, 0]} position={[0, y, 0]} castShadow={h > 0} receiveShadow />;
+}
 const GLOW_BLUE = { emissive: 0x1f49a8, emissiveIntensity: 0.9, roughness: 0.3 };
 
 // ───────────────────────── cada tipo ─────────────────────────
@@ -102,9 +123,29 @@ function ElementModel({ el, ctx }: { el: PlanElement; ctx: BuildCtx }) {
 
   switch (el.kind) {
     case "room":
-      return <B s={[w, 0.08, d]} p={[0, -0.04, 0]} c={FLOOR[v ?? "wood"]} o={{ roughness: v === "granite" ? 0.35 : 0.8 }} shadow={false} />;
+      return el.points ? (
+        <PolyMesh points={el.points} h={0} y={0.001} c={FLOOR[v ?? "wood"]} o={{ roughness: v === "granite" ? 0.35 : 0.8 }} />
+      ) : (
+        <B s={[w, 0.08, d]} p={[0, -0.04, 0]} c={FLOOR[v ?? "wood"]} o={{ roughness: v === "granite" ? 0.35 : 0.8 }} shadow={false} />
+      );
     case "block":
-      return <B s={[w, wallH, d]} p={[0, wallH / 2, 0]} c={0x2a2622} o={{ roughness: 1 }} />;
+      return el.points ? (
+        <PolyMesh points={el.points} h={wallH} c={0x2a2622} o={{ roughness: 1 }} />
+      ) : (
+        <B s={[w, wallH, d]} p={[0, wallH / 2, 0]} c={0x2a2622} o={{ roughness: 1 }} />
+      );
+    case "stage":
+      return el.points ? (
+        <PolyMesh points={el.points} h={0.3} c={0x6e4a2a} />
+      ) : (
+        <B s={[w, 0.3, d]} p={[0, 0.15, 0]} c={0x6e4a2a} />
+      );
+    case "pillar":
+      return v === "round" ? (
+        <Cyl r={Math.min(w, d) / 2} h={wallH} p={[0, wallH / 2, 0]} c={0x8d8780} seg={20} />
+      ) : (
+        <B s={[w, wallH, d]} p={[0, wallH / 2, 0]} c={0x8d8780} />
+      );
     case "wall": {
       const h = v === "low" ? 1.0 : wallH;
       return <B s={[w + d, h, d]} p={[0, h / 2, 0]} c={v === "dark" ? 0x1e1d22 : wallColor} />;
@@ -157,22 +198,33 @@ function ElementModel({ el, ctx }: { el: PlanElement; ctx: BuildCtx }) {
     case "table": {
       const black = v === "black";
       const topColor = ctx.state ? STATE_META[ctx.state].color : black ? 0x2a2a2d : 0xb98a5a;
+      const topY = v === "high" ? 1.05 : 0.75;
+      const topO = ctx.selected ? { emissive: 0xffffff, emissiveIntensity: 0.25 } : ctx.state ? { roughness: 0.6 } : undefined;
+      if (el.shape === "round")
+        return (
+          <group>
+            <mesh geometry={CYL} material={mat(topColor, topO)} scale={[w, 0.06, d]} position={[0, topY, 0]} castShadow receiveShadow onClick={ctx.onPick} />
+            <mesh geometry={CYL} material={mat(0x8a6038)} scale={[0.1, topY - 0.03, 0.1]} position={[0, (topY - 0.03) / 2, 0]} castShadow onClick={ctx.onPick} />
+            <mesh geometry={CYL} material={mat(0x6e4a2a)} scale={[Math.min(w, d) * 0.5, 0.04, Math.min(w, d) * 0.5]} position={[0, 0.02, 0]} />
+            {ctx.selected && <mesh geometry={CYL} material={mat(0xffffff, { emissive: 0xffffff, emissiveIntensity: 0.6 })} scale={[w + 0.12, 0.02, d + 0.12]} position={[0, 0.015, 0]} />}
+          </group>
+        );
       const along = w >= d;
       const off = (along ? w : d) / 2 - 0.25;
       return (
         <group>
           <B
             s={[w, 0.06, d]}
-            p={[0, 0.75, 0]}
+            p={[0, topY, 0]}
             c={topColor}
-            o={ctx.selected ? { emissive: 0xffffff, emissiveIntensity: 0.25 } : ctx.state ? { roughness: 0.6 } : undefined}
+            o={topO}
             onClick={ctx.onPick}
           />
           {[-1, 1].map((sgn) => (
             <B
               key={sgn}
-              s={[along ? 0.08 : w * 0.8, 0.72, along ? d * 0.8 : 0.08]}
-              p={[along ? sgn * off : 0, 0.36, along ? 0 : sgn * off]}
+              s={[along ? 0.08 : w * 0.8, topY - 0.03, along ? d * 0.8 : 0.08]}
+              p={[along ? sgn * off : 0, (topY - 0.03) / 2, along ? 0 : sgn * off]}
               c={0x8a6038}
               onClick={ctx.onPick}
             />
@@ -194,6 +246,30 @@ function ElementModel({ el, ctx }: { el: PlanElement; ctx: BuildCtx }) {
         <group>
           <B s={[w, 0.45, d]} p={[0, 0.225, 0]} c={0x4a4d52} o={{ roughness: 0.5 }} />
           <B s={[w, 0.45, 0.15]} p={[0, 0.67, -d / 2 + 0.075]} c={0x4a4d52} o={{ roughness: 0.5 }} />
+        </group>
+      );
+    case "chair":
+      if (v === "stool")
+        return (
+          <group>
+            <Cyl r={Math.min(w, d) / 2} h={0.05} p={[0, 0.75, 0]} c={0xa8794c} />
+            <Cyl r={0.03} h={0.73} p={[0, 0.365, 0]} c={0x3a2412} seg={8} />
+          </group>
+        );
+      if (v === "armchair")
+        return (
+          <group>
+            <B s={[w, 0.42, d]} p={[0, 0.21, 0]} c={0x6a3b33} o={{ roughness: 0.6 }} />
+            <B s={[w, 0.45, 0.15]} p={[0, 0.64, -d / 2 + 0.075]} c={0x55302a} o={{ roughness: 0.6 }} />
+            <B s={[0.12, 0.25, d]} p={[-w / 2 + 0.06, 0.55, 0]} c={0x55302a} />
+            <B s={[0.12, 0.25, d]} p={[w / 2 - 0.06, 0.55, 0]} c={0x55302a} />
+          </group>
+        );
+      return (
+        <group>
+          <B s={[w, 0.05, d]} p={[0, 0.46, 0]} c={0xa8794c} />
+          <B s={[w * 0.8, 0.44, 0.05]} p={[0, 0.22, 0]} c={0x7a5532} />
+          <B s={[w, 0.5, 0.05]} p={[0, 0.73, -d / 2 + 0.025]} c={0x8a6038} />
         </group>
       );
     case "pouf": {
@@ -242,6 +318,14 @@ function ElementModel({ el, ctx }: { el: PlanElement; ctx: BuildCtx }) {
         </group>
       );
     case "counter": {
+      if (v === "register")
+        return (
+          <group>
+            <B s={[w, 1.05, d]} p={[0, 0.525, 0]} c={0x5a3d24} />
+            <B s={[0.35, 0.12, 0.3]} p={[0, 1.11, 0]} c={0x1b1b1d} />
+            <B s={[0.3, 0.2, 0.03]} p={[0, 1.27, -0.1]} c={0x3d74e0} o={{ emissive: 0x1f49a8, emissiveIntensity: 0.6 }} />
+          </group>
+        );
       if (v !== "bar") return <B s={[w, 1.05, d]} p={[0, 0.525, 0]} c={0x5a3d24} />;
       const n = Math.max(1, Math.floor(w / 0.3));
       return (
@@ -433,6 +517,41 @@ function DecoModel({ el, v, top, bot, hh, wallH }: { el: PlanElement; v?: string
       return <B s={[w, 0.6, Math.max(d, 0.35)]} p={[0, 1.8, 0]} c={0xe2ddd3} />;
     case "hood":
       return <B s={[w + 0.1, 0.35, d + 0.1]} p={[0, 2.05, 0]} c={0x8c9095} o={{ metalness: 0.6, roughness: 0.35 }} />;
+    case "tv": {
+      const th = Math.min(w * 0.5625, hh);
+      return <B s={[w, th, t]} p={[0, Math.min(top - 0.1, 1.6 + th / 2), 0]} c={0x0d0e12} o={{ emissive: 0x1a2a44, emissiveIntensity: 0.5, roughness: 0.3 }} />;
+    }
+    case "speaker":
+      return <B s={[w, 0.5, d]} p={[0, Math.min(top, 2.2) - 0.25, 0]} c={0x1c1c20} />;
+    case "ac":
+      return <B s={[w, 0.3, Math.max(d, 0.2)]} p={[0, Math.min(top, 2.3) - 0.15, 0]} c={0xe8e8e4} />;
+    case "fan":
+      return (
+        <group>
+          <Cyl r={0.1} h={0.12} p={[0, 2.6, 0]} c={0xcfc8ba} />
+          {[0, 1].map((i) => (
+            <B key={i} s={i ? [0.12, 0.02, Math.min(w, d)] : [Math.min(w, d), 0.02, 0.12]} p={[0, 2.55, 0]} c={0x8a6038} />
+          ))}
+        </group>
+      );
+    case "darts":
+      return (
+        <group>
+          <B s={[w, w, 0.03]} p={[0, 1.73, 0]} c={0x1b1b1d} />
+          <mesh position={[0, 1.73, 0.03]} rotation={[Math.PI / 2, 0, 0]} material={mat(0xb8322c)} castShadow>
+            <cylinderGeometry args={[w * 0.4, w * 0.4, 0.04, 24]} />
+          </mesh>
+        </group>
+      );
+    case "bin":
+      return <Cyl r={Math.min(w, d) / 2} r2={Math.min(w, d) * 0.42} h={0.7} p={[0, 0.35, 0]} c={0x6f747a} o={{ metalness: 0.3 }} />;
+    case "coatrack":
+      return (
+        <group>
+          <Cyl r={0.03} h={1.75} p={[0, 0.875, 0]} c={0x7a5232} seg={8} />
+          <Cyl r={Math.min(w, d) / 2} h={0.04} p={[0, 0.02, 0]} c={0x3a2412} />
+        </group>
+      );
     default:
       return <B s={[w, hh, t]} p={[0, bot + hh / 2, 0]} c={0xd9c79e} />;
   }
@@ -458,7 +577,7 @@ function CameraRig({ center, radius, topView, fitKey }: { center: THREE.Vector3;
     const vFov = (cam.fov * Math.PI) / 180;
     const fitH = radius / Math.tan(vFov / 2);
     const fitW = radius / (Math.tan(vFov / 2) * Math.min(1, aspect));
-    const dist = Math.max(8, Math.max(fitH, fitW) * 1.15);
+    const dist = Math.max(8, Math.max(fitH, fitW) * 1.3);
     if (topView) camera.position.set(center.x, center.y + dist, center.z + 0.01);
     else camera.position.set(center.x - dist * 0.42, center.y + dist * 0.72, center.z + dist * 0.55);
     camera.lookAt(center);

@@ -80,7 +80,7 @@ describe("nomes de mesa", () => {
     expect(parseTableField("3/3")).toEqual(["3"]);
   });
   it("junta no formato da equipe", () => {
-    expect(joinTableNames(["12", "2", "7"])).toBe("2/7/12");
+    expect(joinTableNames(["12", "2", "7"])).toBe("2, 7, 12");
   });
   it("título e lugares", () => {
     expect(tableTitle("12")).toBe("Mesa 12");
@@ -214,7 +214,7 @@ describe("estado das mesas", () => {
     }, [reserve({ table: "2" })]);
     const g = s.unitByKey.get("g")!;
     expect(g.isGroup).toBe(true);
-    expect(g.name).toBe("1/2");
+    expect(g.name).toBe("1, 2");
     expect(g.seats).toBe(12);
     expect(g.state).toBe("reserved");
     expect(s.unitOfTable.get("t1")).toBe(g);
@@ -225,7 +225,7 @@ describe("estado das mesas", () => {
       d.groups.g = { tables: ["t1", "t2"], name: "Festa" };
     }, [reserve({ table: "festa" })]);
     expect(s.unitByKey.get("g")!.state).toBe("reserved");
-    expect(s.unitByKey.get("g")!.reserveName).toBe("1/2");
+    expect(s.unitByKey.get("g")!.reserveName).toBe("1, 2");
   });
   it("grupo inválido é ignorado e mesa não entra em dois grupos", () => {
     const s = status((d) => {

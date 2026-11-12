@@ -1,11 +1,15 @@
-import { KINDS } from "./catalog";
+import { KINDS, supportsPolygon } from "./catalog";
 import { cm, MIN_SIZE, normRot } from "./geometry";
-import { emptyDay } from "./day";
+import { DEFAULT_SETTINGS, emptyDay } from "./day";
 import type {
   DayPlan,
+  DayTemplate,
   ElementKind,
   FloorPlan,
+  LevelBackground,
+  LocalPt,
   ManualMark,
+  MapSettings,
   PlanElement,
   PlanLevel,
   Pose,
@@ -56,6 +60,17 @@ function sanitizeElement(raw: unknown, levels: Set<string>): PlanElement | null 
   const parent = str(raw.parent, 80);
   if (parent && parent !== id) el.parent = parent;
   if (raw.hideLabel === true) el.hideLabel = true;
+  if (kind === "table" && raw.shape === "round") el.shape = "round";
+  if (supportsPolygon(kind) && Array.isArray(raw.points)) {
+    const pts: LocalPt[] = [];
+    for (const p of raw.points.slice(0, 64)) {
+      if (!isObj(p)) continue;
+      const px = num(p.x);
+      const py = num(p.y);
+      if (px !== null && py !== null) pts.push({ x: cm(clamp(px, -100, 100)), y: cm(clamp(py, -100, 100)) });
+    }
+    if (pts.length >= 3) el.points = pts;
+  }
   const lx = num(raw.lx);
   const ly = num(raw.ly);
   if (lx !== null) el.lx = cm(clamp(lx, -50, 50));
@@ -71,7 +86,10 @@ export function sanitizePlan(raw: unknown): StoredFloorPlan | null {
     const id = str(l.id, 40);
     const name = str(l.name, 40);
     if (!id || !name || levels.some((x) => x.id === id)) continue;
-    levels.push({ id, name, order: num(l.order) ?? levels.length });
+    const level: PlanLevel = { id, name, order: num(l.order) ?? levels.length };
+    const bg = sanitizeBackground(l.bg);
+    if (bg) level.bg = bg;
+    levels.push(level);
   }
   if (!levels.length) return null;
   levels.sort((a, b) => a.order - b.order);
@@ -95,10 +113,38 @@ export function sanitizePlan(raw: unknown): StoredFloorPlan | null {
   };
 }
 
+function sanitizeBackground(raw: unknown): LevelBackground | undefined {
+  if (!isObj(raw)) return undefined;
+  const url = typeof raw.url === "string" && /^https:\/\//.test(raw.url) ? raw.url : null;
+  const x = num(raw.x);
+  const y = num(raw.y);
+  const w = num(raw.w);
+  const h = num(raw.h);
+  if (!url || x === null || y === null || w === null || h === null || w <= 0 || h <= 0) return undefined;
+  const bg: LevelBackground = {
+    url,
+    x: cm(clamp(x, -MAX_COORD, MAX_COORD)),
+    y: cm(clamp(y, -MAX_COORD, MAX_COORD)),
+    w: Math.round(clamp(w, 0.5, 400) * 1000) / 1000,
+    h: Math.round(clamp(h, 0.5, 400) * 1000) / 1000,
+    opacity: clamp(num(raw.opacity) ?? 0.5, 0.05, 1),
+  };
+  const path = str(raw.path, 300);
+  if (path) bg.path = path;
+  return bg;
+}
+
 /** Para gravar: só os campos do modelo, sem `undefined` (o Firestore recusa). */
 export function planForStorage(plan: FloorPlan): FloorPlan {
   return {
-    levels: plan.levels.map(({ id, name, order }) => ({ id, name, order })),
+    levels: plan.levels.map(({ id, name, order, bg }) => {
+      const out: PlanLevel = { id, name, order };
+      if (bg) {
+        out.bg = { url: bg.url, x: bg.x, y: bg.y, w: bg.w, h: bg.h, opacity: bg.opacity };
+        if (bg.path) out.bg.path = bg.path;
+      }
+      return out;
+    }),
     levelHeight: plan.levelHeight,
     elements: plan.elements.map((el) => {
       const out: PlanElement = { id: el.id, level: el.level, kind: el.kind, x: el.x, y: el.y, w: el.w, d: el.d, rot: el.rot };
@@ -108,6 +154,8 @@ export function planForStorage(plan: FloorPlan): FloorPlan {
       if (el.count !== undefined) out.count = el.count;
       if (el.parent) out.parent = el.parent;
       if (el.hideLabel) out.hideLabel = true;
+      if (el.shape === "round") out.shape = "round";
+      if (el.points && el.points.length >= 3) out.points = el.points.map((p) => ({ x: p.x, y: p.y }));
       if (el.lx !== undefined) out.lx = el.lx;
       if (el.ly !== undefined) out.ly = el.ly;
       return out;
@@ -121,6 +169,24 @@ function sanitizePose(v: unknown): Pose | null {
   const y = num(v.y);
   if (x === null || y === null) return null;
   return { x: cm(clamp(x, -MAX_COORD, MAX_COORD)), y: cm(clamp(y, -MAX_COORD, MAX_COORD)), rot: normRot(num(v.rot) ?? 0) };
+}
+
+export function sanitizeSettings(raw: unknown): MapSettings {
+  if (!isObj(raw)) return { ...DEFAULT_SETTINGS };
+  const stay = num(raw.stayMinutes);
+  return {
+    autoSync: typeof raw.autoSync === "boolean" ? raw.autoSync : DEFAULT_SETTINGS.autoSync,
+    stayMinutes: stay === null ? DEFAULT_SETTINGS.stayMinutes : clamp(Math.round(stay), 30, 24 * 60),
+  };
+}
+
+/** Modelo de arrumação: as mesmas partes do dia (sem estados). */
+export function sanitizeTemplate(id: string, raw: unknown): DayTemplate | null {
+  if (!isObj(raw)) return null;
+  const name = str(raw.name);
+  if (!name) return null;
+  const d = sanitizeDay("1970-01-01", raw);
+  return { id, name, moves: d.moves, names: d.names, hidden: d.hidden, groups: d.groups, createdAt: num(raw.createdAt) ?? 0 };
 }
 
 export function sanitizeDay(date: string, raw: unknown): DayPlan {

@@ -1,8 +1,11 @@
 import { db } from "@/services/firebaseConfig";
 import {
+  addDoc,
   collection,
+  deleteDoc,
   deleteField,
   doc,
+  getDoc,
   onSnapshot,
   query,
   runTransaction,
@@ -10,9 +13,23 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import type { DayPlan, FloorPlan, ManualMark, MapReserve, Pose, StoredFloorPlan, TableGroup } from "@/floorplan/types";
-import { planForStorage, sanitizeDay, sanitizePlan } from "@/floorplan/sanitize";
-import { emptyDay } from "@/floorplan/day";
+import type {
+  DayPlan,
+  DayTemplate,
+  FloorPlan,
+  ManualMark,
+  MapReserve,
+  MapSettings,
+  Pose,
+  StoredFloorPlan,
+  TableGroup,
+} from "@/floorplan/types";
+import { planForStorage, sanitizeDay, sanitizePlan, sanitizeSettings, sanitizeTemplate } from "@/floorplan/sanitize";
+import { DEFAULT_SETTINGS, emptyDay } from "@/floorplan/day";
+import { deleteImageFromFirebase, uploadImageToFirebase } from "./FirebaseImageUtils";
+
+/** As partes do dia que formam a arrumação (sem os estados). */
+export type DayLayoutParts = Pick<DayPlan, "moves" | "names" | "hidden" | "groups">;
 
 /** Outra pessoa salvou a planta depois que ela foi aberta aqui. */
 export class PlanConflictError extends Error {
@@ -22,6 +39,8 @@ export class PlanConflictError extends Error {
 }
 
 const PLAN_DOC = doc(db, "floorPlan", "main");
+const SETTINGS_DOC = doc(db, "floorPlan", "settings");
+const TEMPLATES = collection(db, "floorPlanTemplates");
 const dayDoc = (date: string) => doc(db, "floorPlanDays", date);
 
 /** Uma mudança por chave dentro de um mapa do documento do dia (null apaga). */
@@ -56,6 +75,71 @@ class FloorPlanRepository {
       tx.set(PLAN_DOC, { ...planForStorage(plan), version: next, updatedAt: Date.now() });
       return next;
     });
+  }
+
+  static subscribeSettings(onData: (s: MapSettings) => void): () => void {
+    return onSnapshot(
+      SETTINGS_DOC,
+      (snap) => onData(sanitizeSettings(snap.exists() ? snap.data() : null)),
+      (error) => {
+        console.error("Erro ao ouvir as configurações do mapa:", error);
+        onData({ ...DEFAULT_SETTINGS });
+      },
+    );
+  }
+
+  static saveSettings(patch: Partial<MapSettings>) {
+    return setDoc(SETTINGS_DOC, { ...patch, updatedAt: Date.now() }, { merge: true });
+  }
+
+  /** Imagem de fundo da planta (comprimida, até 1920 px). */
+  static uploadBackground(file: File) {
+    return uploadImageToFirebase(file, "floor-plan");
+  }
+
+  static deleteStorageFile(path: string) {
+    return deleteImageFromFirebase(path);
+  }
+
+  /** A arrumação de um dia (uma vez, sem ouvir). */
+  static async getDayLayout(date: string): Promise<DayLayoutParts> {
+    const snap = await getDoc(dayDoc(date));
+    const d = sanitizeDay(date, snap.exists() ? snap.data() : null);
+    return { moves: d.moves, names: d.names, hidden: d.hidden, groups: d.groups };
+  }
+
+  /** Troca a arrumação inteira do dia (mantém os estados marcados). */
+  static replaceDayLayout(date: string, parts: DayLayoutParts) {
+    return setDoc(
+      dayDoc(date),
+      { date, moves: parts.moves, names: parts.names, hidden: parts.hidden, groups: parts.groups, updatedAt: Date.now() },
+      { mergeFields: ["date", "moves", "names", "hidden", "groups", "updatedAt"] },
+    );
+  }
+
+  static subscribeTemplates(onData: (list: DayTemplate[]) => void): () => void {
+    return onSnapshot(
+      TEMPLATES,
+      (snap) =>
+        onData(
+          snap.docs
+            .map((d) => sanitizeTemplate(d.id, d.data()))
+            .filter((t): t is DayTemplate => !!t)
+            .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
+        ),
+      (error) => {
+        console.error("Erro ao ouvir os modelos de arrumação:", error);
+        onData([]);
+      },
+    );
+  }
+
+  static saveTemplate(name: string, parts: DayLayoutParts) {
+    return addDoc(TEMPLATES, { name: name.trim().slice(0, 60), ...parts, createdAt: Date.now() });
+  }
+
+  static deleteTemplate(id: string) {
+    return deleteDoc(doc(TEMPLATES, id));
   }
 
   static subscribeDay(date: string, onData: (day: DayPlan) => void): () => void {

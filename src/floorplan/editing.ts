@@ -1,5 +1,5 @@
 import { KINDS, suggestedSeats, tableTitle } from "./catalog";
-import { boundsOf, cm, placeWithChildren, translate, withDescendants, wouldCycle } from "./geometry";
+import { boundsOf, cm, placeWithChildren, rectPoints, scalePolygon, translate, withDescendants, wouldCycle } from "./geometry";
 import { newId, normalizeTableName } from "./day";
 import type { ElementKind, FloorPlan, PlanElement, Pose } from "./types";
 
@@ -50,6 +50,11 @@ export function updateElement(plan: FloorPlan, id: string, patch: Partial<PlanEl
   if (Object.keys(rest).length) {
     elements = elements.map((e) => {
       if (e.id !== id) return e;
+      // Polígono muda de tamanho esticando os pontos
+      if (e.points && (rest.w !== undefined || rest.d !== undefined)) {
+        const { w, d, ...others } = rest;
+        return { ...scalePolygon(e, w ?? e.w, d ?? e.d), ...others };
+      }
       const next = { ...e, ...rest };
       const r = rest as Partial<PlanElement>;
       for (const k of Object.keys(r) as (keyof PlanElement)[]) if (r[k] === undefined) delete next[k];
@@ -167,4 +172,18 @@ export function planSummary(plan: FloorPlan): { level: string; tables: number; s
     const tables = plan.elements.filter((e) => e.level === l.id && e.kind === "table");
     return { level: l.id, tables: tables.length, seats: tables.reduce((s, t) => s + (t.seats ?? 0), 0) };
   });
+}
+
+/** Liga (pontos do retângulo atual) ou desliga (volta ao retângulo) o formato livre. */
+export function setPolygon(plan: FloorPlan, id: string, on: boolean): FloorPlan {
+  return {
+    ...plan,
+    elements: plan.elements.map((e) => {
+      if (e.id !== id) return e;
+      if (on) return e.points ? e : { ...e, points: rectPoints(e.w, e.d) };
+      const next = { ...e };
+      delete next.points;
+      return next;
+    }),
+  };
 }

@@ -40,7 +40,35 @@ const DECO_COLOR: Record<string, string> = {
   extinguisher: "#d33a2c",
   wallcab: "#d9d2c4",
   hood: "#8c9095",
+  tv: "#0d0e12",
+  speaker: "#1c1c20",
+  ac: "#e8e8e4",
+  darts: "#b8322c",
+  bin: "#6f747a",
+  coatrack: "#7a5232",
+  fan: "#cfc8ba",
 };
+
+/** Cores da estrutura no tema escuro (tela) e claro (impressão). */
+const STRUCT = {
+  dark: { floor: FLOOR_2D, floorStroke: "#e6c56b", floorStrokeOp: 0.08, wall: WALL, wallDark: "#7d776d", gap: "#1b1612", hatch: "url(#fp-hatch)", hatchStroke: "#0e0c0a" },
+  paper: {
+    floor: { wood: "#f4efe6", tile: "#eceae6", granite: "#e6e8ea" } as Record<string, string>,
+    floorStroke: "#9a917f",
+    floorStrokeOp: 0.6,
+    wall: "#2a2522",
+    wallDark: "#55504a",
+    gap: "#ffffff",
+    hatch: "url(#fp-hatch-paper)",
+    hatchStroke: "#555",
+  },
+};
+
+/** Contorno do polígono (em cm), ou null se for retângulo. */
+function polyPoints(el: PlanElement): string | null {
+  if (!el.points || el.points.length < 3) return null;
+  return el.points.map((p) => `${p.x * U},${p.y * U}`).join(" ");
+}
 
 /** Cor da mesa no modo dia. */
 export function tableFill(state: TableState | undefined, el: PlanElement): { fill: string; ink: string } {
@@ -53,13 +81,18 @@ export function Shape2D({
   el,
   state,
   dim,
+  paper,
 }: {
   el: PlanElement;
   /** Estado da mesa no modo dia. */
   state?: TableState;
   /** Fora do foco (outro andar, modo dia nos móveis). */
   dim?: boolean;
+  /** Cores para papel (impressão). */
+  paper?: boolean;
 }) {
+  const S = paper ? STRUCT.paper : STRUCT.dark;
+  const poly = polyPoints(el);
   const w = el.w * U;
   const d = el.d * U;
   const x0 = -w / 2;
@@ -69,32 +102,86 @@ export function Shape2D({
   const sw = 1.5; // traço fino em cm
 
   switch (el.kind) {
-    case "room":
+    case "room": {
+      const p = { fill: S.floor[v ?? "wood"], stroke: S.floorStroke, strokeOpacity: S.floorStrokeOp, strokeWidth: 2 };
+      return poly ? <polygon points={poly} {...p} /> : <rect x={x0} y={y0} width={w} height={d} {...p} />;
+    }
+    case "block": {
+      const p = { fill: S.hatch, stroke: S.hatchStroke, strokeWidth: 2, opacity: op };
+      return poly ? <polygon points={poly} {...p} /> : <rect x={x0} y={y0} width={w} height={d} {...p} />;
+    }
+    case "stage": {
+      const p = { fill: paper ? "#e9dcc6" : "#5a3d27", stroke: paper ? "#8a6a44" : "#2a1b10", strokeWidth: 2 };
+      const planks = Array.from({ length: Math.max(1, Math.floor(d / 25)) }, (_, i) => (
+        <line key={i} x1={x0} y1={y0 + (i + 1) * 25} x2={-x0} y2={y0 + (i + 1) * 25} stroke={paper ? "#b89a70" : "#3a2716"} strokeWidth={1.5} />
+      ));
+      if (poly)
+        return (
+          <g opacity={op}>
+            <defs>
+              <clipPath id={`clip-${el.id}`}>
+                <polygon points={poly} />
+              </clipPath>
+            </defs>
+            <polygon points={poly} {...p} />
+            <g clipPath={`url(#clip-${el.id})`}>{planks}</g>
+          </g>
+        );
       return (
-        <rect x={x0} y={y0} width={w} height={d} fill={FLOOR_2D[v ?? "wood"]} stroke="#e6c56b" strokeOpacity={0.08} strokeWidth={2} />
+        <g opacity={op}>
+          <rect x={x0} y={y0} width={w} height={d} {...p} />
+          {planks.filter((_, i) => (i + 1) * 25 < d)}
+        </g>
       );
-    case "block":
-      return <rect x={x0} y={y0} width={w} height={d} fill="url(#fp-hatch)" stroke="#0e0c0a" strokeWidth={2} opacity={op} />;
+    }
+    case "pillar":
+      return v === "round" ? (
+        <ellipse rx={w / 2} ry={d / 2} fill={paper ? "#9a958c" : "#6d6862"} stroke={paper ? "#333" : "#1b1816"} strokeWidth={2} />
+      ) : (
+        <rect x={x0} y={y0} width={w} height={d} fill={paper ? "#9a958c" : "#6d6862"} stroke={paper ? "#333" : "#1b1816"} strokeWidth={2} />
+      );
     case "wall": {
-      const fill = v === "dark" ? "#7d776d" : WALL;
+      const fill = v === "dark" ? S.wallDark : S.wall;
       if (v === "low")
         return (
-          <rect x={x0 - d / 2} y={y0} width={w + d} height={d} fill={WALL} fillOpacity={0.35} stroke={WALL} strokeWidth={2} strokeDasharray="8 5" />
+          <rect x={x0 - d / 2} y={y0} width={w + d} height={d} fill={S.wall} fillOpacity={0.35} stroke={S.wall} strokeWidth={2} strokeDasharray="8 5" />
         );
       return <rect x={x0 - d / 2} y={y0} width={w + d} height={d} fill={fill} />;
     }
-    case "door":
+    case "door": {
+      const ink = S.wall;
+      if (v === "sliding")
+        return (
+          <g opacity={op}>
+            <rect x={x0} y={y0} width={w} height={d} fill={S.gap} />
+            <line x1={x0} y1={-d * 0.15} x2={w * 0.1} y2={-d * 0.15} stroke={ink} strokeWidth={3} />
+            <line x1={-w * 0.1} y1={d * 0.15} x2={-x0} y2={d * 0.15} stroke={ink} strokeWidth={3} />
+          </g>
+        );
+      if (v === "double") {
+        const r = w / 2;
+        return (
+          <g opacity={op}>
+            <rect x={x0} y={y0} width={w} height={d} fill={S.gap} />
+            <path d={`M 0 0 A ${r} ${r} 0 0 0 ${-w / 2} ${r}`} fill="none" stroke={ink} strokeWidth={2} strokeOpacity={0.6} />
+            <path d={`M 0 0 A ${r} ${r} 0 0 1 ${w / 2} ${r}`} fill="none" stroke={ink} strokeWidth={2} strokeOpacity={0.6} />
+            <line x1={-w / 2} y1={0} x2={-w / 2} y2={r} stroke={ink} strokeWidth={2.5} strokeOpacity={0.8} />
+            <line x1={w / 2} y1={0} x2={w / 2} y2={r} stroke={ink} strokeWidth={2.5} strokeOpacity={0.8} />
+          </g>
+        );
+      }
       return (
         <g opacity={op}>
-          <rect x={x0} y={y0} width={w} height={d} fill="#1b1612" />
-          <path d={`M ${w / 2} 0 A ${w} ${w} 0 0 1 ${-w / 2} ${w}`} fill="none" stroke={WALL} strokeWidth={2} strokeOpacity={0.6} />
-          <line x1={-w / 2} y1={0} x2={-w / 2} y2={w} stroke={WALL} strokeWidth={2.5} strokeOpacity={0.8} />
+          <rect x={x0} y={y0} width={w} height={d} fill={S.gap} />
+          <path d={`M ${w / 2} 0 A ${w} ${w} 0 0 1 ${-w / 2} ${w}`} fill="none" stroke={ink} strokeWidth={2} strokeOpacity={0.6} />
+          <line x1={-w / 2} y1={0} x2={-w / 2} y2={w} stroke={ink} strokeWidth={2.5} strokeOpacity={0.8} />
         </g>
       );
+    }
     case "arch":
       return (
         <g>
-          <rect x={x0} y={y0} width={w} height={d} fill="#1b1612" fillOpacity={0.5} />
+          <rect x={x0} y={y0} width={w} height={d} fill={S.gap} fillOpacity={0.5} />
           <line x1={x0} y1={0} x2={-x0} y2={0} stroke="#efe7d6" strokeWidth={2.5} strokeDasharray="3 9" strokeLinecap="round" />
           <rect x={x0 - 6} y={y0} width={12} height={d} fill="#efe7d6" />
           <rect x={-x0 - 6} y={y0} width={12} height={d} fill="#efe7d6" />
@@ -148,6 +235,14 @@ export function Shape2D({
     }
     case "table": {
       const { fill } = tableFill(state, el);
+      const stroke = state ? "rgba(0,0,0,0.35)" : "#5e3f22";
+      if (el.shape === "round")
+        return (
+          <g>
+            <ellipse rx={w / 2} ry={d / 2} fill={fill} stroke={stroke} strokeWidth={2} />
+            {v === "high" && !state && <ellipse rx={w * 0.16} ry={d * 0.16} fill="none" stroke="#5e3f22" strokeWidth={1.5} strokeOpacity={0.6} />}
+          </g>
+        );
       return (
         <rect
           x={x0}
@@ -176,6 +271,30 @@ export function Shape2D({
         <g opacity={op}>
           <rect x={x0} y={y0} width={w} height={d} rx={6} fill={SOFA} stroke="#2e3035" strokeWidth={sw} />
           <rect x={x0} y={y0} width={w} height={backH} rx={4} fill="#43464c" />
+        </g>
+      );
+    }
+    case "chair": {
+      if (v === "stool")
+        return (
+          <g opacity={op}>
+            <ellipse rx={w / 2} ry={d / 2} fill="#8a6038" stroke="#3a2412" strokeWidth={sw} />
+            <ellipse rx={w * 0.3} ry={d * 0.3} fill="#a8794c" />
+          </g>
+        );
+      if (v === "armchair")
+        return (
+          <g opacity={op}>
+            <rect x={x0} y={y0} width={w} height={d} rx={10} fill="#6a3b33" stroke="#2e1714" strokeWidth={sw} />
+            <rect x={x0} y={y0} width={w} height={d * 0.25} rx={8} fill="#55302a" />
+            <rect x={x0} y={y0} width={w * 0.15} height={d} rx={6} fill="#55302a" />
+            <rect x={-x0 - w * 0.15} y={y0} width={w * 0.15} height={d} rx={6} fill="#55302a" />
+          </g>
+        );
+      return (
+        <g opacity={op}>
+          <rect x={x0} y={y0 + d * 0.15} width={w} height={d * 0.85} rx={4} fill="#a8794c" stroke="#5e3f22" strokeWidth={sw} />
+          <rect x={x0} y={y0} width={w} height={d * 0.2} rx={3} fill="#7a5232" />
         </g>
       );
     }
@@ -215,6 +334,12 @@ export function Shape2D({
       return (
         <g opacity={op}>
           <rect x={x0} y={y0} width={w} height={d} fill={v === "bar" ? "#4a301c" : "#5a3d24"} stroke="#24160c" strokeWidth={sw} />
+          {v === "register" && (
+            <>
+              <rect x={-Math.min(w, d) * 0.3} y={-d * 0.3} width={Math.min(w, d) * 0.6} height={d * 0.6} rx={3} fill="#1b1b1d" stroke="#e6c56b" strokeOpacity={0.5} strokeWidth={1.5} />
+              <rect x={-Math.min(w, d) * 0.18} y={-d * 0.18} width={Math.min(w, d) * 0.36} height={d * 0.2} fill="#3d74e0" fillOpacity={0.7} />
+            </>
+          )}
           {v === "bar" &&
             Array.from({ length: Math.max(1, Math.floor(w / 30)) }, (_, i) => (
               <circle key={i} cx={x0 + 15 + i * 30} cy={0} r={4} fill={["#c98b2b", "#4f8a4f", "#e0cf8a", "#b23a3a"][i % 4]} />
@@ -276,6 +401,33 @@ export function Shape2D({
       );
     case "deco": {
       const fill = DECO_COLOR[v ?? ""] ?? "#d9c79e";
+      if (v === "fan")
+        return (
+          <g opacity={0.5}>
+            <circle r={Math.min(w, d) * 0.08} fill={fill} />
+            {[0, 90, 180, 270].map((a) => (
+              <rect key={a} x={-Math.min(w, d) * 0.06} y={-Math.min(w, d) / 2} width={Math.min(w, d) * 0.12} height={Math.min(w, d) * 0.42} rx={4} fill={fill} transform={`rotate(${a})`} />
+            ))}
+          </g>
+        );
+      if (v === "darts")
+        return (
+          <g opacity={op}>
+            <rect x={x0} y={y0} width={w} height={Math.max(d, 4)} fill="#1b1b1d" />
+            <circle cx={0} cy={y0 + Math.max(d, 4)} r={Math.min(w * 0.35, 12)} fill={fill} stroke="#f2ead8" strokeWidth={1.5} />
+          </g>
+        );
+      if (v === "bin" || v === "coatrack")
+        return (
+          <g opacity={op}>
+            <ellipse rx={w / 2} ry={d / 2} fill={fill} stroke="#1b1b1d" strokeWidth={1.5} />
+            {v === "coatrack" && <circle r={Math.min(w, d) * 0.12} fill="#3a2412" />}
+          </g>
+        );
+      if (v === "ac" || v === "speaker" || v === "tv")
+        return (
+          <rect x={x0} y={y0} width={w} height={Math.max(d, 5)} rx={2} fill={fill} stroke={v === "ac" ? "#8b8a86" : "#e6c56b"} strokeOpacity={v === "ac" ? 1 : 0.35} strokeWidth={1.5} opacity={op} />
+        );
       if (v === "pendant" || v === "extinguisher" || v === "sconce")
         return <ellipse rx={Math.max(w, 8) / 2} ry={Math.max(d, 8) / 2} fill={fill} opacity={op * (v === "pendant" ? 0.45 : 0.9)} />;
       // No teto: só um contorno, para não cobrir as mesas
@@ -297,6 +449,10 @@ export function PlanDefs() {
       <pattern id="fp-hatch" width={14} height={14} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
         <rect width={14} height={14} fill="#1c1814" />
         <line x1={0} y1={0} x2={0} y2={14} stroke="#2e2822" strokeWidth={4} />
+      </pattern>
+      <pattern id="fp-hatch-paper" width={14} height={14} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <rect width={14} height={14} fill="#e2ded6" />
+        <line x1={0} y1={0} x2={0} y2={14} stroke="#b5afa4" strokeWidth={3} />
       </pattern>
       <pattern id="fp-grid" width={100} height={100} patternUnits="userSpaceOnUse">
         <path d="M 50 0 L 50 100 M 0 50 L 100 50" stroke="#e6c56b" strokeOpacity={0.05} strokeWidth={1} />

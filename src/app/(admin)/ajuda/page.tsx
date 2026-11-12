@@ -166,7 +166,7 @@ const helpCards: HelpCard[] = [
     category: "mapa",
     title: "Como o mapa sabe quais mesas estão reservadas",
     description:
-      "O mapa lê as reservas confirmadas do dia e o campo Mesa de cada uma, do jeito que a equipe já escreve: \"5\", \"3/8\", \"2,7,12\" ou \"salas\" (o nome de um ambiente marca todas as mesas dentro dele). Reserva que chegou deixa a mesa ocupada. Reservas sem mesa, ou com uma mesa que não existe no mapa, aparecem em \"Precisa de mesa\", com o botão Escolher mesa.",
+      "O mapa lê as reservas confirmadas do dia e o campo Mesa de cada uma, do jeito que a equipe já escreve: \"5\", \"3/8\", \"2,7,12\" ou \"salas\" (o nome de um ambiente marca todas as mesas dentro dele). Reserva que chegou deixa a mesa ocupada. Reservas sem mesa, ou com uma mesa que não existe no mapa, aparecem em \"Precisa de mesa\", com sugestões e o botão Escolher no mapa.",
   },
   {
     category: "mapa",
@@ -209,6 +209,61 @@ const helpCards: HelpCard[] = [
     title: "Duas pessoas editando a planta ao mesmo tempo",
     description:
       "Se outra pessoa salvar a planta enquanto você edita, o mapa avisa e, ao salvar, pergunta qual versão fica: a sua ou a dela. Nada é sobrescrito sem você escolher. As mudanças do dia a dia (estados, junções e mesas movidas) aparecem na hora para todo mundo.",
+  },
+
+  {
+    category: "mapa",
+    title: "Sincronizar as mesas com o campo \"mesa\" das reservas",
+    description:
+      "Em Dia a dia → Reservas e mesas, ligue \"Sincronizar com o campo mesa\". Assim o mapa segue o que está escrito em cada reserva: \"8, 9\" aparece como a 8 e a 9 juntas (uma mesa só, com os lugares somados) e \"salas\" junta as mesas que ficam dentro do ambiente Salas (24 e 42). Para separar, mude a mesa na reserva ou desligue a sincronização. Juntar à mão continua valendo, por exemplo para cliente sem reserva.",
+  },
+  {
+    category: "mapa",
+    title: "Ver as mesas por horário",
+    description:
+      "No painel do dia, em Horário, escolha Dia todo, Agora ou um dos horários das reservas (ou digite outro). O mapa passa a mostrar só quem está na mesa naquela hora, contando cada reserva da chegada até o tempo escolhido em \"Uma reserva costuma ficar\". A etiqueta embaixo da mesa mostra a próxima reserva.",
+  },
+  {
+    category: "mapa",
+    title: "Conflitos de mesa e sugestão de mesa",
+    description:
+      "Se duas reservas caem na mesma mesa no mesmo horário, o painel mostra em \"Conflitos de mesa\" com o botão Trocar. Para reserva sem mesa, o mapa sugere as mesas livres naquele horário que comportam o grupo (e duas vizinhas para juntar, quando nenhuma sozinha cabe); tocar na sugestão grava a mesa na reserva.",
+  },
+  {
+    category: "mapa",
+    title: "Copiar a arrumação de outro dia e usar modelos",
+    description:
+      "Em Arrumação do dia, escolha uma data e toque em Copiar para trazer as posições, nomes, mesas retiradas e mesas juntadas à mão daquele dia. Para reusar sempre, arrume as mesas e salve como modelo (ex.: \"Noite de evento\"); depois é só Aplicar. Os estados e as reservas do dia não mudam.",
+  },
+  {
+    category: "mapa",
+    title: "Imprimir o mapa do dia",
+    description:
+      "No painel do dia, toque em Imprimir. Abre uma folha clara com cada andar, as mesas coloridas pelo estado (no horário escolhido) e a lista de reservas com hora, nome, pessoas e mesa.",
+  },
+  {
+    category: "mapa",
+    title: "Régua: medir distâncias",
+    description:
+      "No canto do mapa (abaixo do zoom) fica a régua. Ligue e toque em dois pontos para ver a distância em metros. Toque de novo para começar outra medida; Esc desliga.",
+  },
+  {
+    category: "mapa",
+    title: "Desenhar a planta por cima de uma foto",
+    description:
+      "No modo Planta, em \"Fundo do andar\", escolha uma imagem (foto, print da planta ou do PDF). Depois toque em Acertar a escala, marque o começo e o fim de uma medida que você conhece (ex.: uma parede) e digite quanto ela mede de verdade: a imagem fica na escala certa. Dá para mover a imagem e mudar a transparência. Ela só aparece no modo Planta.",
+  },
+  {
+    category: "mapa",
+    title: "Formatos: mesa redonda e ambiente em L",
+    description:
+      "Ao escolher uma mesa, em Formato, troque entre Retangular e Redonda/oval (o tamanho vira os diâmetros). Ambientes, áreas fechadas e palco podem ter formato Livre: arraste os pontos brancos, toque no + no meio de um lado para criar um ponto e toque duas vezes num ponto para apagar.",
+  },
+  {
+    category: "mapa",
+    title: "O que dá para adicionar na planta",
+    description:
+      "Em Planta → Adicionar há miniaturas de tudo, com busca: mesas (retangular, quadrada, redonda, oval, preta e alta), bancos, sofá, pufes, cadeira, banqueta e poltrona; estantes, balcão, caixa, chopeira, geladeiras e pias; paredes, portas (simples, dupla e de correr), janela, cortina, escada, coluna e palco; TV, caixa de som, alvo de dardos, ar-condicionado, ventilador, luminárias, quadros, vitrais, plantas, lixeira, cabideiro, extintor e texto.",
   },
 
   // ── COLEÇÃO ───────────────────────────────────────────────────

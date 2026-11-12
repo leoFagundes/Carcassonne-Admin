@@ -1,4 +1,4 @@
-import type { ElementKind, PlanElement } from "./types";
+import type { ElementKind, PlanElement, TableShape } from "./types";
 
 export type KindCategory = "lugares" | "moveis" | "estrutura" | "detalhes";
 
@@ -61,10 +61,34 @@ export const KINDS: Record<ElementKind, KindInfo> = {
     structural: true,
     layer: 8,
   },
-  door: { label: "Porta", category: "estrutura", size: { w: 0.9, d: 0.15 }, linear: true, structural: true, layer: 8 },
+  door: {
+    label: "Porta",
+    category: "estrutura",
+    size: { w: 0.9, d: 0.15 },
+    variants: [
+      { id: "single", label: "Porta" },
+      { id: "double", label: "Porta dupla" },
+      { id: "sliding", label: "Porta de correr" },
+    ],
+    linear: true,
+    structural: true,
+    layer: 8,
+  },
   arch: { label: "Arco / passagem", category: "estrutura", size: { w: 1.6, d: 0.15 }, linear: true, structural: true, layer: 8 },
   window: { label: "Janela / vitrine", category: "estrutura", size: { w: 2, d: 0.15 }, linear: true, structural: true, layer: 8 },
   curtain: { label: "Cortina", category: "estrutura", size: { w: 1.5, d: 0.1 }, linear: true, structural: true, layer: 8 },
+  pillar: {
+    label: "Coluna",
+    category: "estrutura",
+    size: { w: 0.4, d: 0.4 },
+    variants: [
+      { id: "square", label: "Coluna quadrada" },
+      { id: "round", label: "Coluna redonda" },
+    ],
+    structural: true,
+    layer: 7,
+  },
+  stage: { label: "Palco / tablado", category: "estrutura", size: { w: 3, d: 2 }, structural: true, showsLabel: true, layer: 2 },
 
   table: {
     label: "Mesa",
@@ -73,6 +97,7 @@ export const KINDS: Record<ElementKind, KindInfo> = {
     variants: [
       { id: "wood", label: "Madeira" },
       { id: "black", label: "Preta" },
+      { id: "high", label: "Mesa alta (bistrô)" },
     ],
     showsLabel: true,
     layer: 5,
@@ -90,6 +115,18 @@ export const KINDS: Record<ElementKind, KindInfo> = {
   },
   sofa: { label: "Sofá", category: "lugares", size: { w: 1.9, d: 0.55 }, attachable: true, layer: 4 },
   pouf: { label: "Pufes", category: "lugares", size: { w: 1.2, d: 0.38 }, attachable: true, layer: 4 },
+  chair: {
+    label: "Cadeira",
+    category: "lugares",
+    size: { w: 0.45, d: 0.45 },
+    variants: [
+      { id: "chair", label: "Cadeira" },
+      { id: "stool", label: "Banqueta" },
+      { id: "armchair", label: "Poltrona" },
+    ],
+    attachable: true,
+    layer: 4,
+  },
 
   shelf: {
     label: "Estante / armário",
@@ -121,6 +158,7 @@ export const KINDS: Record<ElementKind, KindInfo> = {
     variants: [
       { id: "wood", label: "Balcão" },
       { id: "bar", label: "Prateleira de bebidas" },
+      { id: "register", label: "Caixa (pagamento)" },
     ],
     showsLabel: true,
     layer: 3,
@@ -180,10 +218,28 @@ export const KINDS: Record<ElementKind, KindInfo> = {
       { id: "extinguisher", label: "Extintor" },
       { id: "wallcab", label: "Armário de parede" },
       { id: "hood", label: "Coifa" },
+      { id: "tv", label: "TV / telão" },
+      { id: "speaker", label: "Caixa de som" },
+      { id: "ac", label: "Ar-condicionado" },
+      { id: "fan", label: "Ventilador de teto" },
+      { id: "darts", label: "Alvo de dardos" },
+      { id: "bin", label: "Lixeira" },
+      { id: "coatrack", label: "Cabideiro" },
     ],
     layer: 6,
   },
-  text: { label: "Texto", category: "detalhes", size: { w: 1.6, d: 0.4 }, showsLabel: true, layer: 9 },
+  text: {
+    label: "Texto",
+    category: "detalhes",
+    size: { w: 1.6, d: 0.4 },
+    variants: [
+      { id: "normal", label: "Texto normal" },
+      { id: "small", label: "Texto pequeno" },
+      { id: "big", label: "Texto grande" },
+    ],
+    showsLabel: true,
+    layer: 9,
+  },
 };
 
 export const CATEGORY_LABEL: Record<KindCategory, string> = {
@@ -227,10 +283,24 @@ export function tableTitle(name: string): string {
   return /^\d+[a-z]?$/i.test(n) ? `Mesa ${n}` : n;
 }
 
-/** Lugares sugeridos pelo tamanho da mesa. */
-export function suggestedSeats(w: number, d: number): number {
+/** Lugares sugeridos pelo tamanho (e formato) da mesa. */
+export function suggestedSeats(w: number, d: number, shape: TableShape = "rect"): number {
+  if (shape === "round") {
+    // Perímetro da elipse (Ramanujan) ÷ 60 cm por pessoa
+    const a = w / 2;
+    const b = d / 2;
+    const p = Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
+    return Math.max(2, Math.floor(p / 0.6));
+  }
   const long = Math.max(w, d);
   const short = Math.min(w, d);
   const perSide = Math.max(1, Math.floor(long / 0.6));
-  return short >= 1.4 ? perSide * 2 + 2 : perSide * 2;
+  // Mesa larga ou quase quadrada: senta gente nas cabeceiras também
+  const heads = short >= 1.4 || (short >= 0.75 && long / short < 1.5);
+  return heads ? perSide * 2 + 2 : perSide * 2;
+}
+
+/** Ambiente e área fechada aceitam formato livre (pontos). */
+export function supportsPolygon(kind: ElementKind): boolean {
+  return kind === "room" || kind === "block" || kind === "stage";
 }
