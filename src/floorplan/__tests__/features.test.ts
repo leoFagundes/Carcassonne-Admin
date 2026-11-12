@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   activeAt,
+  syncEnabledOn,
+  withSyncChange,
   applyDay,
   autoGroupKey,
   computeDayStatus,
@@ -262,8 +264,22 @@ describe("dados novos no banco", () => {
     expect(sanitizePlan({ ...out, version: 2 })!.elements.find((e) => e.id === "r")!.points).toHaveLength(3);
   });
   it("configurações e modelos", () => {
-    expect(sanitizeSettings(null)).toEqual({ autoSync: true, stayMinutes: 180 });
-    expect(sanitizeSettings({ autoSync: false, stayMinutes: 5 })).toEqual({ autoSync: false, stayMinutes: 30 });
+    expect(sanitizeSettings(null)).toEqual({ syncHistory: [], stayMinutes: 180 });
+    // O antigo "autoSync" sem data é ignorado (vale o padrão: ligada)
+    expect(sanitizeSettings({ autoSync: false, stayMinutes: 5 })).toEqual({ syncHistory: [], stayMinutes: 30 });
+    expect(
+      sanitizeSettings({
+        syncHistory: [
+          { from: "2026-12-01", on: true },
+          { from: "2026-11-12", on: false },
+          { from: "ontem", on: true },
+          { from: "2026-11-20", on: "sim" },
+        ],
+      }).syncHistory,
+    ).toEqual([
+      { from: "2026-11-12", on: false },
+      { from: "2026-12-01", on: true },
+    ]);
     expect(sanitizeTemplate("x", { name: "" })).toBeNull();
     const t = sanitizeTemplate("x", { name: "Evento", moves: { a: { x: 1, y: 2, rot: 0 } }, manual: { a: { state: "free" } }, createdAt: 5 })!;
     expect(t).toMatchObject({ id: "x", name: "Evento", createdAt: 5 });
@@ -298,5 +314,37 @@ describe("paleta", () => {
     expect(suggestedSeats(1, 1, "round")).toBe(5);
     expect(suggestedSeats(1.8, 1, "round")).toBe(7);
     expect(suggestedSeats(0.9, 0.9)).toBe(4);
+  });
+});
+
+describe("sincronização a partir do dia da mudança", () => {
+  it("ligada por padrão, em qualquer dia", () => {
+    expect(syncEnabledOn([], "2020-01-01")).toBe(true);
+    expect(syncEnabledOn([], "2030-01-01")).toBe(true);
+  });
+  it("desligar hoje não mexe nos dias anteriores", () => {
+    const h = withSyncChange([], "2026-11-12", false);
+    expect(h).toEqual([{ from: "2026-11-12", on: false }]);
+    expect(syncEnabledOn(h, "2026-11-11")).toBe(true);
+    expect(syncEnabledOn(h, "2026-11-12")).toBe(false);
+    expect(syncEnabledOn(h, "2026-12-25")).toBe(false);
+  });
+  it("religar depois mantém o período desligado", () => {
+    let h = withSyncChange([], "2026-11-12", false);
+    h = withSyncChange(h, "2026-11-20", true);
+    expect(syncEnabledOn(h, "2026-11-11")).toBe(true);
+    expect(syncEnabledOn(h, "2026-11-15")).toBe(false);
+    expect(syncEnabledOn(h, "2026-11-20")).toBe(true);
+  });
+  it("mudar de novo no mesmo dia troca a mudança do dia (e some se voltar ao que era)", () => {
+    let h = withSyncChange([], "2026-11-12", false);
+    h = withSyncChange(h, "2026-11-12", true);
+    expect(h).toEqual([]);
+    h = withSyncChange(h, "2026-11-12", false);
+    expect(h).toEqual([{ from: "2026-11-12", on: false }]);
+  });
+  it("mudança marcada para depois de hoje é substituída", () => {
+    const h = withSyncChange([{ from: "2026-12-01", on: false }], "2026-11-12", false);
+    expect(h).toEqual([{ from: "2026-11-12", on: false }]);
   });
 });

@@ -11,6 +11,7 @@ import type {
   ManualMark,
   MapSettings,
   PlanElement,
+  SyncChange,
   PlanLevel,
   Pose,
   StoredFloorPlan,
@@ -174,8 +175,16 @@ function sanitizePose(v: unknown): Pose | null {
 export function sanitizeSettings(raw: unknown): MapSettings {
   if (!isObj(raw)) return { ...DEFAULT_SETTINGS };
   const stay = num(raw.stayMinutes);
+  // O antigo "autoSync" (sem data) é ignorado: sem histórico, vale o padrão (ligada)
+  const byDay = new Map<string, SyncChange>();
+  if (Array.isArray(raw.syncHistory)) {
+    for (const c of raw.syncHistory.slice(0, 500)) {
+      if (!isObj(c) || typeof c.from !== "string" || !isDayKey(c.from) || typeof c.on !== "boolean") continue;
+      byDay.set(c.from, { from: c.from, on: c.on });
+    }
+  }
   return {
-    autoSync: typeof raw.autoSync === "boolean" ? raw.autoSync : DEFAULT_SETTINGS.autoSync,
+    syncHistory: [...byDay.values()].sort((a, b) => a.from.localeCompare(b.from)),
     stayMinutes: stay === null ? DEFAULT_SETTINGS.stayMinutes : clamp(Math.round(stay), 30, 24 * 60),
   };
 }

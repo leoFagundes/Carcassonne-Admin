@@ -28,6 +28,9 @@ import {
   formatMinutes,
   newId,
   suggestTables,
+  syncChangeFor,
+  syncEnabledOn,
+  withSyncChange,
   type SeatUnit,
 } from "@/floorplan/day";
 import {
@@ -589,14 +592,16 @@ export default function FloorMap() {
   }, [date]);
 
   const at = scope === "day" ? null : scope === "now" ? nowMinutes : scope;
+  // A sincronização que valia neste dia (mudanças só valem do dia delas em diante)
+  const syncOn = syncEnabledOn(settings.syncHistory, date);
   const dayEff = useMemo(
     () => (dragPose ? { ...day, moves: { ...day.moves, [dragPose.id]: dragPose.pose } } : day),
     [day, dragPose],
   );
   const layout = useMemo(() => applyDay(savedPlan, dayEff), [savedPlan, dayEff]);
   const status = useMemo(
-    () => computeDayStatus(savedPlan, dayEff, layout, reserves, { autoSync: settings.autoSync, at, stayMinutes: settings.stayMinutes }),
-    [savedPlan, dayEff, layout, reserves, settings.autoSync, settings.stayMinutes, at],
+    () => computeDayStatus(savedPlan, dayEff, layout, reserves, { autoSync: syncOn, at, stayMinutes: settings.stayMinutes }),
+    [savedPlan, dayEff, layout, reserves, syncOn, settings.stayMinutes, at],
   );
   const selectedUnit: SeatUnit | null = selUnit ? status.unitByKey.get(selUnit) ?? null : null;
   const reservationTimes = useMemo(
@@ -660,6 +665,13 @@ export default function FloorMap() {
   const setSettings = (patch: Partial<MapSettings>) => {
     setSettingsState((s) => ({ ...s, ...patch }));
     run(FloorPlanRepository.saveSettings(patch));
+  };
+
+  /** Liga/desliga a partir de hoje (os dias anteriores ficam como estavam). */
+  const setSync = (on: boolean) => {
+    const history = withSyncChange(settings.syncHistory, todaySP(), on);
+    setSettings({ syncHistory: history });
+    addAlert(on ? "Sincronização ligada a partir de hoje." : "Sincronização desligada a partir de hoje. Os dias anteriores continuam como estavam.");
   };
 
   const writeMove = (id: string, pose: Pose) => {
@@ -1082,6 +1094,9 @@ export default function FloorMap() {
               loadingReserves={loadingReserves}
               settings={settings}
               setSettings={setSettings}
+              syncOn={syncOn}
+              syncSince={syncChangeFor(settings.syncHistory, date)?.from ?? null}
+              setSync={setSync}
               scope={scope}
               setScope={setScope}
               nowMinutes={nowMinutes}

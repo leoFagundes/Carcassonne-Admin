@@ -101,6 +101,9 @@ export default function DayPanel({
   loadingReserves,
   settings,
   setSettings,
+  syncOn,
+  syncSince,
+  setSync,
   scope,
   setScope,
   nowMinutes,
@@ -128,6 +131,11 @@ export default function DayPanel({
   loadingReserves: boolean;
   settings: MapSettings;
   setSettings: (patch: Partial<MapSettings>) => void;
+  /** A sincronização vale no dia aberto. */
+  syncOn: boolean;
+  /** Desde quando vale assim (null = padrão, nunca mudou). */
+  syncSince: string | null;
+  setSync: (on: boolean) => void;
   scope: TimeScope;
   setScope: (s: TimeScope) => void;
   nowMinutes: number;
@@ -260,12 +268,18 @@ export default function DayPanel({
           </span>
           <input
             type="checkbox"
-            checked={settings.autoSync}
-            onChange={(e) => setSettings({ autoSync: e.target.checked })}
-            className="mt-0.5 h-4 w-4 shrink-0 accent-[#e6c56b]"
+            checked={syncOn}
+            disabled={date < today}
+            onChange={(e) => setSync(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[#e6c56b] disabled:opacity-50"
             aria-label="Sincronizar mesas com as reservas"
           />
         </label>
+        <span className="-mt-1 text-[11px] leading-snug text-primary-gold/45">
+          {date < today
+            ? `Num dia que já passou vale o que estava configurado na época (${syncOn ? "ligada" : "desligada"}). Para mudar, abra hoje.`
+            : `${syncOn ? "Ligada" : "Desligada"} ${syncSince ? `desde ${formatDateBR(syncSince, true)}` : "(padrão)"}. Mudar aqui vale a partir de hoje; os dias anteriores ficam como estavam.`}
+        </span>
         <label className="flex items-center justify-between gap-2 text-xs text-primary-gold/75">
           Uma reserva costuma ficar
           <select

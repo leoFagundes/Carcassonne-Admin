@@ -149,10 +149,19 @@ export interface DayPlan {
   manual: Record<string, ManualMark>;
 }
 
+/** A partir de `from` (AAAA-MM-DD), a sincronização fica ligada ou desligada. */
+export interface SyncChange {
+  from: string;
+  on: boolean;
+}
+
 /** Configurações do mapa: /floorPlan/settings. */
 export interface MapSettings {
-  /** As mesas seguem o campo "mesa" das reservas ("8, 9" junta a 8 e a 9). */
-  autoSync: boolean;
+  /**
+   * Mudanças da sincronização com o campo "mesa" ("8, 9" junta a 8 e a 9),
+   * em ordem. Cada uma vale do dia dela em diante; sem nenhuma, fica ligada.
+   */
+  syncHistory: SyncChange[];
   /** Quanto tempo uma reserva costuma ocupar a mesa (para ver por horário). */
   stayMinutes: number;
 }

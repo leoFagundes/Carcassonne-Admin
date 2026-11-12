@@ -215,7 +215,7 @@ const helpCards: HelpCard[] = [
     category: "mapa",
     title: "Sincronizar as mesas com o campo \"mesa\" das reservas",
     description:
-      "Em Dia a dia → Reservas e mesas, ligue \"Sincronizar com o campo mesa\". Assim o mapa segue o que está escrito em cada reserva: \"8, 9\" aparece como a 8 e a 9 juntas (uma mesa só, com os lugares somados) e \"salas\" junta as mesas que ficam dentro do ambiente Salas (24 e 42). Para separar, mude a mesa na reserva ou desligue a sincronização. Juntar à mão continua valendo, por exemplo para cliente sem reserva.",
+      "Em Dia a dia → Reservas e mesas, ligue \"Sincronizar com o campo mesa\". Assim o mapa segue o que está escrito em cada reserva: \"8, 9\" aparece como a 8 e a 9 juntas (uma mesa só, com os lugares somados) e \"salas\" junta as mesas que ficam dentro do ambiente Salas (24 e 42). Para separar, mude a mesa na reserva ou desligue a sincronização. Ela vem ligada; ligar ou desligar vale a partir do dia em que foi mudado, e os dias anteriores continuam como estavam (num dia que já passou, a opção aparece travada). Juntar à mão continua valendo, por exemplo para cliente sem reserva.",
   },
   {
     category: "mapa",

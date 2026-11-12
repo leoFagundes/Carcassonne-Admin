@@ -6,6 +6,7 @@ import type {
   MapReserve,
   MapSettings,
   PlanElement,
+  SyncChange,
   TableGroup,
   TableState,
 } from "./types";
@@ -14,7 +15,32 @@ export function emptyDay(date: string): DayPlan {
   return { date, moves: {}, names: {}, hidden: {}, groups: {}, manual: {} };
 }
 
-export const DEFAULT_SETTINGS: MapSettings = { autoSync: true, stayMinutes: 180 };
+export const DEFAULT_SETTINGS: MapSettings = { syncHistory: [], stayMinutes: 180 };
+
+/** Sincronização ligada por padrão (antes de qualquer mudança). */
+export const SYNC_DEFAULT = true;
+
+/** A mudança que vale no dia (a última com início até ele), ou null se nunca mudou. */
+export function syncChangeFor(history: SyncChange[], date: string): SyncChange | null {
+  let found: SyncChange | null = null;
+  for (const c of history) if (c.from <= date && (!found || c.from >= found.from)) found = c;
+  return found;
+}
+
+/** A sincronização vale neste dia? */
+export function syncEnabledOn(history: SyncChange[], date: string): boolean {
+  return syncChangeFor(history, date)?.on ?? SYNC_DEFAULT;
+}
+
+/**
+ * Liga/desliga a partir de `today`: os dias anteriores continuam como estavam
+ * e qualquer mudança marcada para depois é substituída por esta.
+ */
+export function withSyncChange(history: SyncChange[], today: string, on: boolean): SyncChange[] {
+  const before = history.filter((c) => c.from < today).sort((a, b) => a.from.localeCompare(b.from));
+  const prev = before.length ? before[before.length - 1].on : SYNC_DEFAULT;
+  return prev === on ? before : [...before, { from: today, on }];
+}
 
 /** O dia tem alguma mudança de mesa (posição, nome, retirada ou junção)? */
 export function dayHasLayoutChanges(day: Pick<DayPlan, "moves" | "names" | "hidden" | "groups">): boolean {
