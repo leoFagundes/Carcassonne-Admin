@@ -3,7 +3,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
+  LuArrowDown,
   LuArrowLeftRight,
+  LuMousePointerClick,
   LuBadgePercent,
   LuCalendarDays,
   LuGauge,
@@ -117,27 +119,41 @@ function Summary({ local }: { local: Draft }) {
     },
   ];
   return (
-    <nav aria-label="Resumo das configurações" className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((it) => (
-        <a
-          key={it.href}
-          href={it.href}
-          onClick={(e) => {
-            e.preventDefault();
-            document.querySelector(it.href)?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }}
-          className="flex min-w-0 flex-col gap-0.5 rounded-xl border border-primary-gold/15 bg-primary-black/30 px-3 py-2 transition-colors hover:border-primary-gold/40"
-        >
-          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-gold/45">{it.label}</span>
-          <span
-            className={`truncate text-xs font-medium first-letter:uppercase ${
-              it.tone === "on" ? "text-emerald-300" : it.tone === "off" ? "text-invalid-color" : "text-primary-gold/85"
-            }`}
+    <nav aria-label="Resumo das configurações (atalhos para cada seção)" className="flex flex-col gap-1.5">
+      <span className="flex items-center gap-1.5 text-[11px] text-primary-gold/50">
+        <LuMousePointerClick size={13} className="shrink-0 text-primary-gold/40" />
+        Resumo: toque num cartão para ir direto à seção.
+      </span>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map((it) => (
+          <a
+            key={it.href}
+            href={it.href}
+            title={`${it.label}: ${it.value}. Ir para a seção`}
+            onClick={(e) => {
+              e.preventDefault();
+              document.querySelector(it.href)?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            className="group flex min-w-0 items-center gap-2 rounded-xl border border-primary-gold/15 bg-primary-black/30 px-3 py-2 transition-colors hover:border-primary-gold/40 hover:bg-primary-gold/[0.04]"
           >
-            {it.value}
-          </span>
-        </a>
-      ))}
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-gold/45">{it.label}</span>
+              <span
+                className={`truncate text-xs font-medium first-letter:uppercase ${
+                  it.tone === "on" ? "text-emerald-300" : it.tone === "off" ? "text-invalid-color" : "text-primary-gold/85"
+                }`}
+              >
+                {it.value}
+              </span>
+            </span>
+            <LuArrowDown
+              size={14}
+              aria-hidden="true"
+              className="shrink-0 text-primary-gold/30 transition-all group-hover:translate-y-0.5 group-hover:text-primary-gold"
+            />
+          </a>
+        ))}
+      </div>
     </nav>
   );
 }
