@@ -19,6 +19,7 @@ import {
   LuPackage,
   LuUsers,
   LuPalette,
+  LuMap,
 } from "react-icons/lu";
 
 interface HelpCard {
@@ -32,6 +33,7 @@ interface HelpCard {
 const categories = [
   { key: "todos", label: "Todos", icon: <LuCircleHelp size={14} /> },
   { key: "reservas", label: "Reservas", icon: <LuCalendar size={14} /> },
+  { key: "mapa", label: "Mapa", icon: <LuMap size={14} /> },
   { key: "colecao", label: "Coleção", icon: <LuDices size={14} /> },
   { key: "aluguel", label: "Aluguel", icon: <LuPackage size={14} /> },
   { key: "cardapio", label: "Cardápio", icon: <LuPizza size={14} /> },
@@ -151,6 +153,62 @@ const helpCards: HelpCard[] = [
     title: "Como ver a visão do cliente",
     description:
       "Clique no ícone de link externo (tooltip: 'Ir para visão do cliente') no cabeçalho para abrir a página de reservas que os clientes utilizam em uma nova aba.",
+  },
+
+  // ── MAPA ──────────────────────────────────────────────────────
+  {
+    category: "mapa",
+    title: "Visão geral do Mapa do pub",
+    description:
+      "O Mapa mostra a planta do pub (térreo e subsolo) com cada mesa colorida pelo estado no dia escolhido: verde livre, amarelo reservada, vermelho ocupada e cinza indisponível. Tem dois modos: Dia a dia (para usar durante o expediente) e Planta (para acertar o desenho). Dá para ver em 2D, de cima, ou em 3D, girando com o dedo ou o mouse.",
+  },
+  {
+    category: "mapa",
+    title: "Como o mapa sabe quais mesas estão reservadas",
+    description:
+      "O mapa lê as reservas confirmadas do dia e o campo Mesa de cada uma, do jeito que a equipe já escreve: \"5\", \"3/8\", \"2,7,12\" ou \"salas\" (o nome de um ambiente marca todas as mesas dentro dele). Reserva que chegou deixa a mesa ocupada. Reservas sem mesa, ou com uma mesa que não existe no mapa, aparecem em \"Precisa de mesa\", com o botão Escolher mesa.",
+  },
+  {
+    category: "mapa",
+    title: "Como colocar uma reserva numa mesa pelo mapa",
+    description:
+      "Em \"Precisa de mesa\", toque em Escolher mesa e depois na mesa no mapa. Também dá para tocar na mesa e usar \"Colocar uma reserva nesta mesa\". A mesa é gravada na própria reserva, então aparece igual em Reservas. Para trocar, faça de novo; para tirar, use Tirar da mesa.",
+  },
+  {
+    category: "mapa",
+    title: "Como marcar uma mesa como ocupada, livre ou indisponível",
+    description:
+      "Toque na mesa e escolha o estado. No Automático, ela segue as reservas (reservada quando tem reserva, ocupada quando a reserva chega). Ocupada serve para cliente sem reserva; Livre, para quando a mesa vagou; Indisponível, para mesa quebrada ou guardada. A marcação vale só para aquele dia.",
+  },
+  {
+    category: "mapa",
+    title: "Como juntar mesas num dia",
+    description:
+      "Toque em Juntar mesas, depois nas mesas que vão ficar juntas, e confirme. Elas passam a valer como uma mesa só naquele dia: um estado, os lugares somados e as mesmas reservas. A reserva colocada no grupo fica com as mesas no formato \"2/3\". Para desfazer, toque no grupo e em Separar as mesas.",
+  },
+  {
+    category: "mapa",
+    title: "Como mudar mesas de lugar ou de nome só num dia",
+    description:
+      "Ligue Mover mesas e arraste a mesa (os bancos vão junto). Ao tocar numa mesa dá para girar, mudar o nome só naquele dia e retirá-la do mapa (ela fica em \"Retiradas neste dia\" para devolver). \"Desfazer mudanças do dia\" volta tudo para a planta. Os outros dias não mudam.",
+  },
+  {
+    category: "mapa",
+    title: "Como corrigir a planta (tamanhos, posições e nomes)",
+    description:
+      "No modo Planta, toque num item para escolher: arraste para mover, puxe as alças brancas para mudar o tamanho e a bolinha dourada para girar. No painel dá para digitar as medidas exatas em metros, o nome e os lugares da mesa, o tipo e o andar. Adicionar coloca mesas, bancos, paredes, portas e móveis novos. Nada vale até tocar em Salvar planta; Ctrl+Z desfaz.",
+  },
+  {
+    category: "mapa",
+    title: "Bancos presos às mesas",
+    description:
+      "Bancos e sofás podem ficar presos a uma mesa: quando ela se move ou gira, eles vão junto, na planta e no dia a dia. Para prender, escolha a mesa e os bancos (com Shift ou Ctrl) e toque em Prender à mesa. Para soltar, escolha o banco e toque em Soltar. Excluir uma mesa exclui os bancos presos a ela.",
+  },
+  {
+    category: "mapa",
+    title: "Duas pessoas editando a planta ao mesmo tempo",
+    description:
+      "Se outra pessoa salvar a planta enquanto você edita, o mapa avisa e, ao salvar, pergunta qual versão fica: a sua ou a dela. Nada é sobrescrito sem você escolher. As mudanças do dia a dia (estados, junções e mesas movidas) aparecem na hora para todo mundo.",
   },
 
   // ── COLEÇÃO ───────────────────────────────────────────────────
