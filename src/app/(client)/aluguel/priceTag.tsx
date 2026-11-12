@@ -18,7 +18,11 @@ export function PriceTag({
   const promo = pricing.listPrice !== undefined;
   if (variant === "chip") {
     return (
-      <span className="flex items-baseline gap-1 px-2 py-0.5 rounded-lg bg-primary-gold text-primary-black text-xs font-bold shadow-card">
+      <span
+        className={`flex rounded-lg bg-primary-gold px-2 py-0.5 text-xs font-bold text-primary-black shadow-card ${
+          promo ? "flex-col items-end leading-tight" : "items-baseline"
+        }`}
+      >
         {promo && <span className="text-[10px] font-semibold line-through opacity-55">{formatBRL(pricing.listPrice!)}</span>}
         {formatBRL(pricing.price)}
       </span>

@@ -563,7 +563,17 @@ export default function PedidoPage() {
                     const isReturn = returnSet.has(date);
                     // Com você: depois da retirada até a última devolução.
                     const withYou = !!startDate && !!lastReturn && date > startDate && date <= lastReturn;
-                    const tag = selected ? "retira" : isReturn ? "devolve" : withYou ? "com você" : null;
+                    // Dia em que a loja não abre: apagado e com o motivo, mesmo dentro do período
+                    const closed = !enabled && !extra;
+                    const tag = selected
+                      ? "retira"
+                      : isReturn
+                        ? "devolve"
+                        : closed
+                          ? "fechado"
+                          : withYou
+                            ? "com você"
+                            : null;
                     return (
                       <button
                         key={date}
@@ -576,7 +586,9 @@ export default function PedidoPage() {
                           extra
                             ? "Fora do período de retirada: só mostra até quando o jogo fica com você"
                             : !enabled
-                              ? "Sem retirada neste dia"
+                              ? withYou
+                                ? "A loja não abre neste dia (o jogo continua com você)"
+                                : "A loja não abre neste dia: não dá para retirar"
                               : busy
                                 ? "Algum jogo do pedido já está reservado nesse período"
                                 : undefined
@@ -587,12 +599,14 @@ export default function PedidoPage() {
                           selected
                             ? "border-primary-gold bg-primary-gold text-primary-black"
                             : isReturn
-                              ? `border-primary-gold/70 bg-primary-gold/15 text-primary-gold ${enabled ? "hover:border-primary-gold cursor-pointer" : "cursor-default"}`
-                              : withYou
-                                ? `border-primary-gold/25 bg-primary-gold/[0.08] text-primary-gold/80 ${enabled ? "hover:border-primary-gold/50 cursor-pointer" : "cursor-default"}`
-                                : enabled
-                                  ? "border-primary-gold/20 text-primary-gold/80 hover:border-primary-gold/50 cursor-pointer"
-                                  : "border-primary-gold/5 text-primary-gold/20 cursor-not-allowed"
+                              ? `border-primary-gold bg-primary-gold/30 text-primary-gold ring-1 ring-primary-gold shadow-[0_0_14px_rgba(230,197,107,0.25)] ${enabled ? "hover:bg-primary-gold/40 cursor-pointer" : "cursor-default"}`
+                              : closed
+                                ? `cursor-not-allowed ${withYou ? "border-primary-gold/10 bg-primary-gold/[0.04] text-primary-gold/30" : "border-primary-gold/5 text-primary-gold/20"}`
+                                : withYou
+                                  ? `border-primary-gold/25 bg-primary-gold/[0.08] text-primary-gold/80 ${enabled ? "hover:border-primary-gold/50 cursor-pointer" : "cursor-default"}`
+                                  : enabled
+                                    ? "border-primary-gold/20 text-primary-gold/80 hover:border-primary-gold/50 cursor-pointer"
+                                    : "border-primary-gold/5 text-primary-gold/20 cursor-not-allowed"
                         }`}
                       >
                         <span className="uppercase text-[10px]">
@@ -606,7 +620,13 @@ export default function PedidoPage() {
                         {tag && (
                           <span
                             className={`mt-0.5 text-[9px] font-semibold uppercase tracking-wide leading-none ${
-                              selected ? "text-primary-black/70" : isReturn ? "text-primary-gold" : "text-primary-gold/55"
+                              selected
+                                ? "text-primary-black/70"
+                                : isReturn
+                                  ? "text-primary-gold font-bold"
+                                  : closed
+                                    ? "text-primary-gold/35"
+                                    : "text-primary-gold/55"
                             }`}
                           >
                             {tag}
@@ -628,8 +648,12 @@ export default function PedidoPage() {
                     Com você
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-primary-gold/70 bg-primary-gold/15" />
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-primary-gold bg-primary-gold/30 ring-1 ring-primary-gold" />
                     Dia de devolver
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-primary-gold/10 bg-primary-gold/[0.04]" />
+                    Fechado (sem retirada)
                   </span>
                   {extraDates.length > 0 && (
                     <span className="flex items-center gap-1.5">

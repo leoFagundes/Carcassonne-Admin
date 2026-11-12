@@ -96,8 +96,10 @@ export default function RentalGameCard({
           className="w-full aspect-[4/3] rounded-t-[11px]"
         />
         <div className="absolute inset-0 rounded-t-[11px] bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-        <AvailabilityBadge availability={availability} short className="absolute top-2 left-2 max-w-[calc(100%-1rem)]" />
-        <PromoBadge pricing={pricing} className="absolute bottom-2 left-2" />
+        <div className="absolute top-2 left-2 flex max-w-[calc(100%-1rem)] flex-col items-start gap-1">
+          <AvailabilityBadge availability={availability} short className="max-w-full" />
+          <PromoBadge pricing={pricing} />
+        </div>
         <span className="absolute bottom-2 right-2">
           <PriceTag pricing={pricing} variant="chip" />
         </span>
