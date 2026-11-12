@@ -160,7 +160,7 @@ const helpCards: HelpCard[] = [
     category: "mapa",
     title: "Visão geral do Mapa do pub",
     description:
-      "O Mapa mostra a planta do pub (térreo e subsolo) com cada mesa colorida pelo estado no dia escolhido: verde livre, amarelo reservada, vermelho ocupada e cinza indisponível. Tem dois modos: Dia a dia (para usar durante o expediente) e Planta (para acertar o desenho). Dá para ver em 2D, de cima, ou em 3D, girando com o dedo ou o mouse.",
+      "Abre pelo ícone de mapa no topo da página de Reservas, já no dia que estiver aberto lá. O Mapa mostra a planta do pub (térreo e subsolo) com cada mesa colorida pelo estado no dia escolhido: verde livre, amarelo reservada, vermelho ocupada e cinza indisponível. Tem dois modos: Dia a dia (para usar durante o expediente) e Planta (para acertar o desenho). Dá para ver em 2D, de cima, ou em 3D, girando com o dedo ou o mouse.",
   },
   {
     category: "mapa",

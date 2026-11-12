@@ -26,6 +26,7 @@ import {
   LuChevronUp,
   LuDollarSign,
   LuLink,
+  LuMap,
   LuNotebookText,
   LuPencil,
   LuPrinter,
@@ -862,6 +863,19 @@ export default function Rerserve() {
                 className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
               >
                 <LuUsers size={16} />
+              </button>
+            </Tooltip>
+            <Tooltip direction="bottom" content="Mapa das mesas neste dia">
+              <button
+                onClick={() =>
+                  router.push(
+                    `/mapa?data=${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`,
+                  )
+                }
+                aria-label="Mapa das mesas neste dia"
+                className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
+              >
+                <LuMap size={16} />
               </button>
             </Tooltip>
             <Tooltip direction="bottom" content="Ir para visão do cliente">

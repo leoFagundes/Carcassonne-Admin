@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { LuBox, LuCalendarDays, LuInfo, LuMap, LuPencilRuler, LuRedo2, LuSave, LuSquare, LuUndo2 } from "react-icons/lu";
+import Link from "next/link";
+import { LuArrowLeft, LuBox, LuCalendarDays, LuInfo, LuMap, LuPencilRuler, LuRedo2, LuSave, LuSquare, LuUndo2 } from "react-icons/lu";
 import { useAlert } from "@/contexts/alertProvider";
 import { todaySP } from "@/rental/dates";
 import { KINDS, tableTitle } from "@/floorplan/catalog";
@@ -359,6 +360,12 @@ export default function FloorMap() {
     setTool({ kind: "select" });
   };
 
+  // Aberto pelo cabeçalho de Reservas: /mapa?data=AAAA-MM-DD
+  useEffect(() => {
+    const d = new URLSearchParams(window.location.search).get("data");
+    if (d && /^d{4}-d{2}-d{2}$/.test(d) && !Number.isNaN(Date.parse(d))) setDateRaw(d);
+  }, []);
+
   useEffect(() => {
     setDay(emptyDay(date));
     return FloorPlanRepository.subscribeDay(date, setDay);
@@ -578,7 +585,18 @@ export default function FloorMap() {
       <header className="flex flex-col gap-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary-gold/25 bg-primary-gold/10 text-primary-gold">
+            <Link
+              href="/myreserves"
+              title="Voltar para Reservas"
+              aria-label="Voltar para Reservas"
+              onClick={(e) => {
+                if (dirty && !window.confirm("A planta tem mudanças não salvas. Sair mesmo assim?")) e.preventDefault();
+              }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary-gold/25 text-primary-gold/70 transition-colors hover:border-primary-gold/60 hover:text-primary-gold"
+            >
+              <LuArrowLeft size={17} />
+            </Link>
+            <span className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary-gold/25 bg-primary-gold/10 text-primary-gold sm:flex">
               <LuMap size={18} />
             </span>
             <div className="min-w-0">
