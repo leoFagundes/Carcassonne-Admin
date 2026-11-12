@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { LuBadgePercent, LuChevronRight, LuEye, LuEyeOff, LuPackage, LuPencil, LuPlus } from "react-icons/lu";
+import {
+  LuBadgePercent,
+  LuCalendarDays,
+  LuChevronRight,
+  LuCopy,
+  LuEye,
+  LuEyeOff,
+  LuPackage,
+  LuPencil,
+  LuPlus,
+} from "react-icons/lu";
 import type { RentalGameType, RentalSettingsType, RentalType } from "@/types";
 import RentalConfigRepository from "@/services/repositories/RentalConfigRepository";
 import { gamePricing } from "@/rental/discounts";
@@ -167,14 +177,29 @@ export default function GamesTab() {
         )}
       </>
     );
-    const details = (
-      <span className="flex items-center gap-2.5 text-[11px] text-primary-gold/55">
-        {pricing.listPrice !== undefined && <span className="line-through text-primary-gold/40">{formatBRL(pricing.listPrice)}</span>}
-        <span className={`font-semibold ${pricing.listPrice !== undefined ? "text-emerald-300" : "text-primary-gold/80"}`}>
+    // Cada informação fica inteira (nowrap); quando falta espaço, quebra o bloco todo
+    const priceLine = (
+      <span className="flex flex-wrap items-baseline gap-x-1.5">
+        {pricing.listPrice !== undefined && (
+          <span className="whitespace-nowrap text-[11px] text-primary-gold/40 line-through">{formatBRL(pricing.listPrice)}</span>
+        )}
+        <span
+          className={`whitespace-nowrap text-sm font-semibold ${pricing.listPrice !== undefined ? "text-emerald-300" : "text-primary-gold/90"}`}
+        >
           {formatBRL(pricing.price)}
         </span>
-        <span>prazo {game.rentalDays} {game.rentalDays === 1 ? "dia" : "dias"}</span>
-        <span>{unitsLabel(game)}</span>
+      </span>
+    );
+    const metaLine = (
+      <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-primary-gold/55">
+        <span className="flex items-center gap-1 whitespace-nowrap" title="Prazo: dias com o cliente">
+          <LuCalendarDays size={12} className="shrink-0 text-primary-gold/40" />
+          {game.rentalDays} {game.rentalDays === 1 ? "dia" : "dias"}
+        </span>
+        <span className="flex items-center gap-1 whitespace-nowrap" title="Cópias livres hoje / total">
+          <LuCopy size={12} className="shrink-0 text-primary-gold/40" />
+          {unitsLabel(game)}
+        </span>
       </span>
     );
     const key = game.id ?? game.name;
@@ -200,7 +225,10 @@ export default function GamesTab() {
               </span>
               {badges}
             </span>
-            {details}
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+              {priceLine}
+              {metaLine}
+            </span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">{toggle}</div>
           <LuChevronRight size={16} className="text-primary-gold/30 group-hover:text-primary-gold/70 shrink-0" />
@@ -228,7 +256,10 @@ export default function GamesTab() {
           <span className="text-sm font-semibold leading-snug line-clamp-2 text-primary-gold">
             <Highlight text={game.name} words={words} />
           </span>
-          {details}
+          <div className="mt-auto flex flex-col gap-1">
+            {priceLine}
+            {metaLine}
+          </div>
         </div>
         <div className="flex items-center gap-1.5 p-2.5">
           {toggle}
