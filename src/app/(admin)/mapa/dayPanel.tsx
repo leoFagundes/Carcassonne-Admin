@@ -11,6 +11,7 @@ import {
   LuEyeOff,
   LuHand,
   LuLayoutTemplate,
+  LuMapPin,
   LuMove,
   LuPrinter,
   LuRefreshCw,
@@ -491,19 +492,33 @@ export default function DayPanel({
   );
 }
 
+/** Sugestões em grade: cada uma é um botão de duas linhas (mesa e lugares) que se ajusta à largura. */
 function Suggestions({ list, onPick }: { list: TableSuggestion[]; onPick: (s: TableSuggestion) => void }) {
   if (!list.length) return <span className="text-[11px] text-primary-gold/45">Nenhuma mesa livre comporta o grupo nesse horário.</span>;
   return (
-    <span className="flex flex-wrap items-center gap-1.5">
-      <span className="flex items-center gap-1 text-[11px] text-primary-gold/55">
-        <LuSparkles size={12} /> Sugestões:
+    <div className="flex flex-col gap-1.5">
+      <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-gold/50">
+        <LuSparkles size={11} /> Sugestões
       </span>
-      {list.map((s) => (
-        <Btn key={s.reserveName} onClick={() => onPick(s)} title={s.join ? "Juntar as duas mesas para esta reserva" : "Usar esta mesa"}>
-          {s.tableIds.length > 1 ? `Mesas ${s.reserveName}` : tableTitle(s.reserveName)} · {s.seats} lug.
-        </Btn>
-      ))}
-    </span>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-1.5">
+        {list.map((s) => (
+          <button
+            key={s.reserveName}
+            type="button"
+            onClick={() => onPick(s)}
+            title={s.join ? "Juntar as duas mesas para esta reserva" : "Usar esta mesa"}
+            className="flex min-w-0 flex-col items-center rounded-lg border border-primary-gold/25 bg-primary-gold/[0.06] px-1.5 py-1.5 text-center transition-colors hover:border-primary-gold/60 hover:bg-primary-gold/[0.12]"
+          >
+            <span className="w-full truncate text-xs font-bold text-primary-gold">
+              {s.tableIds.length > 1 ? `Mesas ${s.reserveName}` : tableTitle(s.reserveName)}
+            </span>
+            <span className="text-[10px] text-primary-gold/55">
+              {s.seats} lugares{s.join ? " · juntar" : ""}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -523,20 +538,33 @@ function ReserveRow({
   onPlace: () => void;
 }) {
   return (
-    <li className="flex flex-col gap-1.5 rounded-lg border border-primary-gold/10 bg-primary-black/40 px-2 py-1.5 text-xs">
-      <span className="flex items-center gap-2">
-        {warn ? <LuTriangleAlert size={14} className="shrink-0 text-amber-300" /> : <LuUsers size={14} className="shrink-0 text-primary-gold/50" />}
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate font-semibold text-primary-gold/90">
-            {r.time} · {r.name || "Sem nome"} · {people(r)}p
-          </span>
-          <span className={`truncate text-[11px] ${warn ? "text-amber-200/80" : "text-primary-gold/50"}`}>{note}</span>
+    <li className="flex flex-col gap-2.5 rounded-xl border border-primary-gold/10 bg-primary-black/40 p-2.5 text-xs">
+      <div className="flex items-start gap-2.5">
+        <span className="flex shrink-0 flex-col items-center rounded-lg bg-primary-gold/10 px-1.5 py-1 leading-none">
+          <span className="text-[13px] font-extrabold tabular-nums text-primary-gold">{r.time}</span>
         </span>
-        <Btn onClick={onPlace} title="Escolher a mesa no mapa">
-          Escolher no mapa
-        </Btn>
-      </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="break-words font-semibold leading-snug text-primary-gold/90">{r.name || "Sem nome"}</span>
+          <span className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-primary-gold/55">
+            <span className="inline-flex items-center gap-1">
+              <LuUsers size={11} /> {people(r)} {people(r) === 1 ? "pessoa" : "pessoas"}
+            </span>
+            <span aria-hidden="true">·</span>
+            <span className={`inline-flex min-w-0 items-center gap-1 ${warn ? "text-amber-200/85" : ""}`}>
+              {warn && <LuTriangleAlert size={11} className="shrink-0 text-amber-300" />}
+              <span className="break-words">{note}</span>
+            </span>
+          </span>
+        </div>
+      </div>
       <Suggestions list={suggestions.slice(0, 3)} onPick={onSuggest} />
+      <button
+        type="button"
+        onClick={onPlace}
+        className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary-gold/25 py-1.5 text-[11px] font-semibold text-primary-gold/70 transition-colors hover:border-primary-gold/60 hover:text-primary-gold"
+      >
+        <LuMapPin size={13} /> {suggestions.length ? "Escolher outra no mapa" : "Escolher no mapa"}
+      </button>
     </li>
   );
 }
