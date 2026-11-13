@@ -7,7 +7,7 @@ import * as THREE from "three";
  * tábuas do piso, piso frio, granito e tecido. São em tons de cinza claro;
  * a cor do material dá o tom.
  */
-export type TexName = "grain" | "planks" | "tiles" | "granite" | "fabric" | "stone";
+export type TexName = "grain" | "planks" | "tiles" | "granite" | "fabric" | "stone" | "dots";
 
 const CACHE = new Map<TexName, THREE.CanvasTexture>();
 
@@ -142,6 +142,21 @@ function draw(name: TexName): HTMLCanvasElement {
         }
       }
     }
+    return c;
+  }
+  if (name === "dots") {
+    // Tecido claro com bolinhas coloridas (almofadas do pufe das salas). Use com cor branca.
+    const [c, g] = canvas(128);
+    g.fillStyle = "#e9dccb";
+    g.fillRect(0, 0, 128, 128);
+    const cols = ["#c0504d", "#4f81bd", "#9bbb59", "#e6a23c", "#8064a2", "#3a3a3a"];
+    for (let y = 6; y < 128; y += 14)
+      for (let x = (y / 14) % 2 ? 13 : 6; x < 128; x += 14) {
+        g.fillStyle = cols[Math.floor(r() * cols.length)];
+        g.beginPath();
+        g.arc(x + (r() - 0.5) * 2, y + (r() - 0.5) * 2, 2.6, 0, Math.PI * 2);
+        g.fill();
+      }
     return c;
   }
   // fabric

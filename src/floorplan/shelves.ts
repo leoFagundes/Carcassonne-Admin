@@ -6,9 +6,9 @@
 import { containsPoint } from "./geometry";
 import type { FloorPlan, PlanElement } from "./types";
 
-export type ShelfModelId = "hutch-open" | "hutch-doors" | "cubes" | "lowcab";
+export type ShelfModelId = "hutch-open" | "hutch-doors" | "cubes" | "lowcab" | "pouf1" | "pouf3" | "understair" | "chest";
 
-export type SlotKind = "top" | "open" | "drawer" | "doors";
+export type SlotKind = "top" | "open" | "drawer" | "doors" | "inside";
 
 /** Espaço do armário, na vista de frente: metros a partir do canto de cima à esquerda do móvel. */
 export interface ShelfSlotDef {
@@ -30,6 +30,8 @@ export interface ShelfModelDef {
   w: number;
   d: number;
   slots: (w: number) => ShelfSlotDef[];
+  /** É um assento (pufe): na planta conta como lugar para sentar, e abre levantando o tampo. */
+  seat?: boolean;
 }
 
 /** Altura da área "em cima" na vista de frente. */
@@ -75,6 +77,73 @@ export const LOWCAB = {
   ] as [number, number][],
   base: [0.82, 0.86] as [number, number],
 };
+
+/**
+ * Pufes-baú das salas (vídeo): o de 1 lugar é um cubo preto de couro com
+ * botões no tampo; o de 3 lugares tem base preta e três almofadas de tecido
+ * claro com bolinhas, e cada lugar abre separado. O tampo levanta para trás.
+ */
+export const POUF = { height: 0.45, lid: 0.07, wall: 0.03, floor: 0.04 };
+
+/** Baú de jogos: caixa de madeira com tampa que abre para trás. */
+export const CHEST = { height: 0.5, lid: 0.06, wall: 0.03, floor: 0.04 };
+
+/**
+ * Armário embaixo da escada: o teto acompanha a escada, baixo de um lado
+ * (`low`) e alto do outro (`height`). Três portas: a baixa (1 prateleira),
+ * a do meio (2) e a alta (3). A parte baixa fica à esquerda na vista de frente.
+ */
+export const UNDERSTAIR = { height: 2.1, low: 0.75, frame: 0.04, base: 0.08, gap: 0.03 };
+
+/** Altura do teto do armário embaixo da escada no ponto x (m, da esquerda). */
+export function understairTop(w: number, x: number): number {
+  const f = Math.max(0, Math.min(1, x / Math.max(0.01, w)));
+  return UNDERSTAIR.low + (UNDERSTAIR.height - UNDERSTAIR.low) * f;
+}
+
+function poufSlots(w: number, n: number): ShelfSlotDef[] {
+  const pw = w / n;
+  const names = n === 1 ? ["Dentro do pufe"] : ["Lugar 1 (esquerda)", "Lugar 2 (meio)", "Lugar 3 (direita)"];
+  return Array.from({ length: n }, (_, i) => ({
+    id: n === 1 ? "in" : `s${i + 1}`,
+    label: names[i] ?? `Lugar ${i + 1}`,
+    kind: "inside" as SlotKind,
+    x: pw * i + POUF.wall,
+    y: POUF.lid,
+    w: pw - POUF.wall * 2,
+    h: POUF.height - POUF.lid - POUF.floor,
+  }));
+}
+
+function understairSlots(w: number): ShelfSlotDef[] {
+  const U = UNDERSTAIR;
+  const cw = w / 3;
+  const bottom = U.height - U.base; // chão de dentro, na vista de frente (de cima para baixo)
+  const cols: { prefix: string; door: string; n: number }[] = [
+    { prefix: "a", door: "Porta baixa", n: 1 },
+    { prefix: "b", door: "Porta do meio", n: 2 },
+    { prefix: "c", door: "Porta alta", n: 3 },
+  ];
+  const out: ShelfSlotDef[] = [];
+  cols.forEach((c, i) => {
+    const x0 = cw * i + U.frame;
+    // O teto mais baixo da coluna é o do lado esquerdo dela
+    const topY = U.height - understairTop(w, cw * i) + U.frame + 0.02;
+    const h = (bottom - topY) / c.n;
+    for (let k = 0; k < c.n; k++) {
+      out.push({
+        id: `${c.prefix}${k + 1}`,
+        label: c.n === 1 ? c.door : `${c.door} ${k === 0 ? "(em cima)" : k === c.n - 1 ? "(embaixo)" : "(no meio)"}`,
+        kind: "doors",
+        x: x0,
+        y: topY + h * k + (k ? U.gap / 2 : 0),
+        w: cw - U.frame * 2,
+        h: h - U.gap,
+      });
+    }
+  });
+  return out;
+}
 
 function hutchSlots(w: number, doors: boolean): ShelfSlotDef[] {
   const ix = HUTCH.upperInset + HUTCH.side;
@@ -140,6 +209,18 @@ export const SHELF_MODELS: Record<ShelfModelId, ShelfModelDef> = {
       })),
     ],
   },
+
+  pouf1: { id: "pouf1", label: "Pufe baú (1 lugar)", height: POUF.height, w: 0.5, d: 0.5, seat: true, slots: (w) => poufSlots(w, 1) },
+  pouf3: { id: "pouf3", label: "Pufe baú (3 lugares)", height: POUF.height, w: 1.5, d: 0.5, seat: true, slots: (w) => poufSlots(w, 3) },
+  chest: {
+    id: "chest",
+    label: "Baú de jogos",
+    height: CHEST.height,
+    w: 0.9,
+    d: 0.5,
+    slots: (w) => [{ id: "in", label: "Dentro do baú", kind: "inside", x: CHEST.wall, y: CHEST.lid, w: w - CHEST.wall * 2, h: CHEST.height - CHEST.lid - CHEST.floor }],
+  },
+  understair: { id: "understair", label: "Armário embaixo da escada", height: UNDERSTAIR.height, w: 2.4, d: 0.6, slots: understairSlots },
 };
 
 export function shelfModel(el: Pick<PlanElement, "variant">): ShelfModelDef {
@@ -255,14 +336,17 @@ export interface GameLocation {
 export function gameShelves(plan: FloorPlan): { el: PlanElement; name: string; room: string }[] {
   const rooms = plan.elements.filter((e) => e.kind === "room" && e.label);
   const levelName = (id: string) => plan.levels.find((l) => l.id === id)?.name ?? "";
+  const seq = { seat: 0, shelf: 0 };
   return plan.elements
     .filter((e) => e.kind === "gameshelf")
-    .map((el, i) => {
+    .map((el) => {
+      const seat = !!shelfModel(el).seat;
+      const i = seat ? seq.seat++ : seq.shelf++;
       // Ambiente que contém o armário (o menor, se estiver em dois)
       const room = rooms
         .filter((r) => r.level === el.level && containsPoint(r, el))
         .sort((a, b) => a.w * a.d - b.w * b.d)[0];
-      return { el, name: el.label?.trim() || `Armário ${i + 1}`, room: room?.label ?? levelName(el.level) };
+      return { el, name: el.label?.trim() || `${seat ? "Pufe" : "Armário"} ${i + 1}`, room: room?.label ?? levelName(el.level) };
     });
 }
 

@@ -47,6 +47,12 @@ const DECO_COLOR: Record<string, string> = {
   bin: "#6f747a",
   coatrack: "#7a5232",
   fan: "#cfc8ba",
+  clock: "#efe7d6",
+  armor: "#a9adb2",
+  chandelier: "#ffe3a1",
+  easel: "#7a5232",
+  dice: "#f2ead8",
+  meeple: "#e6c56b",
 };
 
 /** Cores da estrutura no tema escuro (tela) e claro (impressão). */
@@ -323,9 +329,55 @@ export function Shape2D({
       );
     }
     case "gameshelf": {
-      const wood = v === "cubes" ? "#b07f4c" : v === "lowcab" ? "#7a4f2c" : "#9a6a3c";
       const cols = colors?.length ? colors : [];
       const stripe = Math.min(10, d * 0.22);
+      const band = cols.map((c, i) => (
+        <rect key={c} x={x0 + 4 + ((w - 8) / cols.length) * i} y={-y0 - stripe - 3} width={(w - 8) / cols.length} height={stripe} fill={c} />
+      ));
+      if (v === "pouf1" || v === "pouf3") {
+        const n = v === "pouf3" ? 3 : 1;
+        const pw = w / n;
+        return (
+          <g opacity={op}>
+            <rect x={x0} y={y0} width={w} height={d} rx={5} fill="#1d1d20" stroke="#e6d9c8" strokeOpacity={0.35} strokeWidth={sw} />
+            {n === 1
+              ? [-1, 1].map((sx) => [-1, 1].map((sy) => <circle key={`${sx}${sy}`} cx={sx * w * 0.2} cy={sy * d * 0.2} r={1.8} fill="#4a4a50" />))
+              : Array.from({ length: n }, (_, i) => (
+                  <rect key={i} x={x0 + pw * i + 3} y={y0 + 3} width={pw - 6} height={d - 6} rx={4} fill={paper ? "#e9dccb" : "url(#fp-dots-2d)"} />
+                ))}
+            {/* Símbolo de baú (abre e guarda jogos) */}
+            <path d={`M -6 ${-y0 - 8} h 12 v -6 h -12 z M -6 ${-y0 - 14} l 6 -4 l 6 4`} fill={n === 1 ? "none" : "#1d1d20"} stroke="#e6c56b" strokeOpacity={0.8} strokeWidth={1.4} />
+            {band}
+          </g>
+        );
+      }
+      if (v === "chest")
+        return (
+          <g opacity={op}>
+            <rect x={x0} y={y0} width={w} height={d} rx={3} fill="#7a4f2c" stroke="#2a1b10" strokeWidth={2} />
+            {[0.18, 0.82].map((f) => (
+              <rect key={f} x={x0 + w * f - 2} y={y0} width={4} height={d} fill="#2a2a2c" />
+            ))}
+            <rect x={-4} y={-y0 - 6} width={8} height={6} fill="#c79a2c" />
+            {band}
+          </g>
+        );
+      if (v === "understair")
+        return (
+          <g opacity={op}>
+            <rect x={x0} y={y0} width={w} height={d} rx={2} fill="#8a5a32" stroke="#2a1b10" strokeWidth={2} />
+            {/* Teto inclinado: baixo à esquerda, alto à direita */}
+            {Array.from({ length: 6 }, (_, i) => (
+              <line key={i} x1={x0 + (w * (i + 1)) / 7} y1={y0 + 3} x2={x0 + (w * (i + 1)) / 7} y2={-y0 - 3} stroke="#2a1b10" strokeOpacity={0.12 + i * 0.07} strokeWidth={1.4} />
+            ))}
+            {[1, 2].map((i) => (
+              <line key={i} x1={x0 + (w * i) / 3} y1={-y0 - 10} x2={x0 + (w * i) / 3} y2={-y0} stroke="#f3e2bd" strokeOpacity={0.6} strokeWidth={1.5} />
+            ))}
+            {band}
+            <line x1={x0} y1={-y0 - 1} x2={-x0} y2={-y0 - 1} stroke="#f3e2bd" strokeWidth={3} />
+          </g>
+        );
+      const wood = v === "cubes" ? "#b07f4c" : v === "lowcab" ? "#7a4f2c" : "#9a6a3c";
       return (
         <g opacity={op}>
           <rect x={x0} y={y0} width={w} height={d} rx={2} fill={wood} stroke="#2a1b10" strokeWidth={2} />
@@ -333,9 +385,7 @@ export function Shape2D({
           <rect x={x0 + 4} y={y0 + 4} width={w - 8} height={d - 8} fill="none" stroke="#2a1b10" strokeOpacity={0.45} strokeWidth={1.5} />
           {v === "cubes" && <line x1={0} y1={y0 + 4} x2={0} y2={-y0 - 4} stroke="#2a1b10" strokeOpacity={0.3} strokeWidth={1.2} />}
           {/* Faixa das categorias na frente */}
-          {cols.map((c, i) => (
-            <rect key={c} x={x0 + 4 + ((w - 8) / cols.length) * i} y={-y0 - stripe - 3} width={(w - 8) / cols.length} height={stripe} fill={c} />
-          ))}
+          {band}
           <line x1={x0} y1={-y0 - 1} x2={-x0} y2={-y0 - 1} stroke="#f3e2bd" strokeWidth={3} />
         </g>
       );
@@ -384,8 +434,12 @@ export function Shape2D({
     case "freezer":
       return (
         <g opacity={op}>
-          <rect x={x0} y={y0} width={w} height={d} fill={v === "steel" ? "#c4c8cc" : "#e3e1db"} stroke="#6e6c66" strokeWidth={sw} />
-          <path d={`M ${x0} ${y0} L ${-x0} ${-y0}`} stroke="#6e6c66" strokeWidth={sw} />
+          <rect x={x0} y={y0} width={w} height={d} fill={v === "steel" ? "#c4c8cc" : v === "glass" ? "#2a2c30" : "#e3e1db"} stroke="#6e6c66" strokeWidth={sw} />
+          {v === "glass" ? (
+            <rect x={x0 + 4} y={-y0 - 6} width={w - 8} height={4} fill="#9fd3f0" fillOpacity={0.8} />
+          ) : (
+            <path d={`M ${x0} ${y0} L ${-x0} ${-y0}`} stroke="#6e6c66" strokeWidth={sw} />
+          )}
         </g>
       );
     case "sink":
@@ -431,6 +485,71 @@ export function Shape2D({
             ))}
           </g>
         );
+      if (v === "clock")
+        return (
+          <g opacity={op}>
+            <rect x={x0} y={y0} width={w} height={Math.max(d, 4)} fill="#5e3d22" />
+            <circle cx={0} cy={y0 + Math.max(d, 4)} r={Math.min(w * 0.4, 14)} fill={fill} stroke="#5e3d22" strokeWidth={2} />
+            <path d={`M 0 ${y0 + Math.max(d, 4)} l 0 -7 M 0 ${y0 + Math.max(d, 4)} l 5 2`} stroke="#1b1b1d" strokeWidth={1.4} />
+          </g>
+        );
+      if (v === "chandelier")
+        return (
+          <g opacity={0.6}>
+            <circle r={Math.min(w, d) * 0.42} fill="none" stroke={fill} strokeOpacity={0.55} strokeWidth={2} strokeDasharray="4 3" />
+            {[0, 60, 120, 180, 240, 300].map((a) => (
+              <circle key={a} cx={Math.cos((a * Math.PI) / 180) * Math.min(w, d) * 0.42} cy={Math.sin((a * Math.PI) / 180) * Math.min(w, d) * 0.42} r={2.5} fill={fill} />
+            ))}
+          </g>
+        );
+      if (v === "dice") {
+        const s = Math.min(w, d);
+        return (
+          <g opacity={op}>
+            <rect x={-s / 2} y={-s / 2} width={s} height={s} rx={s * 0.14} fill={fill} stroke="#8a7f6a" strokeWidth={1.5} />
+            {[
+              [-1, -1],
+              [1, 1],
+              [0, 0],
+              [1, -1],
+              [-1, 1],
+            ].map(([a, b]) => (
+              <circle key={`${a}${b}`} cx={a * s * 0.25} cy={b * s * 0.25} r={s * 0.08} fill="#b8322c" />
+            ))}
+          </g>
+        );
+      }
+      if (v === "meeple") {
+        const s = Math.min(w, d * 1.7);
+        return (
+          <path
+            opacity={op}
+            transform={`scale(${s / 100})`}
+            d="M 0 -48 C 14 -48 16 -30 12 -22 L 46 -10 C 52 -6 50 6 42 6 L 22 6 L 40 44 L 10 44 L 0 26 L -10 44 L -40 44 L -22 6 L -42 6 C -50 6 -52 -6 -46 -10 L -12 -22 C -16 -30 -14 -48 0 -48 Z"
+            fill={fill}
+            stroke="#7a5a1c"
+            strokeWidth={3}
+          />
+        );
+      }
+      if (v === "armor" || v === "easel")
+        return (
+          <g opacity={op}>
+            {v === "armor" ? (
+              <>
+                <ellipse rx={w * 0.42} ry={d * 0.4} fill="#4a4a50" />
+                <circle r={Math.min(w, d) * 0.22} fill={fill} stroke="#55595e" strokeWidth={1.5} />
+                <line x1={w * 0.36} y1={-d * 0.45} x2={w * 0.36} y2={d * 0.45} stroke="#c9ced3" strokeWidth={2.5} />
+              </>
+            ) : (
+              <>
+                <line x1={x0 + 3} y1={-y0 - 3} x2={0} y2={y0 + 3} stroke={fill} strokeWidth={3} />
+                <line x1={-x0 - 3} y1={-y0 - 3} x2={0} y2={y0 + 3} stroke={fill} strokeWidth={3} />
+                <rect x={x0 + 2} y={-4} width={w - 4} height={8} fill="#111" stroke={fill} strokeWidth={1.5} />
+              </>
+            )}
+          </g>
+        );
       if (v === "darts")
         return (
           <g opacity={op}>
@@ -474,6 +593,12 @@ export function PlanDefs() {
       <pattern id="fp-hatch-paper" width={14} height={14} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
         <rect width={14} height={14} fill="#e2ded6" />
         <line x1={0} y1={0} x2={0} y2={14} stroke="#b5afa4" strokeWidth={3} />
+      </pattern>
+      <pattern id="fp-dots-2d" width={8} height={8} patternUnits="userSpaceOnUse">
+        <rect width={8} height={8} fill="#e9dccb" />
+        <circle cx={2} cy={2} r={1.2} fill="#c0504d" />
+        <circle cx={6} cy={6} r={1.2} fill="#4f81bd" />
+        <circle cx={6} cy={2} r={1} fill="#9bbb59" />
       </pattern>
       <pattern id="fp-grid" width={100} height={100} patternUnits="userSpaceOnUse">
         <path d="M 50 0 L 50 100 M 0 50 L 100 50" stroke="#e6c56b" strokeOpacity={0.05} strokeWidth={1} />

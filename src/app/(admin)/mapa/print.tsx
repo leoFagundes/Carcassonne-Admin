@@ -19,7 +19,7 @@ interface PrintInput {
 function LevelSheet({ level, elements, status }: { level: PlanLevel; elements: PlanElement[]; status: DayStatus }) {
   const els = elements
     .map((el, i) => ({ el, i }))
-    .filter(({ el }) => el.level === level.id && !(el.kind === "deco" && ["pendant", "projector", "fan", "sconce"].includes(el.variant ?? "")))
+    .filter(({ el }) => el.level === level.id && !(el.kind === "deco" && ["pendant", "projector", "fan", "sconce", "chandelier"].includes(el.variant ?? "")))
     .sort((a, b) => KINDS[a.el.kind].layer - KINDS[b.el.kind].layer || a.i - b.i)
     .map(({ el }) => el);
   const b = boundsOf(els);

@@ -306,7 +306,8 @@ function Table({ el, ctx }: { el: PlanElement; ctx: BuildCtx }) {
   const v = variantOf(el);
   const black = v === "black";
   const high = v === "high";
-  const topY = high ? 1.05 : 0.75;
+  const barrel = v === "barrel";
+  const topY = high || barrel ? 1.05 : 0.75;
   const color = ctx.state ? STATE_META[ctx.state].color : black ? 0x2a2a2d : WOOD;
   const topO: MatOpts = ctx.selected
     ? { emissive: 0xffffff, emissiveIntensity: 0.22, map: black ? undefined : "grain" }
@@ -318,6 +319,22 @@ function Table({ el, ctx }: { el: PlanElement; ctx: BuildCtx }) {
   const pick = ctx.onPick;
   const glow = ctx.selected && <B s={[el.w + 0.14, 0.02, el.d + 0.14]} p={[0, 0.012, 0]} c={0xffffff} o={{ emissive: 0xffffff, emissiveIntensity: 0.6 }} shadow={false} />;
 
+  if (barrel) {
+    // Barril em pé com tampo redondo por cima (mesa alta de bar)
+    const r = Math.min(el.w, el.d) / 2;
+    const s = (r * 0.78) / 0.5;
+    const H = topY - 0.05;
+    return (
+      <group>
+        <mesh geometry={BARREL_GEO} material={mat(0x8a5a2b, GRAIN)} scale={[s, H, s]} castShadow receiveShadow onClick={pick} />
+        {[0.1, 0.5, 0.9].map((t) => (
+          <Ring key={t} r={(0.42 + Math.sin(t * Math.PI) * 0.08) * s + 0.005} tube={0.012} p={[0, H * t, 0]} rot={[Math.PI / 2, 0, 0]} c={0x3b3d40} o={{ metalness: 0.6, roughness: 0.5 }} />
+        ))}
+        <mesh geometry={CYL} material={mat(color, topO)} scale={[el.w, 0.05, el.d]} position={[0, topY - 0.025, 0]} castShadow receiveShadow onClick={pick} />
+        {glow}
+      </group>
+    );
+  }
   if (el.shape === "round") {
     const r = Math.min(el.w, el.d) / 2;
     return (
@@ -338,6 +355,29 @@ function Table({ el, ctx }: { el: PlanElement; ctx: BuildCtx }) {
   const L = along ? el.w : el.d;
   const D = along ? el.d : el.w;
   const legH = topY - 0.05;
+  if (v === "folding") {
+    // Mesa dobrável das salas: tampo fino e pés em X nas pontas
+    const spread = D * 0.78;
+    const bar = Math.hypot(legH, spread);
+    const ang = Math.atan2(spread, legH);
+    return (
+      <group>
+        <RB s={[el.w, 0.035, el.d]} p={[0, topY - 0.018, 0]} c={color} o={topO} r={0.012} onClick={pick} />
+        <group rotation={[0, along ? 0 : Math.PI / 2, 0]}>
+          {[-1, 1].map((sx) => (
+            <group key={sx} position={[sx * (L / 2 - 0.12), legH / 2, 0]}>
+              {[-1, 1].map((k) => (
+                <B key={k} s={[0.035, bar, 0.035]} p={[k * 0.022, 0, 0]} rot={[k * ang, 0, 0]} c={legC} o={legO} onClick={pick} />
+              ))}
+              <Cyl r={0.012} h={0.07} p={[0, 0, 0]} rot={[0, 0, Math.PI / 2]} c={0x3b3d40} o={{ metalness: 0.6 }} seg={8} />
+            </group>
+          ))}
+          <B s={[L - 0.3, 0.03, 0.03]} p={[0, legH - 0.04, 0]} c={legC} o={legO} />
+        </group>
+        {glow}
+      </group>
+    );
+  }
   return (
     <group>
       <RB s={[el.w, 0.05, el.d]} p={[0, topY - 0.025, 0]} c={color} o={topO} r={0.018} onClick={pick} />
@@ -645,6 +685,34 @@ function Steel({ el }: { el: PlanElement }) {
 
 function Fridge({ el }: { el: PlanElement }) {
   const { w, d } = el;
+  if (variantOf(el) === "glass") {
+    // Expositor: corpo preto, porta de vidro, prateleiras com garrafas e luz no topo
+    const H = 1.9;
+    const cols = [0x2f6b3f, 0x8a4a1c, 0xc9b26a, 0x8a1f1f, 0x2e5a8a];
+    const per = Math.max(2, Math.floor((w - 0.1) / 0.09));
+    return (
+      <group>
+        {/* Caixa aberta na frente: fundo, laterais, base e topo com o letreiro */}
+        <B s={[w, H, 0.04]} p={[0, H / 2, -d / 2 + 0.02]} c={0xf3f6f8} o={{ emissive: 0xdfe9ff, emissiveIntensity: 0.35 }} />
+        {[-1, 1].map((sx) => (
+          <B key={sx} s={[0.04, H, d]} p={[sx * (w / 2 - 0.02), H / 2, 0]} c={0x1d1e22} o={{ roughness: 0.4 }} />
+        ))}
+        <B s={[w, 0.08, d]} p={[0, 0.04, 0]} c={0x1d1e22} o={{ roughness: 0.4 }} />
+        <B s={[w, 0.22, d]} p={[0, H - 0.11, 0]} c={0x1d1e22} o={{ roughness: 0.4 }} />
+        <B s={[w - 0.06, 0.15, 0.01]} p={[0, H - 0.11, d / 2 + 0.002]} c={0xb8322c} o={{ emissive: 0xb8322c, emissiveIntensity: 0.5 }} shadow={false} />
+        {[0.42, 0.82, 1.22].map((y, i) => (
+          <group key={y}>
+            <B s={[w - 0.1, 0.012, d - 0.12]} p={[0, y, -0.02]} c={0x9aa0a7} o={CHROME} shadow={false} />
+            {range(per).map((k) => (
+              <Bottle key={k} x={-w / 2 + 0.08 + k * ((w - 0.16) / Math.max(1, per - 1))} y={y + 0.006} z={0.02} c={cols[(k + i) % cols.length]} />
+            ))}
+          </group>
+        ))}
+        <B s={[w - 0.04, H - 0.3, 0.015]} p={[0, (H - 0.3) / 2 + 0.06, d / 2 + 0.005]} c={0xbfe3f5} o={{ opacity: 0.22, roughness: 0.05, metalness: 0.1 }} shadow={false} />
+        <Cyl r={0.012} h={0.6} p={[w / 2 - 0.06, H * 0.5, d / 2 + 0.035]} c={0x8a8d90} o={CHROME} seg={8} />
+      </group>
+    );
+  }
   const steel = variantOf(el) === "steel";
   const H = steel ? 2.0 : 1.85;
   const c = steel ? 0xc4c8cc : 0xf0f0ec;
@@ -776,7 +844,54 @@ function Plant({ el }: { el: PlanElement }) {
 // ───────────────────────── detalhes de parede e teto ─────────────────────────
 
 /** Coisas do teto: só aparecem com as paredes altas (na vista em corte cobririam as mesas). */
-const CEILING = new Set(["pendant", "fan", "projector"]);
+const CEILING = new Set(["pendant", "fan", "projector", "chandelier"]);
+
+const IRON: MatOpts = { metalness: 0.65, roughness: 0.45 };
+// Pouco metálico: a cena não tem reflexo de ambiente, e metal puro fica preto
+const ARMOR: MatOpts = { metalness: 0.4, roughness: 0.32 };
+
+/** Contorno do meeple (o bonequinho dos jogos de tabuleiro), 100 unidades de largura, y para cima. */
+const MEEPLE_GEO = (() => {
+  const s = new THREE.Shape();
+  s.moveTo(0, 48);
+  s.bezierCurveTo(14, 48, 16, 30, 12, 22);
+  s.lineTo(46, 10);
+  s.bezierCurveTo(52, 6, 50, -6, 42, -6);
+  s.lineTo(22, -6);
+  s.lineTo(40, -44);
+  s.lineTo(10, -44);
+  s.lineTo(0, -26);
+  s.lineTo(-10, -44);
+  s.lineTo(-40, -44);
+  s.lineTo(-22, -6);
+  s.lineTo(-42, -6);
+  s.bezierCurveTo(-50, -6, -52, 6, -46, 10);
+  s.lineTo(-12, 22);
+  s.bezierCurveTo(-16, 30, -14, 48, 0, 48);
+  const g = new THREE.ExtrudeGeometry(s, { depth: 1, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 2.5, bevelSegments: 3, curveSegments: 10 });
+  g.translate(0, 44, -0.5);
+  return g;
+})();
+
+/** Pontos do dado numa face (de -1 a 1). */
+const PIPS: Record<number, [number, number][]> = {
+  2: [
+    [-1, -1],
+    [1, 1],
+  ],
+  3: [
+    [-1, -1],
+    [0, 0],
+    [1, 1],
+  ],
+  5: [
+    [-1, -1],
+    [1, -1],
+    [0, 0],
+    [-1, 1],
+    [1, 1],
+  ],
+};
 
 function Deco({ el, v, wallH }: { el: PlanElement; v?: string; wallH: number }) {
   const { w, d } = el;
@@ -997,6 +1112,122 @@ function Deco({ el, v, wallH }: { el: PlanElement; v?: string; wallH: number }) 
           ))}
         </group>
       );
+    case "clock": {
+      const r = Math.min(w, 0.6) / 2;
+      const y = Math.min(top - r - 0.05, 2.05);
+      return (
+        <group position={[0, y, 0]}>
+          <Cyl r={r} h={0.05} p={[0, 0, 0]} rot={[Math.PI / 2, 0, 0]} c={0x5e3d22} o={GRAIN} seg={32} />
+          <Cyl r={r * 0.86} h={0.01} p={[0, 0, 0.028]} rot={[Math.PI / 2, 0, 0]} c={0xefe7d6} seg={32} shadow={false} />
+          {range(12).map((i) => (
+            <B key={i} s={[0.008, i % 3 ? 0.018 : 0.035, 0.004]} p={[Math.sin((i * Math.PI) / 6) * r * 0.74, Math.cos((i * Math.PI) / 6) * r * 0.74, 0.035]} rot={[0, 0, (-i * Math.PI) / 6]} c={0x1b1b1d} shadow={false} />
+          ))}
+          <B s={[0.012, r * 0.5, 0.004]} p={[0, r * 0.22, 0.039]} c={0x1b1b1d} shadow={false} />
+          <B s={[0.008, r * 0.66, 0.004]} p={[r * 0.24, -r * 0.14, 0.041]} rot={[0, 0, -2.1]} c={0x1b1b1d} shadow={false} />
+          <Ball s={[0.025, 0.025, 0.012]} p={[0, 0, 0.042]} c={BRASS} />
+        </group>
+      );
+    }
+    case "armor": {
+      // Armadura de cavaleiro num pedestal, com espada e escudo
+      const s = Math.min(1, Math.min(w, d) / 0.5);
+      return (
+        <group scale={[s, s, s]}>
+          <B s={[0.5, 0.08, 0.4]} p={[0, 0.04, 0]} c={0x5e3d22} o={GRAIN} />
+          {[-1, 1].map((sx) => (
+            <group key={sx}>
+              <Cyl r={0.055} r2={0.045} h={0.78} p={[sx * 0.08, 0.47, 0]} c={0xb4b8bc} o={ARMOR} seg={12} />
+              <RB s={[0.1, 0.06, 0.18]} p={[sx * 0.08, 0.11, 0.03]} c={0x9aa0a7} o={ARMOR} r={0.02} />
+              <Ball s={[0.15, 0.12, 0.15]} p={[sx * 0.18, 1.42, 0]} c={0xc4c8cc} o={ARMOR} />
+              <Cyl r={0.04} r2={0.035} h={0.5} p={[sx * 0.21, 1.15, 0]} c={0xb4b8bc} o={ARMOR} seg={10} />
+            </group>
+          ))}
+          <RB s={[0.34, 0.2, 0.2]} p={[0, 0.92, 0]} c={0x9aa0a7} o={ARMOR} r={0.04} />
+          <RB s={[0.36, 0.42, 0.22]} p={[0, 1.24, 0]} c={0xc4c8cc} o={ARMOR} r={0.07} />
+          <Cyl r={0.11} h={0.24} p={[0, 1.62, 0]} c={0xb4b8bc} o={ARMOR} seg={16} />
+          <Ball s={[0.22, 0.14, 0.22]} p={[0, 1.74, 0]} c={0xc4c8cc} o={ARMOR} />
+          <B s={[0.16, 0.02, 0.01]} p={[0, 1.64, 0.11]} c={0x1b1b1d} shadow={false} />
+          <B s={[0.03, 0.08, 0.02]} p={[0, 1.86, -0.02]} c={0xb8322c} />
+          {/* Espada na mão direita e escudo na esquerda */}
+          <B s={[0.035, 0.9, 0.012]} p={[0.27, 0.62, 0.12]} c={0xdfe3e6} o={ARMOR} />
+          <B s={[0.16, 0.025, 0.03]} p={[0.27, 1.08, 0.12]} c={BRASS} o={{ metalness: 0.7 }} />
+          <RB s={[0.3, 0.42, 0.04]} p={[-0.27, 1.0, 0.14]} c={0x8a1f1f} r={0.05} />
+          <B s={[0.05, 0.36, 0.012]} p={[-0.27, 1.0, 0.165]} c={0xe6c56b} shadow={false} />
+          <B s={[0.24, 0.05, 0.012]} p={[-0.27, 1.06, 0.165]} c={0xe6c56b} shadow={false} />
+        </group>
+      );
+    }
+    case "chandelier": {
+      // Roda de ferro com velas, pendurada por correntes
+      const r = Math.min(w, d) * 0.42;
+      const y = wallH - 0.65;
+      return (
+        <group position={[0, y, 0]}>
+          <Ring r={r} tube={0.018} p={[0, 0, 0]} rot={[Math.PI / 2, 0, 0]} c={0x2a2a2c} o={IRON} />
+          <Ring r={r * 0.45} tube={0.012} p={[0, 0, 0]} rot={[Math.PI / 2, 0, 0]} c={0x2a2a2c} o={IRON} />
+          {[0, 1, 2].map((i) => {
+            const a = (i * Math.PI * 2) / 3;
+            const len = Math.hypot(r, 0.6);
+            return <Cyl key={i} r={0.005} h={len} p={[(Math.cos(a) * r) / 2, 0.3, (Math.sin(a) * r) / 2]} rot={[Math.sin(a) * Math.atan2(r, 0.6), 0, -Math.cos(a) * Math.atan2(r, 0.6)]} c={0x2a2a2c} seg={5} shadow={false} />;
+          })}
+          {range(8).map((i) => {
+            const a = (i * Math.PI) / 4;
+            const x = Math.cos(a) * r;
+            const z = Math.sin(a) * r;
+            return (
+              <group key={i} position={[x, 0.02, z]}>
+                <Cyl r={0.022} h={0.12} p={[0, 0.06, 0]} c={0xf2ead8} seg={10} />
+                <Ball s={[0.016, 0.03, 0.016]} p={[0, 0.14, 0]} c={0xffb347} o={{ emissive: 0xffa53a, emissiveIntensity: 1.6 }} shadow={false} />
+              </group>
+            );
+          })}
+          <pointLight position={[0, 0.1, 0]} intensity={0.7} distance={4} color={0xffc27a} />
+        </group>
+      );
+    }
+    case "easel": {
+      // Cavalete de pé com lousa (cardápio do dia)
+      const bw = Math.min(w, 0.7);
+      const tilt = 0.14;
+      return (
+        <group>
+          {[-1, 1].map((sx) => (
+            <B key={sx} s={[0.035, 1.55, 0.035]} p={[sx * bw * 0.4, 0.76, 0.05]} rot={[-tilt, 0, 0]} c={0x7a5232} o={GRAIN} />
+          ))}
+          <B s={[0.035, 1.5, 0.035]} p={[0, 0.72, -0.15]} rot={[0.28, 0, 0]} c={0x7a5232} o={GRAIN} />
+          <group position={[0, 1.02, 0.02]} rotation={[-tilt, 0, 0]}>
+            <B s={[bw, 0.72, 0.03]} p={[0, 0, 0.04]} c={0x7a5232} o={GRAIN} />
+            <B s={[bw - 0.06, 0.66, 0.01]} p={[0, 0, 0.058]} c={0x15171a} o={{ roughness: 0.95 }} shadow={false} />
+            {[0.2, 0.08, -0.02, -0.12, -0.22].map((y, i) => (
+              <B key={y} s={[(bw - 0.2) * (i === 0 ? 0.6 : 0.85 - (i % 2) * 0.2), 0.016, 0.002]} p={[0, y, 0.065]} c={i === 0 ? 0xe6c56b : 0xe9e4d8} shadow={false} />
+            ))}
+          </group>
+          <B s={[bw * 0.9, 0.04, 0.08]} p={[0, 0.64, 0.12]} c={0x7a5232} o={GRAIN} />
+        </group>
+      );
+    }
+    case "dice": {
+      const s = Math.min(w, d, 0.8);
+      const pip = s * 0.08;
+      const face = (n: number, p: (a: number, b: number) => [number, number, number]) =>
+        PIPS[n].map(([a, b], i) => <Ball key={`${n}-${i}`} s={[pip, pip, pip]} p={p(a * s * 0.25, b * s * 0.25)} c={0xb8322c} shadow={false} />);
+      return (
+        <group rotation={[0, 0.35, 0]}>
+          <RB s={[s, s, s]} p={[0, s / 2, 0]} c={0xf2ead8} o={{ roughness: 0.45 }} r={s * 0.12} />
+          {face(5, (a, b) => [a, s + 0.001, b])}
+          {face(3, (a, b) => [a, s / 2 + b, s / 2 + 0.001])}
+          {face(2, (a, b) => [s / 2 + 0.001, s / 2 + b, a])}
+        </group>
+      );
+    }
+    case "meeple": {
+      const k = w / 100;
+      return (
+        <group>
+          <mesh geometry={MEEPLE_GEO} material={mat(0xd9a21b, { roughness: 0.55, map: "grain" })} scale={[k, k, Math.max(0.12, d * 0.7)]} castShadow receiveShadow />
+        </group>
+      );
+    }
     case "darts": {
       const r = Math.min(w, 0.5) * 0.45;
       return (

@@ -55,6 +55,7 @@ import {
 import {
   boundsOf,
   cm,
+  toWorld,
   formatMeters,
   insertVertex,
   moveVertex,
@@ -70,7 +71,7 @@ import {
   type Pt,
 } from "@/floorplan/geometry";
 import { commitHistory, initHistory, previewHistory, pushHistory, redoHistory, undoHistory } from "@/floorplan/history";
-import { createFromPalette, type PaletteItem } from "@/floorplan/palette";
+import { createFromPalette, gameShelfName, type PaletteItem } from "@/floorplan/palette";
 import { SEED_PLAN } from "@/floorplan/seed";
 import type {
   DayPlan,
@@ -343,10 +344,38 @@ export default function FloorMap() {
       }
       openShelfAt(id);
     },
-    toGameShelf: (id) => {
-      const n = draft.elements.filter((e) => e.kind === "gameshelf").length + 1;
+    toGameShelf: (id, as) => {
       const el = elById.get(id);
-      apply((p) => updateElement(p, id, { kind: "gameshelf", variant: "hutch-open", label: el?.label && el.label !== "Armário" ? el.label : `Armário ${n}`, count: undefined }));
+      if (!el) return;
+      if (as === "pouf1" && el.kind === "pouf") {
+        // Cada pufe vira um pufe-baú de 1 lugar, no mesmo lugar
+        const n = Math.max(1, el.count ?? 3);
+        const pw = el.w / n;
+        apply((p) => {
+          const rest = p.elements.filter((e) => e.id !== id);
+          const made: PlanElement[] = [];
+          for (let i = 0; i < n; i++) {
+            const c = toWorld(el, -el.w / 2 + pw * (i + 0.5), 0);
+            made.push({
+              id: newId("gameshelf"),
+              level: el.level,
+              kind: "gameshelf",
+              variant: "pouf1",
+              x: cm(c.x),
+              y: cm(c.y),
+              w: cm(Math.max(0.3, pw - 0.04)),
+              d: el.d,
+              rot: el.rot,
+              label: gameShelfName([...rest, ...made], "pouf1"),
+            });
+          }
+          return { ...p, elements: [...rest, ...made] };
+        });
+        return;
+      }
+      const variant = as ?? "hutch-open";
+      const keep = el.label && !["Armário", "Pufes", "Pufe"].includes(el.label) ? el.label : undefined;
+      apply((p) => updateElement(p, id, { kind: "gameshelf", variant, label: keep ?? gameShelfName(p.elements, variant), count: undefined }));
     },
     setPolygon: (id, on) => apply((p) => setPolygon(p, id, on)),
     uploadBackground: async (file) => {

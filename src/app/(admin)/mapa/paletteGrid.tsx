@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import dynamic from "next/dynamic";
 import { LuSearch, LuX } from "react-icons/lu";
 import { CATEGORY_LABEL, CATEGORY_ORDER, KINDS, type KindCategory } from "@/floorplan/catalog";
 import { boundsOf } from "@/floorplan/geometry";
@@ -56,11 +58,91 @@ export function PaletteThumb({ item, size = 56 }: { item: PaletteItem; size?: nu
   );
 }
 
+const PalettePreview3D = dynamic(() => import("./palettePreview3d"), { ssr: false });
+
+const PREVIEW_W = 190;
+const PREVIEW_H = 168;
+
+/**
+ * Prévia 3D ao passar o mouse: uma janelinha perto do ponteiro com o objeto
+ * girando. Só em computador (mouse); no toque, a miniatura já basta.
+ */
+function useHoverPreview() {
+  const [item, setItem] = useState<PaletteItem | null>(null);
+  const [visible, setVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pos = useRef({ x: 0, y: 0 });
+
+  const place = useCallback(() => {
+    const node = boxRef.current;
+    if (!node) return;
+    const { x, y } = pos.current;
+    const left = x + 18 + PREVIEW_W > window.innerWidth - 8 ? x - 18 - PREVIEW_W : x + 18;
+    const top = Math.min(Math.max(8, y + 14), window.innerHeight - PREVIEW_H - 8);
+    node.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
+  }, []);
+
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+  useEffect(() => {
+    if (visible) place();
+  }, [visible, place]);
+
+  const bind = (it: PaletteItem) => ({
+    onPointerEnter: (e: React.PointerEvent) => {
+      if (e.pointerType !== "mouse" || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+      pos.current = { x: e.clientX, y: e.clientY };
+      setItem(it);
+      setMounted(true);
+      if (timer.current) clearTimeout(timer.current);
+      // Pequena espera para não piscar ao só atravessar a lista
+      timer.current = setTimeout(() => setVisible(true), visible ? 0 : 220);
+    },
+    onPointerMove: (e: React.PointerEvent) => {
+      pos.current = { x: e.clientX, y: e.clientY };
+      place();
+    },
+    onPointerLeave: () => {
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => setVisible(false), 60);
+    },
+    onPointerDown: () => {
+      if (timer.current) clearTimeout(timer.current);
+      setVisible(false);
+    },
+  });
+
+  const node =
+    mounted && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            ref={boxRef}
+            aria-hidden="true"
+            className={`pointer-events-none fixed left-0 top-0 z-[80] overflow-hidden rounded-xl border border-primary-gold/35 bg-[radial-gradient(circle_at_50%_40%,#3a2c20_0%,#14110e_75%)] shadow-[0_12px_32px_rgba(0,0,0,0.55)] transition-opacity duration-150 ${
+              visible ? "opacity-100" : "opacity-0"
+            }`}
+            style={{ width: PREVIEW_W, height: PREVIEW_H }}
+          >
+            <div className="h-[140px] w-full">
+              <PalettePreview3D item={item} active={visible} />
+            </div>
+            <p className="truncate px-2 text-center text-[11px] font-semibold text-primary-gold/85">{item?.label}</p>
+          </div>,
+          document.body,
+        )
+      : null;
+
+  return { bind, node };
+}
+
 type Tab = KindCategory | "armarios";
 /** Nomes curtos nas abas (o nome completo fica na dica). */
-const SHORT: Record<Tab, string> = { armarios: "Armários", lugares: "Lugares", moveis: "Móveis", estrutura: "Estrutura", detalhes: "Detalhes" };
+const SHORT: Record<Tab, string> = { armarios: "Jogos", lugares: "Lugares", moveis: "Móveis", estrutura: "Estrutura", detalhes: "Detalhes" };
 const TABS: { id: Tab; label: string; title: string }[] = [
-  { id: "armarios", label: SHORT.armarios, title: "Armários de jogos" },
+  { id: "armarios", label: SHORT.armarios, title: "Onde guardar jogos: armários, baús e pufes que abrem" },
   ...CATEGORY_ORDER.map((c) => ({ id: c as Tab, label: SHORT[c], title: CATEGORY_LABEL[c] })),
 ];
 
@@ -68,11 +150,13 @@ const TABS: { id: Tab; label: string; title: string }[] = [
 export default function PaletteGrid({ onAdd }: { onAdd: (item: PaletteItem) => void }) {
   const [cat, setCat] = useState<Tab>("lugares");
   const [q, setQ] = useState("");
+  const preview = useHoverPreview();
   const items = q.trim()
     ? searchPalette(q)
     : cat === "armarios"
       ? PALETTE.filter((p) => p.kind === "gameshelf")
-      : PALETTE.filter((p) => p.category === cat && p.kind !== "gameshelf");
+      : // Os pufes-baú também aparecem em Lugares (são assentos)
+        PALETTE.filter((p) => p.category === cat && (p.kind !== "gameshelf" || cat === "lugares"));
   return (
     <div className="flex flex-col gap-2.5">
       <label className="relative flex items-center">
@@ -122,7 +206,8 @@ export default function PaletteGrid({ onAdd }: { onAdd: (item: PaletteItem) => v
               <button
                 type="button"
                 onClick={() => onAdd(it)}
-                title={`Adicionar ${it.label.toLowerCase()}`}
+                {...preview.bind(it)}
+                aria-label={`Adicionar ${it.label.toLowerCase()}`}
                 className="group flex h-full w-full flex-col items-center gap-1 rounded-xl border border-primary-gold/15 bg-primary-black/40 p-1.5 text-center transition-colors hover:border-primary-gold/50 hover:bg-primary-gold/[0.06]"
               >
                 <span className="flex h-11 w-full items-center justify-center overflow-hidden rounded-lg bg-[#14110e]">
@@ -134,6 +219,7 @@ export default function PaletteGrid({ onAdd }: { onAdd: (item: PaletteItem) => v
           ))}
         </ul>
       )}
+      {preview.node}
     </div>
   );
 }

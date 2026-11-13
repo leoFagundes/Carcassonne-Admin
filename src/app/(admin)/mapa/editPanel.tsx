@@ -44,7 +44,7 @@ export interface EditActions {
   /** Abre o armário de jogos no modo Jogos. */
   organizeShelf: (id: string) => void;
   /** Estante comum vira armário de jogos. */
-  toGameShelf: (id: string) => void;
+  toGameShelf: (id: string, as?: "pouf1" | "pouf3") => void;
   setPolygon: (id: string, on: boolean) => void;
   uploadBackground: (file: File) => void;
   updateBackground: (patch: Partial<LevelBackground>) => void;
@@ -423,8 +423,23 @@ function Inspector({ el, plan, actions }: { el: PlanElement; plan: FloorPlan; ac
 
       {el.kind === "gameshelf" && (
         <div className="flex flex-col gap-1.5 rounded-lg border border-primary-gold/25 bg-primary-gold/[0.05] p-2.5 text-[11px] text-primary-gold/70">
-          Armário de jogos: em <strong>Jogos</strong>, ele abre de frente para guardar os jogos e dar etiquetas às prateleiras. A
-          frente do móvel é o lado com a linha clara.
+          {el.variant === "pouf1" || el.variant === "pouf3" ? (
+            <span>
+              Pufe que abre e guarda jogos: em <strong>Jogos</strong>, o tampo levanta e você guarda os jogos dentro
+              {el.variant === "pouf3" ? " de cada um dos 3 lugares" : ""}. Continua sendo um lugar para sentar.
+            </span>
+          ) : el.variant === "understair" ? (
+            <span>
+              Armário embaixo da escada: em <strong>Jogos</strong>, ele abre de frente com a porta baixa (1 prateleira), a do meio (2) e
+              a alta (3). O lado baixo fica à esquerda de quem olha a frente (a linha clara); gire 180° se a escada sobe para o outro
+              lado.
+            </span>
+          ) : (
+            <span>
+              Armário de jogos: em <strong>Jogos</strong>, ele abre de frente para guardar os jogos e dar etiquetas às prateleiras. A
+              frente do móvel é o lado com a linha clara.
+            </span>
+          )}
           <Btn tone="primary" className="self-start" onClick={() => actions.organizeShelf(el.id)}>
             <LuLibrary size={13} /> Organizar os jogos
           </Btn>
@@ -434,6 +449,19 @@ function Inspector({ el, plan, actions }: { el: PlanElement; plan: FloorPlan; ac
         <Btn className="self-start" onClick={() => actions.toGameShelf(el.id)} title="Passa a guardar jogos (com prateleiras, gaveta e etiquetas)">
           <LuLibrary size={13} /> Transformar em armário de jogos
         </Btn>
+      )}
+      {el.kind === "pouf" && (
+        <div className="flex flex-col gap-1.5 rounded-lg border border-primary-gold/15 p-2.5 text-[11px] text-primary-gold/65">
+          Esses pufes abrem para guardar jogos?
+          <span className="flex flex-wrap gap-1.5">
+            <Btn onClick={() => actions.toGameShelf(el.id, "pouf1")} title="Cada pufe vira um pufe-baú separado, no mesmo lugar">
+              <LuLibrary size={13} /> {Math.max(1, el.count ?? 3) > 1 ? `${Math.max(1, el.count ?? 3)} pufes-baú de 1 lugar` : "Pufe-baú de 1 lugar"}
+            </Btn>
+            <Btn onClick={() => actions.toGameShelf(el.id, "pouf3")} title="Um pufe comprido, com 3 lugares que abrem">
+              <LuLibrary size={13} /> Pufe-baú de 3 lugares
+            </Btn>
+          </span>
+        </div>
       )}
 
       {plan.levels.length > 1 && (

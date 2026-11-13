@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
-import { CUBES, HUTCH, LOWCAB, shelfModel, shelfSlots } from "@/floorplan/shelves";
+import React, { useEffect, useMemo } from "react";
+import * as THREE from "three";
+import { CHEST, CUBES, HUTCH, LOWCAB, POUF, shelfModel, shelfSlots, UNDERSTAIR, understairTop } from "@/floorplan/shelves";
 import type { PlanElement } from "@/floorplan/types";
-import { B } from "./mesh3d";
+import { B, Ball, mat, RB } from "./mesh3d";
 
 /** Caixas de jogo coloridas (o nome define a cor, sempre a mesma). */
 const BOX_COLORS = [0xb8322c, 0x2e6fb5, 0x2f8a4f, 0xd9a21b, 0x6b3fa0, 0xd8692a, 0xe9e4d8, 0x2a2f3a, 0x1f8a8a, 0x9c2f6b];
@@ -69,6 +70,98 @@ function GameBoxes({ names, x0, x1, y0, h, d, z }: { names: string[]; x0: number
   );
 }
 
+/** Pufes-baú: preto de couro (1 lugar, com botões) ou base preta com 3 almofadas de bolinhas. */
+function PoufChest({ el, n }: { el: PlanElement; n: number }) {
+  const { w, d } = el;
+  const H = POUF.height;
+  const body = H - POUF.lid;
+  const pw = w / n;
+  const leather = { roughness: 0.42 };
+  return (
+    <group>
+      <B s={[w - 0.03, 0.03, d - 0.03]} p={[0, 0.015, 0]} c={0x0e0e10} />
+      <RB s={[w, body - 0.02, d]} p={[0, 0.02 + (body - 0.02) / 2, 0]} c={0x1d1d20} o={leather} r={0.025} />
+      {/* Costura logo abaixo do tampo */}
+      <B s={[w + 0.002, 0.006, d + 0.002]} p={[0, body - 0.03, 0]} c={0x2c2c30} shadow={false} />
+      {Array.from({ length: n }, (_, i) => {
+        const x = -w / 2 + pw * (i + 0.5);
+        return n === 1 ? (
+          <group key={i}>
+            <RB s={[pw - 0.006, POUF.lid, d - 0.006]} p={[x, body + POUF.lid / 2, 0]} c={0x222226} o={leather} r={0.03} />
+            {/* Botões do capitonê */}
+            {[-1, 1].map((sx) => [-1, 1].map((sz) => <Ball key={`${sx}${sz}`} s={[0.018, 0.008, 0.018]} p={[x + sx * pw * 0.2, H + 0.001, sz * d * 0.2]} c={0x0c0c0e} shadow={false} />))}
+          </group>
+        ) : (
+          <RB key={i} s={[pw - 0.03, POUF.lid, d - 0.025]} p={[x, body + POUF.lid / 2, 0]} c={0xffffff} o={{ map: "dots", roughness: 0.95 }} r={0.03} />
+        );
+      })}
+    </group>
+  );
+}
+
+/** Baú de madeira com cintas de ferro e fecho. */
+function ChestModel({ el }: { el: PlanElement }) {
+  const { w, d } = el;
+  const H = CHEST.height;
+  const wood = { map: "grain" as const, roughness: 0.75 };
+  const iron = { metalness: 0.6, roughness: 0.45 };
+  return (
+    <group>
+      <RB s={[w, H - CHEST.lid, d]} p={[0, (H - CHEST.lid) / 2, 0]} c={0x7a4f2c} o={wood} r={0.012} />
+      <RB s={[w + 0.02, CHEST.lid, d + 0.02]} p={[0, H - CHEST.lid / 2, 0]} c={0x6e4526} o={wood} r={0.015} />
+      {[-0.32, 0.32].map((fx) => (
+        <group key={fx}>
+          <B s={[0.04, H + 0.004, 0.006]} p={[w * fx, H / 2, d / 2 + 0.012]} c={0x2a2a2c} o={iron} shadow={false} />
+          <B s={[0.04, 0.006, d + 0.024]} p={[w * fx, H + 0.002, 0]} c={0x2a2a2c} o={iron} shadow={false} />
+        </group>
+      ))}
+      <B s={[0.07, 0.09, 0.012]} p={[0, H - CHEST.lid - 0.02, d / 2 + 0.012]} c={0xc79a2c} o={{ metalness: 0.7, roughness: 0.3 }} />
+    </group>
+  );
+}
+
+/** Armário embaixo da escada: corpo com o teto inclinado e três portas de alturas diferentes. */
+function UnderstairModel({ el }: { el: PlanElement }) {
+  const { w, d } = el;
+  const U = UNDERSTAIR;
+  const geo = useMemo(() => {
+    const s = new THREE.Shape();
+    s.moveTo(-w / 2, 0);
+    s.lineTo(w / 2, 0);
+    s.lineTo(w / 2, U.height);
+    s.lineTo(-w / 2, U.low);
+    s.closePath();
+    const g = new THREE.ExtrudeGeometry(s, { depth: d, bevelEnabled: false });
+    g.translate(0, 0, -d / 2);
+    return g;
+  }, [w, d, U.height, U.low]);
+  useEffect(() => () => geo.dispose(), [geo]);
+  const cw = w / 3;
+  const slope = Math.atan2(U.height - U.low, w);
+  return (
+    <group>
+      <mesh geometry={geo} material={mat(0x8a5a32, { map: "grain", roughness: 0.75 })} castShadow receiveShadow />
+      {/* Rodapé */}
+      <B s={[w + 0.01, U.base, 0.02]} p={[0, U.base / 2, d / 2 + 0.006]} c={0x5e3d22} />
+      {/* Acabamento no alto, seguindo a escada */}
+      <B s={[Math.hypot(w, U.height - U.low) + 0.02, 0.04, d + 0.04]} p={[0, (U.low + U.height) / 2, 0]} rot={[0, 0, slope]} c={0x5e3d22} />
+      {[0, 1, 2].map((i) => {
+        const x0 = -w / 2 + cw * i;
+        const top = understairTop(w, cw * i) - U.frame - 0.02;
+        const h = top - U.base - 0.02;
+        const knobLeft = i === 2;
+        return (
+          <group key={i}>
+            <B s={[cw - 0.04, h, 0.025]} p={[x0 + cw / 2, U.base + 0.01 + h / 2, d / 2 + 0.008]} c={0x9a6a3c} o={{ map: "grain", roughness: 0.7 }} />
+            <B s={[(cw - 0.04) * 0.7, h * 0.78, 0.01]} p={[x0 + cw / 2, U.base + 0.01 + h / 2, d / 2 + 0.024]} c={0x8f6236} o={{ roughness: 0.7 }} />
+            <Knob x={x0 + (knobLeft ? 0.07 : cw - 0.07)} y={U.base + 0.01 + h * 0.5} z={d / 2 + 0.04} />
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
 /**
  * Armário de jogos fiel às fotos: estante alta (aberta ou com portas embaixo),
  * torre de nichos e armário baixo. Frente para +z (nos eixos do elemento).
@@ -93,6 +186,10 @@ export function GameShelfModel({ el, games }: { el: PlanElement; games?: Record<
         z={s.kind === "top" ? 0 : 0.02}
       />
     ));
+
+  if (m.id === "pouf1" || m.id === "pouf3") return <PoufChest el={el} n={m.id === "pouf3" ? 3 : 1} />;
+  if (m.id === "chest") return <ChestModel el={el} />;
+  if (m.id === "understair") return <UnderstairModel el={el} />;
 
   if (m.id === "cubes") {
     const wood = 0xb07f4c;

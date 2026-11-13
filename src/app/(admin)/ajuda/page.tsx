@@ -288,7 +288,25 @@ const helpCards: HelpCard[] = [
     category: "mapa",
     title: "Criar ou trocar um armário de jogos",
     description:
-      "Em Planta → Adicionar → Móveis há quatro modelos: armário alto (embaixo aberto), armário alto com portas, torre de nichos e armário baixo com portas. Uma estante que já está na planta vira armário com \"Transformar em armário de jogos\". A frente é o lado com a linha clara: gire para ela ficar virada para o salão. Salve a planta para organizar os jogos dele.",
+      "Em Planta → Adicionar → Jogos estão todos os lugares que guardam jogos: armário alto (embaixo aberto), armário alto com portas, torre de nichos, armário baixo com portas, armário embaixo da escada, baú de jogos e os pufes-baú. Uma estante que já está na planta vira armário com \"Transformar em armário de jogos\". A frente é o lado com a linha clara: gire para ela ficar virada para o salão. Salve a planta para organizar os jogos dele.",
+  },
+  {
+    category: "mapa",
+    title: "Pufes que abrem (salas 24 e 42)",
+    description:
+      "Os pufes das salas abrem e guardam jogos. O pufe-baú de 1 lugar (preto) guarda tudo num espaço só; o de 3 lugares (almofadas de bolinhas) tem um espaço em cada lugar: esquerda, meio e direita. Em Jogos, toque no pufe: o tampo levanta e os jogos aparecem dentro. Se os pufes já estão na planta como pufes comuns, selecione-os em Planta e escolha \"pufes-baú de 1 lugar\" (cada um vira um separado, no mesmo lugar) ou \"Pufe-baú de 3 lugares\". O sofá da parede continua como sofá comum.",
+  },
+  {
+    category: "mapa",
+    title: "Armário embaixo da escada",
+    description:
+      "Tem três portas: a baixa (1 prateleira), a do meio (2) e a alta (3), seguindo a inclinação da escada. Na vista de frente, o lado baixo fica à esquerda; se no pub a escada sobe para o outro lado, gire o armário 180° na planta. Pode mudar a largura à vontade: as prateleiras acompanham e os jogos não se perdem.",
+  },
+  {
+    category: "mapa",
+    title: "Ver o objeto em 3D antes de adicionar",
+    description:
+      "No computador, em Planta → Adicionar, pare o mouse em cima de qualquer objeto: aparece uma janelinha com ele em 3D, girando. No celular, a miniatura já mostra o desenho de cima.",
   },
   {
     category: "mapa",

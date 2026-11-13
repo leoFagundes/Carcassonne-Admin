@@ -15,6 +15,8 @@ import {
   shelfHasCategory,
   shelfSlots,
   SHELF_MODELS,
+  UNDERSTAIR,
+  understairTop,
   slotForStorage,
   suggestSlotLabel,
   typeColor,
@@ -22,6 +24,7 @@ import {
   type CatalogGame,
   type ShelfContent,
 } from "../shelves";
+import { gameShelfName } from "../palette";
 import type { FloorPlan, PlanElement } from "../types";
 
 const el = (p: Partial<PlanElement> & Pick<PlanElement, "id">): PlanElement => ({ level: "a", kind: "gameshelf", x: 0, y: 0, w: 0.85, d: 0.45, rot: 0, ...p });
@@ -48,14 +51,16 @@ describe("modelos", () => {
   it("espaços de cada modelo, de cima para baixo e dentro do móvel", () => {
     for (const m of Object.values(SHELF_MODELS)) {
       const slots = m.slots(m.w);
-      expect(slots[0].id).toBe("top");
+      const classic = ["hutch-open", "hutch-doors", "cubes", "lowcab"].includes(m.id);
+      if (classic) expect(slots[0].id).toBe("top");
       expect(new Set(slots.map((s) => s.id)).size).toBe(slots.length);
       for (const s of slots) {
         expect(s.x).toBeGreaterThanOrEqual(0);
         expect(s.x + s.w).toBeLessThanOrEqual(m.w + 1e-9);
         if (s.kind !== "top") expect(s.y + s.h).toBeLessThanOrEqual(m.height);
       }
-      for (let i = 2; i < slots.length; i++) expect(slots[i].y).toBeGreaterThan(slots[i - 1].y);
+      if (classic) for (let i = 2; i < slots.length; i++) expect(slots[i].y).toBeGreaterThan(slots[i - 1].y);
+      for (const s of slots) expect(s.h).toBeGreaterThan(0.1);
     }
   });
   it("estante alta: 3 prateleiras, gaveta e 2 embaixo; com portas, embaixo fica atrás das portas", () => {
@@ -65,6 +70,25 @@ describe("modelos", () => {
     expect(shelfSlots({ variant: "cubes", w: 0.45 }).map((s) => s.id)).toEqual(["top", "c1", "c2", "c3", "c4"]);
     expect(shelfSlots({ variant: "lowcab", w: 1 }).map((s) => s.id)).toEqual(["top", "drawer", "d1", "d2"]);
     expect(shelfSlots({ variant: "inventado", w: 0.85 })[1].id).toBe("u1");
+  });
+  it("pufes-baú: 1 lugar tem um espaço; 3 lugares, um por lugar (lado a lado)", () => {
+    expect(shelfSlots({ variant: "pouf1", w: 0.5 }).map((s) => s.id)).toEqual(["in"]);
+    const three = shelfSlots({ variant: "pouf3", w: 1.5 });
+    expect(three.map((s) => s.id)).toEqual(["s1", "s2", "s3"]);
+    expect(three[1].x).toBeGreaterThan(three[0].x + three[0].w - 1e-9);
+    expect(SHELF_MODELS.pouf1.seat && SHELF_MODELS.pouf3.seat).toBe(true);
+    expect(shelfSlots({ variant: "chest", w: 0.9 }).map((s) => s.id)).toEqual(["in"]);
+  });
+  it("embaixo da escada: portas baixa (1), do meio (2) e alta (3), abaixo do teto inclinado", () => {
+    const w = 2.4;
+    const slots = shelfSlots({ variant: "understair", w });
+    expect(slots.map((s) => s.id)).toEqual(["a1", "b1", "b2", "c1", "c2", "c3"]);
+    for (const s of slots) {
+      // O canto de cima à esquerda (o mais baixo do teto) fica abaixo da escada
+      expect(UNDERSTAIR.height - s.y).toBeLessThanOrEqual(understairTop(w, s.x) + 1e-9);
+    }
+    // Os ids não mudam com a largura (redimensionar não perde jogos)
+    expect(shelfSlots({ variant: "understair", w: 1.5 }).map((s) => s.id)).toEqual(slots.map((s) => s.id));
   });
 });
 
@@ -143,5 +167,15 @@ describe("mudanças e banco", () => {
   it("busca sem acento", () => {
     expect(searchGames(GAMES, "catan").map((g) => g.id)).toEqual(["catan"]);
     expect(searchGames([{ name: "Pânico em Wall Street" }], "panico wall")).toHaveLength(1);
+  });
+});
+
+describe("nomes dos lugares que guardam jogos", () => {
+  it("conta armários, pufes e baús separados; o da escada tem nome próprio", () => {
+    const els = [el({ id: "a", variant: "hutch-open" }), el({ id: "b", variant: "pouf1" }), el({ id: "c", variant: "cubes" })];
+    expect(gameShelfName(els, "lowcab")).toBe("Armário 3");
+    expect(gameShelfName(els, "pouf3")).toBe("Pufe 2");
+    expect(gameShelfName(els, "chest")).toBe("Baú 1");
+    expect(gameShelfName(els, "understair")).toBe("Embaixo da escada");
   });
 });

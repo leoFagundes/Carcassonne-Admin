@@ -2,6 +2,7 @@ import { KINDS, suggestedSeats, type KindCategory } from "./catalog";
 import { cm } from "./geometry";
 import { newId } from "./day";
 import { nextTableName } from "./editing";
+import { SHELF_MODELS, type ShelfModelId } from "./shelves";
 import type { ElementKind, PlanElement, TableShape } from "./types";
 
 /** Um item da lista "Adicionar" (tipo + variação + tamanho prontos). */
@@ -37,6 +38,8 @@ export const PALETTE: PaletteItem[] = [
   P("table-oval", "Mesa oval", "lugares", "table", 1.8, 1, { variant: "wood", shape: "round" }),
   P("table-black", "Mesa preta", "lugares", "table", 1.5, 0.75, { variant: "black" }),
   P("table-high", "Mesa alta (bistrô)", "lugares", "table", 0.7, 0.7, { variant: "high", shape: "round", tags: "bistro bar" }),
+  P("table-folding", "Mesa dobrável", "lugares", "table", 1.2, 0.7, { variant: "folding", tags: "pés em x salas" }),
+  P("table-barrel", "Mesa barril", "lugares", "table", 0.7, 0.7, { variant: "barrel", shape: "round", tags: "barril alta bar" }),
   P("bench-back", "Banco com encosto", "lugares", "bench", 2, 0.33, { variant: "back" }),
   P("bench-plain", "Banco sem encosto", "lugares", "bench", 2, 0.33, { variant: "plain" }),
   P("sofa", "Sofá", "lugares", "sofa", 1.9, 0.55),
@@ -50,6 +53,10 @@ export const PALETTE: PaletteItem[] = [
   P("gs-hutch-doors", "Armário de jogos alto (portas)", "moveis", "gameshelf", 0.85, 0.45, { variant: "hutch-doors", tags: "estante jogos portas" }),
   P("gs-cubes", "Torre de nichos de jogos", "moveis", "gameshelf", 0.45, 0.35, { variant: "cubes", tags: "estante jogos cubos" }),
   P("gs-lowcab", "Armário baixo de jogos", "moveis", "gameshelf", 1, 0.5, { variant: "lowcab", tags: "jogos portas gaveta" }),
+  P("gs-understair", "Armário embaixo da escada", "moveis", "gameshelf", 2.4, 0.6, { variant: "understair", tags: "escada jogos portas" }),
+  P("gs-pouf1", "Pufe baú (1 lugar)", "lugares", "gameshelf", 0.5, 0.5, { variant: "pouf1", tags: "pufe bau jogos abre assento sala" }),
+  P("gs-pouf3", "Pufe baú (3 lugares)", "lugares", "gameshelf", 1.5, 0.5, { variant: "pouf3", tags: "pufe bau jogos abre assento sala" }),
+  P("gs-chest", "Baú de jogos", "moveis", "gameshelf", 0.9, 0.5, { variant: "chest", tags: "bau caixa jogos" }),
   P("shelf-games", "Estante (decoração)", "moveis", "shelf", 1.8, 0.45, { variant: "bookcase", tags: "jogos" }),
   P("shelf-doors", "Armário com portas", "moveis", "shelf", 1.2, 0.5, { variant: "doors" }),
   P("shelf-cubes", "Nichos", "moveis", "shelf", 0.8, 0.4, { variant: "cubes" }),
@@ -64,6 +71,7 @@ export const PALETTE: PaletteItem[] = [
   P("tap", "Chopeira", "moveis", "steel", 1.2, 0.6, { variant: "tap", tags: "chope" }),
   P("fridge", "Geladeira", "moveis", "fridge", 0.8, 0.7, { variant: "white" }),
   P("fridge-steel", "Geladeira inox", "moveis", "fridge", 0.8, 0.75, { variant: "steel" }),
+  P("fridge-glass", "Expositor de bebidas", "moveis", "fridge", 0.7, 0.7, { variant: "glass", tags: "geladeira vidro cerveja refrigerante" }),
   P("freezer", "Freezer horizontal", "moveis", "freezer", 1.6, 0.75),
   P("sink", "Lavatório", "moveis", "sink", 0.45, 0.4),
   P("toilet", "Vaso sanitário", "moveis", "toilet", 0.4, 0.6),
@@ -109,6 +117,12 @@ export const PALETTE: PaletteItem[] = [
   P("keg", "Barril de chope", "detalhes", "keg", 0.42, 0.42),
   P("bin", "Lixeira", "detalhes", "deco", 0.35, 0.35, { variant: "bin" }),
   P("coatrack", "Cabideiro", "detalhes", "deco", 0.45, 0.45, { variant: "coatrack" }),
+  P("clock", "Relógio de parede", "detalhes", "deco", 0.4, 0.06, { variant: "clock", tags: "hora" }),
+  P("armor", "Armadura medieval", "detalhes", "deco", 0.6, 0.5, { variant: "armor", tags: "cavaleiro elmo" }),
+  P("chandelier", "Lustre medieval", "detalhes", "deco", 0.9, 0.9, { variant: "chandelier", tags: "luz velas teto" }),
+  P("easel", "Cavalete com lousa", "detalhes", "deco", 0.6, 0.5, { variant: "easel", tags: "cardápio menu placa" }),
+  P("dice", "Dado gigante", "detalhes", "deco", 0.5, 0.5, { variant: "dice", tags: "jogo enfeite" }),
+  P("meeple", "Meeple gigante", "detalhes", "deco", 0.6, 0.35, { variant: "meeple", tags: "carcassonne boneco jogo enfeite" }),
   P("extinguisher", "Extintor", "detalhes", "deco", 0.22, 0.22, { variant: "extinguisher" }),
   P("text", "Texto", "detalhes", "text", 1.6, 0.4, { tags: "nome rótulo" }),
 ];
@@ -137,11 +151,17 @@ export function createFromPalette(item: PaletteItem, level: string, at: { x: num
   if (item.kind === "room") el.label = "Novo ambiente";
   if (item.kind === "text") el.label = "Texto";
   if (item.kind === "stage") el.label = "Palco";
-  if (item.kind === "gameshelf") {
-    const n = els.filter((e) => e.kind === "gameshelf").length + 1;
-    el.label = `Armário ${n}`;
-  }
+  if (item.kind === "gameshelf") el.label = gameShelfName(els, el.variant);
   return el;
+}
+
+/** Nome de um armário de jogos novo: "Armário 3", "Pufe 2", "Baú 1" ou "Embaixo da escada". */
+export function gameShelfName(els: PlanElement[], variant: string | undefined): string {
+  if (variant === "understair") return "Embaixo da escada";
+  const group = (v: string | undefined) => (v === "chest" ? "chest" : SHELF_MODELS[v as ShelfModelId]?.seat ? "seat" : "shelf");
+  const g = group(variant);
+  const n = els.filter((e) => e.kind === "gameshelf" && group(e.variant) === g).length + 1;
+  return `${g === "chest" ? "Baú" : g === "seat" ? "Pufe" : "Armário"} ${n}`;
 }
 
 /** Busca na paleta sem ligar para acento e maiúscula. */

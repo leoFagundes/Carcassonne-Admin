@@ -3,10 +3,14 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { LuArrowRight, LuPlus, LuTrash2, LuUndo2, LuX } from "react-icons/lu";
 import {
+  CHEST,
   CUBES,
   HUTCH,
   labelInfo,
   LOWCAB,
+  POUF,
+  UNDERSTAIR,
+  understairTop,
   shelfCount,
   shelfModel,
   shelfSlots,
@@ -29,6 +33,85 @@ function FrontDrawing({ el }: { el: PlanElement }) {
   const m = shelfModel(el);
   const w = el.w * U;
   const H = m.height * U;
+  if (m.id === "pouf1" || m.id === "pouf3" || m.id === "chest") {
+    // Baú aberto: o tampo levantado para trás, e a caixa vista por dentro
+    const chest = m.id === "chest";
+    const n = m.id === "pouf3" ? 3 : 1;
+    const pw = w / n;
+    const lid = (chest ? CHEST.lid : POUF.lid) * U;
+    const wall = (chest ? CHEST.wall : POUF.wall) * U;
+    const floor = (chest ? CHEST.floor : POUF.floor) * U;
+    const outer = chest ? "#7a4f2c" : "#1d1d20";
+    const inner = chest ? "#4a2f1a" : "#2b2622";
+    const up = 20; // altura do tampo em pé (cm, na vista)
+    return (
+      <g>
+        <defs>
+          <pattern id="fp-dots" width={4} height={4} patternUnits="userSpaceOnUse">
+            <rect width={4} height={4} fill="#e9dccb" />
+            <circle cx={1} cy={1} r={0.55} fill="#c0504d" />
+            <circle cx={3} cy={3} r={0.55} fill="#4f81bd" />
+            <circle cx={3} cy={1} r={0.45} fill="#9bbb59" />
+          </pattern>
+        </defs>
+        {Array.from({ length: n }, (_, i) => {
+          const x = pw * i;
+          return (
+            <g key={i}>
+              {/* Tampo em pé, atrás */}
+              <polygon
+                points={`${x + 3},${lid} ${x + pw - 3},${lid} ${x + pw - 7},${lid - up} ${x + 7},${lid - up}`}
+                fill={chest ? "#6e4526" : n === 3 ? "url(#fp-dots)" : "#26262a"}
+                stroke={chest ? "#3a2412" : "#0c0c0e"}
+                strokeWidth={1}
+              />
+              {!chest && n === 1 && [0.3, 0.7].map((f) => <circle key={f} cx={x + pw * f} cy={lid - up * 0.5} r={1.6} fill="#0c0c0e" />)}
+              {/* Caixa: bordas e o fundo de dentro */}
+              <rect x={x} y={lid} width={pw} height={H - lid} rx={chest ? 1.5 : 3} fill={outer} stroke="#0c0c0e" strokeWidth={1.2} />
+              <rect x={x + wall} y={lid + 1} width={pw - wall * 2} height={H - lid - floor - 1} fill={inner} />
+              <rect x={x + wall} y={H - floor - 2} width={pw - wall * 2} height={2} fill={chest ? "#7a4f2c" : "#3a3430"} />
+            </g>
+          );
+        })}
+        {chest && [0.18, 0.82].map((f) => <rect key={f} x={w * f - 2} y={lid} width={4} height={H - lid} fill="#2a2a2c" opacity={0.85} />)}
+      </g>
+    );
+  }
+  if (m.id === "understair") {
+    const S = UNDERSTAIR;
+    const yTop = (x: number) => H - understairTop(el.w, x / U) * U; // x em cm
+    const cw = w / 3;
+    const steps = 7;
+    // Degraus por cima do teto inclinado
+    const pts: string[] = [`0,${yTop(0)}`];
+    for (let k = 0; k < steps; k++) {
+      const x1 = (w * (k + 1)) / steps;
+      pts.push(`${(w * k) / steps},${yTop(x1) - 3}`, `${x1},${yTop(x1) - 3}`);
+    }
+    pts.push(`${w},${yTop(w)}`);
+    return (
+      <g>
+        <polygon points={pts.join(" ")} fill="#4a3424" stroke="#d8c39b" strokeOpacity={0.35} strokeWidth={1} />
+        <polygon points={`0,${yTop(0)} ${w},${yTop(w)} ${w},${H} 0,${H}`} fill="#8a5a32" stroke="#3a2412" strokeWidth={1.2} />
+        {[0, 1, 2].map((i) => {
+          const x0 = cw * i + S.frame * U;
+          const top = yTop(cw * i) + S.frame * U;
+          return <rect key={i} x={x0} y={top} width={cw - S.frame * 2 * U} height={H - S.base * U - top} fill="#4a2f1a" />;
+        })}
+        {/* Prateleiras de dentro (a porta do meio tem 2 espaços; a alta, 3) */}
+        {[1, 2].map((i) => {
+          const n = i + 1;
+          const x0 = cw * i + S.frame * U;
+          const top = yTop(cw * i) + S.frame * U + 2;
+          const h = (H - S.base * U - top) / n;
+          return Array.from({ length: n - 1 }, (_, k) => (
+            <rect key={`${i}-${k}`} x={x0} y={top + h * (k + 1) - 1.5} width={cw - S.frame * 2 * U} height={2.5} fill="#a87444" />
+          ));
+        })}
+        <rect x={0} y={H - S.base * U} width={w} height={S.base * U} fill="#5e3d22" />
+      </g>
+    );
+  }
   if (m.id === "cubes") {
     const c = CUBES.cube * U;
     const t = CUBES.wall * U;
