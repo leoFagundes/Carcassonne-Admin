@@ -1439,6 +1439,17 @@ export default function FloorMap() {
               onHandleEnd={onHandleEnd}
             />
           )}
+          {full && (
+            <button
+              type="button"
+              onClick={() => setFull(false)}
+              className={`absolute left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full border border-primary-gold bg-primary-gold px-4 py-2 text-sm font-bold text-primary-black shadow-card transition-transform hover:scale-[1.03] ${
+                mode === "games" && openShelf ? "top-4" : "bottom-4 [margin-bottom:env(safe-area-inset-bottom)]"
+              }`}
+            >
+              <LuMinimize2 size={16} /> Sair da tela cheia
+            </button>
+          )}
           {mode === "games" && openShelfRef && shelfReady && (
             <ShelfFront
               key={openShelfRef.el.id}
