@@ -257,17 +257,10 @@ function Stair({ el, levelHeight }: { el: PlanElement; levelHeight: number }) {
           </group>
         );
       })}
-      {/* Laterais (longarinas) e corrimão */}
+      {/* Laterais (longarinas) */}
       {[-1, 1].map((sx) => (
         <B key={sx} s={[0.05, 0.25, len]} p={[sx * (w / 2 - 0.025), levelHeight / 2 - 0.05, 0]} rot={[ang, 0, 0]} c={WOOD_DARK} />
       ))}
-      {/* Corrimão: acompanha a subida (sobe para -z) e se apoia em balaústres */}
-      <Cyl r={0.025} h={len} p={[w / 2 - 0.03, levelHeight / 2 + 0.85, 0]} rot={[ang - Math.PI / 2, 0, 0]} c={BRASS} o={{ metalness: 0.6, roughness: 0.35 }} />
-      {[-0.42, -0.14, 0.14, 0.42].map((t) => {
-        const z = t * d;
-        const y = levelHeight / 2 - z * (levelHeight / d);
-        return <Cyl key={t} r={0.016} h={0.85} p={[w / 2 - 0.03, y + 0.425, z]} c={BRASS} o={{ metalness: 0.6, roughness: 0.35 }} />;
-      })}
     </group>
   );
 }
