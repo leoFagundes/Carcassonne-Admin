@@ -27,6 +27,7 @@ export type ElementKind =
   | "pouf"
   | "chair"
   // Móveis e equipamentos
+  | "gameshelf"
   | "shelf"
   | "cabinet"
   | "counter"

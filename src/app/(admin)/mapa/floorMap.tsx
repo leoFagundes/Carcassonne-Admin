@@ -7,7 +7,9 @@ import {
   LuArrowLeft,
   LuBox,
   LuCalendarDays,
+  LuClipboardPaste,
   LuInfo,
+  LuLibrary,
   LuMap,
   LuPencilRuler,
   LuRedo2,
@@ -36,6 +38,9 @@ import {
 import {
   alignElements,
   attachTo,
+  copyElements,
+  pasteElements,
+  type PlanClipboard,
   deleteElements,
   detach,
   duplicateElements,
@@ -78,6 +83,26 @@ import type {
   TableState,
 } from "@/floorplan/types";
 import FloorPlanRepository, { PlanConflictError } from "@/services/repositories/FloorPlanRepository";
+import ShelfRepository from "@/services/repositories/ShelfRepository";
+import BoardgameRepository from "@/services/repositories/BoardGameRepository";
+import {
+  addGameToSlot,
+  gameShelves,
+  locateGames,
+  removeGameFromSlot,
+  shelfColors,
+  shelfCount,
+  shelfHasCategory,
+  unplacedGames,
+  type CatalogGame,
+  type ShelfCategory,
+  type ShelfContent,
+  type ShelfSlot,
+  type SlotLabel,
+} from "@/floorplan/shelves";
+import ShelfFront, { type DragPayload } from "./shelfFront";
+import ShelfPanel, { type ShelfActions } from "./shelfPanel";
+import GamesPanel from "./gamesPanel";
 import PlanCanvas, { BG_ID, type GroupOutline, type HandleId, type MeasureOverlay } from "./planCanvas";
 import DayPanel, { unitTitle, type DayActions, type DayTool, type TimeScope } from "./dayPanel";
 import EditPanel, { type EditActions, type EditTool } from "./editPanel";
@@ -123,7 +148,7 @@ function imageSize(url: string): Promise<{ w: number; h: number }> {
 
 const WEEKDAYS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
-type Mode = "day" | "edit";
+type Mode = "day" | "games" | "edit";
 type Confirm = null | "leave" | "discard" | "conflict";
 
 const ERR = "Não foi possível salvar. Confira a internet e tente de novo.";
@@ -218,14 +243,17 @@ export default function FloorMap() {
     setRemoteNewer(false);
     setEditTool({ kind: "none" });
   };
+  const leaveTo = useRef<Mode>("day");
   const changeMode = (m: Mode) => {
     if (m === mode) return;
     setRuler({ on: false });
     if (m === "edit") {
       resetEdit();
       setMode("edit");
-    } else if (dirty) setConfirm("leave");
-    else setMode("day");
+    } else if (dirty) {
+      leaveTo.current = m;
+      setConfirm("leave");
+    } else setMode(m);
   };
 
   const elById = useMemo(() => new Map(draft.elements.map((e) => [e.id, e])), [draft]);
@@ -296,6 +324,18 @@ export default function FloorMap() {
         return { ...p, elements: els };
       }),
     select: selectIds,
+    organizeShelf: (id) => {
+      if (dirty) {
+        addAlert("Salve a planta antes de organizar os jogos do armário.");
+        return;
+      }
+      openShelfAt(id);
+    },
+    toGameShelf: (id) => {
+      const n = draft.elements.filter((e) => e.kind === "gameshelf").length + 1;
+      const el = elById.get(id);
+      apply((p) => updateElement(p, id, { kind: "gameshelf", variant: "hutch-open", label: el?.label && el.label !== "Armário" ? el.label : `Armário ${n}`, count: undefined }));
+    },
     setPolygon: (id, on) => apply((p) => setPolygon(p, id, on)),
     uploadBackground: async (file) => {
       setUploading(true);
@@ -476,6 +516,18 @@ export default function FloorMap() {
     } else if (mod && key === "y") {
       e.preventDefault();
       setHist(redoHistory);
+    } else if (mod && (key === "c" || key === "x") && sel.length) {
+      e.preventDefault();
+      const c = copyElements(draft, selectedRoots(draft, sel));
+      if (c) {
+        setClip(c);
+        pasteCount.current = 0;
+        if (key === "x") editActions.remove();
+        addAlert(`${key === "x" ? "Recortado" : "Copiado"}: ${c.roots.length} ${c.roots.length === 1 ? "item" : "itens"}. Ctrl+V cola.`);
+      }
+    } else if (mod && key === "v" && clip) {
+      e.preventDefault();
+      pasteClip();
     } else if (mod && key === "d") {
       e.preventDefault();
       editActions.duplicate();
@@ -503,6 +555,17 @@ export default function FloorMap() {
     window.addEventListener("keydown", on);
     return () => window.removeEventListener("keydown", on);
   }, []);
+
+  // Área de transferência da planta (Ctrl+C / Ctrl+X / Ctrl+V)
+  const [clip, setClip] = useState<PlanClipboard | null>(null);
+  const pasteCount = useRef(0);
+  const pasteClip = () => {
+    if (!clip) return;
+    pasteCount.current += 1;
+    const r = pasteElements(draft, clip, level, { offset: cm(0.3 * pasteCount.current), at: centerRef.current });
+    setHist((h) => pushHistory(h, r.plan));
+    setSel(r.ids);
+  };
 
   /** true = salvou. */
   async function save(force = false): Promise<boolean> {
@@ -829,6 +892,154 @@ export default function FloorMap() {
     if (!ok) addAlert("O navegador bloqueou a janela de impressão. Permita janelas para este site e tente de novo.");
   };
 
+  // ───────────── armários de jogos ─────────────
+  const [catalog, setCatalog] = useState<CatalogGame[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(false);
+  const catalogLoaded = useRef(false);
+  useEffect(() => {
+    if (mode !== "games" || catalogLoaded.current) return;
+    catalogLoaded.current = true;
+    setLoadingCatalog(true);
+    BoardgameRepository.getAll()
+      .then((list) => setCatalog(list.map((g) => ({ id: g.id, name: g.name, image: g.image || undefined, types: Array.isArray(g.types) ? g.types : [] }))))
+      .finally(() => setLoadingCatalog(false));
+  }, [mode]);
+  const [contents, setContents] = useState<Map<string, ShelfContent>>(new Map());
+  useEffect(() => ShelfRepository.subscribeAll(setContents), []);
+  const [customs, setCustoms] = useState<ShelfCategory[]>([]);
+  useEffect(() => ShelfRepository.subscribeCategories(setCustoms), []);
+  const [openShelf, setOpenShelf] = useState<string | null>(null);
+  const [shelfReady, setShelfReady] = useState(false);
+  const [selSlot, setSelSlot] = useState<string | null>(null);
+  const [selGame, setSelGame] = useState<string | null>(null);
+  const [highlightGame, setHighlightGame] = useState<string | null>(null);
+  const [catFilter, setCatFilter] = useState<SlotLabel | null>(null);
+
+  const catalogById = useMemo(() => new Map(catalog.map((g) => [g.id, g])), [catalog]);
+  const shelvesList = useMemo(() => gameShelves(savedPlan), [savedPlan]);
+  const located = useMemo(() => locateGames(savedPlan, contents), [savedPlan, contents]);
+  const unplaced = useMemo(() => unplacedGames(catalog, located), [catalog, located]);
+  const typesList = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const g of catalog) for (const t of g.types) m.set(t, (m.get(t) ?? 0) + 1);
+    return [...m].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "pt-BR"));
+  }, [catalog]);
+  const shelfColorsMap = useMemo(() => new Map(shelvesList.map((sh) => [sh.el.id, shelfColors(contents.get(sh.el.id), customs)])), [shelvesList, contents, customs]);
+  const shelfBadgesMap = useMemo(
+    () => new Map(shelvesList.map((sh) => { const n = shelfCount(contents.get(sh.el.id)); return [sh.el.id, `${n} ${n === 1 ? "jogo" : "jogos"}`]; })),
+    [shelvesList, contents],
+  );
+  const shelfGamesMap = useMemo(
+    () =>
+      new Map(
+        shelvesList.map((sh) => [
+          sh.el.id,
+          Object.fromEntries(Object.entries(contents.get(sh.el.id)?.slots ?? {}).map(([k, v]) => [k, v.games.map((g) => g.name)])),
+        ]),
+      ),
+    [shelvesList, contents],
+  );
+  const shelfHighlight = useMemo(
+    () => new Set(catFilter ? shelvesList.filter((sh) => shelfHasCategory(contents.get(sh.el.id), catFilter, catalogById)).map((sh) => sh.el.id) : []),
+    [catFilter, shelvesList, contents, catalogById],
+  );
+  const openShelfRef = openShelf ? shelvesList.find((sh) => sh.el.id === openShelf) ?? null : null;
+
+  // Aberto pela Coleção: /mapa?jogo=ID abre o armário onde o jogo está
+  const wantedGame = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (wantedGame.current === undefined) {
+      wantedGame.current = new URLSearchParams(window.location.search).get("jogo");
+      if (wantedGame.current) setMode("games");
+    }
+    const id = wantedGame.current;
+    if (!id || !loaded) return;
+    const where = located.get(id);
+    if (!where?.length) return;
+    wantedGame.current = null;
+    openShelfAt(where[0].shelfId, where[0].slotId, id);
+  }, [located, loaded]);
+
+  const openShelfAt = (id: string, slotId?: string, gameId?: string) => {
+    const sh = shelvesList.find((x) => x.el.id === id);
+    if (!sh) return;
+    if (mode !== "games") setMode("games");
+    if (sh.el.level !== level && !allLevels) setLevel(sh.el.level);
+    setSelSlot(slotId ?? null);
+    setSelGame(null);
+    setHighlightGame(gameId ?? null);
+    setRuler({ on: false });
+    // No 3D a vista de frente aparece quando a câmera chega; no 2D, na hora
+    setShelfReady(dim === "2d");
+    setOpenShelf(id);
+  };
+  const closeShelf = () => {
+    setOpenShelf(null);
+    setShelfReady(false);
+    setSelSlot(null);
+    setSelGame(null);
+    setHighlightGame(null);
+  };
+  useEffect(() => {
+    if (mode !== "games" && openShelf) closeShelf();
+  }, [mode]);
+
+  const slotOf = (shelfId: string, slotId: string): ShelfSlot | undefined => contents.get(shelfId)?.slots[slotId];
+  const shelfActions: ShelfActions = {
+    setLabel: (slotId, label) => {
+      if (!openShelf) return;
+      const cur = slotOf(openShelf, slotId) ?? { games: [] };
+      run(ShelfRepository.saveSlot(openShelf, slotId, { ...cur, label }));
+    },
+    addGame: (slotId, g) => {
+      if (!openShelf) return;
+      run(ShelfRepository.saveSlot(openShelf, slotId, addGameToSlot(slotOf(openShelf, slotId), g)));
+    },
+    removeGame: (slotId, key) => {
+      if (!openShelf) return;
+      run(ShelfRepository.saveSlot(openShelf, slotId, removeGameFromSlot(slotOf(openShelf, slotId), key)));
+    },
+    moveGame: (from, to) => {
+      if (from.shelfId === to.shelfId && from.slotId === to.slotId) return;
+      const src = slotOf(from.shelfId, from.slotId);
+      const game = src?.games.find((g) => g.key === from.key);
+      if (!game) return;
+      const dst = slotOf(to.shelfId, to.slotId) ?? { games: [] };
+      const moved: ShelfSlot = { ...dst, games: [...dst.games.filter((g) => !(game.gameId && g.gameId === game.gameId)), game] };
+      run(
+        ShelfRepository.saveSlots([
+          { shelfId: from.shelfId, slotId: from.slotId, slot: removeGameFromSlot(src, from.key) },
+          { shelfId: to.shelfId, slotId: to.slotId, slot: moved },
+        ]),
+      );
+    },
+    createCategory: (name, color) => {
+      const c: ShelfCategory = { id: newId("cat"), name, color };
+      const list = [...customs, c];
+      setCustoms(list);
+      run(ShelfRepository.saveCategories(list), `Categoria "${name}" criada.`);
+      return c;
+    },
+  };
+  const onShelfDrop = (payload: DragPayload, toSlot: string) => {
+    if (!openShelf) return;
+    if ("key" in payload) {
+      shelfActions.moveGame({ shelfId: openShelf, slotId: payload.from, key: payload.key }, { shelfId: openShelf, slotId: toSlot });
+      return;
+    }
+    const g = catalogById.get(payload.gameId);
+    if (!g) return;
+    const where = located.get(g.id) ?? [];
+    if (where.length === 1) {
+      const key = slotOf(where[0].shelfId, where[0].slotId)?.games.find((x) => x.gameId === g.id)?.key;
+      if (key) {
+        shelfActions.moveGame({ shelfId: where[0].shelfId, slotId: where[0].slotId, key }, { shelfId: openShelf, slotId: toSlot });
+        return;
+      }
+    }
+    shelfActions.addGame(toSlot, { gameId: g.id, name: g.name });
+  };
+
   // ───────────── pontos no mapa (régua e calibração) ─────────────
   const calibrating = mode === "edit" && editTool.kind === "calibrate";
   const pointMode = ruler.on || calibrating;
@@ -849,7 +1060,7 @@ export default function FloorMap() {
 
   // ───────────── o que mostrar ─────────────
   const plan = mode === "edit" ? draft : savedPlan;
-  const elements = mode === "edit" ? draft.elements : layout.elements;
+  const elements = mode === "edit" ? draft.elements : mode === "games" ? savedPlan.elements : layout.elements;
   const levelsDesc = [...plan.levels].sort((a, b) => b.order - a.order);
   const selectedSet = useMemo(() => new Set(mode === "edit" ? sel : selectedUnit?.tableIds ?? []), [mode, sel, selectedUnit]);
   const pickingSet = useMemo(() => {
@@ -870,7 +1081,11 @@ export default function FloorMap() {
       : "Régua: toque em dois pontos para medir"
     : calibrating
       ? "Marque os dois pontos da medida conhecida"
-      : mode === "edit"
+      : mode === "games"
+        ? shelvesList.length
+          ? "Toque num armário para abrir e organizar os jogos"
+          : "Ainda não há armário de jogos: adicione em Planta"
+        : mode === "edit"
         ? editTool.kind === "bgMove"
           ? "Arraste a imagem de fundo"
           : sel.length
@@ -907,7 +1122,9 @@ export default function FloorMap() {
             <div className="min-w-0">
               <h1 className="text-lg font-bold leading-tight text-primary-gold">Mapa do pub</h1>
               <p className="truncate text-[11px] text-primary-gold/55">
-                {mode === "day"
+                {mode === "games"
+                  ? `Onde fica cada jogo · ${shelvesList.length} ${shelvesList.length === 1 ? "armário" : "armários"} de jogos`
+                  : mode === "day"
                   ? `Mesas livres, reservadas e ocupadas · ${scopeLabel.toLowerCase()}`
                   : `Editando a planta · ${summary.reduce((s, x) => s + x.tables, 0)} mesas, ${summary.reduce((s, x) => s + x.seats, 0)} lugares`}
               </p>
@@ -919,6 +1136,7 @@ export default function FloorMap() {
             onChange={changeMode}
             options={[
               { id: "day", label: <><LuCalendarDays size={14} /> Dia a dia</> },
+              { id: "games", label: <><LuLibrary size={14} /> Jogos</> },
               { id: "edit", label: <><LuPencilRuler size={14} /> Planta</> },
             ]}
           />
@@ -967,6 +1185,11 @@ export default function FloorMap() {
               <Btn tone="ghost" title="Refazer (Ctrl+Shift+Z)" disabled={!hist.future.length} onClick={() => setHist(redoHistory)}>
                 <LuRedo2 size={15} />
               </Btn>
+              {clip && (
+                <Btn tone="ghost" title="Colar o que foi copiado (Ctrl+V)" onClick={pasteClip}>
+                  <LuClipboardPaste size={14} /> Colar
+                </Btn>
+              )}
               <Btn tone="ghost" disabled={!dirty} onClick={() => setConfirm("discard")}>
                 Descartar
               </Btn>
@@ -1015,20 +1238,33 @@ export default function FloorMap() {
               highWalls={highWalls}
               topView={topView}
               showLabels={labels3d}
-              onPickTable={(id) => (mode === "day" ? onTapDay(id) : selectIds([id]))}
+              onPickTable={(id) => (mode === "day" ? onTapDay(id) : mode === "edit" ? selectIds([id]) : undefined)}
+              onPickShelf={(id) => (mode === "edit" ? selectIds([id]) : openShelfAt(id))}
+              focusShelf={mode === "games" ? openShelf : null}
+              onFocusArrive={() => setShelfReady(true)}
+              shelfGames={shelfGamesMap}
+              shelfHighlight={mode === "games" ? shelfHighlight : undefined}
             />
           ) : (
             <PlanCanvas
               elements={elements}
               level={level}
-              mode={mode}
-              selected={selectedSet}
-              picking={pickingSet}
+              mode={mode === "edit" ? "edit" : "day"}
+              selected={mode === "games" ? new Set(openShelf ? [openShelf] : []) : selectedSet}
+              picking={mode === "games" ? shelfHighlight : pickingSet}
+              shelfColors={shelfColorsMap}
+              shelfBadges={mode === "games" ? shelfBadgesMap : undefined}
               tableStates={mode === "day" ? tableStates : undefined}
               tableBadges={mode === "day" ? tableBadges : undefined}
               tableNotes={mode === "day" ? tableNotes : undefined}
               groups={mode === "day" ? groupOutlines : undefined}
-              isInteractive={mode === "day" ? (el) => el.kind === "table" : (el) => !lockStructure || !KINDS[el.kind].structural}
+              isInteractive={
+                mode === "day"
+                  ? (el) => el.kind === "table"
+                  : mode === "games"
+                    ? (el) => el.kind === "gameshelf"
+                    : (el) => !lockStructure || !KINDS[el.kind].structural
+              }
               handlesFor={handlesFor}
               showGrid={mode === "edit"}
               fitKey={`${mode}|${level}`}
@@ -1058,13 +1294,37 @@ export default function FloorMap() {
                   <LuRuler size={15} />
                 </button>
               }
-              onTap={mode === "day" ? (id) => onTapDay(id) : onTapEdit}
-              onMoveStart={mode === "day" ? (id) => onMoveStartDay(id) : onMoveStartEdit}
-              onMove={mode === "day" ? onMoveDay : onMoveEdit}
-              onMoveEnd={mode === "day" ? onMoveEndDay : onMoveEndEdit}
+              onTap={mode === "day" ? (id) => onTapDay(id) : mode === "games" ? (id) => (id ? openShelfAt(id) : closeShelf()) : onTapEdit}
+              onMoveStart={mode === "day" ? (id) => onMoveStartDay(id) : mode === "games" ? () => false : onMoveStartEdit}
+              onMove={mode === "day" ? onMoveDay : mode === "games" ? () => {} : onMoveEdit}
+              onMoveEnd={mode === "day" ? onMoveEndDay : mode === "games" ? () => {} : onMoveEndEdit}
               onHandleStart={onHandleStart}
               onHandle={onHandle}
               onHandleEnd={onHandleEnd}
+            />
+          )}
+          {mode === "games" && openShelfRef && shelfReady && (
+            <ShelfFront
+              key={openShelfRef.el.id}
+              el={openShelfRef.el}
+              name={openShelfRef.name}
+              subtitle={openShelfRef.room}
+              content={contents.get(openShelfRef.el.id)}
+              catalogById={catalogById}
+              customs={customs}
+              selectedSlot={selSlot}
+              selectedGame={selGame}
+              highlightGame={highlightGame}
+              onSelectSlot={(id) => {
+                setSelSlot(id);
+                setSelGame(null);
+              }}
+              onSelectGame={(slotId, key) => {
+                setSelSlot(slotId);
+                setSelGame(key);
+              }}
+              onDrop={onShelfDrop}
+              onClose={closeShelf}
             />
           )}
         </div>
@@ -1106,6 +1366,56 @@ export default function FloorMap() {
               onPrint={() => void onPrint()}
               actions={dayActions}
             />
+          ) : mode === "games" ? (
+            openShelfRef ? (
+              <ShelfPanel
+                shelf={openShelfRef}
+                content={contents.get(openShelfRef.el.id)}
+                catalog={catalog}
+                catalogById={catalogById}
+                types={typesList}
+                customs={customs}
+                located={located}
+                shelves={shelvesList}
+                contents={contents}
+                selectedSlot={selSlot}
+                setSelectedSlot={(id) => {
+                  setSelSlot(id);
+                  setSelGame(null);
+                }}
+                selectedGame={selGame}
+                setSelectedGame={setSelGame}
+                loadingCatalog={loadingCatalog}
+                actions={shelfActions}
+                onClose={closeShelf}
+              />
+            ) : (
+              <GamesPanel
+                shelves={shelvesList}
+                contents={contents}
+                catalog={catalog}
+                located={located}
+                unplaced={unplaced}
+                types={typesList}
+                customs={customs}
+                filter={catFilter}
+                setFilter={setCatFilter}
+                loadingCatalog={loadingCatalog}
+                onOpen={openShelfAt}
+                onCreateCategory={(n, c) => shelfActions.createCategory(n, c)}
+                onUpdateCategory={(c) => {
+                  const list = customs.map((x) => (x.id === c.id ? c : x));
+                  setCustoms(list);
+                  run(ShelfRepository.saveCategories(list));
+                }}
+                onDeleteCategory={(id) => {
+                  const list = customs.filter((x) => x.id !== id);
+                  setCustoms(list);
+                  if (catFilter?.kind === "custom" && catFilter.id === id) setCatFilter(null);
+                  run(ShelfRepository.saveCategories(list));
+                }}
+              />
+            )
           ) : (
             <EditPanel
               plan={draft}
@@ -1140,10 +1450,10 @@ export default function FloorMap() {
             onClick: () => {
               resetEdit();
               setConfirm(null);
-              setMode("day");
+              setMode(leaveTo.current);
             },
           },
-          { label: "Salvar e sair", tone: "primary", onClick: () => void save().then((ok) => ok && setMode("day")) },
+          { label: "Salvar e sair", tone: "primary", onClick: () => void save().then((ok) => ok && setMode(leaveTo.current)) },
         ]}
       >
         As mudanças feitas na planta ainda não foram salvas.

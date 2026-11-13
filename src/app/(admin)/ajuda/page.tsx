@@ -266,6 +266,43 @@ const helpCards: HelpCard[] = [
       "Em Planta → Adicionar há miniaturas de tudo, com busca: mesas (retangular, quadrada, redonda, oval, preta e alta), bancos, sofá, pufes, cadeira, banqueta e poltrona; estantes, balcão, caixa, chopeira, geladeiras e pias; paredes, portas (simples, dupla e de correr), janela, cortina, escada, coluna e palco; TV, caixa de som, alvo de dardos, ar-condicionado, ventilador, luminárias, quadros, vitrais, plantas, lixeira, cabideiro, extintor e texto.",
   },
 
+  {
+    category: "mapa",
+    title: "Armários de jogos: onde fica cada jogo",
+    description:
+      "No Mapa, o modo Jogos mostra os armários de jogos com quantos jogos cada um tem. Toque num armário: no 3D a câmera vai até a frente dele; depois ele abre de frente, com cada prateleira, gaveta, nicho e o espaço atrás das portas. Os jogos aparecem com a foto da caixa (da Coleção). Em \"Onde está?\" é só digitar o nome do jogo para achar o armário e a prateleira.",
+  },
+  {
+    category: "mapa",
+    title: "Como guardar jogos num armário",
+    description:
+      "Abra o armário, toque num espaço e, em \"Guardar um jogo aqui\", busque na Coleção e toque em Guardar (ou Mover para cá, se ele já estiver em outro lugar). Jogo que não está na Coleção entra como avulso. No computador dá para arrastar os jogos entre os espaços e da lista para o desenho; tocando num jogo aparece \"Mover para…\" e a lixeira.",
+  },
+  {
+    category: "mapa",
+    title: "Etiquetas de categoria nas prateleiras",
+    description:
+      "Cada espaço do armário pode ter uma etiqueta: uma categoria da Coleção (Estratégia, Party Game…) ou uma categoria sua, criada na hora (ex.: \"Para crianças\", \"Mais pedidos\"), que aparece antes das da Coleção. O mapa sugere a etiqueta pela maioria dos jogos e avisa o que está fora da categoria. Em Jogos → Categorias, tocar numa categoria acende os armários que têm ela; dá para renomear, trocar a cor e excluir as suas.",
+  },
+  {
+    category: "mapa",
+    title: "Criar ou trocar um armário de jogos",
+    description:
+      "Em Planta → Adicionar → Móveis há quatro modelos: armário alto (embaixo aberto), armário alto com portas, torre de nichos e armário baixo com portas. Uma estante que já está na planta vira armário com \"Transformar em armário de jogos\". A frente é o lado com a linha clara: gire para ela ficar virada para o salão. Salve a planta para organizar os jogos dele.",
+  },
+  {
+    category: "mapa",
+    title: "Onde fica cada jogo, na Coleção",
+    description:
+      "Na Coleção, o jogo que está num armário mostra em verde onde fica (ex.: \"Salão · Armário 2 · Prateleira 1\"). Tocar abre o Mapa já no armário, com o jogo em destaque. Em Jogos → Sem lugar ficam os jogos da Coleção que ainda não têm armário, e em \"Em mais de um lugar\", os repetidos.",
+  },
+  {
+    category: "mapa",
+    title: "Copiar e colar na planta",
+    description:
+      "No modo Planta, escolha um ou mais itens e use Ctrl+C para copiar (ou Ctrl+X para recortar) e Ctrl+V para colar. A cópia entra um pouco deslocada (colar de novo desloca mais), com o que estava preso a ela, e mesa copiada ganha um número novo. Em outro andar, a cópia entra no meio da tela. O botão Colar aparece na barra enquanto houver algo copiado.",
+  },
+
   // ── COLEÇÃO ───────────────────────────────────────────────────
   {
     category: "colecao",

@@ -4,6 +4,8 @@ import { BoardgameType } from "@/types";
 import { useEffect, useMemo, useState } from "react";
 import { LuDices, LuDollarSign, LuEyeOff, LuLink, LuPlus, LuSparkles, LuTag } from "react-icons/lu";
 import Card from "./card";
+import { useGameLocations } from "../mapa/useGameLocations";
+import { formatLocation } from "@/floorplan/shelves";
 import Modal from "@/components/modal";
 import CollectionForms from "@/components/collectionForms";
 import { useAlert } from "@/contexts/alertProvider";
@@ -25,6 +27,7 @@ type Status = "all" | "hidden" | "featured" | "forSale";
 
 export default function CollectionPage() {
   const [search, setSearch] = useState("");
+  const locations = useGameLocations();
   const [status, setStatus] = useState<Status>("all");
   const [filterType, setFilterType] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState("");
@@ -310,6 +313,7 @@ export default function CollectionPage() {
                   setIsModalOpen(true);
                 }}
                 onUpdate={(patch) => updateGame(game, patch)}
+                location={game.id ? locations.get(game.id)?.map(formatLocation) : undefined}
               />
             ))}
           </CatalogItems>

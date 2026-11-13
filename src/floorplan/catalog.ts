@@ -128,6 +128,19 @@ export const KINDS: Record<ElementKind, KindInfo> = {
     layer: 4,
   },
 
+  gameshelf: {
+    label: "Armário de jogos",
+    category: "moveis",
+    size: { w: 0.85, d: 0.45 },
+    variants: [
+      { id: "hutch-open", label: "Estante alta (embaixo aberta)" },
+      { id: "hutch-doors", label: "Estante alta (embaixo com portas)" },
+      { id: "cubes", label: "Torre de nichos" },
+      { id: "lowcab", label: "Armário baixo com portas" },
+    ],
+    showsLabel: true,
+    layer: 3,
+  },
   shelf: {
     label: "Estante / armário",
     category: "moveis",

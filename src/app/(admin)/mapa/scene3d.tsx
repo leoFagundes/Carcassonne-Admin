@@ -9,6 +9,9 @@ import { variantOf } from "@/floorplan/catalog";
 import { boundsOf } from "@/floorplan/geometry";
 import { STATE_META } from "@/floorplan/day";
 import type { PlanElement, PlanLevel, TableState } from "@/floorplan/types";
+import { shelfModel } from "@/floorplan/shelves";
+import { GameShelfModel } from "./shelf3d";
+import { B, CYL, Cyl, mat, type MatOpts } from "./mesh3d";
 
 export interface Scene3DProps {
   elements: PlanElement[];
@@ -24,61 +27,18 @@ export interface Scene3DProps {
   topView: boolean;
   showLabels: boolean;
   onPickTable?: (id: string) => void;
+  /** Toque num armário de jogos. */
+  onPickShelf?: (id: string) => void;
+  /** Armário aberto: a câmera vai até a frente dele (e volta ao fechar). */
+  focusShelf?: string | null;
+  /** A câmera chegou na frente do armário. */
+  onFocusArrive?: () => void;
+  /** Nomes dos jogos de cada espaço de cada armário (para desenhar as caixas). */
+  shelfGames?: ReadonlyMap<string, Record<string, string[]>>;
+  /** Armários em destaque (filtro por categoria). */
+  shelfHighlight?: ReadonlySet<string>;
 }
 
-// ───────────────────────── materiais e caixas compartilhados ─────────────────────────
-
-const BOX = new THREE.BoxGeometry(1, 1, 1);
-/** Cilindro de diâmetro 1 e altura 1 (escala vira elipse: mesa oval). */
-const CYL = new THREE.CylinderGeometry(0.5, 0.5, 1, 40);
-const MATS = new Map<string, THREE.MeshStandardMaterial>();
-type MatOpts = { metalness?: number; roughness?: number; emissive?: number; emissiveIntensity?: number };
-function mat(color: number | string, o: MatOpts = {}): THREE.MeshStandardMaterial {
-  const key = `${color}|${o.metalness ?? 0}|${o.roughness ?? 0.85}|${o.emissive ?? 0}|${o.emissiveIntensity ?? 0}`;
-  let m = MATS.get(key);
-  if (!m) {
-    m = new THREE.MeshStandardMaterial({
-      color,
-      metalness: o.metalness ?? 0,
-      roughness: o.roughness ?? 0.85,
-      emissive: o.emissive ?? 0x000000,
-      emissiveIntensity: o.emissiveIntensity ?? 0,
-    });
-    MATS.set(key, m);
-  }
-  return m;
-}
-
-/** Caixa pelo centro: tamanho [x, y, z], posição [x, y, z] nos eixos do elemento. */
-function B({
-  s,
-  p,
-  c,
-  o,
-  shadow = true,
-  ...ev
-}: {
-  s: [number, number, number];
-  p: [number, number, number];
-  c: number | string;
-  o?: MatOpts;
-  shadow?: boolean;
-  onClick?: (e: ThreeEvent<MouseEvent>) => void;
-  onPointerOver?: (e: ThreeEvent<PointerEvent>) => void;
-  onPointerOut?: (e: ThreeEvent<PointerEvent>) => void;
-}) {
-  return (
-    <mesh geometry={BOX} material={mat(c, o)} scale={s} position={p} castShadow={shadow} receiveShadow {...ev} />
-  );
-}
-
-function Cyl({ r, h, p, c, o, seg = 16, r2 }: { r: number; h: number; p: [number, number, number]; c: number; o?: MatOpts; seg?: number; r2?: number }) {
-  return (
-    <mesh position={p} material={mat(c, o)} castShadow receiveShadow>
-      <cylinderGeometry args={[r, r2 ?? r, h, seg]} />
-    </mesh>
-  );
-}
 
 const FLOOR: Record<string, number> = { wood: 0x7b5236, tile: 0xcfc8ba, granite: 0x8f9296 };
 
@@ -110,6 +70,7 @@ interface BuildCtx {
   state?: TableState;
   selected: boolean;
   onPick?: (e: ThreeEvent<MouseEvent>) => void;
+  shelfGames?: Record<string, string[]>;
 }
 
 function ElementModel({ el, ctx }: { el: PlanElement; ctx: BuildCtx }) {
@@ -394,6 +355,15 @@ function ElementModel({ el, ctx }: { el: PlanElement; ctx: BuildCtx }) {
           </mesh>
         </group>
       );
+    case "gameshelf":
+      return (
+        <group>
+          <GameShelfModel el={el} games={ctx.shelfGames} />
+          {ctx.selected && (
+            <B s={[w + 0.16, 0.02, d + 0.16]} p={[0, 0.012, 0]} c={0xe6c56b} o={{ emissive: 0xe6c56b, emissiveIntensity: 0.8 }} shadow={false} />
+          )}
+        </group>
+      );
     case "deco":
       return <DecoModel el={el} v={v} top={top} bot={bot} hh={hh} wallH={wallH} />;
     default:
@@ -559,7 +529,11 @@ function DecoModel({ el, v, top, bot, hh, wallH }: { el: PlanElement; v?: string
 
 const Placed = memo(function Placed({ el, ctx }: { el: PlanElement; ctx: BuildCtx }) {
   return (
-    <group position={[el.x, 0, el.y]} rotation={[0, (-el.rot * Math.PI) / 180, 0]}>
+    <group
+      position={[el.x, 0, el.y]}
+      rotation={[0, (-el.rot * Math.PI) / 180, 0]}
+      onClick={el.kind === "gameshelf" ? ctx.onPick : undefined}
+    >
       <ElementModel el={el} ctx={ctx} />
     </group>
   );
@@ -587,6 +561,63 @@ function CameraRig({ center, radius, topView, fitKey }: { center: THREE.Vector3;
     }
     invalidate();
   }, [fitKey, topView, controls]);
+  return null;
+}
+
+/** Leva a câmera até a frente do armário (e de volta ao fechar), com uma curva suave. */
+function FocusRig({
+  target,
+  onArrive,
+}: {
+  target: { key: string; pos: THREE.Vector3; look: THREE.Vector3 } | null;
+  onArrive?: () => void;
+}) {
+  const { camera, controls, invalidate } = useThree();
+  const anim = useRef<{ fromP: THREE.Vector3; fromT: THREE.Vector3; toP: THREE.Vector3; toT: THREE.Vector3; t0: number; dur: number; done?: () => void } | null>(null);
+  const saved = useRef<{ p: THREE.Vector3; t: THREE.Vector3 } | null>(null);
+  const arrive = useRef(onArrive);
+  arrive.current = onArrive;
+  const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  useEffect(() => {
+    const c = controls as unknown as OrbitControlsImpl | null;
+    if (!c) return;
+    const fromP = camera.position.clone();
+    const fromT = c.target.clone();
+    if (target) {
+      if (!saved.current) saved.current = { p: fromP.clone(), t: fromT.clone() };
+      c.enabled = false;
+      anim.current = { fromP, fromT, toP: target.pos, toT: target.look, t0: performance.now(), dur: reduce ? 1 : 900, done: () => arrive.current?.() };
+    } else if (saved.current) {
+      const back = saved.current;
+      saved.current = null;
+      anim.current = {
+        fromP,
+        fromT,
+        toP: back.p,
+        toT: back.t,
+        t0: performance.now(),
+        dur: reduce ? 1 : 750,
+        done: () => {
+          c.enabled = true;
+        },
+      };
+    }
+    invalidate();
+  }, [target?.key, controls]);
+  useFrame(() => {
+    const a = anim.current;
+    const c = controls as unknown as OrbitControlsImpl | null;
+    if (!a || !c) return;
+    const k = Math.min(1, (performance.now() - a.t0) / a.dur);
+    const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    camera.position.lerpVectors(a.fromP, a.toP, e);
+    c.target.lerpVectors(a.fromT, a.toT, e);
+    c.update();
+    if (k >= 1) {
+      anim.current = null;
+      a.done?.();
+    } else invalidate();
+  });
   return null;
 }
 
@@ -641,6 +672,11 @@ export default function Scene3D({
   topView,
   showLabels,
   onPickTable,
+  onPickShelf,
+  focusShelf,
+  onFocusArrive,
+  shelfGames,
+  shelfHighlight,
 }: Scene3DProps) {
   const wallH = highWalls ? 2.8 : 1.3;
   const gap = level === "all" ? levelHeight + 3.2 : 0;
@@ -673,25 +709,42 @@ export default function Scene3D({
 
   const pick = useRef(onPickTable);
   pick.current = onPickTable;
+  const pickShelf = useRef(onPickShelf);
+  pickShelf.current = onPickShelf;
   const tableIdsKey = visible
-    .filter((e) => e.kind === "table")
-    .map((e) => e.id)
+    .filter((e) => e.kind === "table" || e.kind === "gameshelf")
+    .map((e) => `${e.kind === "table" ? "t" : "s"}:${e.id}`)
     .join("|");
   const pickers = useMemo(() => {
     const m = new Map<string, (e: ThreeEvent<MouseEvent>) => void>();
-    for (const id of tableIdsKey.split("|")) {
-      if (!id) continue;
+    for (const k of tableIdsKey.split("|")) {
+      if (!k) continue;
+      const id = k.slice(2);
+      const isShelf = k.startsWith("s:");
       m.set(id, (e) => {
         e.stopPropagation();
         if (e.delta > 6) return; // foi um arrasto da câmera
-        pick.current?.(id);
+        (isShelf ? pickShelf.current : pick.current)?.(id);
       });
     }
     return m;
   }, [tableIdsKey]);
 
+  // Frente do armário aberto: centro na meia altura, câmera afastada o bastante para caber
+  const focusTarget = useMemo(() => {
+    const el = focusShelf ? visible.find((e) => e.id === focusShelf) : undefined;
+    if (!el) return null;
+    const H = shelfModel(el).height;
+    const y0 = offsetOf(el.level);
+    const a = (el.rot * Math.PI) / 180;
+    const dir = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a)); // frente (+y local) na cena
+    const look = new THREE.Vector3(el.x, y0 + (H + 0.3) / 2, el.y);
+    const dist = Math.max(1.6, ((H + 0.6) / 2 / Math.tan((22.5 * Math.PI) / 180)) * 1.08, (el.w / 2 / Math.tan((22.5 * Math.PI) / 180)) * 1.6);
+    return { key: el.id, look, pos: look.clone().add(dir.multiplyScalar(dist)) };
+  }, [focusShelf, visible, offsetOf]);
+
   const labels: Label3D[] = useMemo(() => {
-    if (!showLabels) return [];
+    if (!showLabels || focusShelf) return [];
     const out: Label3D[] = [];
     const top = shown[shown.length - 1]?.id;
     for (const el of visible) {
@@ -699,11 +752,13 @@ export default function Scene3D({
       const dim = level === "all" && el.level !== top;
       if (el.kind === "table")
         out.push({ key: `t-${el.id}`, pos: [el.x, y0 + 1.25, el.y], text: tableLabels?.get(el.id) ?? el.label ?? "", tableId: el.id, state: tableStates?.get(el.id), dim });
+      else if (el.kind === "gameshelf")
+        out.push({ key: `g-${el.id}`, pos: [el.x, y0 + shelfModel(el).height + 0.45, el.y], text: el.label ?? "Armário", dim });
       else if (el.kind === "room" && el.label && !el.hideLabel && level !== "all")
         out.push({ key: `r-${el.id}`, pos: [el.x + (el.lx ?? 0), y0 + 2.6, el.y + (el.ly ?? 0)], text: el.label });
     }
     return out;
-  }, [visible, showLabels, tableLabels, tableStates, offsetOf, shown, level]);
+  }, [visible, showLabels, tableLabels, tableStates, offsetOf, shown, level, focusShelf]);
   const nodes = useRef(new Map<string, HTMLElement>());
 
   const fitKey = `${level}|${visible.length > 0}`;
@@ -723,6 +778,8 @@ export default function Scene3D({
         }}
       >
         <hemisphereLight args={[0xfff1d6, 0x2a2018, 0.8]} />
+        {/* De perto (armário aberto) o interior fica escuro: um pouco de luz geral ajuda */}
+        <ambientLight intensity={focusShelf ? 0.55 : 0.12} />
         <directionalLight
           position={[center.x - 12, center.y + 28, center.z + 18]}
           intensity={0.85}
@@ -751,8 +808,9 @@ export default function Scene3D({
                     wallH,
                     levelHeight: level === "all" ? gap : levelHeight,
                     state: el.kind === "table" ? tableStates?.get(el.id) : undefined,
-                    selected: el.kind === "table" && selected.has(el.id),
-                    onPick: el.kind === "table" ? pickers.get(el.id) : undefined,
+                    selected: (el.kind === "table" || el.kind === "gameshelf") && (selected.has(el.id) || !!shelfHighlight?.has(el.id)),
+                    onPick: el.kind === "table" || el.kind === "gameshelf" ? pickers.get(el.id) : undefined,
+                    shelfGames: el.kind === "gameshelf" ? shelfGames?.get(el.id) : undefined,
                   }}
                 />
               ))}
@@ -769,6 +827,7 @@ export default function Scene3D({
           screenSpacePanning
         />
         <CameraRig center={center} radius={radius} topView={topView} fitKey={fitKey} />
+        <FocusRig target={focusTarget} onArrive={onFocusArrive} />
         <LabelProjector labels={labels} nodes={nodes} />
       </Canvas>
 

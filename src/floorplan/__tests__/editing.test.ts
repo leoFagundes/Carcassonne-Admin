@@ -103,3 +103,33 @@ describe("editar a planta", () => {
     ]);
   });
 });
+
+describe("copiar e colar", () => {
+  it("copia com o que está preso e cola deslocado, com nome novo de mesa", async () => {
+    const { copyElements, pasteElements } = await import("../editing");
+    const clip = copyElements(PLAN, ["t1"])!;
+    expect(clip.elements.map((e) => e.id).sort()).toEqual(["b1", "t1"]);
+    const r = pasteElements(PLAN, clip, "a", { offset: 0.3 });
+    expect(r.plan.elements).toHaveLength(6);
+    const t = r.plan.elements.find((e) => e.id === r.ids[0])!;
+    expect(t).toMatchObject({ x: 2.3, y: 2.3, label: "3", level: "a" });
+    const bench = r.plan.elements.find((e) => e.kind === "bench" && e.id !== "b1")!;
+    expect(bench.parent).toBe(t.id);
+    // Colar de novo gera outra cópia com outro nome
+    const r2 = pasteElements(r.plan, clip, "a", { offset: 0.6 });
+    expect(r2.plan.elements.find((e) => e.id === r2.ids[0])!.label).toBe("4");
+  });
+  it("em outro andar, cola centrado no ponto pedido", async () => {
+    const { copyElements, pasteElements } = await import("../editing");
+    const clip = copyElements(PLAN, ["s1"])!;
+    const r = pasteElements(PLAN, clip, "b", { offset: 0.3, at: { x: 1, y: 1 } });
+    expect(r.plan.elements.find((e) => e.id === r.ids[0])).toMatchObject({ level: "b", x: 1, y: 1 });
+  });
+  it("banco copiado sem a mesa fica solto", async () => {
+    const { copyElements, pasteElements } = await import("../editing");
+    const clip = copyElements(PLAN, ["b1"])!;
+    const r = pasteElements(PLAN, clip, "a", { offset: 0.3 });
+    expect(r.plan.elements.find((e) => e.id === r.ids[0])!.parent).toBeUndefined();
+    expect(copyElements(PLAN, [])).toBeNull();
+  });
+});

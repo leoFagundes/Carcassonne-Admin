@@ -82,6 +82,7 @@ export function Shape2D({
   state,
   dim,
   paper,
+  colors,
 }: {
   el: PlanElement;
   /** Estado da mesa no modo dia. */
@@ -90,6 +91,8 @@ export function Shape2D({
   dim?: boolean;
   /** Cores para papel (impressão). */
   paper?: boolean;
+  /** Armário de jogos: cores das etiquetas das prateleiras. */
+  colors?: string[];
 }) {
   const S = paper ? STRUCT.paper : STRUCT.dark;
   const poly = polyPoints(el);
@@ -316,6 +319,24 @@ export function Shape2D({
           <rect x={x0} y={y0} width={w} height={d} fill={fill} stroke="#2a1b10" strokeWidth={sw} />
           <path d={`M ${x0} ${y0} L ${-x0} ${-y0} M ${-x0} ${y0} L ${x0} ${-y0}`} stroke="#e8d6b4" strokeOpacity={0.35} strokeWidth={sw} />
           <line x1={x0} y1={-y0 - 1} x2={-x0} y2={-y0 - 1} stroke="#e8d6b4" strokeOpacity={0.7} strokeWidth={2.5} />
+        </g>
+      );
+    }
+    case "gameshelf": {
+      const wood = v === "cubes" ? "#b07f4c" : v === "lowcab" ? "#7a4f2c" : "#9a6a3c";
+      const cols = colors?.length ? colors : [];
+      const stripe = Math.min(10, d * 0.22);
+      return (
+        <g opacity={op}>
+          <rect x={x0} y={y0} width={w} height={d} rx={2} fill={wood} stroke="#2a1b10" strokeWidth={2} />
+          {/* Laterais e fundo do móvel */}
+          <rect x={x0 + 4} y={y0 + 4} width={w - 8} height={d - 8} fill="none" stroke="#2a1b10" strokeOpacity={0.45} strokeWidth={1.5} />
+          {v === "cubes" && <line x1={0} y1={y0 + 4} x2={0} y2={-y0 - 4} stroke="#2a1b10" strokeOpacity={0.3} strokeWidth={1.2} />}
+          {/* Faixa das categorias na frente */}
+          {cols.map((c, i) => (
+            <rect key={c} x={x0 + 4 + ((w - 8) / cols.length) * i} y={-y0 - stripe - 3} width={(w - 8) / cols.length} height={stripe} fill={c} />
+          ))}
+          <line x1={x0} y1={-y0 - 1} x2={-x0} y2={-y0 - 1} stroke="#f3e2bd" strokeWidth={3} />
         </g>
       );
     }

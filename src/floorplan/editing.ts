@@ -187,3 +187,50 @@ export function setPolygon(plan: FloorPlan, id: string, on: boolean): FloorPlan 
     }),
   };
 }
+
+/** O que foi copiado (Ctrl+C): os elementos e o que está preso a eles. */
+export interface PlanClipboard {
+  elements: PlanElement[];
+  /** Ids escolhidos (sem os presos), para escolher de novo depois de colar. */
+  roots: string[];
+  level: string;
+}
+
+export function copyElements(plan: FloorPlan, ids: string[]): PlanClipboard | null {
+  if (!ids.length) return null;
+  const set = withDescendants(plan.elements, ids);
+  const elements = plan.elements.filter((e) => set.has(e.id)).map((e) => ({ ...e }));
+  if (!elements.length) return null;
+  return { elements, roots: ids.filter((id) => set.has(id)), level: elements[0].level };
+}
+
+/**
+ * Cola (Ctrl+V): ids novos, mesas com nome novo e o que estava preso continua
+ * preso à cópia. No mesmo andar, desloca `offset`; em outro andar, centra em `at`.
+ */
+export function pasteElements(
+  plan: FloorPlan,
+  clip: PlanClipboard,
+  level: string,
+  opts: { offset: number; at?: { x: number; y: number } },
+): { plan: FloorPlan; ids: string[] } {
+  const map = new Map(clip.elements.map((e) => [e.id, newId(e.kind)]));
+  let dx = opts.offset;
+  let dy = opts.offset;
+  if (level !== clip.level && opts.at) {
+    const b = boundsOf(clip.elements)!;
+    dx = opts.at.x - (b.minX + b.maxX) / 2;
+    dy = opts.at.y - (b.minY + b.maxY) / 2;
+  }
+  const copies: PlanElement[] = [];
+  for (const e of clip.elements) {
+    const c: PlanElement = { ...e, id: map.get(e.id)!, level, x: cm(e.x + dx), y: cm(e.y + dy) };
+    if (e.parent) {
+      if (map.has(e.parent)) c.parent = map.get(e.parent);
+      else delete c.parent;
+    }
+    if (c.kind === "table") c.label = nextTableName([...plan.elements, ...copies]);
+    copies.push(c);
+  }
+  return { plan: { ...plan, elements: [...plan.elements, ...copies] }, ids: clip.roots.map((id) => map.get(id)!).filter(Boolean) };
+}

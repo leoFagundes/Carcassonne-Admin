@@ -10,6 +10,7 @@ import {
   LuAlignStartVertical,
   LuCopy,
   LuImagePlus,
+  LuLibrary,
   LuLink,
   LuMove,
   LuRotateCcw,
@@ -40,6 +41,10 @@ export interface EditActions {
   detach: () => void;
   rotate: (delta: number) => void;
   select: (ids: string[]) => void;
+  /** Abre o armário de jogos no modo Jogos. */
+  organizeShelf: (id: string) => void;
+  /** Estante comum vira armário de jogos. */
+  toGameShelf: (id: string) => void;
   setPolygon: (id: string, on: boolean) => void;
   uploadBackground: (file: File) => void;
   updateBackground: (patch: Partial<LevelBackground>) => void;
@@ -410,6 +415,21 @@ function Inspector({ el, plan, actions }: { el: PlanElement; plan: FloorPlan; ac
         <button type="button" className="self-start text-left text-[11px] text-primary-gold/50 underline-offset-2 hover:underline" onClick={() => up({ seats: seatsHint })}>
           Pelo tamanho ({formatMeters(el.w)} × {formatMeters(el.d)}{round ? ", redonda" : ""}), cabem cerca de {seatsHint} lugares. Usar esse número.
         </button>
+      )}
+
+      {el.kind === "gameshelf" && (
+        <div className="flex flex-col gap-1.5 rounded-lg border border-primary-gold/25 bg-primary-gold/[0.05] p-2.5 text-[11px] text-primary-gold/70">
+          Armário de jogos: em <strong>Jogos</strong>, ele abre de frente para guardar os jogos e dar etiquetas às prateleiras. A
+          frente do móvel é o lado com a linha clara.
+          <Btn tone="primary" className="self-start" onClick={() => actions.organizeShelf(el.id)}>
+            <LuLibrary size={13} /> Organizar os jogos
+          </Btn>
+        </div>
+      )}
+      {(el.kind === "shelf" || el.kind === "cabinet") && (
+        <Btn className="self-start" onClick={() => actions.toGameShelf(el.id)} title="Passa a guardar jogos (com prateleiras, gaveta e etiquetas)">
+          <LuLibrary size={13} /> Transformar em armário de jogos
+        </Btn>
       )}
 
       {plan.levels.length > 1 && (

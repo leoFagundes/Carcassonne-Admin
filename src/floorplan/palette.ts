@@ -46,7 +46,11 @@ export const PALETTE: PaletteItem[] = [
   P("armchair", "Poltrona", "lugares", "chair", 0.8, 0.8, { variant: "armchair" }),
 
   // Móveis e equipamentos
-  P("shelf-games", "Estante de jogos", "moveis", "shelf", 1.8, 0.45, { variant: "bookcase", tags: "jogos" }),
+  P("gs-hutch-open", "Armário de jogos alto", "moveis", "gameshelf", 0.85, 0.45, { variant: "hutch-open", tags: "estante jogos prateleira gaveta" }),
+  P("gs-hutch-doors", "Armário de jogos alto (portas)", "moveis", "gameshelf", 0.85, 0.45, { variant: "hutch-doors", tags: "estante jogos portas" }),
+  P("gs-cubes", "Torre de nichos de jogos", "moveis", "gameshelf", 0.45, 0.35, { variant: "cubes", tags: "estante jogos cubos" }),
+  P("gs-lowcab", "Armário baixo de jogos", "moveis", "gameshelf", 1, 0.5, { variant: "lowcab", tags: "jogos portas gaveta" }),
+  P("shelf-games", "Estante (decoração)", "moveis", "shelf", 1.8, 0.45, { variant: "bookcase", tags: "jogos" }),
   P("shelf-doors", "Armário com portas", "moveis", "shelf", 1.2, 0.5, { variant: "doors" }),
   P("shelf-cubes", "Nichos", "moveis", "shelf", 0.8, 0.4, { variant: "cubes" }),
   P("shelf-black", "Estante preta", "moveis", "shelf", 0.6, 0.4, { variant: "black" }),
@@ -133,6 +137,10 @@ export function createFromPalette(item: PaletteItem, level: string, at: { x: num
   if (item.kind === "room") el.label = "Novo ambiente";
   if (item.kind === "text") el.label = "Texto";
   if (item.kind === "stage") el.label = "Palco";
+  if (item.kind === "gameshelf") {
+    const n = els.filter((e) => e.kind === "gameshelf").length + 1;
+    el.label = `Armário ${n}`;
+  }
   return el;
 }
 

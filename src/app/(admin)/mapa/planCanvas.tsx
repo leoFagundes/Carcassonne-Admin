@@ -69,6 +69,9 @@ export interface PlanCanvasProps {
   tableNotes?: ReadonlyMap<string, string>;
   /** Botões extras na coluna do zoom (ex.: régua). */
   extraControls?: React.ReactNode;
+  /** Armários de jogos: cores das etiquetas e o texto do selo (ex.: "24 jogos"). */
+  shelfColors?: ReadonlyMap<string, string[]>;
+  shelfBadges?: ReadonlyMap<string, string>;
 }
 
 interface View {
@@ -117,6 +120,8 @@ export default function PlanCanvas(props: PlanCanvasProps) {
     measure,
     tableNotes,
     extraControls,
+    shelfColors,
+    shelfBadges,
   } = props;
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -328,6 +333,7 @@ export default function PlanCanvas(props: PlanCanvasProps) {
       (el.kind === "room" && el.label && !el.hideLabel) ||
       (el.kind === "table" && el.label) ||
       (el.kind === "text" && el.label) ||
+      (el.kind === "gameshelf" && el.label) ||
       (el.kind !== "room" && el.kind !== "table" && el.kind !== "text" && KINDS[el.kind].showsLabel && el.label && mode === "edit"),
   );
 
@@ -378,7 +384,7 @@ export default function PlanCanvas(props: PlanCanvasProps) {
             {levelEls.map((el) => {
               const interactive = !backgroundDraggable && !pointMode && isInteractive(el);
               const state = mode === "day" && el.kind === "table" ? tableStates?.get(el.id) : undefined;
-              const dim = mode === "day" && el.kind !== "table" && el.kind !== "room" && !KINDS[el.kind].structural;
+              const dim = mode === "day" && el.kind !== "table" && el.kind !== "room" && el.kind !== "gameshelf" && !KINDS[el.kind].structural;
               return (
                 <g
                   key={el.id}
@@ -388,7 +394,7 @@ export default function PlanCanvas(props: PlanCanvasProps) {
                   pointerEvents={interactive ? "visiblePainted" : "none"}
                   opacity={background && el.kind === "room" ? 0.4 : undefined}
                 >
-                  <Shape2D el={el} state={state} dim={dim} />
+                  <Shape2D el={el} state={state} dim={dim} colors={el.kind === "gameshelf" ? shelfColors?.get(el.id) : undefined} />
                 </g>
               );
             })}
@@ -515,6 +521,44 @@ export default function PlanCanvas(props: PlanCanvasProps) {
                             {badge}
                           </text>
                         </g>
+                      )}
+                    </g>
+                  );
+                }
+                if (el.kind === "gameshelf") {
+                  const badge = shelfBadges?.get(el.id);
+                  const fs = px(11);
+                  return (
+                    <g key={`l-${el.id}`}>
+                      <text
+                        x={el.x * U}
+                        y={el.y * U - (badge ? fs * 0.6 : 0)}
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        fontSize={fs}
+                        fontWeight={800}
+                        fill="#fff6e2"
+                        stroke="#14110e"
+                        strokeWidth={px(3)}
+                        paintOrder="stroke"
+                      >
+                        {el.label}
+                      </text>
+                      {badge && (
+                        <text
+                          x={el.x * U}
+                          y={el.y * U + fs * 0.75}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fontSize={px(9.5)}
+                          fontWeight={700}
+                          fill="#e6c56b"
+                          stroke="#14110e"
+                          strokeWidth={px(3)}
+                          paintOrder="stroke"
+                        >
+                          {badge}
+                        </text>
                       )}
                     </g>
                   );

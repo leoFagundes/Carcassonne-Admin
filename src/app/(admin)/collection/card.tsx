@@ -1,6 +1,7 @@
 "use client";
 
-import { LuChevronRight, LuClock, LuEye, LuEyeOff, LuPencil, LuSparkles, LuTag, LuUsers } from "react-icons/lu";
+import Link from "next/link";
+import { LuChevronRight, LuClock, LuEye, LuEyeOff, LuMapPin, LuPencil, LuSparkles, LuTag, LuUsers } from "react-icons/lu";
 import type { BoardgameType } from "@/types";
 import ShowcaseImage from "@/components/showcase/showcaseImage";
 import { Highlight } from "@/components/showcase/search";
@@ -22,8 +23,11 @@ export default function Card({
   words,
   onEdit,
   onUpdate,
+  location,
 }: {
   game: BoardgameType;
+  /** Onde o jogo fica guardado (armários do Mapa). */
+  location?: string[];
   view: CatalogView;
   /** Palavras buscadas (destacadas no nome). */
   words: string[];
@@ -62,6 +66,19 @@ export default function Card({
     </span>
   );
 
+  // Onde fica guardado: abre o armário no Mapa
+  const where = location?.length ? (
+    <Link
+      href={`/mapa?jogo=${encodeURIComponent(game.id ?? "")}`}
+      onClick={(e) => e.stopPropagation()}
+      title="Ver no mapa"
+      className="flex min-w-0 items-center gap-1 text-[10.5px] font-semibold text-emerald-300/85 hover:text-emerald-300 hover:underline"
+    >
+      <LuMapPin size={11} className="shrink-0" />
+      <span className="truncate">{location.join(" e ")}</span>
+    </Link>
+  ) : null;
+
   if (view === "list") {
     return (
       <article
@@ -88,6 +105,7 @@ export default function Card({
             )}
           </span>
           {details}
+          {where}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">{toggles}</div>
         <LuChevronRight size={16} className="text-primary-gold/30 group-hover:text-primary-gold/70 shrink-0" />
@@ -123,6 +141,7 @@ export default function Card({
           <Highlight text={game.name} words={words} />
         </span>
         {details}
+        {where}
       </div>
       <div className="flex items-center gap-1.5 p-2.5">
         {toggles}
