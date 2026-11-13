@@ -68,6 +68,8 @@ import FreelancerRepository from "@/services/repositories/FreelancerRepository";
 import DayNoteRepository from "@/services/repositories/DayNoteRepository";
 import GeneralConfigsRepository from "@/services/repositories/GeneralConfigsRepository ";
 import PrintModal from "./printModal";
+import ConstructionGate from "@/components/constructionGate";
+import { MAP_GATE_KEY } from "../mapa/gate";
 import { FiX } from "react-icons/fi";
 import { useSiteTheme } from "@/components/siteTheme/siteThemeContext";
 
@@ -826,10 +828,17 @@ export default function Rerserve() {
     <div className="flex flex-col gap-5 w-full h-full overflow-y-auto">
       {loading && <LoaderFullscreen />}
       {quickMapOpen && (
-        <QuickMap
-          date={`${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`}
-          onClose={() => setQuickMapOpen(false)}
-        />
+        <ConstructionGate
+          title="Mapa do pub"
+          description="O mapa está em desenvolvimento e ainda não está disponível."
+          storageKey={MAP_GATE_KEY}
+          onCancel={() => setQuickMapOpen(false)}
+        >
+          <QuickMap
+            date={`${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`}
+            onClose={() => setQuickMapOpen(false)}
+          />
+        </ConstructionGate>
       )}
 
       {/* Header */}
