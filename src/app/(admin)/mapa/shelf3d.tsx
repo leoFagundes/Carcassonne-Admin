@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo } from "react";
 import * as THREE from "three";
-import { CHEST, CUBES, HUTCH, LOWCAB, POUF, shelfModel, shelfSlots, UNDERSTAIR, understairTop } from "@/floorplan/shelves";
+import { CHEST, CUBES, HUTCH, LOWCAB, POUF, shelfModel, shelfSlots, UNDERSTAIR, understairDoor } from "@/floorplan/shelves";
 import type { PlanElement } from "@/floorplan/types";
 import { B, Ball, mat, RB } from "./mesh3d";
 
@@ -120,7 +120,7 @@ function ChestModel({ el }: { el: PlanElement }) {
   );
 }
 
-/** Armário embaixo da escada: corpo com o teto inclinado e três portas de correr de alturas diferentes. */
+/** Armário embaixo da escada: parede com o teto inclinado e uma porta de correr no lado alto. */
 function UnderstairModel({ el }: { el: PlanElement }) {
   const { w, d } = el;
   const U = UNDERSTAIR;
@@ -136,38 +136,33 @@ function UnderstairModel({ el }: { el: PlanElement }) {
     return g;
   }, [w, d, U.height, U.low]);
   useEffect(() => () => geo.dispose(), [geo]);
-  const cw = w / 3;
   const slope = Math.atan2(U.height - U.low, w);
+  const door = understairDoor(w);
+  const dx = -w / 2 + door.x0 + door.w / 2;
+  const z = d / 2;
   return (
     <group>
-      <mesh geometry={geo} material={mat(0x8a5a32, { map: "grain", roughness: 0.75 })} castShadow receiveShadow />
+      {/* A parede embaixo da escada (reboco claro) */}
+      <mesh geometry={geo} material={mat(0xb7ae9f, { roughness: 0.95 })} castShadow receiveShadow />
       {/* Rodapé */}
-      <B s={[w + 0.01, U.base, 0.02]} p={[0, U.base / 2, d / 2 + 0.006]} c={0x5e3d22} />
+      <B s={[w + 0.01, U.base, 0.02]} p={[0, U.base / 2, z + 0.006]} c={0x5e3d22} />
       {/* Acabamento no alto, seguindo a escada */}
       <B s={[Math.hypot(w, U.height - U.low) + 0.02, 0.04, d + 0.04]} p={[0, (U.low + U.height) / 2, 0]} rot={[0, 0, slope]} c={0x5e3d22} />
-      {/* Trilho de baixo (duas canaletas) */}
-      <B s={[w - 0.02, 0.025, 0.07]} p={[0, U.base + 0.0125, d / 2 + 0.035]} c={0x9a9a9e} o={{ metalness: 0.5, roughness: 0.4 }} />
-      {/* Portas de correr: alternam entre o trilho da frente e o de trás e se sobrepõem um pouco */}
-      {[0, 1, 2].map((i) => {
-        const x0 = -w / 2 + cw * i;
-        const top = understairTop(w, cw * i) - U.frame - 0.02;
-        const h = top - U.base - 0.03;
-        const pw = cw + (i === 1 ? 0.06 : 0.01);
-        const z = d / 2 + (i === 1 ? 0.018 : 0.05);
-        const pullX = x0 + cw / 2 + (i === 0 ? cw / 2 - 0.08 : i === 2 ? -cw / 2 + 0.08 : 0);
-        const y = U.base + 0.025 + h / 2;
-        return (
-          <group key={i}>
-            <B s={[pw - 0.01, h, 0.022]} p={[x0 + cw / 2, y, z]} c={i === 1 ? 0x93643a : 0x9a6a3c} o={{ map: "grain", roughness: 0.7 }} />
-            {/* Moldura fina nas bordas da folha */}
-            {[-1, 1].map((sx) => (
-              <B key={sx} s={[0.02, h, 0.026]} p={[x0 + cw / 2 + sx * (pw / 2 - 0.015), y, z]} c={0x6e4727} />
-            ))}
-            {/* Puxador embutido (cavidade) */}
-            <B s={[0.03, Math.min(0.22, h * 0.3), 0.006]} p={[pullX, U.base + 0.025 + Math.min(0.95, h * 0.5), z + 0.012]} c={0x241810} o={{ roughness: 0.9 }} />
-          </group>
-        );
-      })}
+      {/* Porta de correr: batente, trilho de cima e a folha de madeira */}
+      <group>
+        {[-1, 1].map((sx) => (
+          <B key={sx} s={[0.05, door.h + 0.05, 0.03]} p={[dx + sx * (door.w / 2 + 0.025), (door.h + 0.05) / 2, z + 0.012]} c={0x5e3d22} />
+        ))}
+        <B s={[door.w + 0.1, 0.05, 0.03]} p={[dx, door.h + 0.05, z + 0.012]} c={0x5e3d22} />
+        <B s={[door.w, 0.03, 0.035]} p={[dx, door.h + 0.012, z + 0.012]} c={0x9a9a9e} o={{ metalness: 0.5, roughness: 0.4 }} />
+        <B s={[door.w - 0.01, door.h - 0.01, 0.03]} p={[dx, door.h / 2, z + 0.016]} c={0x9a6a3c} o={{ map: "grain", roughness: 0.7 }} />
+        {/* Tábuas verticais da folha */}
+        {[1, 2, 3].map((k) => (
+          <B key={k} s={[0.006, door.h - 0.06, 0.004]} p={[dx - door.w / 2 + (door.w * k) / 4, door.h / 2, z + 0.032]} c={0x6e4727} />
+        ))}
+        {/* Puxador embutido, do lado que a porta corre */}
+        <B s={[0.035, Math.min(0.24, door.h * 0.2), 0.006]} p={[dx - door.w / 2 + 0.08, Math.min(1.0, door.h * 0.55), z + 0.033]} c={0x241810} o={{ roughness: 0.9 }} />
+      </group>
     </group>
   );
 }

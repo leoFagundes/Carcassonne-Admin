@@ -16,6 +16,7 @@ import {
   shelfSlots,
   SHELF_MODELS,
   UNDERSTAIR,
+  understairDoor,
   understairTop,
   slotForStorage,
   suggestSlotLabel,
@@ -79,14 +80,27 @@ describe("modelos", () => {
     expect(SHELF_MODELS.pouf1.seat && SHELF_MODELS.pouf3.seat).toBe(true);
     expect(shelfSlots({ variant: "chest", w: 0.9 }).map((s) => s.id)).toEqual(["in"]);
   });
-  it("embaixo da escada: portas baixa (1), do meio (2) e alta (3), abaixo do teto inclinado", () => {
+  it("embaixo da escada: 3 prateleiras grandes, abaixo do teto inclinado, a de baixo a mais comprida", () => {
     const w = 2.4;
     const slots = shelfSlots({ variant: "understair", w });
-    expect(slots.map((s) => s.id)).toEqual(["a1", "b1", "b2", "c1", "c2", "c3"]);
+    expect(slots.map((s) => s.id)).toEqual(["p1", "p2", "p3"]);
+    expect(slots.map((s) => s.label)).toEqual(["Prateleira de cima", "Prateleira do meio", "Prateleira de baixo"]);
     for (const s of slots) {
       // O canto de cima à esquerda (o mais baixo do teto) fica abaixo da escada
       expect(UNDERSTAIR.height - s.y).toBeLessThanOrEqual(understairTop(w, s.x) + 1e-9);
+      expect(s.x + s.w).toBeLessThanOrEqual(w + 1e-9);
     }
+    // De cima para baixo, sem se sobrepor, e cada uma mais comprida que a de cima
+    for (let i = 1; i < slots.length; i++) {
+      expect(slots[i].y).toBeGreaterThanOrEqual(slots[i - 1].y + slots[i - 1].h - 1e-9);
+      expect(slots[i].w).toBeGreaterThan(slots[i - 1].w);
+    }
+    // Uma porta só, no lado alto, abaixo da escada
+    const door = understairDoor(w);
+    expect(door.x0 + door.w).toBeLessThanOrEqual(w);
+    expect(door.h).toBeLessThan(understairTop(w, door.x0));
+    // Mesmo estreito, as prateleiras continuam com tamanho
+    for (const s of shelfSlots({ variant: "understair", w: 0.8 })) expect(s.w).toBeGreaterThan(0.1);
     // Os ids não mudam com a largura (redimensionar não perde jogos)
     expect(shelfSlots({ variant: "understair", w: 1.5 }).map((s) => s.id)).toEqual(slots.map((s) => s.id));
   });

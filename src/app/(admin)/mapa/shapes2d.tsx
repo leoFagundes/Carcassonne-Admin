@@ -2,6 +2,7 @@ import React from "react";
 import { variantOf } from "@/floorplan/catalog";
 import type { PlanElement, TableState } from "@/floorplan/types";
 import { STATE_META } from "@/floorplan/day";
+import { understairDoor } from "@/floorplan/shelves";
 
 /** A planta 2D é desenhada em centímetros (texto pequeno em metros some em alguns navegadores). */
 export const U = 100;
@@ -365,16 +366,25 @@ export function Shape2D({
       if (v === "understair")
         return (
           <g opacity={op}>
-            <rect x={x0} y={y0} width={w} height={d} rx={2} fill="#8a5a32" stroke="#2a1b10" strokeWidth={2} />
+            <rect x={x0} y={y0} width={w} height={d} rx={2} fill="#a39b8e" stroke="#2a1b10" strokeWidth={2} />
             {/* Teto inclinado: baixo à esquerda, alto à direita */}
             {Array.from({ length: 6 }, (_, i) => (
               <line key={i} x1={x0 + (w * (i + 1)) / 7} y1={y0 + 3} x2={x0 + (w * (i + 1)) / 7} y2={-y0 - 3} stroke="#2a1b10" strokeOpacity={0.12 + i * 0.07} strokeWidth={1.4} />
             ))}
-            {[1, 2].map((i) => (
-              <line key={i} x1={x0 + (w * i) / 3} y1={-y0 - 10} x2={x0 + (w * i) / 3} y2={-y0} stroke="#f3e2bd" strokeOpacity={0.6} strokeWidth={1.5} />
-            ))}
             {band}
             <line x1={x0} y1={-y0 - 1} x2={-x0} y2={-y0 - 1} stroke="#f3e2bd" strokeWidth={3} />
+            {/* A porta de correr (lado alto), com a seta de para onde ela corre */}
+            {(() => {
+              const dr = understairDoor(el.w);
+              const a = x0 + dr.x0 * U;
+              const b = a + dr.w * U;
+              return (
+                <g>
+                  <rect x={a} y={-y0 - 5} width={b - a} height={7} fill="#5e3d22" stroke="#f3e2bd" strokeWidth={1.2} />
+                  <path d={`M ${b - 6} ${-y0 - 13} L ${a + 4} ${-y0 - 13} m 6 -4 l -6 4 l 6 4`} fill="none" stroke="#f3e2bd" strokeOpacity={0.7} strokeWidth={1.4} />
+                </g>
+              );
+            })()}
           </g>
         );
       const wood = v === "cubes" ? "#b07f4c" : v === "lowcab" ? "#7a4f2c" : "#9a6a3c";

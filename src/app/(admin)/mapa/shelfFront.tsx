@@ -10,6 +10,8 @@ import {
   LOWCAB,
   POUF,
   UNDERSTAIR,
+  understairDoor,
+  understairLevels,
   understairTop,
   shelfCount,
   shelfModel,
@@ -80,8 +82,10 @@ function FrontDrawing({ el }: { el: PlanElement }) {
   if (m.id === "understair") {
     const S = UNDERSTAIR;
     const yTop = (x: number) => H - understairTop(el.w, x / U) * U; // x em cm
-    const cw = w / 3;
     const steps = 7;
+    const f = S.frame * U;
+    const door = understairDoor(el.w);
+    const levels = understairLevels(el.w);
     // Degraus por cima do teto inclinado
     const pts: string[] = [`0,${yTop(0)}`];
     for (let k = 0; k < steps; k++) {
@@ -92,25 +96,28 @@ function FrontDrawing({ el }: { el: PlanElement }) {
     return (
       <g>
         <polygon points={pts.join(" ")} fill="#4a3424" stroke="#d8c39b" strokeOpacity={0.35} strokeWidth={1} />
-        <polygon points={`0,${yTop(0)} ${w},${yTop(w)} ${w},${H} 0,${H}`} fill="#8a5a32" stroke="#3a2412" strokeWidth={1.2} />
-        {[0, 1, 2].map((i) => {
-          const x0 = cw * i + S.frame * U;
-          const top = yTop(cw * i) + S.frame * U;
-          return <rect key={i} x={x0} y={top} width={cw - S.frame * 2 * U} height={H - S.base * U - top} fill="#4a2f1a" />;
-        })}
-        {/* Prateleiras de dentro (a parte do meio tem 2 espaços; a alta, 3) */}
-        {[1, 2].map((i) => {
-          const n = i + 1;
-          const x0 = cw * i + S.frame * U;
-          const top = yTop(cw * i) + S.frame * U + 2;
-          const h = (H - S.base * U - top) / n;
-          return Array.from({ length: n - 1 }, (_, k) => (
-            <rect key={`${i}-${k}`} x={x0} y={top + h * (k + 1) - 1.5} width={cw - S.frame * 2 * U} height={2.5} fill="#a87444" />
-          ));
+        <polygon points={`0,${yTop(0)} ${w},${yTop(w)} ${w},${H} 0,${H}`} fill="#b7ae9f" stroke="#5a5048" strokeWidth={1.2} />
+        {/* Dentro: o vão embaixo da escada */}
+        <polygon points={`${f},${yTop(f) + f} ${w - f},${yTop(w - f) + f} ${w - f},${H - S.base * U} ${f},${H - S.base * U}`} fill="#4a2f1a" />
+        {/* As 3 prateleiras grandes: as de cima encurtam com a escada */}
+        {levels.slice(1).map((l, k) => {
+          // A tábua fica em cima do vão de baixo e começa onde ele começa
+          const x0 = levels[k].x0 * U - f;
+          return <rect key={k} x={x0} y={H - l.bottom * U} width={w - f - x0} height={S.board * U} fill="#a87444" />;
         })}
         <rect x={0} y={H - S.base * U} width={w} height={S.base * U} fill="#5e3d22" />
-        {/* Trilho das portas de correr */}
-        <rect x={2} y={H - S.base * U - 1} width={w - 4} height={2.5} fill="#9a9a9e" />
+        {/* Onde fica a porta de correr (aberta) */}
+        <rect
+          x={door.x0 * U}
+          y={H - door.h * U}
+          width={door.w * U}
+          height={door.h * U}
+          fill="none"
+          stroke="#e6c56b"
+          strokeOpacity={0.45}
+          strokeWidth={1.2}
+          strokeDasharray="5 4"
+        />
       </g>
     );
   }

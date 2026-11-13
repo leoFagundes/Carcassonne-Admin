@@ -53,7 +53,7 @@ export const PALETTE: PaletteItem[] = [
   P("gs-hutch-doors", "Armário de jogos alto (portas)", "moveis", "gameshelf", 0.85, 0.45, { variant: "hutch-doors", tags: "estante jogos portas" }),
   P("gs-cubes", "Torre de nichos de jogos", "moveis", "gameshelf", 0.45, 0.35, { variant: "cubes", tags: "estante jogos cubos" }),
   P("gs-lowcab", "Armário baixo de jogos", "moveis", "gameshelf", 1, 0.5, { variant: "lowcab", tags: "jogos portas gaveta" }),
-  P("gs-understair", "Armário embaixo da escada", "moveis", "gameshelf", 2.4, 0.6, { variant: "understair", tags: "escada jogos portas" }),
+  P("gs-understair", "Armário embaixo da escada", "moveis", "gameshelf", 2.4, 0.6, { variant: "understair", tags: "escada jogos porta de correr prateleiras" }),
   P("gs-pouf1", "Pufe baú (1 lugar)", "lugares", "gameshelf", 0.5, 0.5, { variant: "pouf1", tags: "pufe bau jogos abre assento sala" }),
   P("gs-pouf3", "Pufe baú (3 lugares)", "lugares", "gameshelf", 1.5, 0.5, { variant: "pouf3", tags: "pufe bau jogos abre assento sala" }),
   P("gs-chest", "Baú de jogos", "moveis", "gameshelf", 0.9, 0.5, { variant: "chest", tags: "bau caixa jogos" }),

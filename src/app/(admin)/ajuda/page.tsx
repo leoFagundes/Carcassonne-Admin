@@ -300,7 +300,7 @@ const helpCards: HelpCard[] = [
     category: "mapa",
     title: "Armário embaixo da escada",
     description:
-      "Fecha com portas de correr e, por dentro, tem três partes: a baixa (1 prateleira), a do meio (2) e a alta (3), seguindo a inclinação da escada. Na vista de frente, o lado baixo fica à esquerda; se no pub a escada sobe para o outro lado, gire o armário 180° na planta. Pode mudar a largura à vontade: as prateleiras acompanham e os jogos não se perdem.",
+      "É uma parede com uma porta de correr (no lado alto) e, por dentro, três prateleiras grandes de ponta a ponta: a de baixo é a mais comprida e as de cima encurtam, seguindo a inclinação da escada. Na vista de frente, o lado baixo fica à esquerda; se no pub a escada sobe para o outro lado, gire o armário 180° na planta. Pode mudar a largura à vontade: as prateleiras acompanham e os jogos não se perdem.",
   },
   {
     category: "mapa",
