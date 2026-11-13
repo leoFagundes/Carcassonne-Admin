@@ -2,9 +2,9 @@
 
 import React, { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { CameraControls, CameraControlsImpl } from "@react-three/drei";
+import { LuInfo, LuMaximize, LuMinus, LuPlus, LuRotateCcw, LuRotateCw, LuX } from "react-icons/lu";
 import * as THREE from "three";
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { variantOf } from "@/floorplan/catalog";
 import { boundsOf } from "@/floorplan/geometry";
 import { STATE_META } from "@/floorplan/day";
@@ -37,6 +37,10 @@ export interface Scene3DProps {
   shelfGames?: ReadonlyMap<string, Record<string, string[]>>;
   /** Armários em destaque (filtro por categoria). */
   shelfHighlight?: ReadonlySet<string>;
+  /** Botões no alto à esquerda (andares, de cima, paredes, nomes). */
+  toolbar?: React.ReactNode;
+  /** Botões extras na coluna da direita (ex.: tela cheia). */
+  extraControls?: React.ReactNode;
 }
 
 
@@ -541,84 +545,117 @@ const Placed = memo(function Placed({ el, ctx }: { el: PlanElement; ctx: BuildCt
 
 // ───────────────────────── câmera ─────────────────────────
 
-function CameraRig({ center, radius, topView, fitKey }: { center: THREE.Vector3; radius: number; topView: boolean; fitKey: string }) {
-  const { camera, controls, invalidate, size } = useThree();
-  useEffect(() => {
-    const c = controls as unknown as OrbitControlsImpl | null;
-    const cam = camera as THREE.PerspectiveCamera;
-    // Distância para caber a planta inteira (considerando a tela estreita do celular)
-    const aspect = size.width / Math.max(1, size.height);
-    const vFov = (cam.fov * Math.PI) / 180;
-    const fitH = radius / Math.tan(vFov / 2);
-    const fitW = radius / (Math.tan(vFov / 2) * Math.min(1, aspect));
-    const dist = Math.max(8, Math.max(fitH, fitW) * 1.3);
-    if (topView) camera.position.set(center.x, center.y + dist, center.z + 0.01);
-    else camera.position.set(center.x - dist * 0.42, center.y + dist * 0.72, center.z + dist * 0.55);
-    camera.lookAt(center);
-    if (c) {
-      c.target.copy(center);
-      c.update();
-    }
-    invalidate();
-  }, [fitKey, topView, controls]);
-  return null;
+const { ACTION } = CameraControlsImpl;
+
+/** Posição que enquadra a planta inteira (de lado ou de cima). */
+function framing(center: THREE.Vector3, radius: number, topView: boolean, fov: number, aspect: number) {
+  const vFov = (fov * Math.PI) / 180;
+  const fitH = radius / Math.tan(vFov / 2);
+  const fitW = radius / (Math.tan(vFov / 2) * Math.min(1, aspect));
+  const dist = Math.max(8, Math.max(fitH, fitW) * 1.3);
+  return topView
+    ? new THREE.Vector3(center.x, center.y + dist, center.z + 0.01)
+    : new THREE.Vector3(center.x - dist * 0.42, center.y + dist * 0.72, center.z + dist * 0.55);
 }
 
-/** Leva a câmera até a frente do armário (e de volta ao fechar), com uma curva suave. */
-function FocusRig({
-  target,
+/**
+ * Comanda a câmera: enquadra ao trocar de andar/vista, vai até a frente do
+ * armário aberto (com transição suave) e volta para onde estava ao fechar.
+ */
+function CameraDirector({
+  ctrl,
+  center,
+  radius,
+  topView,
+  fitKey,
+  focus,
   onArrive,
+  refitRef,
 }: {
-  target: { key: string; pos: THREE.Vector3; look: THREE.Vector3 } | null;
+  ctrl: React.RefObject<CameraControlsImpl | null>;
+  center: THREE.Vector3;
+  radius: number;
+  topView: boolean;
+  fitKey: string;
+  focus: { key: string; pos: THREE.Vector3; look: THREE.Vector3 } | null;
   onArrive?: () => void;
+  /** Recebe a função de reenquadrar (botão "enquadrar"). */
+  refitRef: React.MutableRefObject<() => void>;
 }) {
-  const { camera, controls, invalidate } = useThree();
-  const anim = useRef<{ fromP: THREE.Vector3; fromT: THREE.Vector3; toP: THREE.Vector3; toT: THREE.Vector3; t0: number; dur: number; done?: () => void } | null>(null);
+  const { camera, size } = useThree();
+  const first = useRef(true);
   const saved = useRef<{ p: THREE.Vector3; t: THREE.Vector3 } | null>(null);
   const arrive = useRef(onArrive);
   arrive.current = onArrive;
   const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  useEffect(() => {
-    const c = controls as unknown as OrbitControlsImpl | null;
+
+  const fit = (animate: boolean) => {
+    const c = ctrl.current;
     if (!c) return;
-    const fromP = camera.position.clone();
-    const fromT = c.target.clone();
-    if (target) {
-      if (!saved.current) saved.current = { p: fromP.clone(), t: fromT.clone() };
+    const p = framing(center, radius, topView, (camera as THREE.PerspectiveCamera).fov, size.width / Math.max(1, size.height));
+    void c.setLookAt(p.x, p.y, p.z, center.x, center.y, center.z, animate && !reduce);
+  };
+  refitRef.current = () => fit(true);
+
+  useEffect(() => {
+    if (focus) return;
+    fit(!first.current);
+    first.current = false;
+  }, [fitKey, topView, ctrl.current]);
+
+  useEffect(() => {
+    const c = ctrl.current;
+    if (!c) return;
+    if (focus) {
+      if (!saved.current) saved.current = { p: c.getPosition(new THREE.Vector3()), t: c.getTarget(new THREE.Vector3()) };
       c.enabled = false;
-      anim.current = { fromP, fromT, toP: target.pos, toT: target.look, t0: performance.now(), dur: reduce ? 1 : 900, done: () => arrive.current?.() };
+      c.smoothTime = 0.45;
+      void c.setLookAt(focus.pos.x, focus.pos.y, focus.pos.z, focus.look.x, focus.look.y, focus.look.z, !reduce).then(() => {
+        c.smoothTime = 0.2;
+        arrive.current?.();
+      });
     } else if (saved.current) {
       const back = saved.current;
       saved.current = null;
-      anim.current = {
-        fromP,
-        fromT,
-        toP: back.p,
-        toT: back.t,
-        t0: performance.now(),
-        dur: reduce ? 1 : 750,
-        done: () => {
-          c.enabled = true;
-        },
-      };
+      c.smoothTime = 0.4;
+      void c.setLookAt(back.p.x, back.p.y, back.p.z, back.t.x, back.t.y, back.t.z, !reduce).then(() => {
+        c.smoothTime = 0.2;
+        c.enabled = true;
+      });
     }
-    invalidate();
-  }, [target?.key, controls]);
-  useFrame(() => {
-    const a = anim.current;
-    const c = controls as unknown as OrbitControlsImpl | null;
-    if (!a || !c) return;
-    const k = Math.min(1, (performance.now() - a.t0) / a.dur);
-    const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
-    camera.position.lerpVectors(a.fromP, a.toP, e);
-    c.target.lerpVectors(a.fromT, a.toT, e);
-    c.update();
-    if (k >= 1) {
-      anim.current = null;
-      a.done?.();
-    } else invalidate();
-  });
+  }, [focus?.key]);
   return null;
+}
+
+/** Ajuda dos controles do 3D (mouse e toque). */
+function ControlsHelp({ onClose }: { onClose: () => void }) {
+  const rows = [
+    ["Girar a vista", "arrastar com o botão esquerdo", "arrastar com um dedo"],
+    ["Mover para os lados", "arrastar com o botão direito", "arrastar com dois dedos"],
+    ["Aproximar e afastar", "rodinha do mouse (vai na direção do ponteiro)", "pinça com dois dedos"],
+    ["Ir até um ponto", "dois cliques no chão", "dois toques no chão"],
+    ["Voltar ao começo", "botão enquadrar", "botão enquadrar"],
+  ];
+  return (
+    <div className="absolute right-14 top-2 z-10 w-[min(320px,calc(100%-4.5rem))] rounded-xl border border-primary-gold/25 bg-primary-black/95 p-3 text-xs text-primary-gold/80 shadow-card" role="dialog" aria-label="Como mexer no 3D">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="font-bold text-primary-gold">Como mexer no 3D</span>
+        <button type="button" onClick={onClose} aria-label="Fechar a ajuda" className="text-primary-gold/60 hover:text-primary-gold">
+          <LuX size={14} />
+        </button>
+      </div>
+      <ul className="flex flex-col gap-1.5">
+        {rows.map(([what, mouse, touch]) => (
+          <li key={what} className="flex flex-col">
+            <span className="font-semibold text-primary-gold">{what}</span>
+            <span className="text-[11px] text-primary-gold/60">
+              Mouse: {mouse} · Toque: {touch}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 // ───────────────────────── nomes sobre a cena ─────────────────────────
@@ -677,7 +714,23 @@ export default function Scene3D({
   onFocusArrive,
   shelfGames,
   shelfHighlight,
+  toolbar,
+  extraControls,
 }: Scene3DProps) {
+  const ctrlRef = useRef<CameraControlsImpl | null>(null);
+  const refitRef = useRef<() => void>(() => {});
+  const [help, setHelp] = React.useState(false);
+  // Mostra a ajuda sozinha na primeira vez
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem("fp-3d-help")) {
+        setHelp(true);
+        localStorage.setItem("fp-3d-help", "1");
+      }
+    } catch {
+      /* sem armazenamento: não mostra sozinha */
+    }
+  }, []);
   const wallH = highWalls ? 2.8 : 1.3;
   const gap = level === "all" ? levelHeight + 3.2 : 0;
   const shown = useMemo(() => {
@@ -797,7 +850,17 @@ export default function Scene3D({
         </directionalLight>
 
         {shown.map((l) => (
-          <group key={l.id} position={[0, offsetOf(l.id), 0]}>
+          <group
+            key={l.id}
+            position={[0, offsetOf(l.id), 0]}
+            onDoubleClick={(e) => {
+              const c = ctrlRef.current;
+              if (!c || focusShelf) return;
+              e.stopPropagation();
+              void c.moveTo(e.point.x, e.point.y, e.point.z, true);
+              void c.dollyTo(Math.max(4, c.distance * 0.6), true);
+            }}
+          >
             {visible
               .filter((e) => e.level === l.id)
               .map((el) => (
@@ -817,19 +880,73 @@ export default function Scene3D({
           </group>
         ))}
 
-        <OrbitControls
+        <CameraControls
+          ref={ctrlRef}
           makeDefault
-          enableDamping
-          dampingFactor={0.12}
-          maxPolarAngle={Math.PI * 0.47}
-          minDistance={3}
-          maxDistance={160}
-          screenSpacePanning
+          smoothTime={0.2}
+          draggingSmoothTime={0.09}
+          azimuthRotateSpeed={0.85}
+          polarRotateSpeed={0.75}
+          dollySpeed={0.7}
+          truckSpeed={1.6}
+          dollyToCursor
+          minDistance={1.5}
+          maxDistance={140}
+          minPolarAngle={0}
+          maxPolarAngle={Math.PI * 0.48}
+          mouseButtons={{ left: ACTION.ROTATE, middle: ACTION.DOLLY, right: ACTION.TRUCK, wheel: ACTION.DOLLY }}
+          touches={{ one: ACTION.TOUCH_ROTATE, two: ACTION.TOUCH_DOLLY_TRUCK, three: ACTION.TOUCH_TRUCK }}
         />
-        <CameraRig center={center} radius={radius} topView={topView} fitKey={fitKey} />
-        <FocusRig target={focusTarget} onArrive={onFocusArrive} />
+        <CameraDirector
+          ctrl={ctrlRef}
+          center={center}
+          radius={radius}
+          topView={topView}
+          fitKey={fitKey}
+          focus={focusTarget}
+          onArrive={onFocusArrive}
+          refitRef={refitRef}
+        />
         <LabelProjector labels={labels} nodes={nodes} />
       </Canvas>
+
+      {toolbar && !focusShelf && <div className="absolute left-2 top-2 z-10 flex max-w-[calc(100%-4rem)] flex-wrap gap-1.5">{toolbar}</div>}
+      {!focusShelf && (
+        <div className="absolute right-2 top-2 z-10 flex flex-col gap-1">
+          {[
+            { icon: <LuPlus size={16} />, label: "Aproximar", on: () => void ctrlRef.current?.dolly(Math.max(1, (ctrlRef.current?.distance ?? 10) * 0.25), true) },
+            { icon: <LuMinus size={16} />, label: "Afastar", on: () => void ctrlRef.current?.dolly(-Math.max(1, (ctrlRef.current?.distance ?? 10) * 0.3), true) },
+            { icon: <LuRotateCcw size={15} />, label: "Girar para a esquerda", on: () => void ctrlRef.current?.rotate(-Math.PI / 4, 0, true) },
+            { icon: <LuRotateCw size={15} />, label: "Girar para a direita", on: () => void ctrlRef.current?.rotate(Math.PI / 4, 0, true) },
+            { icon: <LuMaximize size={15} />, label: "Enquadrar tudo", on: () => refitRef.current() },
+          ].map((btn) => (
+            <button
+              key={btn.label}
+              type="button"
+              title={btn.label}
+              aria-label={btn.label}
+              onClick={btn.on}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary-gold/20 bg-primary-black/85 text-primary-gold/80 transition-colors hover:border-primary-gold/50 hover:text-primary-gold"
+            >
+              {btn.icon}
+            </button>
+          ))}
+          <button
+            type="button"
+            title="Como mexer no 3D"
+            aria-label="Como mexer no 3D"
+            aria-pressed={help}
+            onClick={() => setHelp(!help)}
+            className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${
+              help ? "border-primary-gold bg-primary-gold text-primary-black" : "border-primary-gold/20 bg-primary-black/85 text-primary-gold/80 hover:border-primary-gold/50 hover:text-primary-gold"
+            }`}
+          >
+            <LuInfo size={15} />
+          </button>
+          {extraControls}
+        </div>
+      )}
+      {help && !focusShelf && <ControlsHelp onClose={() => setHelp(false)} />}
 
       {/* Nomes: DOM comum por cima do canvas */}
       <div className="pointer-events-none absolute inset-0">

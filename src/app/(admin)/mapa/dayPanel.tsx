@@ -255,7 +255,11 @@ export default function DayPanel({
       </Section>
 
       {/* Sincronização */}
-      <Section title="Reservas e mesas">
+      <Section
+        title="Reservas e mesas"
+        collapse={{ id: "day-sync", defaultOpen: false }}
+        summary={`${syncOn ? "sincronizando com as reservas" : "sincronização desligada"} · ${stayLabel(settings.stayMinutes)}`}
+      >
         <label className="flex items-start justify-between gap-3 text-xs text-primary-gold/80">
           <span className="flex flex-col gap-0.5">
             <span className="flex items-center gap-1.5 font-semibold text-primary-gold">
@@ -470,7 +474,7 @@ export default function DayPanel({
 
       {/* Todas as reservas do dia */}
       {allReserves.length > 0 && (
-        <Section title={`Reservas do dia (${allReserves.length})`}>
+        <Section title={`Reservas do dia (${allReserves.length})`} collapse={{ id: "day-list", defaultOpen: true }} summary={`${totalPeople} pessoas`}>
           <ul className="flex flex-col divide-y divide-primary-gold/10">
             {allReserves.map((r) => {
               const units = unitOfReserve(r);
@@ -598,7 +602,11 @@ function ArrangementSection({
   const [name, setName] = useState("");
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   return (
-    <Section title="Arrumação do dia">
+    <Section
+      title="Arrumação do dia"
+      collapse={{ id: "day-arr", defaultOpen: false }}
+      summary={templates.length ? `${templates.length} ${templates.length === 1 ? "modelo" : "modelos"}` : "copiar de outro dia ou usar modelo"}
+    >
       <span className="text-[11px] leading-snug text-primary-gold/50">
         Posições, nomes, mesas retiradas e mesas juntadas à mão. Copiar ou aplicar troca a arrumação deste dia (as reservas e os estados
         continuam).
@@ -707,7 +715,7 @@ function UnitCard({
   const autoField = unit.reservations[0]?.table ?? unit.dayReservations[0]?.table;
 
   return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-primary-gold/35 bg-secondary-black/60 p-3">
+    <section id="fp-unit-card" className="flex scroll-mt-3 flex-col gap-3 rounded-2xl border border-primary-gold/35 bg-secondary-black/60 p-3">
       <header className="flex items-start gap-2">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h3 className="truncate text-base font-bold text-primary-gold">{unitTitle(unit)}</h3>

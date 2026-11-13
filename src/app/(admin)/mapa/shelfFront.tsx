@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { LuX } from "react-icons/lu";
+import { LuArrowRight, LuPlus, LuTrash2, LuUndo2, LuX } from "react-icons/lu";
 import {
   CUBES,
   HUTCH,
@@ -139,6 +139,7 @@ function GameTile({
   highlight,
   selected,
   onSelect,
+  onRemove,
 }: {
   g: ShelfGame;
   cat?: CatalogGame;
@@ -147,6 +148,7 @@ function GameTile({
   highlight: boolean;
   selected: boolean;
   onSelect: () => void;
+  onRemove: () => void;
 }) {
   const initials = g.name
     .split(/\s+/)
@@ -155,6 +157,7 @@ function GameTile({
     .join("")
     .toUpperCase();
   return (
+    <span className="group/tile relative shrink-0">
     <button
       type="button"
       draggable
@@ -181,6 +184,22 @@ function GameTile({
         </span>
       )}
     </button>
+    {/* Tirar com um clique (aparece ao passar o mouse) */}
+    {size >= 28 && (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+        title={`Tirar ${g.name} daqui`}
+        aria-label={`Tirar ${g.name} daqui`}
+        className="absolute -right-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full border border-[#14110e] bg-invalid-color text-white shadow group-hover/tile:flex [@media(hover:none)]:hidden"
+      >
+        <LuX size={11} />
+      </button>
+    )}
+    </span>
   );
 }
 
@@ -199,6 +218,9 @@ export default function ShelfFront({
   onSelectGame,
   onDrop,
   onClose,
+  onRemove,
+  onMove,
+  undo,
 }: {
   el: PlanElement;
   name: string;
@@ -213,6 +235,10 @@ export default function ShelfFront({
   onSelectGame: (slotId: string, key: string) => void;
   onDrop: (payload: DragPayload, toSlot: string) => void;
   onClose: () => void;
+  onRemove: (slotId: string, key: string) => void;
+  onMove: (slotId: string, key: string, toSlot: string) => void;
+  /** Última retirada, para desfazer. */
+  undo?: { text: string; run: () => void } | null;
 }) {
   const m = shelfModel(el);
   const slots = shelfSlots(el);
@@ -333,7 +359,7 @@ export default function ShelfFront({
                       <span className="truncate rounded-full bg-black/45 px-1.5 py-px text-[9px] font-semibold text-primary-gold/60">{s.label}</span>
                     )}
                   </span>
-                  <div className="flex items-end gap-[3px] overflow-hidden px-1 pb-[3px]">
+                  <div className="flex items-end gap-[3px] px-1 pb-[3px] pt-2">
                     {shown.map((g) => (
                       <GameTile
                         key={g.key}
@@ -344,13 +370,16 @@ export default function ShelfFront({
                         highlight={!!highlightGame && g.gameId === highlightGame}
                         selected={selectedGame === g.key}
                         onSelect={() => onSelectGame(s.id, g.key)}
+                        onRemove={() => onRemove(s.id, g.key)}
                       />
                     ))}
                     {extra > 0 && (
                       <span className="mb-1 shrink-0 rounded bg-black/60 px-1 py-0.5 text-[10px] font-bold text-primary-gold">+{extra}</span>
                     )}
-                    {games.length === 0 && s.kind !== "top" && s.kind !== "drawer" && hPx > 30 && (
-                      <span className="pointer-events-none mb-1 w-full text-center text-[10px] text-primary-gold/30">vazio</span>
+                    {games.length === 0 && s.kind !== "drawer" && hPx > 30 && (
+                      <span className="pointer-events-none mb-1 flex w-full items-center justify-center gap-1 text-[10px] text-primary-gold/35">
+                        <LuPlus size={11} /> {sel ? "guarde pelo painel" : "toque para guardar"}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -359,8 +388,62 @@ export default function ShelfFront({
           </div>
         )}
       </div>
+      {(() => {
+        const sl = selectedSlot ? content?.slots[selectedSlot] : undefined;
+        const game = selectedGame ? sl?.games.find((x) => x.key === selectedGame) : undefined;
+        if (!game || !selectedSlot) return null;
+        const cat = game.gameId ? catalogById.get(game.gameId) : undefined;
+        return (
+          <div className="mx-3 mb-2 flex flex-col gap-2 rounded-xl border border-primary-gold/30 bg-primary-black/95 p-2 shadow-card sm:flex-row sm:items-center">
+            <span className="flex min-w-0 items-center gap-2">
+              {cat?.image ? <img src={cat.image} alt="" className="h-9 w-7 shrink-0 rounded-[3px] object-cover" /> : <span className="h-9 w-7 shrink-0 rounded-[3px] bg-[#3a2a1e]" />}
+              <span className="min-w-0 truncate text-xs font-bold text-primary-gold">{game.name}</span>
+            </span>
+            <span className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <LuArrowRight size={13} className="shrink-0 text-primary-gold/50" />
+              {slots
+                .filter((x) => x.id !== selectedSlot)
+                .map((x) => (
+                  <button
+                    key={x.id}
+                    type="button"
+                    onClick={() => onMove(selectedSlot, game.key, x.id)}
+                    className="shrink-0 whitespace-nowrap rounded-full border border-primary-gold/25 px-2 py-0.5 text-[11px] font-semibold text-primary-gold/80 transition-colors hover:border-primary-gold/60 hover:text-primary-gold"
+                  >
+                    {x.label}
+                  </button>
+                ))}
+            </span>
+            <span className="flex shrink-0 gap-1.5">
+              <button
+                type="button"
+                onClick={() => onRemove(selectedSlot, game.key)}
+                className="flex items-center gap-1 rounded-lg border border-invalid-color/40 bg-invalid-color/10 px-2 py-1 text-[11px] font-semibold text-invalid-color hover:border-invalid-color/70"
+              >
+                <LuTrash2 size={13} /> Tirar
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectGame(selectedSlot, "")}
+                aria-label="Fechar"
+                className="flex items-center rounded-lg border border-primary-gold/20 px-2 py-1 text-primary-gold/60 hover:text-primary-gold"
+              >
+                <LuX size={13} />
+              </button>
+            </span>
+          </div>
+        );
+      })()}
+      {undo && (
+        <div role="status" className="mx-3 mb-2 flex items-center justify-between gap-2 rounded-xl border border-primary-gold/25 bg-primary-black/95 px-3 py-2 text-xs text-primary-gold/80 shadow-card">
+          <span className="min-w-0 truncate">{undo.text}</span>
+          <button type="button" onClick={undo.run} className="flex shrink-0 items-center gap-1 font-bold text-primary-gold hover:underline">
+            <LuUndo2 size={13} /> Desfazer
+          </button>
+        </div>
+      )}
       <p className="px-4 pb-3 text-center text-[11px] text-primary-gold/45">
-        Toque num espaço para ver e guardar jogos · arraste um jogo para outro espaço · Esc fecha
+        Toque num espaço para guardar · toque num jogo para mover ou tirar · arraste no computador · Esc fecha
       </p>
     </div>
   );

@@ -56,11 +56,21 @@ export function PaletteThumb({ item, size = 56 }: { item: PaletteItem; size?: nu
   );
 }
 
-/** Lista "Adicionar": miniaturas por categoria, com busca. */
+type Tab = KindCategory | "armarios";
+const TABS: { id: Tab; label: string }[] = [
+  { id: "armarios", label: "Armários de jogos" },
+  ...CATEGORY_ORDER.map((c) => ({ id: c as Tab, label: CATEGORY_LABEL[c] })),
+];
+
+/** Lista "Adicionar": miniaturas por categoria (armários de jogos primeiro), com busca. */
 export default function PaletteGrid({ onAdd }: { onAdd: (item: PaletteItem) => void }) {
-  const [cat, setCat] = useState<KindCategory>("lugares");
+  const [cat, setCat] = useState<Tab>("lugares");
   const [q, setQ] = useState("");
-  const items = q.trim() ? searchPalette(q) : PALETTE.filter((p) => p.category === cat);
+  const items = q.trim()
+    ? searchPalette(q)
+    : cat === "armarios"
+      ? PALETTE.filter((p) => p.kind === "gameshelf")
+      : PALETTE.filter((p) => p.category === cat && p.kind !== "gameshelf");
   return (
     <div className="flex flex-col gap-2.5">
       <label className="relative flex items-center">
@@ -79,19 +89,27 @@ export default function PaletteGrid({ onAdd }: { onAdd: (item: PaletteItem) => v
         )}
       </label>
       {!q.trim() && (
-        <div role="tablist" aria-label="Categorias" className="flex flex-wrap gap-1">
-          {CATEGORY_ORDER.map((c) => (
+        <div
+          role="tablist"
+          aria-label="Categorias"
+          className="-mx-3 flex gap-1 overflow-x-auto px-3 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {TABS.map((t) => (
             <button
-              key={c}
+              key={t.id}
               type="button"
               role="tab"
-              aria-selected={cat === c}
-              onClick={() => setCat(c)}
-              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-                cat === c ? "bg-primary-gold text-primary-black" : "border border-primary-gold/20 text-primary-gold/65 hover:text-primary-gold"
+              aria-selected={cat === t.id}
+              onClick={() => setCat(t.id)}
+              className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                cat === t.id
+                  ? "bg-primary-gold text-primary-black"
+                  : t.id === "armarios"
+                    ? "border border-emerald-400/40 text-emerald-200/90 hover:text-emerald-100"
+                    : "border border-primary-gold/20 text-primary-gold/65 hover:text-primary-gold"
               }`}
             >
-              {CATEGORY_LABEL[c]}
+              {t.label}
             </button>
           ))}
         </div>
@@ -99,7 +117,7 @@ export default function PaletteGrid({ onAdd }: { onAdd: (item: PaletteItem) => v
       {items.length === 0 ? (
         <p className="py-3 text-center text-xs text-primary-gold/50">Nada com esse nome. Tente outra palavra.</p>
       ) : (
-        <ul className="grid grid-cols-3 gap-1.5">
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-1.5">
           {items.map((it) => (
             <li key={it.id}>
               <button
@@ -111,7 +129,7 @@ export default function PaletteGrid({ onAdd }: { onAdd: (item: PaletteItem) => v
                 <span className="flex h-11 w-full items-center justify-center overflow-hidden rounded-lg bg-[#14110e]">
                   <PaletteThumb item={it} />
                 </span>
-                <span className="text-[10.5px] font-semibold leading-tight text-primary-gold/80 group-hover:text-primary-gold">{it.label}</span>
+                <span className="line-clamp-2 text-[10.5px] font-semibold leading-tight text-primary-gold/80 group-hover:text-primary-gold">{it.label}</span>
               </button>
             </li>
           ))}

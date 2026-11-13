@@ -131,7 +131,7 @@ export default function GamesPanel({
         </p>
       </Section>
 
-      <Section title="Categorias">
+      <Section title="Categorias" collapse={{ id: "games-cats", defaultOpen: true }} summary={`${customs.length} suas · ${types.length} da Coleção`}>
         <span className="-mt-1 text-[11px] text-primary-gold/50">Toque numa categoria para acender, no mapa, os armários que têm ela.</span>
         <div className="flex flex-wrap gap-1">
           {customs.map((c) => (

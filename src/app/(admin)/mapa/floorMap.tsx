@@ -11,6 +11,8 @@ import {
   LuInfo,
   LuLibrary,
   LuMap,
+  LuMaximize2,
+  LuMinimize2,
   LuPencilRuler,
   LuRedo2,
   LuRuler,
@@ -28,6 +30,7 @@ import {
   DEFAULT_SETTINGS,
   emptyDay,
   formatMinutes,
+  STATE_META,
   newId,
   suggestTables,
   syncChangeFor,
@@ -195,6 +198,13 @@ export default function FloorMap() {
   const centerRef = useRef<Pt>({ x: 0, y: 0 });
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [ruler, setRuler] = useState<{ on: boolean; a?: Pt; b?: Pt }>({ on: false });
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    if (!full) return;
+    const on = (e: KeyboardEvent) => e.key === "Escape" && setFull(false);
+    window.addEventListener("keydown", on);
+    return () => window.removeEventListener("keydown", on);
+  }, [full]);
 
   useEffect(() => {
     if (!savedPlan.levels.some((l) => l.id === level)) setLevel(defaultLevel(savedPlan));
@@ -984,7 +994,17 @@ export default function FloorMap() {
     if (mode !== "games" && openShelf) closeShelf();
   }, [mode]);
 
-  const slotOf = (shelfId: string, slotId: string): ShelfSlot | undefined => contents.get(shelfId)?.slots[slotId];
+  // Sempre o conteúdo mais novo (o "desfazer" roda segundos depois)
+  const contentsRef = useRef(contents);
+  contentsRef.current = contents;
+  const slotOf = (shelfId: string, slotId: string): ShelfSlot | undefined => contentsRef.current.get(shelfId)?.slots[slotId];
+  const [undoInfo, setUndoInfo] = useState<{ text: string; run: () => void } | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const offerUndo = (info: { text: string; run: () => void }) => {
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    setUndoInfo(info);
+    undoTimer.current = setTimeout(() => setUndoInfo(null), 7000);
+  };
   const shelfActions: ShelfActions = {
     setLabel: (slotId, label) => {
       if (!openShelf) return;
@@ -997,7 +1017,24 @@ export default function FloorMap() {
     },
     removeGame: (slotId, key) => {
       if (!openShelf) return;
-      run(ShelfRepository.saveSlot(openShelf, slotId, removeGameFromSlot(slotOf(openShelf, slotId), key)));
+      const shelfId = openShelf;
+      const cur = slotOf(shelfId, slotId);
+      const idx = cur?.games.findIndex((g) => g.key === key) ?? -1;
+      const game = idx >= 0 ? cur!.games[idx] : undefined;
+      if (!game) return;
+      if (selGame === key) setSelGame(null);
+      run(ShelfRepository.saveSlot(shelfId, slotId, removeGameFromSlot(cur, key)));
+      offerUndo({
+        text: `Tirou ${game.name}.`,
+        run: () => {
+          const now = slotOf(shelfId, slotId) ?? { games: [] };
+          if (game.gameId && now.games.some((g) => g.gameId === game.gameId)) return setUndoInfo(null);
+          const games = [...now.games];
+          games.splice(Math.min(idx, games.length), 0, game);
+          run(ShelfRepository.saveSlot(shelfId, slotId, { ...now, games }));
+          setUndoInfo(null);
+        },
+      });
     },
     moveGame: (from, to) => {
       if (from.shelfId === to.shelfId && from.slotId === to.slotId) return;
@@ -1059,6 +1096,79 @@ export default function FloorMap() {
       : undefined;
 
   // ───────────── o que mostrar ─────────────
+  // Celular: ao tocar numa mesa, uma barra no mapa já resolve o estado (sem rolar a tela)
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const on = () => setNarrow(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  const bottomBar =
+    narrow && mode === "day" && selectedUnit && tool.kind === "select" && !full ? (
+      <div className="flex flex-col gap-2 rounded-xl border border-primary-gold/35 bg-primary-black/95 p-2.5 shadow-card backdrop-blur">
+        <div className="flex items-center gap-2">
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-bold text-primary-gold">{unitTitle(selectedUnit)}</span>
+            <span className="block truncate text-[11px] text-primary-gold/60">
+              {STATE_META[selectedUnit.state].label} · {selectedUnit.seats} lugares
+              {selectedUnit.reservations[0] ? ` · ${selectedUnit.reservations[0].time} ${selectedUnit.reservations[0].name.split(" ")[0]}` : ""}
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={() => document.getElementById("fp-unit-card")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="shrink-0 rounded-lg border border-primary-gold/30 px-2 py-1 text-[11px] font-semibold text-primary-gold/85"
+          >
+            Detalhes
+          </button>
+          <button type="button" aria-label="Fechar" onClick={() => setSelUnit(null)} className="shrink-0 rounded-lg px-1.5 py-1 text-primary-gold/60">
+            ✕
+          </button>
+        </div>
+        <div className="grid grid-cols-4 gap-1">
+          {(
+            [
+              { id: null, label: "Auto" },
+              { id: "free", label: "Livre" },
+              { id: "occupied", label: "Ocupada" },
+              { id: "blocked", label: "Fechada" },
+            ] as { id: ManualState | null; label: string }[]
+          ).map((o) => {
+            const on = (selectedUnit.manual?.state ?? null) === o.id;
+            return (
+              <button
+                key={o.label}
+                type="button"
+                aria-pressed={on}
+                onClick={() => dayActions.setManual(selectedUnit, o.id)}
+                className={`flex items-center justify-center gap-1 rounded-lg border px-1 py-1.5 text-[11px] font-bold ${
+                  on ? "border-primary-gold bg-primary-gold/20 text-primary-gold" : "border-primary-gold/15 text-primary-gold/70"
+                }`}
+              >
+                {o.id && <span className="h-2 w-2 rounded-full" style={{ background: STATE_META[o.id].color }} />}
+                {o.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    ) : null;
+  const fullButton = (
+    <button
+      type="button"
+      title={full ? "Sair da tela cheia (Esc)" : "Mapa em tela cheia"}
+      aria-label={full ? "Sair da tela cheia" : "Mapa em tela cheia"}
+      aria-pressed={full}
+      onClick={() => setFull(!full)}
+      className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${
+        full ? "border-primary-gold bg-primary-gold text-primary-black" : "border-primary-gold/20 bg-primary-black/85 text-primary-gold/80 hover:border-primary-gold/50 hover:text-primary-gold"
+      }`}
+    >
+      {full ? <LuMinimize2 size={15} /> : <LuMaximize2 size={15} />}
+    </button>
+  );
   const plan = mode === "edit" ? draft : savedPlan;
   const elements = mode === "edit" ? draft.elements : mode === "games" ? savedPlan.elements : layout.elements;
   const levelsDesc = [...plan.levels].sort((a, b) => b.order - a.order);
@@ -1160,14 +1270,6 @@ export default function FloorMap() {
               { id: "3d", label: <><LuBox size={12} /> 3D</>, title: "Vista em 3D" },
             ]}
           />
-          {dim === "3d" && (
-            <div className="flex flex-wrap gap-1.5">
-              <Btn active={allLevels} onClick={() => setAllLevels(!allLevels)}>Todos os andares</Btn>
-              <Btn active={topView} onClick={() => setTopView(!topView)}>De cima</Btn>
-              <Btn active={highWalls} onClick={() => setHighWalls(!highWalls)}>Paredes altas</Btn>
-              <Btn active={labels3d} onClick={() => setLabels3d(!labels3d)}>Nomes</Btn>
-            </div>
-          )}
           {levelSummary && !(dim === "3d" && allLevels) && (
             <span className="text-[11px] text-primary-gold/50">
               {levelSummary.tables} mesas · {levelSummary.seats} lugares neste andar
@@ -1224,7 +1326,13 @@ export default function FloorMap() {
 
       {/* Mapa e painel */}
       <div className="flex flex-col gap-3 lg:min-h-0 lg:flex-1 lg:flex-row">
-        <div className="relative h-[62dvh] min-h-[340px] lg:h-auto lg:min-h-0 lg:flex-1">
+        <div
+          className={
+            full
+              ? "fixed inset-0 z-[70] bg-primary-black p-2 [padding-bottom:max(0.5rem,env(safe-area-inset-bottom))] [padding-top:max(0.5rem,env(safe-area-inset-top))]"
+              : "relative h-[62dvh] min-h-[340px] lg:h-auto lg:min-h-0 lg:flex-1"
+          }
+        >
           {!loaded ? (
             <CanvasMessage>Carregando a planta…</CanvasMessage>
           ) : dim === "3d" ? (
@@ -1244,6 +1352,29 @@ export default function FloorMap() {
               onFocusArrive={() => setShelfReady(true)}
               shelfGames={shelfGamesMap}
               shelfHighlight={mode === "games" ? shelfHighlight : undefined}
+              toolbar={
+                <>
+                  {[
+                    { on: allLevels, set: () => setAllLevels(!allLevels), label: "Todos os andares" },
+                    { on: topView, set: () => setTopView(!topView), label: "De cima" },
+                    { on: highWalls, set: () => setHighWalls(!highWalls), label: "Paredes altas" },
+                    { on: labels3d, set: () => setLabels3d(!labels3d), label: "Nomes" },
+                  ].map((t) => (
+                    <button
+                      key={t.label}
+                      type="button"
+                      aria-pressed={t.on}
+                      onClick={t.set}
+                      className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold backdrop-blur-sm transition-colors ${
+                        t.on ? "border-primary-gold bg-primary-gold text-primary-black" : "border-primary-gold/25 bg-primary-black/75 text-primary-gold/75 hover:text-primary-gold"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </>
+              }
+              extraControls={fullButton}
             />
           ) : (
             <PlanCanvas
@@ -1274,8 +1405,12 @@ export default function FloorMap() {
               pointMode={pointMode}
               onTapPoint={onTapPoint}
               measure={measure}
-              hint={hint}
+              hint={bottomBar ? undefined : hint}
+              legend={mode === "day" ? (["free", "reserved", "occupied", "blocked"] as TableState[]).map((st) => ({ color: STATE_META[st].color, label: STATE_META[st].label })) : undefined}
+              bottomOverlay={bottomBar}
               extraControls={
+                <>
+                {fullButton}
                 <button
                   type="button"
                   title="Régua: medir distâncias"
@@ -1293,6 +1428,7 @@ export default function FloorMap() {
                 >
                   <LuRuler size={15} />
                 </button>
+                </>
               }
               onTap={mode === "day" ? (id) => onTapDay(id) : mode === "games" ? (id) => (id ? openShelfAt(id) : closeShelf()) : onTapEdit}
               onMoveStart={mode === "day" ? (id) => onMoveStartDay(id) : mode === "games" ? () => false : onMoveStartEdit}
@@ -1321,10 +1457,16 @@ export default function FloorMap() {
               }}
               onSelectGame={(slotId, key) => {
                 setSelSlot(slotId);
-                setSelGame(key);
+                setSelGame(key || null);
               }}
               onDrop={onShelfDrop}
               onClose={closeShelf}
+              onRemove={(slotId, key) => shelfActions.removeGame(slotId, key)}
+              onMove={(slotId, key, toSlot) => {
+                shelfActions.moveGame({ shelfId: openShelfRef.el.id, slotId, key }, { shelfId: openShelfRef.el.id, slotId: toSlot });
+                setSelSlot(toSlot);
+              }}
+              undo={undoInfo}
             />
           )}
         </div>
@@ -1376,6 +1518,8 @@ export default function FloorMap() {
                 types={typesList}
                 customs={customs}
                 located={located}
+                unplaced={unplaced}
+                undo={undoInfo}
                 shelves={shelvesList}
                 contents={contents}
                 selectedSlot={selSlot}
@@ -1438,6 +1582,19 @@ export default function FloorMap() {
           )}
         </aside>
       </div>
+
+      {/* Celular: salvar sempre à mão enquanto há mudança na planta */}
+      {mode === "edit" && dirty && narrow && !full && (
+        <div className="fixed inset-x-3 bottom-3 z-[60] flex items-center gap-2 rounded-xl border border-amber-300/40 bg-primary-black/95 p-2 shadow-card backdrop-blur [margin-bottom:env(safe-area-inset-bottom)]">
+          <span className="min-w-0 flex-1 truncate pl-1 text-xs font-semibold text-amber-200">Alterações não salvas</span>
+          <Btn tone="ghost" title="Desfazer" disabled={!hist.past.length} onClick={() => setHist(undoHistory)}>
+            <LuUndo2 size={15} />
+          </Btn>
+          <Btn tone="primary" disabled={saving} onClick={() => void save()}>
+            <LuSave size={14} /> {saving ? "Salvando…" : "Salvar"}
+          </Btn>
+        </div>
+      )}
 
       <ConfirmDialog
         open={confirm === "leave"}

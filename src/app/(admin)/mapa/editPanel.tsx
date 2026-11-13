@@ -119,7 +119,7 @@ export default function EditPanel({
 
       {lv && <BackgroundSection levelName={lv.name} bg={lv.bg} tool={tool} setTool={setTool} uploading={uploading} actions={actions} />}
 
-      <Section title="Edição">
+      <Section title="Edição" collapse={{ id: "edit-help", defaultOpen: false }} summary={`${snap ? "grade de 5 cm" : "sem grade"}${lockStructure ? " · estrutura travada" : ""} · atalhos`}>
         <label className="flex items-center justify-between gap-2 text-xs text-primary-gold/75">
           Encaixar na grade de 5 cm
           <input type="checkbox" checked={snap} onChange={(e) => setSnap(e.target.checked)} className="h-4 w-4 accent-[#e6c56b]" />
@@ -159,7 +159,11 @@ function BackgroundSection({
   const measured = tool.kind === "calibrate" && tool.a && tool.b ? Math.hypot(tool.b.x - tool.a.x, tool.b.y - tool.a.y) : null;
   const realN = Number(real.replace(",", "."));
   return (
-    <Section title={`Fundo do ${levelName.toLowerCase()}`}>
+    <Section
+      title={`Fundo do ${levelName.toLowerCase()}`}
+      collapse={{ id: "edit-bg", defaultOpen: false }}
+      summary={bg ? "com imagem" : "desenhar por cima de uma foto"}
+    >
       <input
         ref={fileRef}
         type="file"

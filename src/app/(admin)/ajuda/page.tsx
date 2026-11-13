@@ -303,6 +303,25 @@ const helpCards: HelpCard[] = [
       "No modo Planta, escolha um ou mais itens e use Ctrl+C para copiar (ou Ctrl+X para recortar) e Ctrl+V para colar. A cópia entra um pouco deslocada (colar de novo desloca mais), com o que estava preso a ela, e mesa copiada ganha um número novo. Em outro andar, a cópia entra no meio da tela. O botão Colar aparece na barra enquanto houver algo copiado.",
   },
 
+  {
+    category: "mapa",
+    title: "Como mexer no 3D",
+    description:
+      "Arraste com o botão esquerdo (ou um dedo) para girar, com o botão direito (ou dois dedos) para mover para os lados, e use a rodinha (ou a pinça) para aproximar: o zoom vai na direção do ponteiro. Dois cliques no chão levam a vista até ali. Na coluna da direita há aproximar, afastar, girar 45°, enquadrar tudo, tela cheia e o botão \"i\" com essa ajuda. Os botões Todos os andares, De cima, Paredes altas e Nomes ficam no alto, dentro do 3D.",
+  },
+  {
+    category: "mapa",
+    title: "Guardar e tirar jogos rápido",
+    description:
+      "Com o armário aberto, toque num espaço: a busca \"Guardar aqui\" já fica pronta no computador (Enter guarda o primeiro resultado) e embaixo aparecem os jogos sem lugar, primeiro os da categoria da etiqueta, para guardar com um toque. Para tirar: o × na capa (passando o mouse), o × na lista ou toque no jogo e em Tirar. Depois de tirar aparece Desfazer. Tocando num jogo aparece também \"Mover para\" com os outros espaços.",
+  },
+  {
+    category: "mapa",
+    title: "Mapa no celular",
+    description:
+      "Ao tocar numa mesa, aparece em cima do mapa uma barra com o estado e os botões Auto, Livre, Ocupada e Fechada (Detalhes leva ao painel completo). O botão de tela cheia, abaixo do zoom, deixa só o mapa (Esc ou o mesmo botão volta). No modo Planta, enquanto houver mudança, a barra Salvar fica fixa embaixo. Os blocos do painel abrem e fecham tocando no título e o mapa lembra como você deixou.",
+  },
+
   // ── COLEÇÃO ───────────────────────────────────────────────────
   {
     category: "colecao",

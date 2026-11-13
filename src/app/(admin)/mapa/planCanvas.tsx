@@ -69,6 +69,10 @@ export interface PlanCanvasProps {
   tableNotes?: ReadonlyMap<string, string>;
   /** Botões extras na coluna do zoom (ex.: régua). */
   extraControls?: React.ReactNode;
+  /** Legenda de cores no canto (modo dia). */
+  legend?: { color: string; label: string }[];
+  /** Algo por cima do mapa, embaixo (ex.: a barra rápida da mesa no celular). */
+  bottomOverlay?: React.ReactNode;
   /** Armários de jogos: cores das etiquetas e o texto do selo (ex.: "24 jogos"). */
   shelfColors?: ReadonlyMap<string, string[]>;
   shelfBadges?: ReadonlyMap<string, string>;
@@ -122,6 +126,8 @@ export default function PlanCanvas(props: PlanCanvasProps) {
     extraControls,
     shelfColors,
     shelfBadges,
+    legend,
+    bottomOverlay,
   } = props;
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -677,8 +683,23 @@ export default function PlanCanvas(props: PlanCanvasProps) {
         )}
       </div>
 
+      {legend && (
+        <div className="pointer-events-none absolute left-3 top-2 flex max-w-[calc(100%-4.5rem)] flex-wrap gap-x-2.5 gap-y-1 rounded-lg bg-primary-black/70 px-2 py-1 text-[10px] font-semibold text-primary-gold/75 backdrop-blur-sm">
+          {legend.map((l) => (
+            <span key={l.label} className="flex items-center gap-1">
+              <span className="h-2.5 w-2.5 rounded-sm" style={{ background: l.color }} /> {l.label}
+            </span>
+          ))}
+        </div>
+      )}
+      {bottomOverlay && (
+        <div className="absolute inset-x-2 bottom-2 z-10" onPointerDown={(e) => e.stopPropagation()}>
+          {bottomOverlay}
+        </div>
+      )}
+
       {/* Escala */}
-      <div className="pointer-events-none absolute bottom-2 left-3 flex flex-col gap-0.5 text-[10px] text-primary-gold/60">
+      <div className={`pointer-events-none absolute bottom-2 left-3 flex flex-col gap-0.5 text-[10px] text-primary-gold/60 ${bottomOverlay ? "hidden" : ""}`}>
         <span className="block h-1.5 border-x border-b border-primary-gold/60" style={{ width: barM * view.s }} />
         <span>{formatMeters(barM)}</span>
       </div>

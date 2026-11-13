@@ -232,14 +232,62 @@ export function SelectField<T extends string>({
   );
 }
 
-export function Section({ title, children, aside }: { title: string; children: ReactNode; aside?: ReactNode }) {
+/**
+ * Bloco do painel. Com `collapse`, o título abre e fecha o bloco e o mapa
+ * lembra como você deixou (neste aparelho).
+ */
+export function Section({
+  title,
+  children,
+  aside,
+  collapse,
+  summary,
+}: {
+  title: string;
+  children: ReactNode;
+  aside?: ReactNode;
+  collapse?: { id: string; defaultOpen?: boolean };
+  /** Resumo mostrado quando o bloco está fechado. */
+  summary?: ReactNode;
+}) {
+  const key = collapse ? `fp-section-${collapse.id}` : "";
+  const [open, setOpen] = useState(collapse ? collapse.defaultOpen ?? true : true);
+  useEffect(() => {
+    if (!key) return;
+    try {
+      const v = localStorage.getItem(key);
+      if (v !== null) setOpen(v === "1");
+    } catch {
+      /* sem armazenamento */
+    }
+  }, [key]);
+  const toggle = () => {
+    setOpen((o) => {
+      try {
+        localStorage.setItem(key, o ? "0" : "1");
+      } catch {
+        /* sem armazenamento */
+      }
+      return !o;
+    });
+  };
   return (
     <section className="flex flex-col gap-2.5 rounded-2xl border border-primary-gold/15 bg-secondary-black/40 p-3">
       <header className="flex items-center justify-between gap-2">
-        <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary-gold/70">{title}</h3>
+        {collapse ? (
+          <button type="button" onClick={toggle} aria-expanded={open} className="group flex min-w-0 flex-1 items-center gap-1.5 text-left">
+            <svg viewBox="0 0 16 16" width={12} height={12} aria-hidden="true" className={`shrink-0 text-primary-gold/50 transition-transform ${open ? "rotate-90" : ""}`}>
+              <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <h3 className="shrink-0 text-[11px] font-bold uppercase tracking-[0.14em] text-primary-gold/70 group-hover:text-primary-gold">{title}</h3>
+            {!open && summary && <span className="ml-1 min-w-0 truncate text-[11px] font-normal text-primary-gold/45">{summary}</span>}
+          </button>
+        ) : (
+          <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary-gold/70">{title}</h3>
+        )}
         {aside}
       </header>
-      {children}
+      {open && children}
     </section>
   );
 }
