@@ -32,7 +32,7 @@ export default function QuickMap({ date, onClose }: { date: string; onClose: () 
   const [loadingReserves, setLoadingReserves] = useState(true);
   const [sel, setSel] = useState<string | null>(null);
   const today = todaySP();
-  const [scope, setScope] = useState<"day" | "now">(date === today ? "now" : "day");
+  const [scope, setScope] = useState<"day" | "now">("day");
   const [now, setNow] = useState(nowSP);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -143,8 +143,8 @@ export default function QuickMap({ date, onClose }: { date: string; onClose: () 
             <div role="group" aria-label="Horário" className="order-3 inline-flex rounded-xl border border-primary-gold/20 bg-primary-black/60 p-0.5 sm:order-2">
               {(
                 [
-                  { id: "now", label: `Agora (${formatMinutes(now)})` },
                   { id: "day", label: "Dia todo" },
+                  { id: "now", label: `Agora (${formatMinutes(now)})` },
                 ] as const
               ).map((o) => (
                 <button
