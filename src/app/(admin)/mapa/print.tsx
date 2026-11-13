@@ -6,7 +6,7 @@ import { boundsOf, toWorld } from "@/floorplan/geometry";
 import { STATE_META, type DayStatus } from "@/floorplan/day";
 import type { MapReserve, PlanElement, PlanLevel } from "@/floorplan/types";
 import { PlanDefs, Shape2D, U } from "./shapes2d";
-import { people } from "./dayPanel";
+import { people } from "./labels";
 
 interface PrintInput {
   levels: PlanLevel[];

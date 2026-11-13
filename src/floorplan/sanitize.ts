@@ -16,6 +16,7 @@ import type {
   Pose,
   StoredFloorPlan,
   TableGroup,
+  Walkin,
 } from "./types";
 
 /** Limite de elementos (o documento do Firestore tem teto de 1 MB). */
@@ -225,6 +226,21 @@ export function sanitizeDay(date: string, raw: unknown): DayPlan {
       const name = str(v.name);
       if (name) g.name = name;
       day.groups[id] = g;
+    }
+  }
+  if (isObj(raw.walkins)) {
+    for (const [id, v] of Object.entries(raw.walkins)) {
+      if (!isObj(v) || !Array.isArray(v.tables)) continue;
+      const tables = [...new Set(v.tables.filter((t): t is string => typeof t === "string"))].slice(0, 20);
+      const people = num(v.people);
+      const at = num(v.at);
+      if (!tables.length || people === null || at === null) continue;
+      const w: Walkin = { tables, people: clamp(Math.round(people), 1, 99), at };
+      const name = str(v.name);
+      if (name) w.name = name;
+      const left = num(v.leftAt);
+      if (left !== null) w.leftAt = left;
+      day.walkins[id] = w;
     }
   }
   if (isObj(raw.manual)) {

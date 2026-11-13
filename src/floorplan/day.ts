@@ -9,10 +9,11 @@ import type {
   SyncChange,
   TableGroup,
   TableState,
+  Walkin,
 } from "./types";
 
 export function emptyDay(date: string): DayPlan {
-  return { date, moves: {}, names: {}, hidden: {}, groups: {}, manual: {} };
+  return { date, moves: {}, names: {}, hidden: {}, groups: {}, manual: {}, walkins: {} };
 }
 
 export const DEFAULT_SETTINGS: MapSettings = { syncHistory: [], stayMinutes: 180 };
@@ -109,6 +110,26 @@ export function formatMinutes(total: number): string {
   return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
 }
 
+/** Minuto do dia em Brasília (UTC−3) de um instante em ms. */
+export function spMinuteOf(ms: number): number {
+  return (((Math.floor(ms / 60000) - 180) % 1440) + 1440) % 1440;
+}
+
+/** O cliente sem reserva está na mesa no minuto `at` (ou agora, se `at` for null)? */
+export function walkinActive(w: Pick<Walkin, "at" | "leftAt">, at: number | null): boolean {
+  if (at === null) return w.leftAt === undefined;
+  const start = spMinuteOf(w.at);
+  if (start > at) return false;
+  return w.leftAt === undefined || spMinuteOf(w.leftAt) > at;
+}
+
+/** Ids dos clientes sem reserva que ainda estão nas mesas. */
+export function activeWalkinIds(day: Pick<DayPlan, "walkins">, tableIds: string[]): string[] {
+  return Object.entries(day.walkins ?? {})
+    .filter(([, w]) => w.leftAt === undefined && w.tables.some((t) => tableIds.includes(t)))
+    .map(([id]) => id);
+}
+
 /** A reserva está na mesa no minuto `at`? (da chegada até chegada + permanência) */
 export function activeAt(r: Pick<MapReserve, "time">, at: number, stayMinutes: number): boolean {
   const s = minutesOf(r.time);
@@ -180,6 +201,8 @@ export interface SeatUnit {
   auto: TableState;
   state: TableState;
   manual?: ManualMark;
+  /** Clientes sem reserva na mesa agora (no horário escolhido). */
+  walkins: (Walkin & { id: string })[];
 }
 
 export interface UnmatchedReserve {
@@ -206,7 +229,7 @@ export interface DayStatus {
   /** Reservas com mesa que não está no mapa. */
   unmatched: UnmatchedReserve[];
   conflicts: TableConflict[];
-  counts: Record<TableState, number> & { seatsFree: number; seatsTotal: number };
+  counts: Record<TableState, number> & { seatsFree: number; seatsTotal: number; walkinPeople: number };
 }
 
 export interface StatusOptions {
@@ -330,6 +353,7 @@ export function computeDayStatus(
       upcoming: [],
       auto: "free",
       state: "free",
+      walkins: [],
     };
     units.push(unit);
     tableIds.forEach((id) => unitOfTable.set(id, unit));
@@ -362,13 +386,27 @@ export function computeDayStatus(
       }
   }
 
-  const counts = { free: 0, reserved: 0, occupied: 0, blocked: 0, seatsFree: 0, seatsTotal: 0 };
+  const counts = { free: 0, reserved: 0, occupied: 0, blocked: 0, seatsFree: 0, seatsTotal: 0, walkinPeople: 0 };
+  // Clientes sem reserva: na unidade de qualquer mesa onde sentaram
+  for (const [id, w] of Object.entries(day.walkins ?? {})) {
+    if (!walkinActive(w, at)) continue;
+    const seen = new Set<SeatUnit>();
+    for (const t of w.tables) {
+      const u = unitOfTable.get(t);
+      if (u && !seen.has(u)) {
+        seen.add(u);
+        u.walkins.push({ ...w, id });
+      }
+    }
+    if (seen.size) counts.walkinPeople += w.people;
+  }
   const byTime = (a: MapReserve, b: MapReserve) => a.time.localeCompare(b.time);
   for (const u of units) {
     u.reservations.sort(byTime);
     u.dayReservations.sort(byTime);
     u.upcoming.sort(byTime);
-    u.auto = u.reservations.some((r) => r.isArrived) ? "occupied" : u.reservations.length ? "reserved" : "free";
+    u.walkins.sort((a, b) => a.at - b.at);
+    u.auto = u.walkins.length || u.reservations.some((r) => r.isArrived) ? "occupied" : u.reservations.length ? "reserved" : "free";
     u.manual = day.manual[u.key];
     u.state = u.manual?.state ?? u.auto;
     counts[u.state] += 1;

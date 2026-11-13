@@ -7,10 +7,11 @@ import { useAlert } from "@/contexts/alertProvider";
 import { formatDateBR, RENTAL_TZ, todaySP, weekdayOf } from "@/rental/dates";
 import { applyDay, computeDayStatus, DEFAULT_SETTINGS, emptyDay, formatMinutes, STATE_META, syncEnabledOn, type SeatUnit } from "@/floorplan/day";
 import { SEED_PLAN } from "@/floorplan/seed";
-import type { DayPlan, FloorPlan, ManualState, MapReserve, MapSettings, TableState } from "@/floorplan/types";
+import type { DayPlan, FloorPlan, MapReserve, MapSettings, TableState } from "@/floorplan/types";
 import FloorPlanRepository from "@/services/repositories/FloorPlanRepository";
 import PlanCanvas, { type GroupOutline } from "./planCanvas";
 import QuickUnitBar from "./quickUnitBar";
+import { releaseUnit, seatWalkin, setUnitState } from "./walkinActions";
 
 const WEEKDAYS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
@@ -103,9 +104,9 @@ export default function QuickMap({ date, onClose }: { date: string; onClose: () 
     return { free: us.filter((u) => u.state === "free").length, total: us.length, seats: us.filter((u) => u.state === "free").reduce((s, u) => s + u.seats, 0) };
   };
 
-  const setState = (u: SeatUnit, state: ManualState | null) =>
-    FloorPlanRepository.setManual(date, u.key, state ? { state, at: Date.now() } : null).catch((error) => {
-      console.error("Erro ao mudar o estado da mesa:", error);
+  const save = (p: Promise<unknown>) =>
+    p.catch((error) => {
+      console.error("Erro ao mudar a mesa:", error);
       addAlert("Não foi possível salvar. Confira a internet e tente de novo.");
     });
 
@@ -136,7 +137,7 @@ export default function QuickMap({ date, onClose }: { date: string; onClose: () 
           <div className="order-1 min-w-0 flex-1 basis-[calc(100%-3rem)] sm:basis-auto">
             <h2 className="text-base font-bold text-primary-gold">Mesas · {date === today ? "hoje" : WEEKDAYS[weekdayOf(date)]}, {formatDateBR(date)}</h2>
             <p className="text-[11px] text-primary-gold/60">
-              {loadingReserves ? "Carregando reservas…" : `${c.free} livres · ${c.reserved} reservadas · ${c.occupied} ocupadas${c.blocked ? ` · ${c.blocked} fechadas` : ""} · ${c.seatsFree} de ${c.seatsTotal} lugares livres`}
+              {loadingReserves ? "Carregando reservas…" : `${c.free} livres · ${c.reserved} reservadas · ${c.occupied} ocupadas${c.blocked ? ` · ${c.blocked} fechadas` : ""} · ${c.seatsFree} de ${c.seatsTotal} lugares livres${c.walkinPeople ? ` · ${c.walkinPeople} sem reserva` : ""}`}
             </p>
           </div>
           {date === today && (
@@ -222,7 +223,15 @@ export default function QuickMap({ date, onClose }: { date: string; onClose: () 
           )}
         </div>
 
-        {unit && <QuickUnitBar unit={unit} onSet={(s) => void setState(unit, s)} onClose={() => setSel(null)} />}
+        {unit && (
+          <QuickUnitBar
+            unit={unit}
+            onSet={(st) => void save(setUnitState(date, unit, st))}
+            onSeatWalkin={(name, n) => void save(seatWalkin(date, unit, name, n))}
+            onRelease={() => void save(releaseUnit(date, unit))}
+            onClose={() => setSel(null)}
+          />
+        )}
       </div>
     </div>
   );

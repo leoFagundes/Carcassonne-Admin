@@ -23,6 +23,7 @@ import type {
   Pose,
   StoredFloorPlan,
   TableGroup,
+  Walkin,
 } from "@/floorplan/types";
 import { planForStorage, sanitizeDay, sanitizePlan, sanitizeSettings, sanitizeTemplate } from "@/floorplan/sanitize";
 import { DEFAULT_SETTINGS, emptyDay } from "@/floorplan/day";
@@ -44,7 +45,7 @@ const TEMPLATES = collection(db, "floorPlanTemplates");
 const dayDoc = (date: string) => doc(db, "floorPlanDays", date);
 
 /** Uma mudança por chave dentro de um mapa do documento do dia (null apaga). */
-type DayField = "moves" | "names" | "hidden" | "groups" | "manual";
+type DayField = "moves" | "names" | "hidden" | "groups" | "manual" | "walkins";
 
 class FloorPlanRepository {
   /** Planta salva (null = ainda não salva: usar a inicial). */
@@ -175,6 +176,15 @@ class FloorPlanRepository {
 
   static setHidden(date: string, tableId: string, hidden: boolean) {
     return this.setDayEntry(date, "hidden", tableId, hidden ? true : null);
+  }
+
+  /** Cliente sem reserva: grava (ou apaga com null). */
+  static setWalkin(date: string, id: string, w: Walkin | null) {
+    if (!w) return this.setDayEntry(date, "walkins", id, null);
+    const clean: Walkin = { tables: w.tables, people: w.people, at: w.at };
+    if (w.name?.trim()) clean.name = w.name.trim().slice(0, 60);
+    if (w.leftAt !== undefined) clean.leftAt = w.leftAt;
+    return this.setDayEntry(date, "walkins", id, clean);
   }
 
   static setGroup(date: string, groupId: string, group: TableGroup | null) {

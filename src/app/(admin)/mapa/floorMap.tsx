@@ -111,6 +111,7 @@ import DayPanel, { unitTitle, type DayActions, type DayTool, type TimeScope } fr
 import EditPanel, { type EditActions, type EditTool } from "./editPanel";
 import { printDay } from "./print";
 import QuickUnitBar from "./quickUnitBar";
+import { releaseUnit, seatWalkin, setUnitState } from "./walkinActions";
 import { Btn, ConfirmDialog, Seg } from "./ui";
 
 const Scene3D = dynamic(() => import("./scene3d"), {
@@ -756,7 +757,9 @@ export default function FloorMap() {
   const layoutParts = () => ({ moves: day.moves, names: day.names, hidden: day.hidden, groups: day.groups });
 
   const dayActions: DayActions = {
-    setManual: (unit, state: ManualState | null) => run(FloorPlanRepository.setManual(date, unit.key, state ? { state, at: Date.now() } : null)),
+    setManual: (unit, state: ManualState | null) => run(setUnitState(date, unit, state)),
+    seatWalkin: (unit, name, n) => run(seatWalkin(date, unit, name, n)),
+    release: (unit) => run(releaseUnit(date, unit)),
     renameTable: (id, name) => {
       const base = baseNameOf(id);
       run(FloorPlanRepository.setName(date, id, name && name !== base ? name : null));
@@ -1111,6 +1114,8 @@ export default function FloorMap() {
       <QuickUnitBar
         unit={selectedUnit}
         onSet={(st) => dayActions.setManual(selectedUnit, st)}
+        onSeatWalkin={(name, n) => dayActions.seatWalkin(selectedUnit, name, n)}
+        onRelease={() => dayActions.release(selectedUnit)}
         onClose={() => setSelUnit(null)}
         extra={
           <button
@@ -1486,6 +1491,7 @@ export default function FloorMap() {
               templates={templates}
               onPrint={() => void onPrint()}
               actions={dayActions}
+              dayWalkins={day.walkins}
             />
           ) : mode === "games" ? (
             openShelfRef ? (

@@ -30,7 +30,9 @@ import {
 import { addDays, formatDateBR, todaySP, weekdayOf } from "@/rental/dates";
 import { tableTitle } from "@/floorplan/catalog";
 import { formatMinutes, minutesOf, STATE_META, type DayStatus, type SeatUnit, type TableSuggestion } from "@/floorplan/day";
-import type { DayTemplate, ManualState, MapReserve, MapSettings, PlanElement, TableState } from "@/floorplan/types";
+import type { DayTemplate, ManualState, MapReserve, MapSettings, PlanElement, TableState, Walkin } from "@/floorplan/types";
+import { since, WalkinForm } from "./quickUnitBar";
+import { people, unitTitle } from "./labels";
 import { Btn, Section, TextField } from "./ui";
 
 const WEEKDAYS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
@@ -42,6 +44,10 @@ export type TimeScope = "day" | "now" | number;
 
 export interface DayActions {
   setManual: (unit: SeatUnit, state: ManualState | null) => void;
+  /** Cliente sem reserva senta na mesa (nome opcional). */
+  seatWalkin: (unit: SeatUnit, name: string, people: number) => void;
+  /** Quem estava sem reserva foi embora. */
+  release: (unit: SeatUnit) => void;
   renameTable: (tableId: string, name: string) => void;
   renameGroup: (unit: SeatUnit, name: string) => void;
   hideTable: (tableId: string) => void;
@@ -61,14 +67,7 @@ export interface DayActions {
   deleteTemplate: (t: DayTemplate) => void;
 }
 
-export function unitTitle(u: SeatUnit): string {
-  if (u.isGroup) return u.name === u.reserveName ? `Mesas ${u.reserveName}` : `${u.name} (mesas ${u.reserveName})`;
-  return tableTitle(u.name);
-}
-
-export function people(r: MapReserve): number {
-  return (r.adults || 0) + (r.childs || 0);
-}
+export { people, unitTitle } from "./labels";
 
 function StatePill({ state }: { state: TableState }) {
   const m = STATE_META[state];
@@ -112,6 +111,7 @@ export default function DayPanel({
   templates,
   onPrint,
   actions,
+  dayWalkins,
 }: {
   date: string;
   setDate: (d: string) => void;
@@ -144,6 +144,8 @@ export default function DayPanel({
   templates: DayTemplate[];
   onPrint: () => void;
   actions: DayActions;
+  /** Clientes sem reserva do dia (para o histórico da mesa). */
+  dayWalkins?: Record<string, Walkin>;
 }) {
   const [confirmReset, setConfirmReset] = useState(false);
   const today = todaySP();
@@ -251,6 +253,7 @@ export default function DayPanel({
         <p className="text-xs text-primary-gold/65">
           <strong className="text-primary-gold">{c.seatsFree}</strong> de {c.seatsTotal} lugares livres ·{" "}
           {loadingReserves ? "carregando reservas…" : `${allReserves.length} ${allReserves.length === 1 ? "reserva" : "reservas"} no dia (${totalPeople} pessoas)`}
+          {c.walkinPeople ? ` · ${c.walkinPeople} sem reserva agora` : ""}
         </p>
       </Section>
 
@@ -397,6 +400,10 @@ export default function DayPanel({
           scoped={scope !== "day"}
           onClose={() => onSelect(null)}
           actions={actions}
+          history={Object.entries(dayWalkins ?? {})
+            .filter(([, w]) => w.leftAt !== undefined && w.tables.some((t) => selected.tableIds.includes(t)))
+            .map(([id, w]) => ({ ...w, id }))
+            .sort((a, b) => b.at - a.at)}
         />
       ) : (
         <p className="rounded-xl border border-dashed border-primary-gold/20 px-3 py-4 text-center text-xs text-primary-gold/55">
@@ -691,6 +698,7 @@ function UnitCard({
   scoped,
   onClose,
   actions,
+  history,
 }: {
   unit: SeatUnit;
   levelName: string;
@@ -701,7 +709,10 @@ function UnitCard({
   scoped: boolean;
   onClose: () => void;
   actions: DayActions;
+  /** Quem já passou sem reserva por esta mesa no dia. */
+  history: (Walkin & { id: string })[];
 }) {
+  const [seating, setSeating] = useState(false);
   const choices: { id: ManualState | "auto"; label: string }[] = [
     { id: "auto", label: `Automático (${STATE_META[unit.auto].label.toLowerCase()})` },
     { id: "free", label: "Livre" },
@@ -759,6 +770,51 @@ function UnitCard({
           No automático, a mesa fica reservada quando tem reserva e ocupada quando a reserva chega. A marcação à mão vale o dia todo.
           {unit.manual ? ` Marcado às ${new Date(unit.manual.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.` : ""}
         </span>
+      </div>
+
+      {/* Cliente sem reserva (opcional) */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-gold/50">Cliente sem reserva</span>
+        {unit.walkins.map((w) => (
+          <div key={w.id} className="flex items-center gap-2 rounded-lg border border-[#f0716b]/35 bg-[#f0716b]/10 px-2 py-1.5 text-xs">
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-semibold text-primary-gold/90">{w.name || "Cliente"}</span>
+              <span className="block text-[11px] text-primary-gold/60">
+                {w.people} {w.people === 1 ? "pessoa" : "pessoas"} · chegou {new Date(w.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} ({since(w.at)})
+              </span>
+            </span>
+          </div>
+        ))}
+        {unit.walkins.length > 0 && (
+          <Btn onClick={() => actions.release(unit)} className="self-start" title="O cliente foi embora: a mesa fica livre">
+            Liberar a mesa
+          </Btn>
+        )}
+        {seating ? (
+          <WalkinForm
+            seats={unit.seats}
+            onCancel={() => setSeating(false)}
+            onSeat={(name, n) => {
+              actions.seatWalkin(unit, name, n);
+              setSeating(false);
+            }}
+          />
+        ) : (
+          <button type="button" onClick={() => setSeating(true)} className="self-start text-[11px] font-semibold text-primary-gold/65 underline-offset-2 hover:text-primary-gold hover:underline">
+            + Sentar um cliente sem reserva {unit.walkins.length ? "(mais um grupo)" : "(nome e pessoas, opcional)"}
+          </button>
+        )}
+        {history.length > 0 && (
+          <span className="text-[11px] leading-snug text-primary-gold/45">
+            Já passaram hoje:{" "}
+            {history
+              .map(
+                (w) =>
+                  `${w.name || "cliente"} (${w.people}p, ${new Date(w.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}–${new Date(w.leftAt!).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })})`,
+              )
+              .join(" · ")}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-col gap-1.5">

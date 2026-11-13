@@ -348,3 +348,58 @@ describe("sincronização a partir do dia da mudança", () => {
     expect(h).toEqual([{ from: "2026-11-12", on: false }]);
   });
 });
+
+describe("cliente sem reserva", () => {
+  // 20:00 em Brasília = 23:00 UTC
+  const at20 = Date.UTC(2026, 10, 12, 23, 0);
+  const at21 = Date.UTC(2026, 10, 13, 0, 0);
+  it("ocupa a mesa enquanto está lá e conta as pessoas", async () => {
+    const { s } = status([], {}, (d) => {
+      d.walkins.w1 = { tables: ["t2"], name: "João", people: 3, at: at20 };
+    });
+    const u = s.unitByKey.get("t2")!;
+    expect(u.state).toBe("occupied");
+    expect(u.walkins.map((w) => w.name)).toEqual(["João"]);
+    expect(s.counts.walkinPeople).toBe(3);
+  });
+  it("depois de liberar, a mesa volta ao normal (o registro fica)", () => {
+    const { s } = status([], {}, (d) => {
+      d.walkins.w1 = { tables: ["t2"], people: 3, at: at20, leftAt: at21 };
+    });
+    expect(s.unitByKey.get("t2")!.state).toBe("free");
+    expect(s.counts.walkinPeople).toBe(0);
+  });
+  it("no horário escolhido, vale entre a chegada e a saída", () => {
+    const patch = (d: ReturnType<typeof emptyDay>) => {
+      d.walkins.w1 = { tables: ["t2"], people: 2, at: at20, leftAt: at21 };
+    };
+    expect(status([], { at: 20 * 60 + 30 }, patch).s.unitByKey.get("t2")!.state).toBe("occupied");
+    expect(status([], { at: 19 * 60 }, patch).s.unitByKey.get("t2")!.state).toBe("free");
+    expect(status([], { at: 21 * 60 + 5 }, patch).s.unitByKey.get("t2")!.state).toBe("free");
+  });
+  it("em mesas juntas, conta uma vez no grupo", () => {
+    const { s } = status([], {}, (d) => {
+      d.groups.g = { tables: ["t8", "t9"] };
+      d.walkins.w1 = { tables: ["t8", "t9"], people: 9, at: at20 };
+    });
+    expect(s.unitByKey.get("g")!.walkins).toHaveLength(1);
+    expect(s.counts.walkinPeople).toBe(9);
+  });
+  it("marcação à mão vence (ex.: indisponível)", () => {
+    const { s } = status([], {}, (d) => {
+      d.walkins.w1 = { tables: ["t2"], people: 2, at: at20 };
+      d.manual.t2 = { state: "blocked", at: 1 };
+    });
+    expect(s.unitByKey.get("t2")!.state).toBe("blocked");
+  });
+  it("minuto de Brasília, ativos e dados do banco", async () => {
+    const { spMinuteOf, activeWalkinIds } = await import("../day");
+    const { sanitizeDay } = await import("../sanitize");
+    expect(spMinuteOf(at20)).toBe(20 * 60);
+    const d = sanitizeDay("2026-11-12", {
+      walkins: { a: { tables: ["t1", "t1"], people: 2.4, at: 5, name: " Ana " }, b: { tables: [], people: 2, at: 1 }, c: { tables: ["t2"], people: 1, at: 1, leftAt: 9 } },
+    });
+    expect(d.walkins).toEqual({ a: { tables: ["t1"], people: 2, at: 5, name: "Ana" }, c: { tables: ["t2"], people: 1, at: 1, leftAt: 9 } });
+    expect(activeWalkinIds(d, ["t1", "t2"])).toEqual(["a"]);
+  });
+});

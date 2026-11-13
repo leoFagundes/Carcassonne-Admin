@@ -148,6 +148,19 @@ export interface DayPlan {
   groups: Record<string, TableGroup>;
   /** Estado marcado à mão, por mesa ou por grupo. */
   manual: Record<string, ManualMark>;
+  /** Clientes sem reserva que sentaram numa mesa (opcional; o estado sozinho também vale). */
+  walkins: Record<string, Walkin>;
+}
+
+/** Cliente sem reserva numa mesa (ou em mesas juntas). */
+export interface Walkin {
+  tables: string[];
+  name?: string;
+  people: number;
+  /** Quando sentou (ms). */
+  at: number;
+  /** Quando a mesa foi liberada (ms); sem isso, ainda está lá. */
+  leftAt?: number;
 }
 
 /** A partir de `from` (AAAA-MM-DD), a sincronização fica ligada ou desligada. */

@@ -322,6 +322,13 @@ const helpCards: HelpCard[] = [
       "Ao tocar numa mesa, aparece em cima do mapa uma barra com o estado e os botões Auto, Livre, Ocupada e Fechada (Detalhes leva ao painel completo). O botão de tela cheia, abaixo do zoom, deixa só o mapa (Esc ou o mesmo botão volta). No modo Planta, enquanto houver mudança, a barra Salvar fica fixa embaixo. Os blocos do painel abrem e fecham tocando no título e o mapa lembra como você deixou.",
   },
 
+  {
+    category: "mapa",
+    title: "Cliente sem reserva na mesa (opcional)",
+    description:
+      "Para só trocar o estado, continue usando Livre, Ocupada ou Fechada. Se quiser registrar quem sentou sem reserva, toque na mesa e em \"Cliente sem reserva\": o nome é opcional, escolha quantas pessoas e toque em Sentar. A mesa fica ocupada e mostra há quanto tempo o cliente está lá. Quando ele for embora, toque em Liberar (ou em Livre). Fica o histórico de quem passou pela mesa no dia, e o resumo mostra quantas pessoas sem reserva estão no pub.",
+  },
+
   // ── COLEÇÃO ───────────────────────────────────────────────────
   {
     category: "colecao",
