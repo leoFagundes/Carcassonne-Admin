@@ -17,6 +17,7 @@ import {
   LuCircleHelp,
   LuUsers,
   LuPackage,
+  LuMap,
 } from "react-icons/lu";
 import { signOut } from "firebase/auth";
 import { auth } from "@/services/firebaseConfig";
@@ -67,8 +68,7 @@ function Item({
   rentalCounts,
 }: ItemProps) {
   const pathname = usePathname();
-  // O Mapa abre pelo cabeçalho de Reservas e conta como parte dela
-  const isActive = pathname === path || (path === "/myreserves" && pathname === "/mapa");
+  const isActive = pathname === path;
 
   return (
     <div
@@ -295,6 +295,7 @@ export default function Sidebar() {
       message: "Reservas",
       icon: <LuCalendar size={18} />,
     },
+    { path: "/mapa", message: "Mapa", icon: <LuMap size={18} /> },
     {
       path: "/aluguel-admin",
       message: "Aluguel",

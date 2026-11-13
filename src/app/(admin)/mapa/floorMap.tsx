@@ -110,6 +110,7 @@ import PlanCanvas, { BG_ID, type GroupOutline, type HandleId, type MeasureOverla
 import DayPanel, { unitTitle, type DayActions, type DayTool, type TimeScope } from "./dayPanel";
 import EditPanel, { type EditActions, type EditTool } from "./editPanel";
 import { printDay } from "./print";
+import QuickUnitBar from "./quickUnitBar";
 import { Btn, ConfirmDialog, Seg } from "./ui";
 
 const Scene3D = dynamic(() => import("./scene3d"), {
@@ -1107,15 +1108,11 @@ export default function FloorMap() {
   }, []);
   const bottomBar =
     narrow && mode === "day" && selectedUnit && tool.kind === "select" && !full ? (
-      <div className="flex flex-col gap-2 rounded-xl border border-primary-gold/35 bg-primary-black/95 p-2.5 shadow-card backdrop-blur">
-        <div className="flex items-center gap-2">
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-bold text-primary-gold">{unitTitle(selectedUnit)}</span>
-            <span className="block truncate text-[11px] text-primary-gold/60">
-              {STATE_META[selectedUnit.state].label} · {selectedUnit.seats} lugares
-              {selectedUnit.reservations[0] ? ` · ${selectedUnit.reservations[0].time} ${selectedUnit.reservations[0].name.split(" ")[0]}` : ""}
-            </span>
-          </span>
+      <QuickUnitBar
+        unit={selectedUnit}
+        onSet={(st) => dayActions.setManual(selectedUnit, st)}
+        onClose={() => setSelUnit(null)}
+        extra={
           <button
             type="button"
             onClick={() => document.getElementById("fp-unit-card")?.scrollIntoView({ behavior: "smooth", block: "start" })}
@@ -1123,37 +1120,8 @@ export default function FloorMap() {
           >
             Detalhes
           </button>
-          <button type="button" aria-label="Fechar" onClick={() => setSelUnit(null)} className="shrink-0 rounded-lg px-1.5 py-1 text-primary-gold/60">
-            ✕
-          </button>
-        </div>
-        <div className="grid grid-cols-4 gap-1">
-          {(
-            [
-              { id: null, label: "Auto" },
-              { id: "free", label: "Livre" },
-              { id: "occupied", label: "Ocupada" },
-              { id: "blocked", label: "Fechada" },
-            ] as { id: ManualState | null; label: string }[]
-          ).map((o) => {
-            const on = (selectedUnit.manual?.state ?? null) === o.id;
-            return (
-              <button
-                key={o.label}
-                type="button"
-                aria-pressed={on}
-                onClick={() => dayActions.setManual(selectedUnit, o.id)}
-                className={`flex items-center justify-center gap-1 rounded-lg border px-1 py-1.5 text-[11px] font-bold ${
-                  on ? "border-primary-gold bg-primary-gold/20 text-primary-gold" : "border-primary-gold/15 text-primary-gold/70"
-                }`}
-              >
-                {o.id && <span className="h-2 w-2 rounded-full" style={{ background: STATE_META[o.id].color }} />}
-                {o.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+        }
+      />
     ) : null;
   const fullButton = (
     <button

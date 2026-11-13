@@ -59,6 +59,10 @@ import DayAttendanceCard from "./dayAttendance";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import ReserveAdminForms from "@/components/reserveAdminForms";
 import interactionPlugin from "@fullcalendar/interaction";
+import dynamic from "next/dynamic";
+
+// Atalho do mapa (carrega só quando abre)
+const QuickMap = dynamic(() => import("../mapa/quickMap"), { ssr: false });
 import FreelancerBookingRepository from "@/services/repositories/FreelancerBookingRepository";
 import FreelancerRepository from "@/services/repositories/FreelancerRepository";
 import DayNoteRepository from "@/services/repositories/DayNoteRepository";
@@ -129,6 +133,7 @@ const TODAY = today(getLocalTimeZone());
 export default function Rerserve() {
   const themed = useSiteTheme() !== "default";
   const [date, setDate] = useState(TODAY);
+  const [quickMapOpen, setQuickMapOpen] = useState(false);
   // Configurações de reserva (o mesmo painel de Configurações → Reservas).
   const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => {
@@ -820,10 +825,16 @@ export default function Rerserve() {
   return (
     <div className="flex flex-col gap-5 w-full h-full overflow-y-auto">
       {loading && <LoaderFullscreen />}
+      {quickMapOpen && (
+        <QuickMap
+          date={`${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`}
+          onClose={() => setQuickMapOpen(false)}
+        />
+      )}
 
       {/* Header */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-center gap-4 w-full">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3 w-full">
           <div className="flex items-center gap-2">
             <LuCalendar size={32} className="text-primary-gold/70 shrink-0" />
             <div className="flex flex-col">
@@ -836,7 +847,7 @@ export default function Rerserve() {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             <Tooltip direction="bottom" content="Criar uma nova reserva">
               <button
                 onClick={() => {
@@ -865,14 +876,10 @@ export default function Rerserve() {
                 <LuUsers size={16} />
               </button>
             </Tooltip>
-            <Tooltip direction="bottom" content="Mapa das mesas neste dia">
+            <Tooltip direction="bottom" content="Mesas livres neste dia (atalho do mapa)">
               <button
-                onClick={() =>
-                  router.push(
-                    `/mapa?data=${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`,
-                  )
-                }
-                aria-label="Mapa das mesas neste dia"
+                onClick={() => setQuickMapOpen(true)}
+                aria-label="Mesas livres neste dia"
                 className="p-2.5 rounded-lg border border-primary-gold/20 hover:border-primary-gold/50 text-primary-gold/50 hover:text-primary-gold transition-all cursor-pointer"
               >
                 <LuMap size={16} />
