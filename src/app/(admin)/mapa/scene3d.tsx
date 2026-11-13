@@ -138,11 +138,89 @@ function CameraDirector({
   return null;
 }
 
-/** Ajuda dos controles do 3D (mouse e toque). */
+/** Teclas de andar pela cena: [frente, lado, giro]. */
+const MOVE_KEYS: Record<string, [number, number, number]> = {
+  w: [1, 0, 0],
+  arrowup: [1, 0, 0],
+  s: [-1, 0, 0],
+  arrowdown: [-1, 0, 0],
+  a: [0, -1, 0],
+  arrowleft: [0, -1, 0],
+  d: [0, 1, 0],
+  arrowright: [0, 1, 0],
+  q: [0, 0, -1],
+  e: [0, 0, 1],
+};
+
+/**
+ * Andar pelo 3D com o teclado: W A S D ou setas movem (no plano do chão),
+ * Q e E giram, Shift acelera. A velocidade acompanha a distância da câmera.
+ */
+function KeyboardMove({ ctrl, enabled }: { ctrl: React.RefObject<CameraControlsImpl | null>; enabled: boolean }) {
+  const invalidate = useThree((s) => s.invalidate);
+  const held = useRef(new Set<string>());
+  const fast = useRef(false);
+  useEffect(() => {
+    const keys = held.current;
+    if (!enabled) {
+      keys.clear();
+      return;
+    }
+    const down = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      const k = e.key.toLowerCase();
+      fast.current = e.shiftKey;
+      if (!MOVE_KEYS[k]) return;
+      e.preventDefault(); // setas não rolam a página
+      keys.add(k);
+      invalidate();
+    };
+    const up = (e: KeyboardEvent) => {
+      fast.current = e.shiftKey;
+      keys.delete(e.key.toLowerCase());
+    };
+    const clear = () => keys.clear();
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", clear);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", clear);
+      keys.clear();
+    };
+  }, [enabled, invalidate]);
+  useFrame((_, dt) => {
+    const c = ctrl.current;
+    const keys = held.current;
+    if (!c || !keys.size) return;
+    let f = 0;
+    let s = 0;
+    let r = 0;
+    for (const k of keys) {
+      const m = MOVE_KEYS[k];
+      if (!m) continue;
+      f += m[0];
+      s += m[1];
+      r += m[2];
+    }
+    const step = Math.min(dt, 0.05) * (fast.current ? 2.5 : 1);
+    const speed = Math.max(2.5, c.distance * 0.5);
+    if (f) void c.forward(Math.sign(f) * speed * step, false);
+    if (s) void c.truck(Math.sign(s) * speed * step, 0, false);
+    if (r) void c.rotate(Math.sign(r) * 1.4 * step, 0, false);
+    invalidate();
+  });
+  return null;
+}
+
+/** Ajuda dos controles do 3D (mouse, toque e teclado). */
 function ControlsHelp({ onClose }: { onClose: () => void }) {
   const rows = [
-    ["Girar a vista", "arrastar com o botão esquerdo", "arrastar com um dedo"],
-    ["Mover para os lados", "arrastar com o botão direito", "arrastar com dois dedos"],
+    ["Girar a vista", "arrastar com o botão esquerdo", "arrastar com um dedo", "Q e E"],
+    ["Andar pelo mapa", "arrastar com o botão direito", "arrastar com dois dedos", "W A S D ou setas (Shift: mais rápido)"],
     ["Aproximar e afastar", "rodinha do mouse (vai na direção do ponteiro)", "pinça com dois dedos"],
     ["Ir até um ponto", "dois cliques no chão", "dois toques no chão"],
     ["Voltar ao começo", "botão enquadrar", "botão enquadrar"],
@@ -156,11 +234,12 @@ function ControlsHelp({ onClose }: { onClose: () => void }) {
         </button>
       </div>
       <ul className="flex flex-col gap-1.5">
-        {rows.map(([what, mouse, touch]) => (
+        {rows.map(([what, mouse, touch, keys]) => (
           <li key={what} className="flex flex-col">
             <span className="font-semibold text-primary-gold">{what}</span>
             <span className="text-[11px] text-primary-gold/60">
               Mouse: {mouse} · Toque: {touch}
+              {keys && ` · Teclado: ${keys}`}
             </span>
           </li>
         ))}
@@ -418,6 +497,7 @@ export default function Scene3D({
           onArrive={onFocusArrive}
           refitRef={refitRef}
         />
+        <KeyboardMove ctrl={ctrlRef} enabled={!focusShelf} />
         <LabelProjector labels={labels} nodes={nodes} />
       </Canvas>
 

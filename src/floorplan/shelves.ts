@@ -90,8 +90,9 @@ export const CHEST = { height: 0.5, lid: 0.06, wall: 0.03, floor: 0.04 };
 
 /**
  * Armário embaixo da escada: o teto acompanha a escada, baixo de um lado
- * (`low`) e alto do outro (`height`). Três portas: a baixa (1 prateleira),
- * a do meio (2) e a alta (3). A parte baixa fica à esquerda na vista de frente.
+ * (`low`) e alto do outro (`height`). Fecha com portas de correr; dentro há
+ * três partes: a baixa (1 prateleira), a do meio (2) e a alta (3). A parte
+ * baixa fica à esquerda na vista de frente.
  */
 export const UNDERSTAIR = { height: 2.1, low: 0.75, frame: 0.04, base: 0.08, gap: 0.03 };
 
@@ -120,9 +121,9 @@ function understairSlots(w: number): ShelfSlotDef[] {
   const cw = w / 3;
   const bottom = U.height - U.base; // chão de dentro, na vista de frente (de cima para baixo)
   const cols: { prefix: string; door: string; n: number }[] = [
-    { prefix: "a", door: "Porta baixa", n: 1 },
-    { prefix: "b", door: "Porta do meio", n: 2 },
-    { prefix: "c", door: "Porta alta", n: 3 },
+    { prefix: "a", door: "Parte baixa", n: 1 },
+    { prefix: "b", door: "Parte do meio", n: 2 },
+    { prefix: "c", door: "Parte alta", n: 3 },
   ];
   const out: ShelfSlotDef[] = [];
   cols.forEach((c, i) => {

@@ -300,7 +300,7 @@ const helpCards: HelpCard[] = [
     category: "mapa",
     title: "Armário embaixo da escada",
     description:
-      "Tem três portas: a baixa (1 prateleira), a do meio (2) e a alta (3), seguindo a inclinação da escada. Na vista de frente, o lado baixo fica à esquerda; se no pub a escada sobe para o outro lado, gire o armário 180° na planta. Pode mudar a largura à vontade: as prateleiras acompanham e os jogos não se perdem.",
+      "Fecha com portas de correr e, por dentro, tem três partes: a baixa (1 prateleira), a do meio (2) e a alta (3), seguindo a inclinação da escada. Na vista de frente, o lado baixo fica à esquerda; se no pub a escada sobe para o outro lado, gire o armário 180° na planta. Pode mudar a largura à vontade: as prateleiras acompanham e os jogos não se perdem.",
   },
   {
     category: "mapa",
@@ -325,7 +325,7 @@ const helpCards: HelpCard[] = [
     category: "mapa",
     title: "Como mexer no 3D",
     description:
-      "Arraste com o botão esquerdo (ou um dedo) para girar, com o botão direito (ou dois dedos) para mover para os lados, e use a rodinha (ou a pinça) para aproximar: o zoom vai na direção do ponteiro. Dois cliques no chão levam a vista até ali. Na coluna da direita há aproximar, afastar, girar 45°, enquadrar tudo, tela cheia e o botão \"i\" com essa ajuda. Os botões Todos os andares, De cima, Paredes altas e Nomes ficam no alto, dentro do 3D.",
+      "Arraste com o botão esquerdo (ou um dedo) para girar, com o botão direito (ou dois dedos) para mover para os lados, e use a rodinha (ou a pinça) para aproximar: o zoom vai na direção do ponteiro. Dois cliques no chão levam a vista até ali. No computador também dá para andar com W A S D ou as setas, girar com Q e E, e segurar Shift para ir mais rápido. Na coluna da direita há aproximar, afastar, girar 45°, enquadrar tudo, tela cheia e o botão \"i\" com essa ajuda. Os botões Todos os andares, De cima, Paredes altas e Nomes ficam no alto, dentro do 3D.",
   },
   {
     category: "mapa",

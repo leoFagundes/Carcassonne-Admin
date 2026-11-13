@@ -430,8 +430,8 @@ function Inspector({ el, plan, actions }: { el: PlanElement; plan: FloorPlan; ac
             </span>
           ) : el.variant === "understair" ? (
             <span>
-              Armário embaixo da escada: em <strong>Jogos</strong>, ele abre de frente com a porta baixa (1 prateleira), a do meio (2) e
-              a alta (3). O lado baixo fica à esquerda de quem olha a frente (a linha clara); gire 180° se a escada sobe para o outro
+              Armário embaixo da escada: em <strong>Jogos</strong>, as portas de correr abrem e aparecem a parte baixa (1 prateleira), a do
+              meio (2) e a alta (3). O lado baixo fica à esquerda de quem olha a frente (a linha clara); gire 180° se a escada sobe para o outro
               lado.
             </span>
           ) : (

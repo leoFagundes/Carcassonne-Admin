@@ -583,7 +583,8 @@ export default function FloorMap() {
       setEditTool({ kind: "none" });
       setRuler({ on: false });
     } else if (key === "r" && !mod && sel.length) editActions.rotate(e.shiftKey ? -90 : 90);
-    else if (key.startsWith("arrow") && sel.length) {
+    // No 3D as setas andam pela cena (não movem o objeto)
+    else if (key.startsWith("arrow") && sel.length && dim === "2d") {
       e.preventDefault();
       const n = (e.altKey ? 0.01 : 0.05) * (e.shiftKey ? 10 : 1);
       const dx = key === "arrowleft" ? -n : key === "arrowright" ? n : 0;

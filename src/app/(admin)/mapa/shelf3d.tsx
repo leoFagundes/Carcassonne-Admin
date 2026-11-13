@@ -120,7 +120,7 @@ function ChestModel({ el }: { el: PlanElement }) {
   );
 }
 
-/** Armário embaixo da escada: corpo com o teto inclinado e três portas de alturas diferentes. */
+/** Armário embaixo da escada: corpo com o teto inclinado e três portas de correr de alturas diferentes. */
 function UnderstairModel({ el }: { el: PlanElement }) {
   const { w, d } = el;
   const U = UNDERSTAIR;
@@ -145,16 +145,26 @@ function UnderstairModel({ el }: { el: PlanElement }) {
       <B s={[w + 0.01, U.base, 0.02]} p={[0, U.base / 2, d / 2 + 0.006]} c={0x5e3d22} />
       {/* Acabamento no alto, seguindo a escada */}
       <B s={[Math.hypot(w, U.height - U.low) + 0.02, 0.04, d + 0.04]} p={[0, (U.low + U.height) / 2, 0]} rot={[0, 0, slope]} c={0x5e3d22} />
+      {/* Trilho de baixo (duas canaletas) */}
+      <B s={[w - 0.02, 0.025, 0.07]} p={[0, U.base + 0.0125, d / 2 + 0.035]} c={0x9a9a9e} o={{ metalness: 0.5, roughness: 0.4 }} />
+      {/* Portas de correr: alternam entre o trilho da frente e o de trás e se sobrepõem um pouco */}
       {[0, 1, 2].map((i) => {
         const x0 = -w / 2 + cw * i;
         const top = understairTop(w, cw * i) - U.frame - 0.02;
-        const h = top - U.base - 0.02;
-        const knobLeft = i === 2;
+        const h = top - U.base - 0.03;
+        const pw = cw + (i === 1 ? 0.06 : 0.01);
+        const z = d / 2 + (i === 1 ? 0.018 : 0.05);
+        const pullX = x0 + cw / 2 + (i === 0 ? cw / 2 - 0.08 : i === 2 ? -cw / 2 + 0.08 : 0);
+        const y = U.base + 0.025 + h / 2;
         return (
           <group key={i}>
-            <B s={[cw - 0.04, h, 0.025]} p={[x0 + cw / 2, U.base + 0.01 + h / 2, d / 2 + 0.008]} c={0x9a6a3c} o={{ map: "grain", roughness: 0.7 }} />
-            <B s={[(cw - 0.04) * 0.7, h * 0.78, 0.01]} p={[x0 + cw / 2, U.base + 0.01 + h / 2, d / 2 + 0.024]} c={0x8f6236} o={{ roughness: 0.7 }} />
-            <Knob x={x0 + (knobLeft ? 0.07 : cw - 0.07)} y={U.base + 0.01 + h * 0.5} z={d / 2 + 0.04} />
+            <B s={[pw - 0.01, h, 0.022]} p={[x0 + cw / 2, y, z]} c={i === 1 ? 0x93643a : 0x9a6a3c} o={{ map: "grain", roughness: 0.7 }} />
+            {/* Moldura fina nas bordas da folha */}
+            {[-1, 1].map((sx) => (
+              <B key={sx} s={[0.02, h, 0.026]} p={[x0 + cw / 2 + sx * (pw / 2 - 0.015), y, z]} c={0x6e4727} />
+            ))}
+            {/* Puxador embutido (cavidade) */}
+            <B s={[0.03, Math.min(0.22, h * 0.3), 0.006]} p={[pullX, U.base + 0.025 + Math.min(0.95, h * 0.5), z + 0.012]} c={0x241810} o={{ roughness: 0.9 }} />
           </group>
         );
       })}

@@ -98,7 +98,7 @@ function FrontDrawing({ el }: { el: PlanElement }) {
           const top = yTop(cw * i) + S.frame * U;
           return <rect key={i} x={x0} y={top} width={cw - S.frame * 2 * U} height={H - S.base * U - top} fill="#4a2f1a" />;
         })}
-        {/* Prateleiras de dentro (a porta do meio tem 2 espaços; a alta, 3) */}
+        {/* Prateleiras de dentro (a parte do meio tem 2 espaços; a alta, 3) */}
         {[1, 2].map((i) => {
           const n = i + 1;
           const x0 = cw * i + S.frame * U;
@@ -109,6 +109,8 @@ function FrontDrawing({ el }: { el: PlanElement }) {
           ));
         })}
         <rect x={0} y={H - S.base * U} width={w} height={S.base * U} fill="#5e3d22" />
+        {/* Trilho das portas de correr */}
+        <rect x={2} y={H - S.base * U - 1} width={w - 4} height={2.5} fill="#9a9a9e" />
       </g>
     );
   }
