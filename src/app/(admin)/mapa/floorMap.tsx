@@ -833,6 +833,11 @@ export default function FloorMap() {
       if (tool.kind === "select") setSelUnit(null);
       return;
     }
+    // Armário de jogos: vai direto para ele (modo Jogos, armário aberto)
+    if (shelvesList.some((sh) => sh.el.id === id)) {
+      if (tool.kind === "select") openShelfAt(id);
+      return;
+    }
     const unit = status.unitOfTable.get(id);
     if (!unit) return;
     if (tool.kind === "join") {
@@ -1364,7 +1369,7 @@ export default function FloorMap() {
               groups={mode === "day" ? groupOutlines : undefined}
               isInteractive={
                 mode === "day"
-                  ? (el) => el.kind === "table"
+                  ? (el) => el.kind === "table" || (el.kind === "gameshelf" && tool.kind === "select")
                   : mode === "games"
                     ? (el) => el.kind === "gameshelf"
                     : (el) => !lockStructure || !KINDS[el.kind].structural
