@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import NumberPicker from "./numberPicker";
+import AddToCalendar from "./addToCalendar";
 import Button from "@/components/button";
 import Calendar from "react-calendar";
 import ReserveRepository from "@/services/repositories/ReserveRepository";
@@ -844,6 +845,18 @@ export default function Reserve() {
                   Os detalhes foram enviados para o seu e-mail.
                 </p>
               </div>
+
+              <AddToCalendar
+                code={reserve.code}
+                bookingDate={reserve.bookingDate}
+                time={reserve.time}
+                people={(reserve.adults || 0) + (reserve.childs || 0)}
+                address={pub.address}
+                closeTime={(() => {
+                  const d = new Date(Number(reserve.bookingDate.year), Number(reserve.bookingDate.month) - 1, Number(reserve.bookingDate.day));
+                  return pub.hours?.[d.getDay()]?.close;
+                })()}
+              />
             </div>
           </div>
         )}
