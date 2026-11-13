@@ -23,7 +23,7 @@ export const SYNC_DEFAULT = true;
 /** A mudança que vale no dia (a última com início até ele), ou null se nunca mudou. */
 export function syncChangeFor(history: SyncChange[], date: string): SyncChange | null {
   let found: SyncChange | null = null;
-  for (const c of history) if (c.from <= date && (!found || c.from >= found.from)) found = c;
+  for (const c of history ?? []) if (c.from <= date && (!found || c.from >= found.from)) found = c;
   return found;
 }
 
@@ -37,7 +37,7 @@ export function syncEnabledOn(history: SyncChange[], date: string): boolean {
  * e qualquer mudança marcada para depois é substituída por esta.
  */
 export function withSyncChange(history: SyncChange[], today: string, on: boolean): SyncChange[] {
-  const before = history.filter((c) => c.from < today).sort((a, b) => a.from.localeCompare(b.from));
+  const before = (history ?? []).filter((c) => c.from < today).sort((a, b) => a.from.localeCompare(b.from));
   const prev = before.length ? before[before.length - 1].on : SYNC_DEFAULT;
   return prev === on ? before : [...before, { from: today, on }];
 }
