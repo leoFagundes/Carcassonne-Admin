@@ -57,9 +57,11 @@ export function PaletteThumb({ item, size = 56 }: { item: PaletteItem; size?: nu
 }
 
 type Tab = KindCategory | "armarios";
-const TABS: { id: Tab; label: string }[] = [
-  { id: "armarios", label: "Armários de jogos" },
-  ...CATEGORY_ORDER.map((c) => ({ id: c as Tab, label: CATEGORY_LABEL[c] })),
+/** Nomes curtos nas abas (o nome completo fica na dica). */
+const SHORT: Record<Tab, string> = { armarios: "Armários", lugares: "Lugares", moveis: "Móveis", estrutura: "Estrutura", detalhes: "Detalhes" };
+const TABS: { id: Tab; label: string; title: string }[] = [
+  { id: "armarios", label: SHORT.armarios, title: "Armários de jogos" },
+  ...CATEGORY_ORDER.map((c) => ({ id: c as Tab, label: SHORT[c], title: CATEGORY_LABEL[c] })),
 ];
 
 /** Lista "Adicionar": miniaturas por categoria (armários de jogos primeiro), com busca. */
@@ -89,19 +91,16 @@ export default function PaletteGrid({ onAdd }: { onAdd: (item: PaletteItem) => v
         )}
       </label>
       {!q.trim() && (
-        <div
-          role="tablist"
-          aria-label="Categorias"
-          className="-mx-3 flex gap-1 overflow-x-auto px-3 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
+        <div role="tablist" aria-label="Categorias" className="grid grid-cols-5 gap-1">
           {TABS.map((t) => (
             <button
               key={t.id}
               type="button"
               role="tab"
               aria-selected={cat === t.id}
+              title={t.title}
               onClick={() => setCat(t.id)}
-              className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+              className={`min-w-0 truncate rounded-full px-1 py-1 text-center text-[10.5px] font-semibold transition-colors ${
                 cat === t.id
                   ? "bg-primary-gold text-primary-black"
                   : t.id === "armarios"
