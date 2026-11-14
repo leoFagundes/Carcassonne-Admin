@@ -6,6 +6,7 @@ import { KINDS, tableTitle } from "@/floorplan/catalog";
 import { boundsOf, formatMeters, handleLocal, HANDLES, toWorld, type Handle, type Pt } from "@/floorplan/geometry";
 import type { LevelBackground, PlanElement, TableState } from "@/floorplan/types";
 import { STATE_META } from "@/floorplan/day";
+import { groupOutline, outlinePath } from "@/floorplan/groupOutline";
 import { PlanDefs, Shape2D, tableFill, U } from "./shapes2d";
 
 /** Alças: tamanho, giro, ponto do polígono (v0…) e "criar ponto" no meio da aresta (m0…). */
@@ -412,18 +413,17 @@ export default function PlanCanvas(props: PlanCanvasProps) {
             {/* Grupos de mesas juntadas */}
             {groups?.map((g) => {
               const els = levelEls.filter((e) => g.tableIds.includes(e.id));
-              const gb = boundsOf(els);
-              if (!gb) return null;
-              const pad = 12;
+              if (!els.length) return null;
+              // Segue o formato do grupo (um "L" não engole a mesa do canto)
+              const loops = groupOutline(
+                els.map((e) => boundsOf([e])!),
+                0.12,
+              );
               const color = g.state ? STATE_META[g.state].color : "#e6c56b";
               return (
-                <rect
+                <path
                   key={g.key}
-                  x={gb.minX * U - pad}
-                  y={gb.minY * U - pad}
-                  width={(gb.maxX - gb.minX) * U + pad * 2}
-                  height={(gb.maxY - gb.minY) * U + pad * 2}
-                  rx={10}
+                  d={outlinePath(loops, U, 10)}
                   fill="none"
                   stroke={color}
                   strokeWidth={px(2)}
