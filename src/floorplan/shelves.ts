@@ -402,6 +402,22 @@ export function unplacedGames(games: CatalogGame[], located: Map<string, GameLoc
   return games.filter((g) => !located.has(g.id));
 }
 
+/**
+ * Caixas de pé numa prateleira (vista de frente): lado a lado se cabem; senão,
+ * uma por cima da outra (como lombadas), deixando ao menos 36% de cada capa à
+ * mostra; se nem assim cabem, mostra as que dá e um "+N" no fim.
+ * `overlap` é quanto cada caixa entra na anterior (negativo = espaço entre elas).
+ */
+export function layoutBoxes(n: number, boxW: number, avail: number, gap = 3): { shown: number; overlap: number } {
+  if (n <= 1 || n * boxW + (n - 1) * gap <= avail) return { shown: n, overlap: -gap };
+  const minStep = boxW * 0.36;
+  const step = (avail - boxW) / (n - 1);
+  if (step >= minStep) return { shown: n, overlap: boxW - step };
+  const badge = Math.max(26, boxW * 0.64) + 4;
+  const shown = Math.max(1, Math.floor((avail - badge - boxW) / minStep) + 1);
+  return { shown: Math.min(n, shown), overlap: boxW - minStep };
+}
+
 /** Total de jogos guardados num armário. */
 export function shelfCount(content: ShelfContent | undefined): number {
   if (!content) return 0;

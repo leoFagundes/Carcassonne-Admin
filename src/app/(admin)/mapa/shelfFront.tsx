@@ -7,6 +7,7 @@ import {
   CUBES,
   HUTCH,
   labelInfo,
+  layoutBoxes,
   LOWCAB,
   POUF,
   UNDERSTAIR,
@@ -227,10 +228,47 @@ function OpenDoor({ x, y, w, h, side }: { x: number; y: number; w: number; h: nu
   );
 }
 
+/**
+ * Plaquinha do espaço: de latão (com a cor da categoria num esmalte) quando
+ * tem etiqueta, de madeira com o nome do espaço quando não tem. Nas
+ * prateleiras ela fica pendurada na tábua de cima por duas correntinhas.
+ */
+function ShelfSign({ text, color, count, hang }: { text: string; color?: string; count: number; hang: boolean }) {
+  const brass = !!color;
+  const plate = (
+    <span
+      className={`relative flex max-w-full items-center gap-1 rounded-[3px] border px-[7px] py-[2px] text-[9.5px] font-extrabold uppercase leading-none tracking-[0.08em] shadow-[0_2px_3px_rgba(0,0,0,0.45)] ${
+        brass
+          ? "border-[#6b4f1f] bg-[linear-gradient(180deg,#f3dda0_0%,#d4ad5c_45%,#a8843f_100%)] text-[#3a2410] [text-shadow:0_1px_0_rgba(255,240,200,0.55)]"
+          : "border-[#1e130a] bg-[linear-gradient(180deg,#5c3f28_0%,#3d2817_100%)] text-primary-gold/75"
+      }`}
+    >
+      {/* Parafusos */}
+      <span className={`absolute left-[2px] top-1/2 h-[3px] w-[3px] -translate-y-1/2 rounded-full ${brass ? "bg-[#6b4f1f]" : "bg-[#1e130a]"}`} />
+      <span className={`absolute right-[2px] top-1/2 h-[3px] w-[3px] -translate-y-1/2 rounded-full ${brass ? "bg-[#6b4f1f]" : "bg-[#1e130a]"}`} />
+      {brass && <span className="h-[7px] w-[7px] shrink-0 rounded-full border border-[#3a2410]/60" style={{ background: color }} />}
+      <span className="min-w-0 truncate">{text}</span>
+      {count > 0 && <span className={`shrink-0 rounded-sm px-[3px] py-px text-[8.5px] tracking-normal ${brass ? "bg-[#3a2410]/15" : "bg-black/30"}`}>{count}</span>}
+    </span>
+  );
+  if (!hang) return <span className="pointer-events-none absolute left-1 top-1 z-10 flex max-w-[calc(100%-8px)]">{plate}</span>;
+  return (
+    <span className="pointer-events-none absolute left-1/2 top-0 z-10 flex max-w-[calc(100%-12px)] -translate-x-1/2 flex-col items-center">
+      {/* Correntinhas presas na tábua de cima */}
+      <span className="flex w-[70%] justify-between">
+        <span className={`h-[5px] w-px ${brass ? "bg-[#c9a253]" : "bg-[#8a6a4a]"}`} />
+        <span className={`h-[5px] w-px ${brass ? "bg-[#c9a253]" : "bg-[#8a6a4a]"}`} />
+      </span>
+      {plate}
+    </span>
+  );
+}
+
 function GameTile({
   g,
   cat,
   size,
+  overlap,
   slotId,
   highlight,
   selected,
@@ -240,6 +278,8 @@ function GameTile({
   g: ShelfGame;
   cat?: CatalogGame;
   size: number;
+  /** Quanto a caixa entra por cima da anterior (px), quando há muitas. */
+  overlap: number;
   slotId: string;
   highlight: boolean;
   selected: boolean;
@@ -253,7 +293,10 @@ function GameTile({
     .join("")
     .toUpperCase();
   return (
-    <span className="group/tile relative shrink-0">
+    <span
+      className={`group/tile relative shrink-0 transition-transform duration-150 hover:z-20 hover:-translate-y-1 focus-within:z-20 ${selected || highlight ? "z-10 -translate-y-1" : ""}`}
+      style={{ marginLeft: overlap ? -overlap : 0 }}
+    >
     <button
       type="button"
       draggable
@@ -265,21 +308,31 @@ function GameTile({
         e.stopPropagation();
         onSelect();
       }}
-      title={g.name}
       aria-label={g.name}
-      className={`relative shrink-0 overflow-hidden rounded-[3px] shadow-[0_2px_4px_rgba(0,0,0,0.5)] transition-transform hover:-translate-y-0.5 ${
-        highlight ? "ring-2 ring-white" : selected ? "ring-2 ring-primary-gold" : ""
+      className={`relative block shrink-0 overflow-hidden rounded-[3px] shadow-[2px_3px_5px_rgba(0,0,0,0.55),-1px_0_0_rgba(0,0,0,0.35)] outline-none ${
+        highlight ? "ring-2 ring-white" : selected ? "ring-2 ring-primary-gold" : "focus-visible:ring-2 focus-visible:ring-primary-gold"
       }`}
       style={{ width: size * 0.78, height: size }}
     >
       {cat?.image ? (
         <img src={cat.image} alt="" className="h-full w-full object-cover" loading="lazy" draggable={false} />
       ) : (
-        <span className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#5a3d27] to-[#2a1b10] text-[10px] font-extrabold text-primary-gold/85">
-          {initials}
+        <span className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#5a3d27] to-[#2a1b10] px-0.5 text-center text-[10px] font-extrabold leading-tight text-primary-gold/85">
+          {size >= 44 ? g.name : initials}
         </span>
       )}
+      {/* Volume da caixa: lombada escura à esquerda e brilho no alto */}
+      <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.38)_0%,rgba(0,0,0,0)_9%,rgba(255,255,255,0)_70%,rgba(255,255,255,0.10)_100%)]" />
+      <span className="pointer-events-none absolute inset-x-0 top-0 h-[18%] bg-gradient-to-b from-white/15 to-transparent" />
     </button>
+    {/* Nome do jogo (ao passar o mouse ou com o jogo escolhido) */}
+    <span
+      className={`pointer-events-none absolute bottom-full left-1/2 z-30 mb-1 max-w-[160px] -translate-x-1/2 truncate whitespace-nowrap rounded-md border border-primary-gold/30 bg-[#14110e]/95 px-1.5 py-0.5 text-[10px] font-bold text-primary-gold shadow-card ${
+        selected ? "block" : "hidden group-hover/tile:block"
+      }`}
+    >
+      {g.name}
+    </span>
     {/* Tirar com um clique (aparece ao passar o mouse) */}
     {size >= 28 && (
       <button
@@ -407,9 +460,12 @@ export default function ShelfFront({
               const info = labelInfo(slot?.label, customs);
               const games = slot?.games ?? [];
               const hPx = s.h * scale;
-              const tile = Math.max(18, Math.min(70, hPx * (s.kind === "top" ? 0.7 : 0.62)));
-              const fit = Math.max(1, Math.floor((s.w * scale - 8) / (tile * 0.78 + 3)));
-              const shown = games.length > fit ? games.slice(0, Math.max(0, fit - 1)) : games;
+              const hang = s.kind !== "top" && s.kind !== "drawer";
+              // A plaquinha pendurada ocupa o alto do espaço; as caixas ficam de pé embaixo
+              const sign = hang ? Math.min(24, Math.max(15, hPx * 0.2)) : 0;
+              const tile = Math.max(18, Math.min(110, (hPx - sign - 8) * (s.kind === "top" ? 0.8 : 0.9)));
+              const lay = layoutBoxes(games.length, tile * 0.78, s.w * scale - 10);
+              const shown = games.slice(0, lay.shown);
               const extra = games.length - shown.length;
               const sel = selectedSlot === s.id;
               return (
@@ -446,22 +502,15 @@ export default function ShelfFront({
                     height: hPx,
                   }}
                 >
-                  <span className="pointer-events-none absolute left-1 top-1 flex max-w-[calc(100%-8px)] items-center gap-1">
-                    {info ? (
-                      <span className="truncate rounded-full px-1.5 py-px text-[9px] font-extrabold uppercase tracking-wide text-[#14110e] shadow" style={{ background: info.color }}>
-                        {info.text}
-                      </span>
-                    ) : (
-                      <span className="truncate rounded-full bg-black/45 px-1.5 py-px text-[9px] font-semibold text-primary-gold/60">{s.label}</span>
-                    )}
-                  </span>
-                  <div className="flex items-end gap-[3px] px-1 pb-[3px] pt-2">
-                    {shown.map((g) => (
+                  <ShelfSign text={info?.text ?? s.label} color={info?.color} count={games.length} hang={hang} />
+                  <div className="flex items-end px-[5px] pb-[3px] pt-2">
+                    {shown.map((g, i) => (
                       <GameTile
                         key={g.key}
                         g={g}
                         cat={g.gameId ? catalogById.get(g.gameId) : undefined}
                         size={tile}
+                        overlap={i ? lay.overlap : 0}
                         slotId={s.id}
                         highlight={!!highlightGame && g.gameId === highlightGame}
                         selected={selectedGame === g.key}
@@ -470,7 +519,13 @@ export default function ShelfFront({
                       />
                     ))}
                     {extra > 0 && (
-                      <span className="mb-1 shrink-0 rounded bg-black/60 px-1 py-0.5 text-[10px] font-bold text-primary-gold">+{extra}</span>
+                      <span
+                        className="relative z-10 ml-1 flex shrink-0 items-center justify-center rounded-[3px] border border-primary-gold/30 bg-[#14110e]/85 text-[11px] font-extrabold text-primary-gold"
+                        style={{ width: Math.max(26, tile * 0.5), height: tile * 0.6 }}
+                        title={`Mais ${extra}: veja a lista no painel`}
+                      >
+                        +{extra}
+                      </span>
                     )}
                     {games.length === 0 && s.kind !== "drawer" && hPx > 30 && (
                       <span className="pointer-events-none mb-1 flex w-full items-center justify-center gap-1 text-[10px] text-primary-gold/35">

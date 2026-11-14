@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  layoutBoxes,
   addGameToSlot,
   formatLocation,
   gameShelves,
@@ -193,5 +194,27 @@ describe("nomes dos lugares que guardam jogos", () => {
     expect(gameShelfName(els, "pouf3")).toBe("Pufe 2");
     expect(gameShelfName(els, "chest")).toBe("Baú 1");
     expect(gameShelfName(els, "understair")).toBe("Embaixo da escada");
+  });
+});
+
+describe("caixas de pé na prateleira", () => {
+  it("lado a lado quando cabem", () => {
+    expect(layoutBoxes(3, 40, 200)).toEqual({ shown: 3, overlap: -3 });
+    expect(layoutBoxes(0, 40, 10).shown).toBe(0);
+  });
+  it("muitas: uma por cima da outra, todas à mostra, sem passar da largura", () => {
+    const l = layoutBoxes(8, 40, 200);
+    expect(l.shown).toBe(8);
+    expect(l.overlap).toBeGreaterThan(0);
+    // largura total = primeira caixa + (n-1) passos
+    expect(40 + 7 * (40 - l.overlap)).toBeLessThanOrEqual(200 + 1e-9);
+    // cada capa aparece ao menos 36%
+    expect(40 - l.overlap).toBeGreaterThanOrEqual(14.4 - 1e-9);
+  });
+  it("demais: mostra as que dá e sobra espaço para o +N", () => {
+    const l = layoutBoxes(60, 40, 200);
+    expect(l.shown).toBeLessThan(60);
+    expect(l.shown).toBeGreaterThan(1);
+    expect(40 + (l.shown - 1) * (40 - l.overlap) + 30).toBeLessThanOrEqual(200 + 1e-9);
   });
 });

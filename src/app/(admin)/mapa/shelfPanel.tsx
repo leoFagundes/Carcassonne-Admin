@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { LuArrowRightLeft, LuPlus, LuSearch, LuSparkles, LuTag, LuTriangleAlert, LuUndo2, LuX } from "react-icons/lu";
+import { LuArrowRightLeft, LuPlus, LuSearch, LuSparkles, LuTriangleAlert, LuUndo2, LuX } from "react-icons/lu";
 import {
   CATEGORY_COLORS,
   formatLocation,
@@ -20,6 +20,7 @@ import {
 import type { PlanElement } from "@/floorplan/types";
 import { Btn, Section } from "./ui";
 import { DRAG_MIME, type DragPayload } from "./shelfFront";
+import LabelPicker from "./labelPicker";
 
 export interface ShelfActions {
   setLabel: (slotId: string, label: SlotLabel | undefined) => void;
@@ -37,8 +38,16 @@ export interface ShelfRef {
 }
 
 /** Cria uma categoria do gerente: nome e cor. */
-export function CategoryForm({ onCreate, onCancel }: { onCreate: (name: string, color: string) => void; onCancel?: () => void }) {
-  const [name, setName] = useState("");
+export function CategoryForm({
+  onCreate,
+  onCancel,
+  initialName = "",
+}: {
+  onCreate: (name: string, color: string) => void;
+  onCancel?: () => void;
+  initialName?: string;
+}) {
+  const [name, setName] = useState(initialName);
   const [color, setColor] = useState(CATEGORY_COLORS[1]);
   return (
     <form
@@ -141,7 +150,8 @@ export default function ShelfPanel({
   const slotDef = slots.find((s) => s.id === selectedSlot) ?? null;
   const slot = selectedSlot ? content?.slots[selectedSlot] : undefined;
   const [q, setQ] = useState("");
-  const [creating, setCreating] = useState(false);
+  /** Formulário de categoria nova: aberto (com o nome já digitado na busca, se houver). */
+  const [creating, setCreating] = useState<string | boolean>(false);
   const [showWrong, setShowWrong] = useState(false);
   const [moving, setMoving] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -165,7 +175,6 @@ export default function ShelfPanel({
     return list.slice(0, 12);
   }, [unplaced, slot?.label]);
 
-  const labelValue = !slot?.label ? "" : slot.label.kind === "type" ? `type:${slot.label.name}` : `custom:${slot.label.id}`;
   const targets = shelves.flatMap((s) =>
     shelfSlots(s.el).map((sl) => ({ shelfId: s.el.id, slotId: sl.id, label: s.el.id === shelf.el.id ? sl.label : `${s.name} · ${sl.label}`, here: s.el.id === shelf.el.id })),
   );
@@ -235,50 +244,18 @@ export default function ShelfPanel({
         <Section title={slotDef.label} aside={<span className="text-[11px] text-primary-gold/50">{slot?.games.length ?? 0} jogos</span>}>
           {/* Etiqueta */}
           <div className="flex flex-col gap-1.5">
-            <label className="flex items-center gap-1.5">
-              <LuTag size={13} className="shrink-0 text-primary-gold/50" aria-hidden="true" />
-              {info && <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: info.color }} />}
-              <select
-                value={labelValue}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (v === "__new") {
-                    setCreating(true);
-                    return;
-                  }
-                  if (!v) actions.setLabel(slotDef.id, undefined);
-                  else if (v.startsWith("type:")) actions.setLabel(slotDef.id, { kind: "type", name: v.slice(5) });
-                  else actions.setLabel(slotDef.id, { kind: "custom", id: v.slice(7) });
-                }}
-                className="w-full min-w-0 rounded-lg border border-primary-gold/20 bg-primary-black/70 px-2 py-1.5 text-sm text-primary-gold outline-none focus:border-primary-gold/60"
-                aria-label="Etiqueta do espaço"
-              >
-                <option value="" className="bg-primary-black">
-                  Sem etiqueta
-                </option>
-                {customs.length > 0 && (
-                  <optgroup label="Suas categorias">
-                    {customs.map((c) => (
-                      <option key={c.id} value={`custom:${c.id}`} className="bg-primary-black">
-                        {c.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-                <optgroup label="Categorias da Coleção">
-                  {types.map((t) => (
-                    <option key={t.name} value={`type:${t.name}`} className="bg-primary-black">
-                      {t.name} ({t.count})
-                    </option>
-                  ))}
-                </optgroup>
-                <option value="__new" className="bg-primary-black">
-                  + Criar uma categoria nova…
-                </option>
-              </select>
-            </label>
-            {creating && (
+            <LabelPicker
+              key={slotDef.id}
+              value={slot?.label}
+              customs={customs}
+              types={types}
+              suggestion={suggestion}
+              onChange={(label) => actions.setLabel(slotDef.id, label)}
+              onCreate={(name) => setCreating(name || true)}
+            />
+            {creating !== false && (
               <CategoryForm
+                initialName={typeof creating === "string" ? creating : ""}
                 onCancel={() => setCreating(false)}
                 onCreate={(name, color) => {
                   const c = actions.createCategory(name, color);
