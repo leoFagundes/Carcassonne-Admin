@@ -19,6 +19,7 @@ import {
   LuSave,
   LuSquare,
   LuUndo2,
+  LuLayers,
 } from "react-icons/lu";
 import { useAlert } from "@/contexts/alertProvider";
 import { formatDateBR, RENTAL_TZ, todaySP, weekdayOf } from "@/rental/dates";
@@ -111,6 +112,7 @@ import PlanCanvas, { BG_ID, type GroupOutline, type HandleId, type MeasureOverla
 import DayPanel, { unitTitle, type DayActions, type DayTool, type TimeScope } from "./dayPanel";
 import EditPanel, { type EditActions, type EditTool } from "./editPanel";
 import { printDay } from "./print";
+import LayersPanel from "./layersPanel";
 import QuickUnitBar from "./quickUnitBar";
 import { releaseUnit, seatWalkin, setUnitState } from "./walkinActions";
 import { Btn, ConfirmDialog, Seg } from "./ui";
@@ -202,6 +204,8 @@ export default function FloorMap() {
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [ruler, setRuler] = useState<{ on: boolean; a?: Pt; b?: Pt }>({ on: false });
   const [full, setFull] = useState(false);
+  /** Lista de camadas (modo planta): fechada até a pessoa abrir. */
+  const [layersOpen, setLayersOpen] = useState(false);
   useEffect(() => {
     if (!full) return;
     const on = (e: KeyboardEvent) => e.key === "Escape" && setFull(false);
@@ -461,7 +465,8 @@ export default function FloorMap() {
     const el = elById.get(id);
     if (!el) return false;
     let ids: string[];
-    if (sel.includes(id)) ids = sel;
+    // Travados (cadeado) não se movem junto
+    if (sel.includes(id)) ids = sel.filter((x) => !elById.get(x)?.locked);
     else {
       if (el.kind === "room") return false; // arrastar o piso = mover a planta
       ids = additive ? [...sel, id] : [id];
@@ -589,7 +594,7 @@ export default function FloorMap() {
       const n = (e.altKey ? 0.01 : 0.05) * (e.shiftKey ? 10 : 1);
       const dx = key === "arrowleft" ? -n : key === "arrowright" ? n : 0;
       const dy = key === "arrowup" ? -n : key === "arrowdown" ? n : 0;
-      apply((p) => ({ ...p, elements: translate(p.elements, selectedRoots(p, sel), dx, dy) }));
+      apply((p) => ({ ...p, elements: translate(p.elements, selectedRoots(p, sel).filter((id) => !elById.get(id)?.locked), dx, dy) }));
     }
   };
   useEffect(() => {
@@ -1202,8 +1207,26 @@ export default function FloorMap() {
       {full ? <LuMinimize2 size={15} /> : <LuMaximize2 size={15} />}
     </button>
   );
+  // Botão das camadas (só no modo planta), na coluna de botões do mapa
+  const layersButton =
+    mode === "edit" ? (
+      <button
+        type="button"
+        title={layersOpen ? "Fechar a lista de camadas" : "Camadas: tudo o que está na planta"}
+        aria-label={layersOpen ? "Fechar a lista de camadas" : "Abrir a lista de camadas"}
+        aria-pressed={layersOpen}
+        onClick={() => setLayersOpen(!layersOpen)}
+        className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${
+          layersOpen ? "border-primary-gold bg-primary-gold text-primary-black" : "border-primary-gold/20 bg-primary-black/85 text-primary-gold/80 hover:border-primary-gold/50 hover:text-primary-gold"
+        }`}
+      >
+        <LuLayers size={15} />
+      </button>
+    ) : null;
   const plan = mode === "edit" ? draft : savedPlan;
   const elements = mode === "edit" ? draft.elements : mode === "games" ? savedPlan.elements : layout.elements;
+  // Escondidos (olhinho na lista de camadas) não são desenhados no 2D nem no 3D
+  const drawn = useMemo(() => elements.filter((e) => !e.hidden), [elements]);
   const levelsDesc = [...plan.levels].sort((a, b) => b.order - a.order);
   const selectedSet = useMemo(() => new Set(mode === "edit" ? sel : selectedUnit?.tableIds ?? []), [mode, sel, selectedUnit]);
   const pickingSet = useMemo(() => {
@@ -1214,7 +1237,7 @@ export default function FloorMap() {
   const summary = planSummary(plan);
   const levelSummary = summary.find((s) => s.level === level);
   const handlesFor =
-    mode === "edit" && editTool.kind === "none" && !ruler.on && selection.length === 1 && (!lockStructure || !KINDS[selection[0].kind].structural)
+    mode === "edit" && editTool.kind === "none" && !ruler.on && selection.length === 1 && !selection[0].locked && (!lockStructure || !KINDS[selection[0].kind].structural)
       ? selection[0]
       : null;
 
@@ -1370,7 +1393,7 @@ export default function FloorMap() {
             <CanvasMessage>Carregando a planta…</CanvasMessage>
           ) : dim === "3d" ? (
             <Scene3D
-              elements={elements}
+              elements={drawn}
               levels={plan.levels}
               levelHeight={plan.levelHeight}
               level={allLevels ? "all" : level}
@@ -1407,11 +1430,16 @@ export default function FloorMap() {
                   ))}
                 </>
               }
-              extraControls={fullButton}
+              extraControls={
+                <>
+                  {layersButton}
+                  {fullButton}
+                </>
+              }
             />
           ) : (
             <PlanCanvas
-              elements={elements}
+              elements={drawn}
               level={level}
               mode={mode === "edit" ? "edit" : "day"}
               selected={mode === "games" ? new Set(openShelf ? [openShelf] : []) : selectedSet}
@@ -1427,7 +1455,7 @@ export default function FloorMap() {
                   ? (el) => el.kind === "table" || (el.kind === "gameshelf" && tool.kind === "select")
                   : mode === "games"
                     ? (el) => el.kind === "gameshelf"
-                    : (el) => !lockStructure || !KINDS[el.kind].structural
+                    : (el) => !el.locked && (!lockStructure || !KINDS[el.kind].structural)
               }
               handlesFor={handlesFor}
               showGrid={mode === "edit"}
@@ -1443,6 +1471,7 @@ export default function FloorMap() {
               bottomOverlay={bottomBar}
               extraControls={
                 <>
+                {layersButton}
                 {fullButton}
                 <button
                   type="button"
@@ -1470,6 +1499,27 @@ export default function FloorMap() {
               onHandleStart={onHandleStart}
               onHandle={onHandle}
               onHandleEnd={onHandleEnd}
+            />
+          )}
+          {mode === "edit" && layersOpen && loaded && (
+            <LayersPanel
+              elements={draft.elements}
+              level={level}
+              levelName={draft.levels.find((l) => l.id === level)?.name ?? ""}
+              selected={selectedSet}
+              onSelect={(id, additive) => {
+                if (additive) setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+                else selectIds([id]);
+              }}
+              onUpdate={(id, patch) => editActions.update(id, patch)}
+              onUpdateMany={(ids, patch) =>
+                apply((p) => ({ ...p, elements: p.elements.map((e) => (ids.includes(e.id) ? { ...e, ...patch } : e)) }))
+              }
+              onDelete={(id) => {
+                apply((p) => deleteElements(p, [id]));
+                setSel((s) => s.filter((x) => x !== id));
+              }}
+              onClose={() => setLayersOpen(false)}
             />
           )}
           {full && (

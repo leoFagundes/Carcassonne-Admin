@@ -77,6 +77,8 @@ export default function QuickMap({ date, onClose }: { date: string; onClose: () 
   const base = plan ?? SEED_PLAN;
   const at = scope === "now" ? now : null;
   const layout = useMemo(() => applyDay(base, day), [base, day]);
+  // Escondidos na lista de camadas não aparecem no mapa
+  const shownElements = useMemo(() => layout.elements.filter((e) => !e.hidden), [layout]);
   const status = useMemo(
     () => computeDayStatus(base, day, layout, reserves, { autoSync: syncEnabledOn(settings.syncHistory, date), at, stayMinutes: settings.stayMinutes }),
     [base, day, layout, reserves, settings, date, at],
@@ -202,7 +204,7 @@ export default function QuickMap({ date, onClose }: { date: string; onClose: () 
                   </h3>
                   <div className="h-[46dvh] min-h-[280px] lg:h-auto lg:min-h-0 lg:flex-1">
                     <PlanCanvas
-                      elements={layout.elements}
+                      elements={shownElements}
                       level={l.id}
                       mode="day"
                       selected={selectedSet}

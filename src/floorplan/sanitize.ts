@@ -62,6 +62,8 @@ function sanitizeElement(raw: unknown, levels: Set<string>): PlanElement | null 
   const parent = str(raw.parent, 80);
   if (parent && parent !== id) el.parent = parent;
   if (raw.hideLabel === true) el.hideLabel = true;
+  if (raw.hidden === true) el.hidden = true;
+  if (raw.locked === true) el.locked = true;
   if (kind === "table" && raw.shape === "round") el.shape = "round";
   if (supportsPolygon(kind) && Array.isArray(raw.points)) {
     const pts: LocalPt[] = [];
@@ -156,6 +158,8 @@ export function planForStorage(plan: FloorPlan): FloorPlan {
       if (el.count !== undefined) out.count = el.count;
       if (el.parent) out.parent = el.parent;
       if (el.hideLabel) out.hideLabel = true;
+      if (el.hidden) out.hidden = true;
+      if (el.locked) out.locked = true;
       if (el.shape === "round") out.shape = "round";
       if (el.points && el.points.length >= 3) out.points = el.points.map((p) => ({ x: p.x, y: p.y }));
       if (el.lx !== undefined) out.lx = el.lx;

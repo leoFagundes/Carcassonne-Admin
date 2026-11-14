@@ -79,6 +79,10 @@ export interface PlanElement {
   points?: LocalPt[];
   /** Ambiente sem o nome escrito no mapa. */
   hideLabel?: boolean;
+  /** Escondido (olhinho na lista de camadas): não aparece no mapa, no 3D nem na impressão. */
+  hidden?: boolean;
+  /** Travado (cadeado na lista de camadas): não dá para escolher nem mover tocando no mapa. */
+  locked?: boolean;
   /** Posição do nome do ambiente em relação ao centro (eixos do ambiente). */
   lx?: number;
   ly?: number;

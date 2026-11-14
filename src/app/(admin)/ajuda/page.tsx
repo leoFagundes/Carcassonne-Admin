@@ -200,6 +200,12 @@ const helpCards: HelpCard[] = [
   },
   {
     category: "mapa",
+    title: "Lista de camadas (tudo o que está na planta)",
+    description:
+      "No modo Planta, o botão de camadas (na coluna de botões do mapa) abre e fecha a lista com tudo o que está no andar, de quem fica por cima para quem fica por baixo. Dá para agrupar por ambiente ou por tipo, buscar pelo nome e filtrar por tipo. Tocar num item escolhe ele no mapa (bom para pegar algo escondido embaixo de outro); o lápis renomeia, a lixeira exclui, o olhinho esconde do mapa, do 3D e da impressão, e o cadeado trava para não mexer sem querer tocando no mapa (pela lista ainda dá para escolher). Mesa escondida continua valendo para as reservas. Como tudo na planta, só vale depois de Salvar planta.",
+  },
+  {
+    category: "mapa",
     title: "Bancos presos às mesas",
     description:
       "Bancos e sofás podem ficar presos a uma mesa: quando ela se move ou gira, eles vão junto, na planta e no dia a dia. Para prender, escolha a mesa e os bancos (com Shift ou Ctrl) e toque em Prender à mesa. Para soltar, escolha o banco e toque em Soltar. Excluir uma mesa exclui os bancos presos a ela.",
