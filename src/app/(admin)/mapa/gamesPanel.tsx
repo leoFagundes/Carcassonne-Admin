@@ -1,15 +1,18 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { LuChevronDown, LuMapPin, LuPencil, LuPlus, LuSearch, LuTrash2, LuTriangleAlert } from "react-icons/lu";
+import { LuChevronDown, LuFilter, LuMapPin, LuPencil, LuPlus, LuSearch, LuTrash2, LuTriangleAlert } from "react-icons/lu";
 import {
   CATEGORY_COLORS,
   formatLocation,
+  hasRule,
+  ruleSummary,
   searchGames,
   shelfColors,
   shelfCount,
   typeColor,
   type CatalogGame,
+  type CategoryRule,
   type GameLocation,
   type ShelfCategory,
   type ShelfContent,
@@ -17,6 +20,7 @@ import {
 } from "@/floorplan/shelves";
 import { Btn, Section } from "./ui";
 import { CategoryForm, type ShelfRef } from "./shelfPanel";
+import RuleEditor from "./ruleEditor";
 
 export default function GamesPanel({
   shelves,
@@ -46,7 +50,7 @@ export default function GamesPanel({
   loadingCatalog: boolean;
   /** Abre o armário (e, se vier, o espaço e o jogo em destaque). */
   onOpen: (shelfId: string, slotId?: string, gameId?: string) => void;
-  onCreateCategory: (name: string, color: string) => void;
+  onCreateCategory: (name: string, color: string, rule?: CategoryRule) => void;
   onUpdateCategory: (c: ShelfCategory) => void;
   onDeleteCategory: (id: string) => void;
 }) {
@@ -191,7 +195,7 @@ export default function GamesPanel({
                     </>
                   ) : (
                     <>
-                      <Btn tone="ghost" title="Renomear ou trocar a cor" onClick={() => setEditing(editing === c.id ? null : c.id)}>
+                      <Btn tone="ghost" title="Renomear, trocar a cor ou mudar o filtro" onClick={() => setEditing(editing === c.id ? null : c.id)}>
                         <LuPencil size={13} />
                       </Btn>
                       <Btn tone="ghost" title="Excluir a categoria (os espaços ficam sem etiqueta)" onClick={() => setConfirmDel(c.id)}>
@@ -222,6 +226,21 @@ export default function GamesPanel({
                         />
                       ))}
                     </span>
+                    <RuleEditor
+                      rule={c.rule}
+                      catalog={catalog}
+                      types={types}
+                      onChange={(rule) => {
+                        const { rule: _old, ...rest } = c;
+                        void _old;
+                        onUpdateCategory(rule ? { ...rest, rule } : rest);
+                      }}
+                    />
+                  </span>
+                )}
+                {editing !== c.id && hasRule(c.rule) && (
+                  <span className="flex items-start gap-1 text-[10.5px] leading-snug text-primary-gold/55">
+                    <LuFilter size={11} className="mt-px shrink-0" /> {ruleSummary(c.rule)}
                   </span>
                 )}
               </li>
@@ -229,9 +248,11 @@ export default function GamesPanel({
           </ul>
           {creating ? (
             <CategoryForm
+              catalog={catalog}
+              types={types}
               onCancel={() => setCreating(false)}
-              onCreate={(n, col) => {
-                onCreateCategory(n, col);
+              onCreate={(n, col, rule) => {
+                onCreateCategory(n, col, rule);
                 setCreating(false);
               }}
             />

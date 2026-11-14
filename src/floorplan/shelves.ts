@@ -285,6 +285,91 @@ export interface ShelfCategory {
   id: string;
   name: string;
   color: string;
+  /** Regra opcional: quais jogos da Coleção combinam com a plaquinha. */
+  rule?: CategoryRule;
+}
+
+/**
+ * Regra de uma categoria criada pelo gerente (ex.: "Jogos para 2" = dá para
+ * jogar com 2). Todas as partes preenchidas precisam valer ao mesmo tempo;
+ * dentro de uma lista (categorias, dificuldades), basta uma.
+ */
+export interface CategoryRule {
+  /** Dá para jogar com esse número de pessoas (mínimo ≤ N ≤ máximo). */
+  players?: number;
+  /** Só os feitos exatamente para esse número (mínimo = máximo = N). */
+  exact?: boolean;
+  /** Duração de até tantos minutos. */
+  maxTime?: number;
+  /** Uma destas dificuldades. */
+  difficulty?: string[];
+  /** Uma destas categorias da Coleção. */
+  types?: string[];
+}
+
+export function hasRule(rule: CategoryRule | undefined): rule is CategoryRule {
+  return !!rule && (!!rule.players || !!rule.maxTime || !!rule.difficulty?.length || !!rule.types?.length);
+}
+
+/** O jogo combina com a regra? (sem regra, combina; dado que falta no jogo, não combina) */
+export function matchesRule(g: CatalogGame, rule: CategoryRule | undefined): boolean {
+  if (!hasRule(rule)) return true;
+  if (rule.players) {
+    const min = g.minPlayers ?? 0;
+    const max = g.maxPlayers ?? 0;
+    if (!min || !max) return false;
+    if (rule.exact ? !(min === rule.players && max === rule.players) : !(min <= rule.players && rule.players <= max)) return false;
+  }
+  if (rule.maxTime && !(g.playTime && g.playTime <= rule.maxTime)) return false;
+  if (rule.difficulty?.length && !(g.difficulty && rule.difficulty.includes(g.difficulty))) return false;
+  if (rule.types?.length && !rule.types.some((t) => g.types.includes(t))) return false;
+  return true;
+}
+
+/** "Para 2 jogadores · até 30 min · Leve · Party Game ou Blefe". */
+export function ruleSummary(rule: CategoryRule | undefined): string {
+  if (!hasRule(rule)) return "";
+  const parts: string[] = [];
+  if (rule.players) parts.push(rule.exact ? `só para ${rule.players}` : `dá para jogar com ${rule.players}`);
+  if (rule.maxTime) parts.push(`até ${rule.maxTime} min`);
+  const or = (l: string[]) => (l.length > 1 ? `${l.slice(0, -1).join(", ")} ou ${l[l.length - 1]}` : l[0]);
+  if (rule.difficulty?.length) parts.push(or(rule.difficulty));
+  if (rule.types?.length) parts.push(or(rule.types));
+  return parts.join(" · ");
+}
+
+/** Quem combina com a etiqueta: categoria da Coleção, ou a regra da sua categoria. Sem critério: null. */
+export function labelMatcher(label: SlotLabel | undefined, customs: ShelfCategory[]): ((g: CatalogGame) => boolean) | null {
+  if (!label) return null;
+  if (label.kind === "type") return (g) => g.types.includes(label.name);
+  const rule = customs.find((c) => c.id === label.id)?.rule;
+  return hasRule(rule) ? (g) => matchesRule(g, rule) : null;
+}
+
+function sanitizeRule(raw: unknown): CategoryRule | undefined {
+  if (!isObj(raw)) return undefined;
+  const int = (v: unknown, max: number) => (typeof v === "number" && Number.isFinite(v) && v >= 1 && v <= max ? Math.round(v) : undefined);
+  const list = (v: unknown) =>
+    Array.isArray(v) ? [...new Set(v.filter((x): x is string => typeof x === "string" && x.trim().length > 0).map((x) => x.slice(0, 60)))].slice(0, 40) : [];
+  const rule: CategoryRule = {};
+  const players = int(raw.players, 99);
+  if (players) {
+    rule.players = players;
+    if (raw.exact === true) rule.exact = true;
+  }
+  const maxTime = int(raw.maxTime, 600);
+  if (maxTime) rule.maxTime = maxTime;
+  const difficulty = list(raw.difficulty);
+  if (difficulty.length) rule.difficulty = difficulty;
+  const types = list(raw.types);
+  if (types.length) rule.types = types;
+  return hasRule(rule) ? rule : undefined;
+}
+
+/** A categoria como vai para o banco (sem campos vazios: o Firestore recusa undefined). */
+export function categoryForStorage(c: ShelfCategory): Record<string, unknown> {
+  const rule = sanitizeRule(c.rule);
+  return rule ? { id: c.id, name: c.name, color: c.color, rule } : { id: c.id, name: c.name, color: c.color };
 }
 
 /** O que o armário precisa saber de cada jogo da Coleção. */
@@ -293,6 +378,11 @@ export interface CatalogGame {
   name: string;
   image?: string;
   types: string[];
+  minPlayers?: number;
+  maxPlayers?: number;
+  /** Duração (min). */
+  playTime?: number;
+  difficulty?: string;
 }
 
 export const CATEGORY_COLORS = ["#e6c56b", "#34d399", "#60a5fa", "#f472b6", "#f59e0b", "#a78bfa", "#f87171", "#2dd4bf", "#a3e635", "#fb923c"];
@@ -339,13 +429,13 @@ export function suggestSlotLabel(slot: ShelfSlot | undefined, byId: Map<string, 
   return best && best[1] * 2 >= slot.games.length ? best[0] : null;
 }
 
-/** Jogos da Coleção que não são da categoria do espaço (só para etiqueta da Coleção). */
-export function outOfLabel(slot: ShelfSlot | undefined, byId: Map<string, CatalogGame>): ShelfGame[] {
-  if (!slot?.label || slot.label.kind !== "type") return [];
-  const name = slot.label.name;
+/** Jogos da Coleção no espaço que não combinam com a etiqueta (categoria da Coleção ou regra da sua categoria). */
+export function outOfLabel(slot: ShelfSlot | undefined, byId: Map<string, CatalogGame>, customs: ShelfCategory[] = []): ShelfGame[] {
+  const ok = labelMatcher(slot?.label, customs);
+  if (!slot || !ok) return [];
   return slot.games.filter((g) => {
     const cat = g.gameId ? byId.get(g.gameId) : undefined;
-    return cat && !cat.types.includes(name);
+    return cat && !ok(cat);
   });
 }
 
@@ -493,7 +583,8 @@ export function sanitizeCategories(raw: unknown): ShelfCategory[] {
     const id = str(c.id, 40);
     const name = str(c.name, 40);
     const color = typeof c.color === "string" && /^#[0-9a-f]{6}$/i.test(c.color) ? c.color : CATEGORY_COLORS[0];
-    if (id && name && !out.some((x) => x.id === id)) out.push({ id, name, color });
+    const rule = sanitizeRule(c.rule);
+    if (id && name && !out.some((x) => x.id === id)) out.push(rule ? { id, name, color, rule } : { id, name, color });
   }
   return out;
 }

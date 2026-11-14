@@ -1,6 +1,7 @@
 import { db } from "@/services/firebaseConfig";
 import { collection, doc, onSnapshot, setDoc } from "firebase/firestore";
 import {
+  categoryForStorage,
   sanitizeCategories,
   sanitizeShelf,
   slotForStorage,
@@ -61,7 +62,7 @@ class ShelfRepository {
   }
 
   static saveCategories(list: ShelfCategory[]) {
-    return setDoc(CATEGORIES_DOC, { list: list.map(({ id, name, color }) => ({ id, name, color })), updatedAt: Date.now() });
+    return setDoc(CATEGORIES_DOC, { list: list.map(categoryForStorage), updatedAt: Date.now() });
   }
 }
 

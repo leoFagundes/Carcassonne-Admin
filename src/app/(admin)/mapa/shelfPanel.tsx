@@ -1,17 +1,20 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { LuArrowRightLeft, LuPlus, LuSearch, LuSparkles, LuTriangleAlert, LuUndo2, LuX } from "react-icons/lu";
+import { LuArrowRightLeft, LuFilter, LuPlus, LuSearch, LuSparkles, LuTriangleAlert, LuUndo2, LuX } from "react-icons/lu";
 import {
   CATEGORY_COLORS,
   formatLocation,
   labelInfo,
+  labelMatcher,
   outOfLabel,
+  ruleSummary,
   sameLabel,
   searchGames,
   shelfSlots,
   suggestSlotLabel,
   type CatalogGame,
+  type CategoryRule,
   type GameLocation,
   type ShelfCategory,
   type ShelfContent,
@@ -21,6 +24,7 @@ import type { PlanElement } from "@/floorplan/types";
 import { Btn, Section } from "./ui";
 import { DRAG_MIME, type DragPayload } from "./shelfFront";
 import LabelPicker from "./labelPicker";
+import RuleEditor, { playersFromName } from "./ruleEditor";
 
 export interface ShelfActions {
   setLabel: (slotId: string, label: SlotLabel | undefined) => void;
@@ -28,7 +32,8 @@ export interface ShelfActions {
   removeGame: (slotId: string, key: string) => void;
   /** Move um jogo de um espaço (de qualquer armário) para outro. */
   moveGame: (from: { shelfId: string; slotId: string; key: string }, to: { shelfId: string; slotId: string }) => void;
-  createCategory: (name: string, color: string) => ShelfCategory;
+  createCategory: (name: string, color: string, rule?: CategoryRule) => ShelfCategory;
+  updateCategory: (c: ShelfCategory) => void;
 }
 
 export interface ShelfRef {
@@ -37,26 +42,37 @@ export interface ShelfRef {
   room: string;
 }
 
-/** Cria uma categoria do gerente: nome e cor. */
+/** Cria uma categoria do gerente: nome, cor e, se quiser, um filtro dos jogos que combinam. */
 export function CategoryForm({
   onCreate,
   onCancel,
   initialName = "",
+  catalog = [],
+  types = [],
 }: {
-  onCreate: (name: string, color: string) => void;
+  onCreate: (name: string, color: string, rule?: CategoryRule) => void;
   onCancel?: () => void;
   initialName?: string;
+  catalog?: CatalogGame[];
+  types?: { name: string; count: number }[];
 }) {
   const [name, setName] = useState(initialName);
   const [color, setColor] = useState(CATEGORY_COLORS[1]);
+  const [rule, setRule] = useState<CategoryRule | undefined>(() => {
+    const n = playersFromName(initialName);
+    return n ? { players: n } : undefined;
+  });
+  const [showRule, setShowRule] = useState(() => !!playersFromName(initialName));
+  const guess = playersFromName(name);
   return (
     <form
       className="flex flex-col gap-2 rounded-lg border border-primary-gold/20 bg-primary-black/50 p-2"
       onSubmit={(e) => {
         e.preventDefault();
         if (name.trim()) {
-          onCreate(name.trim(), color);
+          onCreate(name.trim(), color, rule);
           setName("");
+          setRule(undefined);
         }
       }}
     >
@@ -82,6 +98,21 @@ export function CategoryForm({
           />
         ))}
       </div>
+      {showRule ? (
+        <RuleEditor rule={rule} onChange={setRule} catalog={catalog} types={types} />
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setShowRule(true);
+            if (guess && !rule) setRule({ players: guess });
+          }}
+          className="flex items-center gap-1.5 self-start text-[11px] text-primary-gold/65 underline-offset-2 hover:text-primary-gold hover:underline"
+        >
+          <LuFilter size={12} />
+          {guess ? `Filtrar: jogos que dá para jogar com ${guess}` : "Adicionar filtro (jogadores, duração, categorias…)"}
+        </button>
+      )}
       <div className="flex justify-end gap-1.5">
         {onCancel && (
           <Btn tone="ghost" onClick={onCancel}>
@@ -93,6 +124,74 @@ export function CategoryForm({
         </Btn>
       </div>
     </form>
+  );
+}
+
+/** Filtro da sua categoria escolhida no espaço: resumo, e editar na hora. */
+function RuleBar({
+  category,
+  catalog,
+  types,
+  onSave,
+}: {
+  category: ShelfCategory;
+  catalog: CatalogGame[];
+  types: { name: string; count: number }[];
+  onSave: (c: ShelfCategory) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<CategoryRule | undefined>(category.rule);
+  const summary = ruleSummary(category.rule);
+  if (editing)
+    return (
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[11px] text-primary-gold/60">
+          Filtro de <strong className="text-primary-gold/85">{category.name}</strong>: ajuda a achar os jogos e avisa quem não combina.
+        </span>
+        <RuleEditor rule={draft} onChange={setDraft} catalog={catalog} types={types} />
+        <span className="flex justify-end gap-1.5">
+          <Btn
+            tone="ghost"
+            onClick={() => {
+              setDraft(category.rule);
+              setEditing(false);
+            }}
+          >
+            Cancelar
+          </Btn>
+          <Btn
+            tone="primary"
+            onClick={() => {
+              const { rule: _old, ...rest } = category;
+              void _old;
+              onSave(draft ? { ...rest, rule: draft } : rest);
+              setEditing(false);
+            }}
+          >
+            Salvar filtro
+          </Btn>
+        </span>
+      </div>
+    );
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        const n = playersFromName(category.name);
+        setDraft(category.rule ?? (n ? { players: n } : undefined));
+        setEditing(true);
+      }}
+      className="flex items-start gap-1.5 self-start text-left text-[11px] text-primary-gold/60 underline-offset-2 hover:text-primary-gold hover:underline"
+    >
+      <LuFilter size={12} className="mt-px shrink-0" />
+      {summary ? (
+        <span>
+          Filtro: <strong className="font-semibold text-primary-gold/85">{summary}</strong> (editar)
+        </span>
+      ) : (
+        <span>Adicionar filtro a {category.name} (jogadores, duração, categorias…)</span>
+      )}
+    </button>
   );
 }
 
@@ -155,9 +254,17 @@ export default function ShelfPanel({
   const [showWrong, setShowWrong] = useState(false);
   const [moving, setMoving] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const results = useMemo(() => (q.trim() ? searchGames(catalog, q, 12) : []), [catalog, q]);
+  const matcher = useMemo(() => labelMatcher(slot?.label, customs), [slot?.label, customs]);
+  const results = useMemo(() => {
+    if (!q.trim()) return [];
+    const found = searchGames(catalog, q, 40);
+    // Com filtro na etiqueta, os que combinam vêm primeiro
+    const sorted = matcher ? [...found.filter(matcher), ...found.filter((g) => !matcher(g))] : found;
+    return sorted.slice(0, 12);
+  }, [catalog, q, matcher]);
   const suggestion = suggestSlotLabel(slot, catalogById);
-  const wrong = outOfLabel(slot, catalogById);
+  const wrong = outOfLabel(slot, catalogById, customs);
+  const customCat = slot?.label?.kind === "custom" ? customs.find((c) => c.id === (slot.label as { id: string }).id) : undefined;
   const wrongKeys = new Set(wrong.map((g) => g.key));
   const info = labelInfo(slot?.label, customs);
 
@@ -168,12 +275,9 @@ export default function ShelfPanel({
     if (selectedSlot && typeof window !== "undefined" && window.matchMedia?.("(pointer: fine)").matches) searchRef.current?.focus();
   }, [selectedSlot]);
 
-  // Sem lugar: primeiro os da categoria da etiqueta
-  const quick = useMemo(() => {
-    const type = slot?.label?.kind === "type" ? slot.label.name : null;
-    const list = type ? [...unplaced.filter((g) => g.types.includes(type)), ...unplaced.filter((g) => !g.types.includes(type))] : unplaced;
-    return list.slice(0, 12);
-  }, [unplaced, slot?.label]);
+  // Sem lugar: com etiqueta (categoria ou filtro), só os que combinam; se nenhum combina, todos
+  const matched = useMemo(() => (matcher ? unplaced.filter(matcher) : null), [unplaced, matcher]);
+  const quick = (matched && matched.length ? matched : unplaced).slice(0, 12);
 
   const targets = shelves.flatMap((s) =>
     shelfSlots(s.el).map((sl) => ({ shelfId: s.el.id, slotId: sl.id, label: s.el.id === shelf.el.id ? sl.label : `${s.name} · ${sl.label}`, here: s.el.id === shelf.el.id })),
@@ -253,12 +357,15 @@ export default function ShelfPanel({
               onChange={(label) => actions.setLabel(slotDef.id, label)}
               onCreate={(name) => setCreating(name || true)}
             />
+            {customCat && <RuleBar key={customCat.id} category={customCat} catalog={catalog} types={types} onSave={actions.updateCategory} />}
             {creating !== false && (
               <CategoryForm
                 initialName={typeof creating === "string" ? creating : ""}
+                catalog={catalog}
+                types={types}
                 onCancel={() => setCreating(false)}
-                onCreate={(name, color) => {
-                  const c = actions.createCategory(name, color);
+                onCreate={(name, color, rule) => {
+                  const c = actions.createCategory(name, color, rule);
                   actions.setLabel(slotDef.id, { kind: "custom", id: c.id });
                   setCreating(false);
                 }}
@@ -280,7 +387,9 @@ export default function ShelfPanel({
                 className="flex items-center gap-1.5 self-start text-[11px] text-amber-200/85 hover:text-amber-100"
               >
                 <LuTriangleAlert size={12} className="shrink-0 text-amber-300" />
-                {wrong.length} {wrong.length === 1 ? "jogo não é" : "jogos não são"} da categoria {info?.text}
+                {customCat
+                  ? `${wrong.length} ${wrong.length === 1 ? "jogo não combina" : "jogos não combinam"} com o filtro de ${info?.text}`
+                  : `${wrong.length} ${wrong.length === 1 ? "jogo não é" : "jogos não são"} da categoria ${info?.text}`}
                 {showWrong ? "" : " (ver)"}
               </button>
             )}
@@ -339,7 +448,14 @@ export default function ShelfPanel({
                       >
                         <Cover g={g} size="sm" />
                         <span className="flex min-w-0 flex-1 flex-col">
-                          <span className="truncate font-semibold text-primary-gold/90">{g.name}</span>
+                          <span className="flex min-w-0 items-center gap-1">
+                            <span className="truncate font-semibold text-primary-gold/90">{g.name}</span>
+                            {matcher?.(g) && (
+                              <span className="shrink-0 rounded-sm px-1 text-[9px] font-bold uppercase tracking-wide text-[#14110e]" style={{ background: info?.color }}>
+                                combina
+                              </span>
+                            )}
+                          </span>
                           <span className="truncate text-[10px] text-primary-gold/45">
                             {already ? "Já está aqui" : where.length ? `Vai sair de: ${where.map(formatLocation).join(" e ")}` : "Sem lugar ainda"}
                           </span>
@@ -368,7 +484,11 @@ export default function ShelfPanel({
               quick.length > 0 && (
                 <div className="flex flex-col gap-1">
                   <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-gold/45">
-                    Sem lugar{slot?.label?.kind === "type" ? ` (primeiro ${slot.label.name})` : ""}: toque para guardar
+                    {matched && matched.length
+                      ? `Sem lugar que combinam com ${info?.text} (${matched.length}): toque para guardar`
+                      : matched
+                        ? `Nenhum jogo sem lugar combina com ${info?.text}. Todos sem lugar:`
+                        : "Sem lugar: toque para guardar"}
                   </span>
                   <div className="flex flex-wrap gap-1">
                     {quick.map((g) => (

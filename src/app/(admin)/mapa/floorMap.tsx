@@ -950,7 +950,20 @@ export default function FloorMap() {
     catalogLoaded.current = true;
     setLoadingCatalog(true);
     BoardgameRepository.getAll()
-      .then((list) => setCatalog(list.map((g) => ({ id: g.id, name: g.name, image: g.image || undefined, types: Array.isArray(g.types) ? g.types : [] }))))
+      .then((list) =>
+        setCatalog(
+          list.map((g) => ({
+            id: g.id,
+            name: g.name,
+            image: g.image || undefined,
+            types: Array.isArray(g.types) ? g.types : [],
+            minPlayers: Number(g.minPlayers) || undefined,
+            maxPlayers: Number(g.maxPlayers) || undefined,
+            playTime: Number(g.playTime) || undefined,
+            difficulty: typeof g.difficulty === "string" && g.difficulty ? g.difficulty : undefined,
+          })),
+        ),
+      )
       .finally(() => setLoadingCatalog(false));
   }, [mode]);
   const [contents, setContents] = useState<Map<string, ShelfContent>>(new Map());
@@ -1089,12 +1102,17 @@ export default function FloorMap() {
         ]),
       );
     },
-    createCategory: (name, color) => {
-      const c: ShelfCategory = { id: newId("cat"), name, color };
+    createCategory: (name, color, rule) => {
+      const c: ShelfCategory = rule ? { id: newId("cat"), name, color, rule } : { id: newId("cat"), name, color };
       const list = [...customs, c];
       setCustoms(list);
       run(ShelfRepository.saveCategories(list), `Categoria "${name}" criada.`);
       return c;
+    },
+    updateCategory: (c) => {
+      const list = customs.map((x) => (x.id === c.id ? c : x));
+      setCustoms(list);
+      run(ShelfRepository.saveCategories(list));
     },
   };
   const onShelfDrop = (payload: DragPayload, toSlot: string) => {
@@ -1566,12 +1584,8 @@ export default function FloorMap() {
                 setFilter={setCatFilter}
                 loadingCatalog={loadingCatalog}
                 onOpen={openShelfAt}
-                onCreateCategory={(n, c) => shelfActions.createCategory(n, c)}
-                onUpdateCategory={(c) => {
-                  const list = customs.map((x) => (x.id === c.id ? c : x));
-                  setCustoms(list);
-                  run(ShelfRepository.saveCategories(list));
-                }}
+                onCreateCategory={(n, c, r) => shelfActions.createCategory(n, c, r)}
+                onUpdateCategory={shelfActions.updateCategory}
                 onDeleteCategory={(id) => {
                   const list = customs.filter((x) => x.id !== id);
                   setCustoms(list);

@@ -7,6 +7,10 @@ import {
   labelInfo,
   locateGames,
   outOfLabel,
+  matchesRule,
+  ruleSummary,
+  labelMatcher,
+  categoryForStorage,
   removeGameFromSlot,
   sanitizeCategories,
   sanitizeShelf,
@@ -216,5 +220,39 @@ describe("caixas de pé na prateleira", () => {
     expect(l.shown).toBeLessThan(60);
     expect(l.shown).toBeGreaterThan(1);
     expect(40 + (l.shown - 1) * (40 - l.overlap) + 30).toBeLessThanOrEqual(200 + 1e-9);
+  });
+});
+
+describe("filtro das suas categorias", () => {
+  const g = (p: Partial<CatalogGame>): CatalogGame => ({ id: "x", name: "X", types: [], ...p });
+  const jaipur = g({ minPlayers: 2, maxPlayers: 2, playTime: 30, difficulty: "Leve", types: ["Gerenciamento de mãos"] });
+  const catan = g({ minPlayers: 3, maxPlayers: 4, playTime: 90, difficulty: "Médio", types: ["Estratégia"] });
+  const azul = g({ minPlayers: 2, maxPlayers: 4, playTime: 45, difficulty: "Leve", types: ["Família"] });
+  const semDados = g({});
+
+  it("Jogos para 2: dá para jogar com 2 (ou só para 2)", () => {
+    expect([jaipur, catan, azul, semDados].filter((x) => matchesRule(x, { players: 2 }))).toEqual([jaipur, azul]);
+    expect([jaipur, catan, azul].filter((x) => matchesRule(x, { players: 2, exact: true }))).toEqual([jaipur]);
+  });
+  it("junta as partes (todas valem) e listas (basta uma)", () => {
+    expect(matchesRule(azul, { players: 2, maxTime: 45, difficulty: ["Leve", "Médio"] })).toBe(true);
+    expect(matchesRule(catan, { maxTime: 60 })).toBe(false);
+    expect(matchesRule(catan, { types: ["Família", "Estratégia"] })).toBe(true);
+    expect(matchesRule(catan, undefined)).toBe(true);
+  });
+  it("resumo, etiqueta e quem não combina", () => {
+    expect(ruleSummary({ players: 2, maxTime: 30, types: ["Blefe", "Party Game"] })).toBe("dá para jogar com 2 · até 30 min · Blefe ou Party Game");
+    const customs = [{ id: "c2", name: "Jogos para 2", color: "#34d399", rule: { players: 2 } }];
+    const byId = new Map([["j", { ...jaipur, id: "j" }], ["c", { ...catan, id: "c" }]]);
+    const slot = { label: { kind: "custom" as const, id: "c2" }, games: [{ key: "1", gameId: "j", name: "Jaipur" }, { key: "2", gameId: "c", name: "Catan" }] };
+    expect(outOfLabel(slot, byId, customs).map((x) => x.name)).toEqual(["Catan"]);
+    expect(labelMatcher({ kind: "custom", id: "c2" }, [{ ...customs[0], rule: undefined }])).toBeNull();
+  });
+  it("guarda e lê do banco sem campos vazios e descarta lixo", () => {
+    const saved = categoryForStorage({ id: "c", name: "N", color: "#34d399", rule: { players: 2, types: [] } });
+    expect(saved).toEqual({ id: "c", name: "N", color: "#34d399", rule: { players: 2 } });
+    expect(categoryForStorage({ id: "c", name: "N", color: "#34d399", rule: {} })).toEqual({ id: "c", name: "N", color: "#34d399" });
+    const back = sanitizeCategories({ list: [{ id: "c", name: "N", color: "#34d399", rule: { players: "dois", maxTime: 30, difficulty: [1, "Leve"] } }] });
+    expect(back[0].rule).toEqual({ maxTime: 30, difficulty: ["Leve"] });
   });
 });
