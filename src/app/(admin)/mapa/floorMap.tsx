@@ -1114,6 +1114,13 @@ export default function FloorMap() {
       setCustoms(list);
       run(ShelfRepository.saveCategories(list));
     },
+    deleteCategory: (id) => {
+      const gone = customs.find((x) => x.id === id);
+      const list = customs.filter((x) => x.id !== id);
+      setCustoms(list);
+      if (catFilter?.kind === "custom" && catFilter.id === id) setCatFilter(null);
+      run(ShelfRepository.saveCategories(list), gone ? `Categoria "${gone.name}" excluída.` : undefined);
+    },
   };
   const onShelfDrop = (payload: DragPayload, toSlot: string) => {
     if (!openShelf) return;
@@ -1586,12 +1593,7 @@ export default function FloorMap() {
                 onOpen={openShelfAt}
                 onCreateCategory={(n, c, r) => shelfActions.createCategory(n, c, r)}
                 onUpdateCategory={shelfActions.updateCategory}
-                onDeleteCategory={(id) => {
-                  const list = customs.filter((x) => x.id !== id);
-                  setCustoms(list);
-                  if (catFilter?.kind === "custom" && catFilter.id === id) setCatFilter(null);
-                  run(ShelfRepository.saveCategories(list));
-                }}
+                onDeleteCategory={shelfActions.deleteCategory}
               />
             )
           ) : (

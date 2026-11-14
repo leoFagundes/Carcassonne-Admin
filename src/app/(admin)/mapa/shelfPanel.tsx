@@ -34,6 +34,8 @@ export interface ShelfActions {
   moveGame: (from: { shelfId: string; slotId: string; key: string }, to: { shelfId: string; slotId: string }) => void;
   createCategory: (name: string, color: string, rule?: CategoryRule) => ShelfCategory;
   updateCategory: (c: ShelfCategory) => void;
+  /** Exclui uma categoria sua (os espaços com ela ficam sem etiqueta). */
+  deleteCategory: (id: string) => void;
 }
 
 export interface ShelfRef {
@@ -49,20 +51,24 @@ export function CategoryForm({
   initialName = "",
   catalog = [],
   types = [],
+  editing,
 }: {
   onCreate: (name: string, color: string, rule?: CategoryRule) => void;
   onCancel?: () => void;
   initialName?: string;
   catalog?: CatalogGame[];
   types?: { name: string; count: number }[];
+  /** Editar uma categoria que já existe (o botão vira "Salvar"). */
+  editing?: ShelfCategory;
 }) {
-  const [name, setName] = useState(initialName);
-  const [color, setColor] = useState(CATEGORY_COLORS[1]);
+  const [name, setName] = useState(editing?.name ?? initialName);
+  const [color, setColor] = useState(editing?.color ?? CATEGORY_COLORS[1]);
   const [rule, setRule] = useState<CategoryRule | undefined>(() => {
+    if (editing) return editing.rule;
     const n = playersFromName(initialName);
     return n ? { players: n } : undefined;
   });
-  const [showRule, setShowRule] = useState(() => !!playersFromName(initialName));
+  const [showRule, setShowRule] = useState(() => (editing ? !!editing.rule : !!playersFromName(initialName)));
   const guess = playersFromName(name);
   return (
     <form
@@ -120,7 +126,7 @@ export function CategoryForm({
           </Btn>
         )}
         <Btn tone="primary" type="submit" disabled={!name.trim()}>
-          Criar
+          {editing ? "Salvar" : "Criar"}
         </Btn>
       </div>
     </form>
@@ -251,6 +257,8 @@ export default function ShelfPanel({
   const [q, setQ] = useState("");
   /** Formulário de categoria nova: aberto (com o nome já digitado na busca, se houver). */
   const [creating, setCreating] = useState<string | boolean>(false);
+  /** Categoria sua sendo editada (nome, cor e filtro). */
+  const [editingCat, setEditingCat] = useState<ShelfCategory | null>(null);
   const [showWrong, setShowWrong] = useState(false);
   const [moving, setMoving] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -355,9 +363,38 @@ export default function ShelfPanel({
               types={types}
               suggestion={suggestion}
               onChange={(label) => actions.setLabel(slotDef.id, label)}
-              onCreate={(name) => setCreating(name || true)}
+              onCreate={(name) => {
+                setEditingCat(null);
+                setCreating(name || true);
+              }}
+              onEdit={(c) => {
+                setCreating(false);
+                setEditingCat(c);
+              }}
+              onDelete={(c) => {
+                if (editingCat?.id === c.id) setEditingCat(null);
+                actions.deleteCategory(c.id);
+              }}
             />
-            {customCat && <RuleBar key={customCat.id} category={customCat} catalog={catalog} types={types} onSave={actions.updateCategory} />}
+            {editingCat && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-gold/50">Editar {editingCat.name}</span>
+                <CategoryForm
+                  key={editingCat.id}
+                  editing={editingCat}
+                  catalog={catalog}
+                  types={types}
+                  onCancel={() => setEditingCat(null)}
+                  onCreate={(name, color, rule) => {
+                    const { rule: _old, ...rest } = editingCat;
+                    void _old;
+                    actions.updateCategory(rule ? { ...rest, name, color, rule } : { ...rest, name, color });
+                    setEditingCat(null);
+                  }}
+                />
+              </div>
+            )}
+            {customCat && !editingCat && <RuleBar key={customCat.id} category={customCat} catalog={catalog} types={types} onSave={actions.updateCategory} />}
             {creating !== false && (
               <CategoryForm
                 initialName={typeof creating === "string" ? creating : ""}

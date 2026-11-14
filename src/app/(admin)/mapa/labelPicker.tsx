@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { LuCheck, LuChevronDown, LuPlus, LuSearch, LuSparkles, LuTag, LuX } from "react-icons/lu";
+import { LuCheck, LuChevronDown, LuPencil, LuPlus, LuSearch, LuSparkles, LuTag, LuTrash2, LuX } from "react-icons/lu";
 import { labelInfo, sameLabel, typeColor, type ShelfCategory, type SlotLabel } from "@/floorplan/shelves";
 
 const norm = (s: string) =>
@@ -13,6 +13,8 @@ const norm = (s: string) =>
 
 interface Option {
   key: string;
+  /** Sua categoria (dá para editar e excluir). */
+  custom?: ShelfCategory;
   label: SlotLabel | undefined;
   text: string;
   color?: string;
@@ -32,6 +34,8 @@ export default function LabelPicker({
   suggestion,
   onChange,
   onCreate,
+  onEdit,
+  onDelete,
 }: {
   value: SlotLabel | undefined;
   customs: ShelfCategory[];
@@ -41,7 +45,12 @@ export default function LabelPicker({
   onChange: (label: SlotLabel | undefined) => void;
   /** Abre o formulário de categoria nova (com o nome digitado, se houver). */
   onCreate: (name: string) => void;
+  /** Editar nome, cor e filtro de uma categoria sua. */
+  onEdit: (c: ShelfCategory) => void;
+  /** Excluir uma categoria sua (os espaços com ela ficam sem etiqueta). */
+  onDelete: (c: ShelfCategory) => void;
 }) {
+  const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [active, setActive] = useState(0);
@@ -56,7 +65,7 @@ export default function LabelPicker({
     if (suggestion && !nq && !sameLabel(value, { kind: "type", name: suggestion }))
       all.push({ key: `sug:${suggestion}`, label: { kind: "type", name: suggestion }, text: suggestion, color: typeColor(suggestion), group: "sug" });
     if (value && !nq) all.push({ key: "none", label: undefined, text: "Sem etiqueta", group: "none" });
-    for (const c of customs) if (match(c.name)) all.push({ key: `custom:${c.id}`, label: { kind: "custom", id: c.id }, text: c.name, color: c.color, group: "custom" });
+    for (const c of customs) if (match(c.name)) all.push({ key: `custom:${c.id}`, label: { kind: "custom", id: c.id }, text: c.name, color: c.color, group: "custom", custom: c });
     for (const t of types) if (match(t.name)) all.push({ key: `type:${t.name}`, label: { kind: "type", name: t.name }, text: t.name, color: typeColor(t.name), count: t.count, group: "type" });
     return all;
   }, [q, customs, types, suggestion, value]);
@@ -204,6 +213,54 @@ export default function LabelPicker({
                     </span>
                     {o.count !== undefined && <span className="shrink-0 tabular-nums text-[11px] text-primary-gold/40">{o.count}</span>}
                     {on && <LuCheck size={14} className="shrink-0 text-primary-gold" />}
+                    {o.custom &&
+                      (confirmDel === o.custom.id ? (
+                        <span className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <span className="text-[11px] text-primary-gold/60">Excluir?</span>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDel(null)}
+                            className="rounded-md border border-primary-gold/25 px-1.5 py-0.5 text-[11px] font-semibold text-primary-gold/75 hover:text-primary-gold"
+                          >
+                            Não
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const c = o.custom!;
+                              setConfirmDel(null);
+                              onDelete(c);
+                            }}
+                            className="rounded-md border border-invalid-color/50 bg-invalid-color/15 px-1.5 py-0.5 text-[11px] font-semibold text-invalid-color hover:bg-invalid-color/25"
+                          >
+                            Excluir
+                          </button>
+                        </span>
+                      ) : (
+                        <span className="flex shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onEdit(o.custom!);
+                              setOpen(false);
+                            }}
+                            aria-label={`Editar ${o.text}`}
+                            title="Editar nome, cor e filtro"
+                            className="flex h-6 w-6 items-center justify-center rounded-md text-primary-gold/45 hover:bg-primary-gold/15 hover:text-primary-gold"
+                          >
+                            <LuPencil size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDel(o.custom!.id)}
+                            aria-label={`Excluir ${o.text}`}
+                            title="Excluir a categoria"
+                            className="flex h-6 w-6 items-center justify-center rounded-md text-primary-gold/45 hover:bg-invalid-color/15 hover:text-invalid-color"
+                          >
+                            <LuTrash2 size={12} />
+                          </button>
+                        </span>
+                      ))}
                   </li>
                 </React.Fragment>
               );
