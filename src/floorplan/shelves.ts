@@ -89,54 +89,43 @@ export const POUF = { height: 0.45, lid: 0.07, wall: 0.03, floor: 0.04 };
 export const CHEST = { height: 0.5, lid: 0.06, wall: 0.03, floor: 0.04 };
 
 /**
- * Armário embaixo da escada: o teto acompanha a escada, baixo de um lado
- * (`low`) e alto do outro (`height`). A frente é uma parede com uma porta de
- * correr (no lado alto) e, dentro, três prateleiras grandes de ponta a ponta:
- * a de baixo é a mais comprida, e as de cima encurtam com a escada. A parte
- * baixa fica à esquerda na vista de frente.
+ * Armário embaixo da escada (como no pub): a frente é uma parede reta — a
+ * escada fica atrás da parte da esquerda — e, na direita, uma porta de correr
+ * do chão até em cima, com puxador vertical. Atrás da porta, três prateleiras
+ * grandes, uma em cima da outra.
  */
 export const UNDERSTAIR = {
   height: 2.1,
-  low: 0.75,
-  frame: 0.04,
+  frame: 0.05,
   base: 0.08,
   /** Espessura das prateleiras. */
   board: 0.03,
-  /** Altura (do chão) em que começa cada prateleira, de baixo para cima. */
-  levels: [0.08, 0.72, 1.38],
-  /** Altura livre mínima da prateleira de cima, embaixo da escada. */
-  minTop: 0.32,
-  /** Largura máxima da porta de correr. */
-  door: 0.85,
+  /** A porta ocupa essa fração da largura (entre o mínimo e o máximo). */
+  doorFrac: 0.36,
+  doorMin: 0.6,
+  doorMax: 1.0,
 };
 
-/** As três prateleiras: x (m, da esquerda) onde cabem, e alturas de baixo e de cima. */
-export function understairLevels(w: number): { x0: number; bottom: number; top: number }[] {
-  const U = UNDERSTAIR;
-  const slope = (U.height - U.low) / Math.max(0.01, w);
-  // Onde o teto (escada) chega a uma altura
-  const xAt = (h: number) => Math.max(0, Math.min(w, (h - U.low) / slope));
-  return U.levels.map((bottom, k) => {
-    const last = k === U.levels.length - 1;
-    const x = last ? xAt(bottom + U.minTop + U.frame) : xAt(U.levels[k + 1] + U.frame);
-    const x0 = Math.min(x + U.frame, w - U.frame - 0.15);
-    // A prateleira de cima de cada vão vai de levels[k+1] a levels[k+1] + board
-    const top = last ? understairTop(w, x0) - U.frame : U.levels[k + 1];
-    return { x0, bottom: bottom + (k ? U.board : 0), top };
-  });
-}
-
-/** A porta de correr (no lado alto): x da esquerda, largura e altura (m). */
+/** A porta de correr (na direita): x da esquerda, largura e altura (m). */
 export function understairDoor(w: number): { x0: number; w: number; h: number } {
-  const dw = Math.min(UNDERSTAIR.door, w * 0.4);
-  const x0 = w - 0.12 - dw;
-  return { x0, w: dw, h: understairTop(w, x0) - 0.14 };
+  const U = UNDERSTAIR;
+  const dw = Math.min(Math.max(U.doorMin, w * U.doorFrac), U.doorMax, Math.max(0.3, w - U.frame * 2));
+  return { x0: w - U.frame - dw, w: dw, h: U.height - U.frame };
 }
 
-/** Altura do teto do armário embaixo da escada no ponto x (m, da esquerda). */
-export function understairTop(w: number, x: number): number {
-  const f = Math.max(0, Math.min(1, x / Math.max(0.01, w)));
-  return UNDERSTAIR.low + (UNDERSTAIR.height - UNDERSTAIR.low) * f;
+/** As três prateleiras atrás da porta, de baixo para cima: x e largura, alturas de baixo e de cima (m). */
+export function understairLevels(w: number): { x0: number; w: number; bottom: number; top: number }[] {
+  const U = UNDERSTAIR;
+  const door = understairDoor(w);
+  const x0 = door.x0 + 0.03;
+  const lw = door.w - 0.06;
+  const floor = U.base;
+  const ceil = door.h - 0.03;
+  const each = (ceil - floor - U.board * 2) / 3;
+  return [0, 1, 2].map((k) => {
+    const bottom = floor + k * (each + U.board);
+    return { x0, w: lw, bottom, top: bottom + each };
+  });
 }
 
 /** Pufe-baú: um baú só por dentro (o de 3 lugares também não tem divisão). */
@@ -165,7 +154,7 @@ function understairSlots(w: number): ShelfSlotDef[] {
       kind: "doors" as SlotKind,
       x: l.x0,
       y: U.height - l.top,
-      w: w - U.frame - l.x0,
+      w: l.w,
       h: l.top - l.bottom,
     }))
     .reverse();

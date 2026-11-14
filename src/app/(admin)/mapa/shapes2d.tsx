@@ -377,13 +377,13 @@ export function Shape2D({
         return (
           <g opacity={op}>
             <rect x={x0} y={y0} width={w} height={d} rx={2} fill="#a39b8e" stroke="#2a1b10" strokeWidth={2} />
-            {/* Teto inclinado: baixo à esquerda, alto à direita */}
+            {/* A escada fica atrás da parte da esquerda (degraus bem apagados) */}
             {Array.from({ length: 6 }, (_, i) => (
-              <line key={i} x1={x0 + (w * (i + 1)) / 7} y1={y0 + 3} x2={x0 + (w * (i + 1)) / 7} y2={-y0 - 3} stroke="#2a1b10" strokeOpacity={0.12 + i * 0.07} strokeWidth={1.4} />
+              <line key={i} x1={x0 + ((w * 0.6) * (i + 1)) / 7} y1={y0 + 4} x2={x0 + ((w * 0.6) * (i + 1)) / 7} y2={-y0 - 8} stroke="#2a1b10" strokeOpacity={0.18} strokeWidth={1.2} />
             ))}
             {band}
             <line x1={x0} y1={-y0 - 1} x2={-x0} y2={-y0 - 1} stroke="#f3e2bd" strokeWidth={3} />
-            {/* A porta de correr (lado alto), com a seta de para onde ela corre */}
+            {/* A porta de correr (na direita), com a seta de para onde ela corre */}
             {(() => {
               const dr = understairDoor(el.w);
               const a = x0 + dr.x0 * U;

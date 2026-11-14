@@ -24,6 +24,7 @@ import type { PlanElement } from "@/floorplan/types";
 import { Btn, Section } from "./ui";
 import { DRAG_MIME, type DragPayload } from "./shelfFront";
 import LabelPicker from "./labelPicker";
+import ColorPicker from "./colorPicker";
 import RuleEditor, { playersFromName } from "./ruleEditor";
 
 export interface ShelfActions {
@@ -90,20 +91,7 @@ export function CategoryForm({
         placeholder="Nome da categoria (ex.: Para crianças)"
         className="w-full rounded-lg border border-primary-gold/20 bg-primary-black/70 px-2 py-1.5 text-sm text-primary-gold outline-none placeholder:text-primary-gold/30 focus:border-primary-gold/60"
       />
-      <div className="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="Cor">
-        {CATEGORY_COLORS.map((c) => (
-          <button
-            key={c}
-            type="button"
-            role="radio"
-            aria-checked={color === c}
-            aria-label={`Cor ${c}`}
-            onClick={() => setColor(c)}
-            className={`h-6 w-6 rounded-full transition-transform ${color === c ? "scale-110 ring-2 ring-white ring-offset-2 ring-offset-[#14110e]" : ""}`}
-            style={{ background: c }}
-          />
-        ))}
-      </div>
+      <ColorPicker value={color} onChange={setColor} size={22} />
       {showRule ? (
         <RuleEditor rule={rule} onChange={setRule} catalog={catalog} types={types} />
       ) : (

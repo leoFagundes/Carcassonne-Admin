@@ -13,7 +13,6 @@ import {
   UNDERSTAIR,
   understairDoor,
   understairLevels,
-  understairTop,
   shelfCount,
   shelfModel,
   shelfSlots,
@@ -85,44 +84,35 @@ function FrontDrawing({ el }: { el: PlanElement }) {
     );
   }
   if (m.id === "understair") {
+    // Parede reta; a porta de correr (aberta) fica empurrada para a esquerda, por cima da parede
     const S = UNDERSTAIR;
-    const yTop = (x: number) => H - understairTop(el.w, x / U) * U; // x em cm
-    const steps = 7;
-    const f = S.frame * U;
     const door = understairDoor(el.w);
     const levels = understairLevels(el.w);
-    // Degraus por cima do teto inclinado
-    const pts: string[] = [`0,${yTop(0)}`];
-    for (let k = 0; k < steps; k++) {
-      const x1 = (w * (k + 1)) / steps;
-      pts.push(`${(w * k) / steps},${yTop(x1) - 3}`, `${x1},${yTop(x1) - 3}`);
-    }
-    pts.push(`${w},${yTop(w)}`);
+    const dx = door.x0 * U;
+    const dw = door.w * U;
+    const top = H - door.h * U;
+    const open = Math.max(0, dx - dw * 0.92); // onde fica a folha aberta
     return (
       <g>
-        <polygon points={pts.join(" ")} fill="#4a3424" stroke="#d8c39b" strokeOpacity={0.35} strokeWidth={1} />
-        <polygon points={`0,${yTop(0)} ${w},${yTop(w)} ${w},${H} 0,${H}`} fill="#b7ae9f" stroke="#5a5048" strokeWidth={1.2} />
-        {/* Dentro: o vão embaixo da escada */}
-        <polygon points={`${f},${yTop(f) + f} ${w - f},${yTop(w - f) + f} ${w - f},${H - S.base * U} ${f},${H - S.base * U}`} fill="#4a2f1a" />
-        {/* As 3 prateleiras grandes: as de cima encurtam com a escada */}
-        {levels.slice(1).map((l, k) => {
-          // A tábua fica em cima do vão de baixo e começa onde ele começa
-          const x0 = levels[k].x0 * U - f;
-          return <rect key={k} x={x0} y={H - l.bottom * U} width={w - f - x0} height={S.board * U} fill="#a87444" />;
-        })}
+        <rect x={0} y={0} width={w} height={H} fill="#b7ae9f" stroke="#5a5048" strokeWidth={1.2} />
+        <rect x={0} y={0} width={w} height={5} fill="#8f8678" />
         <rect x={0} y={H - S.base * U} width={w} height={S.base * U} fill="#5e3d22" />
-        {/* Onde fica a porta de correr (aberta) */}
-        <rect
-          x={door.x0 * U}
-          y={H - door.h * U}
-          width={door.w * U}
-          height={door.h * U}
-          fill="none"
-          stroke="#e6c56b"
-          strokeOpacity={0.45}
-          strokeWidth={1.2}
-          strokeDasharray="5 4"
-        />
+        {/* Vão da porta, com as 3 prateleiras grandes */}
+        <rect x={dx} y={top} width={dw} height={H - top} fill="#4a2f1a" />
+        {levels.slice(1).map((l) => (
+          <rect key={l.bottom} x={dx} y={H - l.bottom * U} width={dw} height={S.board * U} fill="#a87444" />
+        ))}
+        <rect x={dx - 4} y={top} width={4} height={H - top} fill="#5e3d22" />
+        <rect x={dx + dw} y={top} width={4} height={H - top} fill="#5e3d22" />
+        {/* Trilho e a folha aberta */}
+        <rect x={open - 2} y={top - 4} width={dx + dw - open + 4} height={3.5} fill="#2a2a2c" />
+        <g opacity={0.92}>
+          <rect x={open} y={top} width={dw} height={H - top - 1} fill="#9a6a3c" stroke="#5e3d22" strokeWidth={1} />
+          {[1, 2, 3].map((k) => (
+            <line key={k} x1={open + (dw * k) / 4} y1={top + 3} x2={open + (dw * k) / 4} y2={H - 4} stroke="#6e4727" strokeWidth={0.8} />
+          ))}
+          <rect x={open + dw - 9} y={H - 100 - 16} width={2.4} height={32} rx={1} fill="#1c1c1e" />
+        </g>
       </g>
     );
   }

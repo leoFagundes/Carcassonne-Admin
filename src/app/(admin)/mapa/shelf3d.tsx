@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
-import * as THREE from "three";
+import React from "react";
 import { CHEST, CUBES, HUTCH, LOWCAB, POUF, shelfModel, shelfSlots, UNDERSTAIR, understairDoor } from "@/floorplan/shelves";
 import type { PlanElement } from "@/floorplan/types";
-import { B, Ball, mat, RB } from "./mesh3d";
+import { B, Ball, RB } from "./mesh3d";
 
 /** Caixas de jogo coloridas (o nome define a cor, sempre a mesma). */
 const BOX_COLORS = [0xb8322c, 0x2e6fb5, 0x2f8a4f, 0xd9a21b, 0x6b3fa0, 0xd8692a, 0xe9e4d8, 0x2a2f3a, 0x1f8a8a, 0x9c2f6b];
@@ -133,49 +132,47 @@ function ChestModel({ el }: { el: PlanElement }) {
   );
 }
 
-/** Armário embaixo da escada: parede com o teto inclinado e uma porta de correr no lado alto. */
+/**
+ * Armário embaixo da escada (como no pub): parede reta de reboco — a escada
+ * fica atrás da parte da esquerda — e, na direita, uma porta de correr de
+ * madeira, do chão até em cima, com puxador vertical e trilho no alto (ela
+ * corre para a esquerda, por cima da parede).
+ */
 function UnderstairModel({ el }: { el: PlanElement }) {
   const { w, d } = el;
   const U = UNDERSTAIR;
-  const geo = useMemo(() => {
-    const s = new THREE.Shape();
-    s.moveTo(-w / 2, 0);
-    s.lineTo(w / 2, 0);
-    s.lineTo(w / 2, U.height);
-    s.lineTo(-w / 2, U.low);
-    s.closePath();
-    const g = new THREE.ExtrudeGeometry(s, { depth: d, bevelEnabled: false });
-    g.translate(0, 0, -d / 2);
-    return g;
-  }, [w, d, U.height, U.low]);
-  useEffect(() => () => geo.dispose(), [geo]);
-  const slope = Math.atan2(U.height - U.low, w);
+  const H = U.height;
   const door = understairDoor(w);
   const dx = -w / 2 + door.x0 + door.w / 2;
   const z = d / 2;
   return (
     <group>
-      {/* A parede embaixo da escada (reboco claro) */}
-      <mesh geometry={geo} material={mat(0xb7ae9f, { roughness: 0.95 })} castShadow receiveShadow />
-      {/* Rodapé */}
+      {/* Parede (o corpo todo) */}
+      <B s={[w, H, d]} p={[0, H / 2, 0]} c={0xb7ae9f} o={{ roughness: 0.95 }} />
+      {/* Rodapé e acabamento no alto */}
       <B s={[w + 0.01, U.base, 0.02]} p={[0, U.base / 2, z + 0.006]} c={0x5e3d22} />
-      {/* Acabamento no alto, seguindo a escada */}
-      <B s={[Math.hypot(w, U.height - U.low) + 0.02, 0.04, d + 0.04]} p={[0, (U.low + U.height) / 2, 0]} rot={[0, 0, slope]} c={0x5e3d22} />
-      {/* Porta de correr: batente, trilho de cima e a folha de madeira */}
-      <group>
-        {[-1, 1].map((sx) => (
-          <B key={sx} s={[0.05, door.h + 0.05, 0.03]} p={[dx + sx * (door.w / 2 + 0.025), (door.h + 0.05) / 2, z + 0.012]} c={0x5e3d22} />
-        ))}
-        <B s={[door.w + 0.1, 0.05, 0.03]} p={[dx, door.h + 0.05, z + 0.012]} c={0x5e3d22} />
-        <B s={[door.w, 0.03, 0.035]} p={[dx, door.h + 0.012, z + 0.012]} c={0x9a9a9e} o={{ metalness: 0.5, roughness: 0.4 }} />
-        <B s={[door.w - 0.01, door.h - 0.01, 0.03]} p={[dx, door.h / 2, z + 0.016]} c={0x9a6a3c} o={{ map: "grain", roughness: 0.7 }} />
-        {/* Tábuas verticais da folha */}
-        {[1, 2, 3].map((k) => (
-          <B key={k} s={[0.006, door.h - 0.06, 0.004]} p={[dx - door.w / 2 + (door.w * k) / 4, door.h / 2, z + 0.032]} c={0x6e4727} />
-        ))}
-        {/* Puxador embutido, do lado que a porta corre */}
-        <B s={[0.035, Math.min(0.24, door.h * 0.2), 0.006]} p={[dx - door.w / 2 + 0.08, Math.min(1.0, door.h * 0.55), z + 0.033]} c={0x241810} o={{ roughness: 0.9 }} />
-      </group>
+      <B s={[w + 0.02, 0.05, d + 0.02]} p={[0, H - 0.025, 0]} c={0x8f8678} />
+      {/* Vão da porta (escuro, aparece nas frestas) e batente */}
+      <B s={[door.w, door.h, 0.01]} p={[dx, door.h / 2, z + 0.002]} c={0x1c140e} />
+      {[-1, 1].map((sx) => (
+        <B key={sx} s={[0.04, door.h, 0.02]} p={[dx + sx * (door.w / 2 + 0.02), door.h / 2, z + 0.008]} c={0x5e3d22} />
+      ))}
+      {/* Trilho no alto: a porta corre para a esquerda */}
+      <B s={[door.w * 2 + 0.04, 0.035, 0.03]} p={[dx - door.w / 2, door.h + 0.012, z + 0.03]} c={0x2a2a2c} o={{ metalness: 0.6, roughness: 0.4 }} />
+      {[-0.32, 0.32].map((f) => (
+        <Ball key={f} s={[0.03, 0.03, 0.012]} p={[dx + f * door.w, door.h - 0.01, z + 0.05]} c={0x2a2a2c} shadow={false} />
+      ))}
+      {/* Folha da porta, um pouco à frente da parede */}
+      <B s={[door.w + 0.02, door.h - 0.02, 0.035]} p={[dx, (door.h - 0.02) / 2 + 0.005, z + 0.05]} c={0x9a6a3c} o={{ map: "grain", roughness: 0.7 }} />
+      {/* Tábuas verticais */}
+      {[1, 2, 3].map((k) => (
+        <B key={k} s={[0.006, door.h - 0.08, 0.004]} p={[dx - door.w / 2 + (door.w * k) / 4, door.h / 2, z + 0.069]} c={0x6e4727} shadow={false} />
+      ))}
+      {/* Puxador vertical, no lado direito da porta */}
+      <B s={[0.022, 0.32, 0.022]} p={[dx + door.w / 2 - 0.08, 1.0, z + 0.09]} c={0x1c1c1e} o={{ metalness: 0.5, roughness: 0.4 }} />
+      {[-1, 1].map((sy) => (
+        <B key={sy} s={[0.014, 0.014, 0.03]} p={[dx + door.w / 2 - 0.08, 1.0 + sy * 0.14, z + 0.075]} c={0x1c1c1e} shadow={false} />
+      ))}
     </group>
   );
 }

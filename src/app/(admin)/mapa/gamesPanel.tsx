@@ -3,7 +3,6 @@
 import React, { useMemo, useState } from "react";
 import { LuChevronDown, LuFilter, LuMapPin, LuPencil, LuPlus, LuSearch, LuTrash2, LuTriangleAlert } from "react-icons/lu";
 import {
-  CATEGORY_COLORS,
   formatLocation,
   hasRule,
   ruleSummary,
@@ -21,6 +20,7 @@ import {
 import { Btn, Section } from "./ui";
 import { CategoryForm, type ShelfRef } from "./shelfPanel";
 import RuleEditor from "./ruleEditor";
+import ColorPicker from "./colorPicker";
 
 export default function GamesPanel({
   shelves,
@@ -214,18 +214,7 @@ export default function GamesPanel({
                       className="w-full rounded-lg border border-primary-gold/20 bg-primary-black/70 px-2 py-1 text-sm text-primary-gold outline-none focus:border-primary-gold/60"
                       aria-label="Nome da categoria"
                     />
-                    <span className="flex flex-wrap gap-1.5">
-                      {CATEGORY_COLORS.map((col) => (
-                        <button
-                          key={col}
-                          type="button"
-                          aria-label={`Cor ${col}`}
-                          onClick={() => onUpdateCategory({ ...c, color: col })}
-                          className={`h-5 w-5 rounded-full ${c.color === col ? "ring-2 ring-white" : ""}`}
-                          style={{ background: col }}
-                        />
-                      ))}
-                    </span>
+                    <ColorPicker value={c.color} onChange={(col) => col !== c.color && onUpdateCategory({ ...c, color: col })} size={20} />
                     <RuleEditor
                       rule={c.rule}
                       catalog={catalog}
