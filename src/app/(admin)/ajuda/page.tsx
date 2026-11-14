@@ -200,6 +200,12 @@ const helpCards: HelpCard[] = [
   },
   {
     category: "mapa",
+    title: "Foto de referência do armário e das prateleiras",
+    description:
+      "Em Jogos, abra um armário: no painel há \"Adicionar foto de referência do armário\" e, ao escolher um espaço, \"…deste espaço\" (tire a foto pelo celular ou escolha uma do computador). A foto não fica à mostra: só abre grande quando você toca em \"Ver a foto de referência\" ou no ícone de câmera (no alto do armário aberto e no canto do espaço que tem foto). Na foto aberta dá para trocar ou apagar.",
+  },
+  {
+    category: "mapa",
     title: "Lista de camadas (tudo o que está na planta)",
     description:
       "No modo Planta, o botão de camadas (na coluna de botões do mapa) abre e fecha a lista com tudo o que está no andar, de quem fica por cima para quem fica por baixo. Dá para agrupar por ambiente ou por tipo, buscar pelo nome e filtrar por tipo. Tocar num item escolhe ele no mapa (bom para pegar algo escondido embaixo de outro); o lápis renomeia, a lixeira exclui, o olhinho esconde do mapa, do 3D e da impressão, e o cadeado trava para não mexer sem querer tocando no mapa (pela lista ainda dá para escolher). Mesa escondida continua valendo para as reservas. Como tudo na planta, só vale depois de Salvar planta.",

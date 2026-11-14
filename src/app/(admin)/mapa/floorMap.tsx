@@ -1064,6 +1064,41 @@ export default function FloorMap() {
     undoTimer.current = setTimeout(() => setUndoInfo(null), 7000);
   };
   const shelfActions: ShelfActions = {
+    setShelfPhoto: async (file) => {
+      if (!openShelf) return;
+      const shelfId = openShelf;
+      const old = contentsRef.current.get(shelfId)?.photo;
+      try {
+        const photo = file ? await ShelfRepository.uploadPhoto(file) : undefined;
+        await ShelfRepository.saveShelfPhoto(shelfId, photo);
+        if (old?.path && old.path !== photo?.path) void ShelfRepository.deletePhotoFile(old.path);
+        addAlert(file ? "Foto do armário salva." : "Foto do armário apagada.");
+      } catch (error) {
+        console.error("Erro na foto do armário:", error);
+        if (!file) addAlert(ERR);
+        throw error;
+      }
+    },
+    setSlotPhoto: async (slotId, file) => {
+      if (!openShelf) return;
+      const shelfId = openShelf;
+      const cur = slotOf(shelfId, slotId) ?? { games: [] };
+      const old = cur.photo;
+      try {
+        const photo = file ? await ShelfRepository.uploadPhoto(file) : undefined;
+        // Lê de novo: os jogos podem ter mudado enquanto a foto subia
+        const now = slotOf(shelfId, slotId) ?? { games: [] };
+        const { photo: _p, ...rest } = now;
+        void _p;
+        await ShelfRepository.saveSlot(shelfId, slotId, photo ? { ...rest, photo } : rest);
+        if (old?.path && old.path !== photo?.path) void ShelfRepository.deletePhotoFile(old.path);
+        addAlert(file ? "Foto da prateleira salva." : "Foto da prateleira apagada.");
+      } catch (error) {
+        console.error("Erro na foto da prateleira:", error);
+        if (!file) addAlert(ERR);
+        throw error;
+      }
+    },
     setLabel: (slotId, label) => {
       if (!openShelf) return;
       const cur = slotOf(openShelf, slotId) ?? { games: [] };
@@ -1538,6 +1573,8 @@ export default function FloorMap() {
           {mode === "games" && openShelfRef && shelfReady && (
             <ShelfFront
               key={openShelfRef.el.id}
+              onShelfPhoto={shelfActions.setShelfPhoto}
+              onSlotPhoto={shelfActions.setSlotPhoto}
               el={openShelfRef.el}
               name={openShelfRef.name}
               subtitle={openShelfRef.room}

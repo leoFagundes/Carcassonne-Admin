@@ -1,5 +1,6 @@
 import { db } from "@/services/firebaseConfig";
-import { collection, doc, onSnapshot, setDoc } from "firebase/firestore";
+import { collection, deleteField, doc, onSnapshot, setDoc } from "firebase/firestore";
+import { deleteImageFromFirebase, uploadImageToFirebase } from "./FirebaseImageUtils";
 import {
   categoryForStorage,
   sanitizeCategories,
@@ -7,6 +8,7 @@ import {
   slotForStorage,
   type ShelfCategory,
   type ShelfContent,
+  type ShelfPhoto,
   type ShelfSlot,
 } from "@/floorplan/shelves";
 
@@ -48,6 +50,24 @@ class ShelfRepository {
         ),
       ),
     );
+  }
+
+  /** Foto do armário inteiro (sem foto: apaga o campo). */
+  static saveShelfPhoto(shelfId: string, photo: ShelfPhoto | undefined) {
+    return setDoc(
+      doc(SHELVES, shelfId),
+      { photo: photo ? { url: photo.url, path: photo.path } : deleteField(), updatedAt: Date.now() },
+      { mergeFields: ["photo", "updatedAt"] },
+    );
+  }
+
+  /** Foto de referência (comprimida, até 1920 px). */
+  static uploadPhoto(file: File) {
+    return uploadImageToFirebase(file, "shelf-photos");
+  }
+
+  static deletePhotoFile(path: string) {
+    return path ? deleteImageFromFirebase(path) : Promise.resolve();
   }
 
   static subscribeCategories(onData: (list: ShelfCategory[]) => void): () => void {

@@ -257,3 +257,19 @@ describe("filtro das suas categorias", () => {
     expect(back[0].rule).toEqual({ maxTime: 30, difficulty: ["Leve"] });
   });
 });
+
+describe("foto de referência", () => {
+  const photo = { url: "https://firebasestorage.googleapis.com/v0/b/x/o/shelf-photos%2Fa.jpg?alt=media", path: "shelf-photos/a.jpg" };
+  it("lê a foto do armário e a de cada espaço; descarta endereço estranho", () => {
+    const s = sanitizeShelf("e1", { photo, slots: { u1: { games: [], photo }, u2: { games: [], photo: { url: "javascript:alert(1)", path: "x" } } } });
+    expect(s.photo).toEqual(photo);
+    expect(s.slots.u1.photo).toEqual(photo);
+    expect(s.slots.u2.photo).toBeUndefined();
+    expect(sanitizeShelf("e2", { photo }).photo).toEqual(photo);
+  });
+  it("a foto do espaço vai junto ao salvar (guardar um jogo não apaga a foto)", () => {
+    const slot = addGameToSlot({ games: [], photo }, { name: "Catan" });
+    expect(slotForStorage(slot).photo).toEqual(photo);
+    expect(slotForStorage({ games: [] }).photo).toBeUndefined();
+  });
+});

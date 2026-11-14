@@ -2,6 +2,7 @@
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { LuArrowRight, LuPlus, LuTrash2, LuUndo2, LuX } from "react-icons/lu";
+import ReferencePhoto from "./refPhoto";
 import {
   CHEST,
   CUBES,
@@ -360,6 +361,8 @@ export default function ShelfFront({
   onRemove,
   onMove,
   undo,
+  onShelfPhoto,
+  onSlotPhoto,
 }: {
   el: PlanElement;
   name: string;
@@ -378,6 +381,9 @@ export default function ShelfFront({
   onMove: (slotId: string, key: string, toSlot: string) => void;
   /** Última retirada, para desfazer. */
   undo?: { text: string; run: () => void } | null;
+  /** Fotos de referência (o ícone só aparece onde já tem foto). */
+  onShelfPhoto?: (file: File | null) => Promise<void>;
+  onSlotPhoto?: (slotId: string, file: File | null) => Promise<void>;
 }) {
   const m = shelfModel(el);
   const slots = shelfSlots(el);
@@ -429,6 +435,16 @@ export default function ShelfFront({
             {subtitle} · {count} {count === 1 ? "jogo" : "jogos"}
           </p>
         </div>
+        {onShelfPhoto && (
+          <ReferencePhoto
+            variant="icon"
+            photo={content?.photo}
+            what="do armário"
+            onSave={(file) => onShelfPhoto(file)}
+            onRemove={() => onShelfPhoto(null)}
+            className="h-9 w-9 shrink-0 rounded-lg"
+          />
+        )}
         <button
           type="button"
           onClick={onClose}
@@ -493,6 +509,16 @@ export default function ShelfFront({
                   }}
                 >
                   <ShelfSign text={info?.text ?? s.label} color={info?.color} count={games.length} hang={hang} />
+                  {onSlotPhoto && slot?.photo && (
+                    <ReferencePhoto
+                      variant="icon"
+                      photo={slot.photo}
+                      what={`de "${s.label}"`}
+                      onSave={(file) => onSlotPhoto(s.id, file)}
+                      onRemove={() => onSlotPhoto(s.id, null)}
+                      className="absolute right-1 top-1 z-20 h-6 w-6"
+                    />
+                  )}
                   <div className="flex items-end px-[5px] pb-[3px] pt-2">
                     {shown.map((g, i) => (
                       <GameTile

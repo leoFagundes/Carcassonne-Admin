@@ -24,6 +24,7 @@ import type { PlanElement } from "@/floorplan/types";
 import { Btn, Section } from "./ui";
 import { DRAG_MIME, type DragPayload } from "./shelfFront";
 import LabelPicker from "./labelPicker";
+import ReferencePhoto from "./refPhoto";
 import ColorPicker from "./colorPicker";
 import RuleEditor, { playersFromName } from "./ruleEditor";
 
@@ -37,6 +38,10 @@ export interface ShelfActions {
   updateCategory: (c: ShelfCategory) => void;
   /** Exclui uma categoria sua (os espaços com ela ficam sem etiqueta). */
   deleteCategory: (id: string) => void;
+  /** Foto de referência do armário inteiro (null apaga). */
+  setShelfPhoto: (file: File | null) => Promise<void>;
+  /** Foto de referência de um espaço (null apaga). */
+  setSlotPhoto: (slotId: string, file: File | null) => Promise<void>;
 }
 
 export interface ShelfRef {
@@ -304,6 +309,7 @@ export default function ShelfPanel({
         }
       >
         <p className="-mt-1 text-[11px] text-primary-gold/55">{shelf.room}</p>
+        <ReferencePhoto photo={content?.photo} what="do armário" onSave={(file) => actions.setShelfPhoto(file)} onRemove={() => actions.setShelfPhoto(null)} />
         <div className="grid grid-cols-2 gap-1">
           {slots.map((s) => {
             const sl = content?.slots[s.id];
@@ -420,6 +426,14 @@ export default function ShelfPanel({
             )}
             {showWrong && wrong.length > 0 && <p className="text-[11px] leading-snug text-amber-100/70">{wrong.map((g) => g.name).join(", ")}.</p>}
           </div>
+
+          <ReferencePhoto
+            key={slotDef.id}
+            photo={slot?.photo}
+            what="deste espaço"
+            onSave={(file) => actions.setSlotPhoto(slotDef.id, file)}
+            onRemove={() => actions.setSlotPhoto(slotDef.id, null)}
+          />
 
           {/* Guardar: busca no alto, Enter guarda o primeiro */}
           <div className="flex flex-col gap-1.5 border-t border-primary-gold/10 pt-2.5">

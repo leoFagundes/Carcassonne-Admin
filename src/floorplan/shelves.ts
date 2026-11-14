@@ -258,15 +258,32 @@ export interface ShelfGame {
 /** Etiqueta do espaço: uma categoria da Coleção ou uma criada pelo gerente. */
 export type SlotLabel = { kind: "type"; name: string } | { kind: "custom"; id: string };
 
+/** Foto de referência (como a prateleira ou o armário deve ficar). Só abre ao tocar. */
+export interface ShelfPhoto {
+  url: string;
+  /** Caminho no Storage (para apagar ao trocar). */
+  path: string;
+}
+
 export interface ShelfSlot {
   label?: SlotLabel;
   games: ShelfGame[];
+  photo?: ShelfPhoto;
 }
 
 export interface ShelfContent {
   /** Id do armário na planta. */
   id: string;
   slots: Record<string, ShelfSlot>;
+  /** Foto do armário inteiro. */
+  photo?: ShelfPhoto;
+}
+
+export function sanitizePhoto(raw: unknown): ShelfPhoto | undefined {
+  if (!isObj(raw)) return undefined;
+  const url = typeof raw.url === "string" && /^https:\/\/\S{1,2000}$/.test(raw.url) ? raw.url : null;
+  const path = typeof raw.path === "string" && raw.path.length <= 300 ? raw.path : "";
+  return url ? { url, path } : undefined;
 }
 
 /** Categoria criada pelo gerente (vale por cima das da Coleção): /floorPlan/shelfCategories. */
@@ -531,7 +548,10 @@ const str = (v: unknown, max = 80) => (typeof v === "string" && v.trim() ? v.tri
 
 export function sanitizeShelf(id: string, raw: unknown): ShelfContent {
   const out: ShelfContent = { id, slots: {} };
-  if (!isObj(raw) || !isObj(raw.slots)) return out;
+  if (!isObj(raw)) return out;
+  const photo = sanitizePhoto(raw.photo);
+  if (photo) out.photo = photo;
+  if (!isObj(raw.slots)) return out;
   for (const [slotId, v] of Object.entries(raw.slots)) {
     if (!/^[a-z0-9-]{1,20}$/.test(slotId) || !isObj(v)) continue;
     const slot: ShelfSlot = { games: [] };
@@ -553,6 +573,8 @@ export function sanitizeShelf(id: string, raw: unknown): ShelfContent {
         slot.games.push(game);
       }
     }
+    const slotPhoto = sanitizePhoto(v.photo);
+    if (slotPhoto) slot.photo = slotPhoto;
     out.slots[slotId] = slot;
   }
   return out;
@@ -561,6 +583,7 @@ export function sanitizeShelf(id: string, raw: unknown): ShelfContent {
 export function slotForStorage(slot: ShelfSlot): ShelfSlot {
   const out: ShelfSlot = { games: slot.games.map((g) => (g.gameId ? { key: g.key, gameId: g.gameId, name: g.name } : { key: g.key, name: g.name })) };
   if (slot.label) out.label = slot.label.kind === "type" ? { kind: "type", name: slot.label.name } : { kind: "custom", id: slot.label.id };
+  if (slot.photo) out.photo = { url: slot.photo.url, path: slot.photo.path };
   return out;
 }
 
