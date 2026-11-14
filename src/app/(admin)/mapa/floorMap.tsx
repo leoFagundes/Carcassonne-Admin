@@ -113,6 +113,7 @@ import DayPanel, { unitTitle, type DayActions, type DayTool, type TimeScope } fr
 import EditPanel, { type EditActions, type EditTool } from "./editPanel";
 import { printDay } from "./print";
 import LayersPanel from "./layersPanel";
+import { HELP_DAY, HELP_EDIT, HELP_GAMES } from "./help2d";
 import QuickUnitBar from "./quickUnitBar";
 import { releaseUnit, seatWalkin, setUnitState } from "./walkinActions";
 import { Btn, ConfirmDialog, Seg } from "./ui";
@@ -1458,6 +1459,7 @@ export default function FloorMap() {
                     : (el) => !el.locked && (!lockStructure || !KINDS[el.kind].structural)
               }
               handlesFor={handlesFor}
+              help={mode === "edit" ? HELP_EDIT : mode === "games" ? HELP_GAMES : HELP_DAY}
               showGrid={mode === "edit"}
               fitKey={`${mode}|${level}`}
               centerRef={centerRef}

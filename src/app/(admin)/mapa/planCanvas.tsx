@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { LuMaximize, LuMinus, LuPlus } from "react-icons/lu";
+import { LuInfo, LuMaximize, LuMinus, LuPlus, LuX } from "react-icons/lu";
 import { KINDS, tableTitle } from "@/floorplan/catalog";
 import { boundsOf, formatMeters, handleLocal, HANDLES, toWorld, type Handle, type Pt } from "@/floorplan/geometry";
 import type { LevelBackground, PlanElement, TableState } from "@/floorplan/types";
@@ -69,6 +69,8 @@ export interface PlanCanvasProps {
   tableNotes?: ReadonlyMap<string, string>;
   /** Botões extras na coluna do zoom (ex.: régua). */
   extraControls?: React.ReactNode;
+  /** Ajuda do botão "i": o que dá para fazer neste modo (mouse e toque). */
+  help?: { title: string; rows: { what: string; mouse: string; touch?: string }[] };
   /** Legenda de cores no canto (modo dia). */
   legend?: { color: string; label: string }[];
   /** Algo por cima do mapa, embaixo (ex.: a barra rápida da mesa no celular). */
@@ -124,6 +126,7 @@ export default function PlanCanvas(props: PlanCanvasProps) {
     measure,
     tableNotes,
     extraControls,
+    help,
     shelfColors,
     shelfBadges,
     legend,
@@ -131,6 +134,7 @@ export default function PlanCanvas(props: PlanCanvasProps) {
   } = props;
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  const [helpOpen, setHelpOpen] = useState(false);
   const [view, setView] = useState<View>({ cx: 6, cy: 5, s: 50 });
   const viewRef = useRef(view);
   viewRef.current = view;
@@ -676,12 +680,53 @@ export default function PlanCanvas(props: PlanCanvasProps) {
             {b.icon}
           </button>
         ))}
+        {help && (
+          <button
+            type="button"
+            title={help.title}
+            aria-label={help.title}
+            aria-pressed={helpOpen}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => setHelpOpen(!helpOpen)}
+            className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${
+              helpOpen ? "border-primary-gold bg-primary-gold text-primary-black" : "border-primary-gold/20 bg-primary-black/85 text-primary-gold/80 hover:border-primary-gold/50 hover:text-primary-gold"
+            }`}
+          >
+            <LuInfo size={15} />
+          </button>
+        )}
         {extraControls && (
           <div className="flex flex-col gap-1" onPointerDown={(e) => e.stopPropagation()}>
             {extraControls}
           </div>
         )}
       </div>
+      {help && helpOpen && (
+        <div
+          role="dialog"
+          aria-label={help.title}
+          onPointerDown={(e) => e.stopPropagation()}
+          onWheel={(e) => e.stopPropagation()}
+          className="absolute right-14 top-2 z-30 flex max-h-[calc(100%-1rem)] w-[min(330px,calc(100%-4.5rem))] flex-col overflow-hidden rounded-xl border border-primary-gold/25 bg-primary-black/95 text-xs text-primary-gold/80 shadow-card"
+        >
+          <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-3">
+            <span className="font-bold text-primary-gold">{help.title}</span>
+            <button type="button" onClick={() => setHelpOpen(false)} aria-label="Fechar a ajuda" className="text-primary-gold/60 hover:text-primary-gold">
+              <LuX size={14} />
+            </button>
+          </div>
+          <ul className="flex flex-col gap-1.5 overflow-y-auto overscroll-contain px-3 pb-3">
+            {help.rows.map((r) => (
+              <li key={r.what} className="flex flex-col">
+                <span className="font-semibold text-primary-gold">{r.what}</span>
+                <span className="text-[11px] text-primary-gold/60">
+                  {r.touch === undefined ? r.mouse.charAt(0).toUpperCase() + r.mouse.slice(1) : `Mouse: ${r.mouse} · Toque: ${r.touch}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {legend && (
         <div className="pointer-events-none absolute left-3 top-2 flex max-w-[calc(100%-4.5rem)] flex-wrap gap-x-2.5 gap-y-1 rounded-lg bg-primary-black/70 px-2 py-1 text-[10px] font-semibold text-primary-gold/75 backdrop-blur-sm">
