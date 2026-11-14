@@ -37,13 +37,14 @@ function FrontDrawing({ el }: { el: PlanElement }) {
   const H = m.height * U;
   if (m.id === "pouf1" || m.id === "pouf3" || m.id === "chest") {
     // Baú aberto: o tampo levantado para trás, e a caixa vista por dentro
+    // Pufe de 1 lugar: tecido branquinho de bolinhas; de 3 lugares: couro preto, um baú só
     const chest = m.id === "chest";
-    const n = m.id === "pouf3" ? 3 : 1;
-    const pw = w / n;
+    const dotted = m.id === "pouf1";
+    const seats = m.id === "pouf3" ? 3 : 1;
     const lid = (chest ? CHEST.lid : POUF.lid) * U;
     const wall = (chest ? CHEST.wall : POUF.wall) * U;
     const floor = (chest ? CHEST.floor : POUF.floor) * U;
-    const outer = chest ? "#7a4f2c" : "#1d1d20";
+    const outer = chest ? "#7a4f2c" : dotted ? "url(#fp-dots)" : "#1d1d20";
     const inner = chest ? "#4a2f1a" : "#2b2622";
     const up = 20; // altura do tampo em pé (cm, na vista)
     return (
@@ -56,25 +57,28 @@ function FrontDrawing({ el }: { el: PlanElement }) {
             <circle cx={3} cy={1} r={0.45} fill="#9bbb59" />
           </pattern>
         </defs>
-        {Array.from({ length: n }, (_, i) => {
-          const x = pw * i;
-          return (
-            <g key={i}>
-              {/* Tampo em pé, atrás */}
-              <polygon
-                points={`${x + 3},${lid} ${x + pw - 3},${lid} ${x + pw - 7},${lid - up} ${x + 7},${lid - up}`}
-                fill={chest ? "#6e4526" : n === 3 ? "url(#fp-dots)" : "#26262a"}
-                stroke={chest ? "#3a2412" : "#0c0c0e"}
-                strokeWidth={1}
-              />
-              {!chest && n === 1 && [0.3, 0.7].map((f) => <circle key={f} cx={x + pw * f} cy={lid - up * 0.5} r={1.6} fill="#0c0c0e" />)}
-              {/* Caixa: bordas e o fundo de dentro */}
-              <rect x={x} y={lid} width={pw} height={H - lid} rx={chest ? 1.5 : 3} fill={outer} stroke="#0c0c0e" strokeWidth={1.2} />
-              <rect x={x + wall} y={lid + 1} width={pw - wall * 2} height={H - lid - floor - 1} fill={inner} />
-              <rect x={x + wall} y={H - floor - 2} width={pw - wall * 2} height={2} fill={chest ? "#7a4f2c" : "#3a3430"} />
-            </g>
-          );
-        })}
+        {/* Tampo em pé, atrás (um só) */}
+        <polygon
+          points={`3,${lid} ${w - 3},${lid} ${w - 7},${lid - up} 7,${lid - up}`}
+          fill={chest ? "#6e4526" : dotted ? "url(#fp-dots)" : "#26262a"}
+          stroke={chest ? "#3a2412" : "#0c0c0e"}
+          strokeWidth={1}
+        />
+        {/* Couro: costura dos assentos e botões do capitonê */}
+        {!chest && !dotted && (
+          <g>
+            {Array.from({ length: seats - 1 }, (_, i) => (
+              <line key={i} x1={(w * (i + 1)) / seats} y1={lid - 1} x2={(w * (i + 1)) / seats} y2={lid - up + 1} stroke="#0c0c0e" strokeWidth={1} />
+            ))}
+            {Array.from({ length: seats }, (_, i) =>
+              [0.3, 0.7].map((f) => <circle key={`${i}${f}`} cx={(w * (i + f)) / seats} cy={lid - up * 0.5} r={1.6} fill="#0c0c0e" />),
+            )}
+          </g>
+        )}
+        {/* Caixa: bordas e o fundo de dentro */}
+        <rect x={0} y={lid} width={w} height={H - lid} rx={chest ? 1.5 : 3} fill={outer} stroke="#0c0c0e" strokeWidth={1.2} />
+        <rect x={wall} y={lid + 1} width={w - wall * 2} height={H - lid - floor - 1} fill={inner} />
+        <rect x={wall} y={H - floor - 2} width={w - wall * 2} height={2} fill={chest ? "#7a4f2c" : "#3a3430"} />
         {chest && [0.18, 0.82].map((f) => <rect key={f} x={w * f - 2} y={lid} width={4} height={H - lid} fill="#2a2a2c" opacity={0.85} />)}
       </g>
     );

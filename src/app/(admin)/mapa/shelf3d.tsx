@@ -77,24 +77,37 @@ function PoufChest({ el, n }: { el: PlanElement; n: number }) {
   const body = H - POUF.lid;
   const pw = w / n;
   const leather = { roughness: 0.42 };
+  const fabric = { map: "dots" as const, roughness: 0.95 };
+  // 1 lugar: o branquinho de tecido com bolinhas coloridas
+  if (n === 1)
+    return (
+      <group>
+        <B s={[w - 0.04, 0.025, d - 0.04]} p={[0, 0.0125, 0]} c={0x3a3430} />
+        <RB s={[w, body - 0.02, d]} p={[0, 0.02 + (body - 0.02) / 2, 0]} c={0xffffff} o={fabric} r={0.03} />
+        {/* Vivo (debrum) entre a caixa e o tampo */}
+        <B s={[w + 0.004, 0.008, d + 0.004]} p={[0, body - 0.004, 0]} c={0xd9ccb8} shadow={false} />
+        <RB s={[w - 0.004, POUF.lid, d - 0.004]} p={[0, body + POUF.lid / 2, 0]} c={0xffffff} o={fabric} r={0.035} />
+      </group>
+    );
+  // 3 lugares: o preto de couro, com um tampo só (3 assentos marcados por costura)
   return (
     <group>
       <B s={[w - 0.03, 0.03, d - 0.03]} p={[0, 0.015, 0]} c={0x0e0e10} />
       <RB s={[w, body - 0.02, d]} p={[0, 0.02 + (body - 0.02) / 2, 0]} c={0x1d1d20} o={leather} r={0.025} />
       {/* Costura logo abaixo do tampo */}
       <B s={[w + 0.002, 0.006, d + 0.002]} p={[0, body - 0.03, 0]} c={0x2c2c30} shadow={false} />
-      {Array.from({ length: n }, (_, i) => {
-        const x = -w / 2 + pw * (i + 0.5);
-        return n === 1 ? (
-          <group key={i}>
-            <RB s={[pw - 0.006, POUF.lid, d - 0.006]} p={[x, body + POUF.lid / 2, 0]} c={0x222226} o={leather} r={0.03} />
-            {/* Botões do capitonê */}
-            {[-1, 1].map((sx) => [-1, 1].map((sz) => <Ball key={`${sx}${sz}`} s={[0.018, 0.008, 0.018]} p={[x + sx * pw * 0.2, H + 0.001, sz * d * 0.2]} c={0x0c0c0e} shadow={false} />))}
-          </group>
-        ) : (
-          <RB key={i} s={[pw - 0.03, POUF.lid, d - 0.025]} p={[x, body + POUF.lid / 2, 0]} c={0xffffff} o={{ map: "dots", roughness: 0.95 }} r={0.03} />
-        );
-      })}
+      <RB s={[w - 0.006, POUF.lid, d - 0.006]} p={[0, body + POUF.lid / 2, 0]} c={0x222226} o={leather} r={0.03} />
+      {Array.from({ length: n - 1 }, (_, i) => (
+        <B key={i} s={[0.008, 0.004, d - 0.04]} p={[-w / 2 + pw * (i + 1), H + 0.001, 0]} c={0x0c0c0e} shadow={false} />
+      ))}
+      {/* Botões do capitonê em cada assento */}
+      {Array.from({ length: n }, (_, i) =>
+        [-1, 1].map((sx) =>
+          [-1, 1].map((sz) => (
+            <Ball key={`${i}${sx}${sz}`} s={[0.018, 0.008, 0.018]} p={[-w / 2 + pw * (i + 0.5) + sx * pw * 0.2, H + 0.001, sz * d * 0.2]} c={0x0c0c0e} shadow={false} />
+          )),
+        ),
+      )}
     </group>
   );
 }

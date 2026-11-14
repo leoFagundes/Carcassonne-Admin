@@ -72,11 +72,13 @@ describe("modelos", () => {
     expect(shelfSlots({ variant: "lowcab", w: 1 }).map((s) => s.id)).toEqual(["top", "drawer", "d1", "d2"]);
     expect(shelfSlots({ variant: "inventado", w: 0.85 })[1].id).toBe("u1");
   });
-  it("pufes-baú: 1 lugar tem um espaço; 3 lugares, um por lugar (lado a lado)", () => {
+  it("pufes-baú: um baú só por dentro, também no de 3 lugares (sem divisão)", () => {
     expect(shelfSlots({ variant: "pouf1", w: 0.5 }).map((s) => s.id)).toEqual(["in"]);
     const three = shelfSlots({ variant: "pouf3", w: 1.5 });
-    expect(three.map((s) => s.id)).toEqual(["s1", "s2", "s3"]);
-    expect(three[1].x).toBeGreaterThan(three[0].x + three[0].w - 1e-9);
+    expect(three.map((s) => s.id)).toEqual(["in"]);
+    expect(three[0].label).toBe("Dentro do baú");
+    // Ocupa a largura toda (menos as paredes)
+    expect(three[0].w).toBeGreaterThan(1.4);
     expect(SHELF_MODELS.pouf1.seat && SHELF_MODELS.pouf3.seat).toBe(true);
     expect(shelfSlots({ variant: "chest", w: 0.9 }).map((s) => s.id)).toEqual(["in"]);
   });

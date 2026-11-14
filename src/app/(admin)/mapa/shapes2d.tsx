@@ -338,16 +338,26 @@ export function Shape2D({
       if (v === "pouf1" || v === "pouf3") {
         const n = v === "pouf3" ? 3 : 1;
         const pw = w / n;
+        // 1 lugar: branquinho de bolinhas; 3 lugares: preto de couro, um baú só
         return (
           <g opacity={op}>
-            <rect x={x0} y={y0} width={w} height={d} rx={5} fill="#1d1d20" stroke="#e6d9c8" strokeOpacity={0.35} strokeWidth={sw} />
-            {n === 1
-              ? [-1, 1].map((sx) => [-1, 1].map((sy) => <circle key={`${sx}${sy}`} cx={sx * w * 0.2} cy={sy * d * 0.2} r={1.8} fill="#4a4a50" />))
-              : Array.from({ length: n }, (_, i) => (
-                  <rect key={i} x={x0 + pw * i + 3} y={y0 + 3} width={pw - 6} height={d - 6} rx={4} fill={paper ? "#e9dccb" : "url(#fp-dots-2d)"} />
+            {n === 1 ? (
+              <rect x={x0} y={y0} width={w} height={d} rx={6} fill={paper ? "#e9dccb" : "url(#fp-dots-2d)"} stroke="#3a3430" strokeOpacity={0.6} strokeWidth={sw} />
+            ) : (
+              <>
+                <rect x={x0} y={y0} width={w} height={d} rx={5} fill="#1d1d20" stroke="#e6d9c8" strokeOpacity={0.35} strokeWidth={sw} />
+                {Array.from({ length: n - 1 }, (_, i) => (
+                  <line key={i} x1={x0 + pw * (i + 1)} y1={y0 + 5} x2={x0 + pw * (i + 1)} y2={-y0 - 5} stroke="#4a4a50" strokeWidth={1.2} />
                 ))}
+                {Array.from({ length: n }, (_, i) =>
+                  [-1, 1].map((sx) =>
+                    [-1, 1].map((sy) => <circle key={`${i}${sx}${sy}`} cx={x0 + pw * (i + 0.5) + sx * pw * 0.2} cy={sy * d * 0.2} r={1.8} fill="#4a4a50" />),
+                  ),
+                )}
+              </>
+            )}
             {/* Símbolo de baú (abre e guarda jogos) */}
-            <path d={`M -6 ${-y0 - 8} h 12 v -6 h -12 z M -6 ${-y0 - 14} l 6 -4 l 6 4`} fill={n === 1 ? "none" : "#1d1d20"} stroke="#e6c56b" strokeOpacity={0.8} strokeWidth={1.4} />
+            <path d={`M -6 ${-y0 - 8} h 12 v -6 h -12 z M -6 ${-y0 - 14} l 6 -4 l 6 4`} fill={n === 1 ? "#3a3430" : "#1d1d20"} stroke="#e6c56b" strokeOpacity={0.8} strokeWidth={1.4} />
             {band}
           </g>
         );

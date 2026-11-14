@@ -294,7 +294,7 @@ const helpCards: HelpCard[] = [
     category: "mapa",
     title: "Pufes que abrem (salas 24 e 42)",
     description:
-      "Os pufes das salas abrem e guardam jogos. O pufe-baú de 1 lugar (preto) guarda tudo num espaço só; o de 3 lugares (almofadas de bolinhas) tem um espaço em cada lugar: esquerda, meio e direita. Em Jogos, toque no pufe: o tampo levanta e os jogos aparecem dentro. Se os pufes já estão na planta como pufes comuns, selecione-os em Planta e escolha \"pufes-baú de 1 lugar\" (cada um vira um separado, no mesmo lugar) ou \"Pufe-baú de 3 lugares\". O sofá da parede continua como sofá comum.",
+      "Os pufes das salas abrem e guardam jogos. O pufe-baú de 1 lugar é o branquinho de bolinhas coloridas; o de 3 lugares é o preto, de couro, e por dentro é um baú só, sem divisão. Em Jogos, toque no pufe: o tampo levanta e os jogos aparecem dentro. Se os pufes já estão na planta como pufes comuns, selecione-os em Planta e escolha \"pufes-baú de 1 lugar\" (cada um vira um separado, no mesmo lugar) ou \"Pufe-baú de 3 lugares\". O sofá da parede continua como sofá comum.",
   },
   {
     category: "mapa",

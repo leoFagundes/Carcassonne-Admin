@@ -426,7 +426,7 @@ function Inspector({ el, plan, actions }: { el: PlanElement; plan: FloorPlan; ac
           {el.variant === "pouf1" || el.variant === "pouf3" ? (
             <span>
               Pufe que abre e guarda jogos: em <strong>Jogos</strong>, o tampo levanta e você guarda os jogos dentro
-              {el.variant === "pouf3" ? " de cada um dos 3 lugares" : ""}. Continua sendo um lugar para sentar.
+              {el.variant === "pouf3" ? " (os 3 lugares abrem juntos: é um baú só, sem divisão)" : ""}. Continua sendo um lugar para sentar.
             </span>
           ) : el.variant === "understair" ? (
             <span>
@@ -457,7 +457,7 @@ function Inspector({ el, plan, actions }: { el: PlanElement; plan: FloorPlan; ac
             <Btn onClick={() => actions.toGameShelf(el.id, "pouf1")} title="Cada pufe vira um pufe-baú separado, no mesmo lugar">
               <LuLibrary size={13} /> {Math.max(1, el.count ?? 3) > 1 ? `${Math.max(1, el.count ?? 3)} pufes-baú de 1 lugar` : "Pufe-baú de 1 lugar"}
             </Btn>
-            <Btn onClick={() => actions.toGameShelf(el.id, "pouf3")} title="Um pufe comprido, com 3 lugares que abrem">
+            <Btn onClick={() => actions.toGameShelf(el.id, "pouf3")} title="Um pufe comprido de 3 lugares, com um baú só por dentro">
               <LuLibrary size={13} /> Pufe-baú de 3 lugares
             </Btn>
           </span>

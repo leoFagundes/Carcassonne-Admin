@@ -139,18 +139,19 @@ export function understairTop(w: number, x: number): number {
   return UNDERSTAIR.low + (UNDERSTAIR.height - UNDERSTAIR.low) * f;
 }
 
-function poufSlots(w: number, n: number): ShelfSlotDef[] {
-  const pw = w / n;
-  const names = n === 1 ? ["Dentro do pufe"] : ["Lugar 1 (esquerda)", "Lugar 2 (meio)", "Lugar 3 (direita)"];
-  return Array.from({ length: n }, (_, i) => ({
-    id: n === 1 ? "in" : `s${i + 1}`,
-    label: names[i] ?? `Lugar ${i + 1}`,
-    kind: "inside" as SlotKind,
-    x: pw * i + POUF.wall,
-    y: POUF.lid,
-    w: pw - POUF.wall * 2,
-    h: POUF.height - POUF.lid - POUF.floor,
-  }));
+/** Pufe-baú: um baú só por dentro (o de 3 lugares também não tem divisão). */
+function poufSlots(w: number, label: string): ShelfSlotDef[] {
+  return [
+    {
+      id: "in",
+      label,
+      kind: "inside",
+      x: POUF.wall,
+      y: POUF.lid,
+      w: w - POUF.wall * 2,
+      h: POUF.height - POUF.lid - POUF.floor,
+    },
+  ];
 }
 
 function understairSlots(w: number): ShelfSlotDef[] {
@@ -235,8 +236,8 @@ export const SHELF_MODELS: Record<ShelfModelId, ShelfModelDef> = {
     ],
   },
 
-  pouf1: { id: "pouf1", label: "Pufe baú (1 lugar)", height: POUF.height, w: 0.5, d: 0.5, seat: true, slots: (w) => poufSlots(w, 1) },
-  pouf3: { id: "pouf3", label: "Pufe baú (3 lugares)", height: POUF.height, w: 1.5, d: 0.5, seat: true, slots: (w) => poufSlots(w, 3) },
+  pouf1: { id: "pouf1", label: "Pufe baú (1 lugar)", height: POUF.height, w: 0.5, d: 0.5, seat: true, slots: (w) => poufSlots(w, "Dentro do pufe") },
+  pouf3: { id: "pouf3", label: "Pufe baú (3 lugares)", height: POUF.height, w: 1.5, d: 0.5, seat: true, slots: (w) => poufSlots(w, "Dentro do baú") },
   chest: {
     id: "chest",
     label: "Baú de jogos",
