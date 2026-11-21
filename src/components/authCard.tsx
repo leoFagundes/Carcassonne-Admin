@@ -96,7 +96,7 @@ export function AuthSubmit({
     <button
       type="submit"
       disabled={loading}
-      className="group mt-1 flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#f0d382] to-primary-gold text-sm font-bold tracking-wide text-primary-black shadow-[0_10px_26px_-6px_rgba(230,197,107,0.45)] transition-all hover:brightness-105 active:scale-[0.99] disabled:cursor-wait disabled:opacity-80"
+      className="group mt-1 flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#f0d382] to-primary-gold text-sm font-bold tracking-wide text-primary-black shadow-[0_10px_26px_-6px_rgba(230,197,107,0.45)] transition-all hover:brightness-105 active:scale-[0.99] disabled:cursor-default disabled:opacity-80"
     >
       {loading ? (
         <span
