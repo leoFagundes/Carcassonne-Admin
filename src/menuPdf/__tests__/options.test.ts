@@ -76,3 +76,17 @@ describe("verso ligado por padrão (versão 2 do salvo)", () => {
     expect(loadSavedOptions(saved).backPage).toBe(false);
   });
 });
+
+describe("bordas", () => {
+  it("padrão igual ao de antes: capa dupla, itens sem, regulamento e verso ingresso", async () => {
+    const { DEFAULT_FRAMES } = await import("../options");
+    expect(DEFAULT_OPTIONS.frames).toEqual({ cover: "double", content: "none", rules: "ticket", back: "ticket" });
+    expect(sanitizeOptions({}).frames).toEqual(DEFAULT_FRAMES);
+  });
+  it("lê o salvo, mistura e ignora o inválido", () => {
+    const o = sanitizeOptions({ frames: { cover: "ticket", content: "double", rules: "estrela", back: "none", outra: "double" } });
+    expect(o.frames).toEqual({ cover: "ticket", content: "double", rules: "ticket", back: "none" });
+    // Não compartilha o objeto do padrão (mudar um não muda o outro)
+    expect(sanitizeOptions({}).frames).not.toBe(DEFAULT_OPTIONS.frames);
+  });
+});

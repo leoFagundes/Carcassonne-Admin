@@ -52,7 +52,28 @@ export type PdfOptions = {
   subtitles: boolean;
   /** Categorias que ficam de fora (pelo nome). */
   hidden: string[];
+  /** Borda de cada tipo de página. */
+  frames: PdfFrames;
 };
+
+/** Sem borda, dupla (a da capa) ou ingresso (a do verso, com os cantos recortados). */
+export type FrameStyle = "none" | "double" | "ticket";
+export type FramePage = "cover" | "content" | "rules" | "back";
+export type PdfFrames = Record<FramePage, FrameStyle>;
+
+export const FRAME_STYLES: FrameStyle[] = ["none", "double", "ticket"];
+export const FRAME_PAGES: FramePage[] = ["cover", "content", "rules", "back"];
+export const DEFAULT_FRAMES: PdfFrames = { cover: "double", content: "none", rules: "ticket", back: "ticket" };
+
+export function sanitizeFrames(raw: unknown): PdfFrames {
+  const out = { ...DEFAULT_FRAMES };
+  if (!raw || typeof raw !== "object") return out;
+  for (const page of FRAME_PAGES) {
+    const v = (raw as Record<string, unknown>)[page];
+    if (typeof v === "string" && (FRAME_STYLES as string[]).includes(v)) out[page] = v as FrameStyle;
+  }
+  return out;
+}
 
 export const DEFAULT_OPTIONS: PdfOptions = {
   theme: "black",
@@ -78,6 +99,7 @@ export const DEFAULT_OPTIONS: PdfOptions = {
   badges: true,
   subtitles: true,
   hidden: [],
+  frames: DEFAULT_FRAMES,
 };
 
 export const OPTIONS_STORAGE_KEY = "cardapio-pdf-opcoes";
@@ -119,9 +141,10 @@ const FLAGS = [
 
 /** Lê o que veio do navegador; o que faltar ou estiver estranho volta ao padrão. */
 export function sanitizeOptions(raw: unknown): PdfOptions {
-  const out: PdfOptions = { ...DEFAULT_OPTIONS, hidden: [] };
+  const out: PdfOptions = { ...DEFAULT_OPTIONS, hidden: [], frames: { ...DEFAULT_FRAMES } };
   if (!raw || typeof raw !== "object") return out;
   const r = raw as Record<string, unknown>;
+  out.frames = sanitizeFrames(r.frames);
   if (r.theme === "black" || r.theme === "white") out.theme = r.theme;
   if (r.paper === "A4" || r.paper === "A5") out.paper = r.paper;
   if (r.style === "cards" || r.style === "list") out.style = r.style;

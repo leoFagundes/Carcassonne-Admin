@@ -37,7 +37,12 @@ import {
   type PdfSection,
 } from "./model";
 import { PALETTES, alpha, type PdfTheme } from "./theme";
-import { FONT_SCALE, type PdfOptions, type PdfPaper } from "./options";
+import {
+  FONT_SCALE,
+  type FrameStyle,
+  type PdfOptions,
+  type PdfPaper,
+} from "./options";
 import type { QrShape } from "./qr";
 import { hoursLines } from "./hours";
 
@@ -335,6 +340,29 @@ function Frame({ p }: { p: Pal }) {
   );
 }
 
+/** A borda escolhida para a página (nenhuma, dupla ou ingresso). Fica em todas as páginas que a página gerar. */
+function PageFrame({
+  p,
+  style,
+  paper,
+}: {
+  p: Pal;
+  style: FrameStyle;
+  paper: PdfPaper;
+}) {
+  if (style === "none") return null;
+  if (style === "double") return <Frame p={p} />;
+  const s = paper === "A4" ? 1 : 0.7;
+  const size = PAGE_SIZE[paper];
+  return (
+    <TicketFrame color={p.G} w={size.w} h={size.h} inset={18 * s} r={20 * s} />
+  );
+}
+
+/** Folga a mais nas páginas dos itens quando têm borda (para o texto não encostar nela). */
+const contentInset = (style: FrameStyle, paper: PdfPaper) =>
+  style === "none" ? 0 : paper === "A4" ? 12 : 9;
+
 /* ─── Sumário ─── */
 function Toc({
   p,
@@ -515,7 +543,7 @@ function Cover({
         paddingBottom: opts.legend ? L.coverLegendBottom : L.coverPadY,
       }}
     >
-      <Frame p={p} />
+      <PageFrame p={p} style={opts.frames.cover} paper={opts.paper} />
       <View style={{ flex: 1, justifyContent: "center", gap: L.coverGap }}>
         <View style={{ alignItems: "center" }}>
           {logo ? (
@@ -707,10 +735,12 @@ function Chrome({
   p,
   pub,
   record,
+  inset = 0,
 }: {
   p: Pal;
   pub: PubInfo;
   record?: MenuDocProps["record"];
+  inset?: number;
 }) {
   const L = useLayout();
   const contact = [pub.website, pub.instagram && `@${pub.instagram}`]
@@ -729,9 +759,9 @@ function Chrome({
         fixed
         style={{
           position: "absolute",
-          top: L.chromeTop,
-          left: L.side,
-          right: L.side,
+          top: L.chromeTop + inset,
+          left: L.side + inset,
+          right: L.side + inset,
         }}
       >
         <View
@@ -753,9 +783,9 @@ function Chrome({
         fixed
         style={{
           position: "absolute",
-          bottom: L.chromeBottom,
-          left: L.side,
-          right: L.side,
+          bottom: L.chromeBottom + inset,
+          left: L.side + inset,
+          right: L.side + inset,
         }}
       >
         <View
@@ -829,18 +859,20 @@ function ContentPage({
   children: React.ReactNode;
 }) {
   const L = useLayout();
+  const inset = contentInset(opts.frames.content, opts.paper);
   return (
     <Page
       size={opts.paper}
       style={{
         backgroundColor: p.BG,
-        paddingTop: opts.pageChrome ? L.top : L.side + 2,
-        paddingBottom: opts.pageChrome ? L.bottom : L.side + 2,
-        paddingHorizontal: L.side,
+        paddingTop: (opts.pageChrome ? L.top : L.side + 2) + inset,
+        paddingBottom: (opts.pageChrome ? L.bottom : L.side + 2) + inset,
+        paddingHorizontal: L.side + inset,
       }}
     >
+      <PageFrame p={p} style={opts.frames.content} paper={opts.paper} />
       {opts.pageChrome ? (
-        <Chrome p={p} pub={pub} record={record} />
+        <Chrome p={p} pub={pub} record={record} inset={inset} />
       ) : (
         <PageCounter record={record} color={p.BG} />
       )}
@@ -1302,7 +1334,6 @@ function RulesPage({
   logo?: string | null;
   record?: MenuDocProps["record"];
 }) {
-  const size = PAGE_SIZE[opts.paper];
   const s = opts.paper === "A4" ? 1 : 0.7;
   const width = 430 * s;
   const site = pub.website
@@ -1374,13 +1405,7 @@ function RulesPage({
         paddingVertical: 42 * s,
       }}
     >
-      <TicketFrame
-        color={p.G}
-        w={size.w}
-        h={size.h}
-        inset={18 * s}
-        r={20 * s}
-      />
+      <PageFrame p={p} style={opts.frames.rules} paper={opts.paper} />
       <PageCounter record={record} color={p.BG} />
       <View
         style={{
@@ -1608,7 +1633,6 @@ function BackPage({
   logo?: string | null;
   qr?: MenuDocProps["qr"];
 }) {
-  const size = PAGE_SIZE[opts.paper];
   const hours = hoursLines(pub.hours, { closedLast: true });
   const address = [
     ...pub.address
@@ -1670,13 +1694,7 @@ function BackPage({
         paddingVertical: 40 * s,
       }}
     >
-      <TicketFrame
-        color={p.G}
-        w={size.w}
-        h={size.h}
-        inset={18 * s}
-        r={20 * s}
-      />
+      <PageFrame p={p} style={opts.frames.back} paper={opts.paper} />
       <View
         style={{
           flex: 1,

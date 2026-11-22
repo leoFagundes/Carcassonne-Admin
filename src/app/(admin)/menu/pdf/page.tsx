@@ -24,6 +24,9 @@ import {
   OPTIONS_STORAGE_KEY,
   loadSavedOptions,
   optionsToSave,
+  FRAME_STYLES,
+  type FramePage,
+  type FrameStyle,
   type PdfFontSize,
   type PdfOptions,
 } from "@/menuPdf/options";
@@ -276,6 +279,119 @@ function QrLinkField({
   );
 }
 
+const FRAME_LABEL: Record<FrameStyle, string> = {
+  none: "Sem",
+  double: "Dupla",
+  ticket: "Ingresso",
+};
+
+/** Desenho pequeno de cada borda, para reconhecer de olho. */
+function FrameIcon({ style }: { style: FrameStyle }) {
+  return (
+    <svg
+      width="14"
+      height="18"
+      viewBox="0 0 14 18"
+      aria-hidden="true"
+      className="shrink-0"
+    >
+      {style === "none" ? (
+        <rect
+          x="1"
+          y="1"
+          width="12"
+          height="16"
+          rx="1"
+          fill="none"
+          stroke="currentColor"
+          strokeOpacity="0.35"
+          strokeDasharray="2 2"
+        />
+      ) : style === "double" ? (
+        <>
+          <rect
+            x="1"
+            y="1"
+            width="12"
+            height="16"
+            rx="1.5"
+            fill="none"
+            stroke="currentColor"
+          />
+          <rect
+            x="3"
+            y="3"
+            width="8"
+            height="12"
+            rx="1"
+            fill="none"
+            stroke="currentColor"
+            strokeOpacity="0.55"
+          />
+        </>
+      ) : (
+        <path
+          d="M4 1 H10 A3 3 0 0 0 13 4 V14 A3 3 0 0 0 10 17 H4 A3 3 0 0 0 1 14 V4 A3 3 0 0 0 4 1 Z"
+          fill="none"
+          stroke="currentColor"
+        />
+      )}
+    </svg>
+  );
+}
+
+function FrameRow({
+  label,
+  value,
+  onChange,
+  disabled,
+  hint,
+}: {
+  label: string;
+  value: FrameStyle;
+  onChange: (v: FrameStyle) => void;
+  disabled?: boolean;
+  hint?: string;
+}) {
+  return (
+    <div
+      className={`flex items-center justify-between gap-2 ${disabled ? "opacity-40" : ""}`}
+    >
+      <span className="flex min-w-0 flex-col">
+        <span className="text-[13px] leading-tight text-primary-gold/80">
+          {label}
+        </span>
+        {hint ? (
+          <span className="text-[11px] leading-snug text-primary-gold/35">
+            {hint}
+          </span>
+        ) : null}
+      </span>
+      <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-primary-gold/20 bg-primary-black/30 p-0.5">
+        {FRAME_STYLES.map((st) => (
+          <button
+            key={st}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(st)}
+            aria-pressed={value === st}
+            aria-label={`${label}: ${FRAME_LABEL[st]}`}
+            title={FRAME_LABEL[st]}
+            className={`flex h-7 cursor-pointer items-center gap-1 rounded-md px-1.5 text-[11px] font-medium transition-all disabled:cursor-default ${
+              value === st
+                ? "bg-primary-gold/20 text-primary-gold"
+                : "text-primary-gold/45 hover:text-primary-gold/80"
+            }`}
+          >
+            <FrameIcon style={st} />
+            {FRAME_LABEL[st]}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Group({
   title,
   children,
@@ -330,7 +446,10 @@ export default function PDFPage() {
   useEffect(() => {
     if (!applied) return;
     try {
-      localStorage.setItem(OPTIONS_STORAGE_KEY, JSON.stringify(optionsToSave(opts)));
+      localStorage.setItem(
+        OPTIONS_STORAGE_KEY,
+        JSON.stringify(optionsToSave(opts)),
+      );
       localStorage.setItem(AUTO_STORAGE_KEY, auto ? "1" : "0");
     } catch {
       // ignora
@@ -711,6 +830,79 @@ export default function PDFPage() {
                 </div>
               </Group>
             </div>
+
+            <Group
+              title="Bordas"
+              aside={
+                <div className="flex items-center gap-1.5 text-[11px] text-primary-gold/40">
+                  Todas:
+                  {FRAME_STYLES.map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() =>
+                        set("frames", {
+                          cover: st,
+                          content: st,
+                          rules: st,
+                          back: st,
+                        })
+                      }
+                      className="cursor-pointer text-primary-gold/50 hover:text-primary-gold"
+                    >
+                      {FRAME_LABEL[st]}
+                    </button>
+                  ))}
+                </div>
+              }
+            >
+              <div className="flex flex-col gap-2">
+                {(
+                  [
+                    {
+                      page: "cover",
+                      label: "Capa",
+                      off: !opts.cover,
+                      offHint: "A capa está desligada",
+                    },
+                    {
+                      page: "content",
+                      label: "Páginas dos itens",
+                      off: false,
+                      offHint: "",
+                    },
+                    {
+                      page: "rules",
+                      label: "Regulamento",
+                      off: !opts.rules,
+                      offHint: "O regulamento está desligado",
+                    },
+                    {
+                      page: "back",
+                      label: "Verso",
+                      off: !opts.backPage,
+                      offHint: "O verso está desligado",
+                    },
+                  ] as {
+                    page: FramePage;
+                    label: string;
+                    off: boolean;
+                    offHint: string;
+                  }[]
+                ).map((row) => (
+                  <FrameRow
+                    key={row.page}
+                    label={row.label}
+                    value={opts.frames[row.page]}
+                    onChange={(v) =>
+                      set("frames", { ...opts.frames, [row.page]: v })
+                    }
+                    disabled={!raw || row.off}
+                    hint={row.off ? row.offHint : undefined}
+                  />
+                ))}
+              </div>
+            </Group>
 
             {model && model.sections.length > 0 && (
               <Group
