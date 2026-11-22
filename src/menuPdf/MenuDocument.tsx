@@ -1216,118 +1216,295 @@ function RowView({
   );
 }
 
-/* ─── Regulamento (o mesmo texto do site) ─── */
+/* ─── Regulamento: no mesmo estilo do verso (o texto é o mesmo do site) ─── */
+function NoticeIcon({
+  kind,
+  color,
+  size,
+}: {
+  kind: "smoking" | "minors" | "payment";
+  color: string;
+  size: number;
+}) {
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        borderWidth: 1,
+        borderColor: color,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {kind === "minors" ? (
+        <Text
+          style={{
+            fontFamily: "Cinzel",
+            fontWeight: 700,
+            fontSize: size * 0.32,
+            color,
+          }}
+        >
+          18+
+        </Text>
+      ) : kind === "smoking" ? (
+        <Svg width={size * 0.62} height={size * 0.62} viewBox="0 0 24 24">
+          <Rect
+            x={3}
+            y={13}
+            width={14}
+            height={3.2}
+            rx={0.6}
+            stroke={color}
+            strokeWidth={1.5}
+            fill="none"
+          />
+          <Path
+            d="M19 13 v3.2 M21.5 13 v3.2 M19 10.5 c0 -2 2.5 -2 2.5 -4.5"
+            stroke={color}
+            strokeWidth={1.5}
+            fill="none"
+          />
+          <Path d="M3 3 L21 21" stroke={color} strokeWidth={1.8} />
+        </Svg>
+      ) : (
+        <Svg width={size * 0.6} height={size * 0.6} viewBox="0 0 24 24">
+          <Rect
+            x={2.5}
+            y={5}
+            width={19}
+            height={14}
+            rx={2.5}
+            stroke={color}
+            strokeWidth={1.6}
+            fill="none"
+          />
+          <Path d="M2.5 9.5 H21.5" stroke={color} strokeWidth={2.4} />
+          <Path d="M6 15 H11" stroke={color} strokeWidth={1.6} />
+        </Svg>
+      )}
+    </View>
+  );
+}
+
 function RulesPage({
   p,
   opts,
   pub,
+  logo,
   record,
 }: {
   p: Pal;
   opts: PdfOptions;
   pub: PubInfo;
+  logo?: string | null;
   record?: MenuDocProps["record"];
 }) {
-  const L = useLayout();
-  const t = useText(p);
+  const size = PAGE_SIZE[opts.paper];
+  const s = opts.paper === "A4" ? 1 : 0.7;
+  const width = 430 * s;
+  const site = pub.website
+    ? /^www\./i.test(pub.website)
+      ? pub.website
+      : `www.${pub.website}`
+    : "";
   const contacts = [
-    pub.whatsapp && { label: "WhatsApp", value: formatPhoneBR(pub.whatsapp) },
-    pub.instagram && { label: "Instagram", value: `@${pub.instagram}` },
-    pub.facebook && { label: "Facebook", value: `/${pub.facebook}` },
-    pub.website && { label: "Site", value: pub.website },
-    pub.address && { label: "Endereço", value: pub.cep ? `${pub.address} · CEP ${pub.cep}` : pub.address },
-  ].filter(Boolean) as { label: string; value: string }[];
-  const label = {
+    pub.whatsapp && `WhatsApp ${formatPhoneBR(pub.whatsapp)}`,
+    pub.instagram && `@${pub.instagram}`,
+    site,
+  ]
+    .filter(Boolean)
+    .join("   •   ");
+  const address = [pub.address, pub.cep && `CEP ${pub.cep}`]
+    .filter(Boolean)
+    .join(" · ");
+  // O marcador (bookmark) e a âncora do sumário
+  const mark = { bookmark: { title: "Regulamento", fit: true } } as Record<
+    string,
+    unknown
+  >;
+
+  const heading = {
     fontFamily: "Cinzel",
-    fontWeight: 600,
-    fontSize: 7.5 * L.k,
-    letterSpacing: 1.6,
-    color: alpha(p.G, 0.75),
-  } as const;
-  const boxes = [
-    ...LEGAL_NOTICES.map((n) => (
-      <View key={n.kind} style={{ ...card(p), gap: 4 }}>
-        <Text style={label}>{n.label.toUpperCase()}</Text>
-        <Text style={{ ...t.body, marginTop: 0 }}>{n.text}</Text>
-        <Text style={{ ...t.obs, marginTop: 2 }}>{n.law}</Text>
-      </View>
-    )),
-    <View key="pagamento" style={{ ...card(p), gap: 4 }}>
-      <Text style={label}>{PAYMENT.label.toUpperCase()}</Text>
-      {PAYMENT.methods.map((m) => (
-        <Text key={m} style={{ ...t.body, marginTop: 0 }}>
-          • {m}
-        </Text>
-      ))}
-      <Text style={{ ...t.obs, marginTop: 2 }}>{PAYMENT.note}</Text>
-    </View>,
-  ];
-  return (
-    <ContentPage p={p} opts={opts} pub={pub} record={record}>
-      <SectionHeader
-        p={p}
-        id="regulamento"
-        title="Regulamento"
-        record={record}
-      />
-      <View style={{ gap: 16 }}>
+    fontWeight: 700,
+    fontSize: 14 * s,
+    letterSpacing: 1.2 * s,
+    color: p.G,
+    textAlign: "center" as const,
+  };
+  const body = {
+    fontFamily: "Garamond",
+    fontSize: 12.5 * s,
+    color: alpha(p.G, 0.9),
+    textAlign: "center" as const,
+    lineHeight: 1.3,
+  };
+  const small = { ...body, fontSize: 10 * s, color: alpha(p.G, 0.6) };
+
+  const Divider = ({ meeple = true }: { meeple?: boolean }) =>
+    meeple ? (
+      <View
+        style={{
+          width,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6 * s,
+        }}
+      >
         <View
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            columnGap: 22,
-            rowGap: 6,
-          }}
+          style={{ flex: 1, height: 1, backgroundColor: alpha(p.G, 0.8) }}
+        />
+        <Meeple color={p.G} size={15 * s} />
+        <View
+          style={{ flex: 1, height: 1, backgroundColor: alpha(p.G, 0.8) }}
+        />
+      </View>
+    ) : (
+      <View style={{ width, height: 1, backgroundColor: alpha(p.G, 0.8) }} />
+    );
+
+  return (
+    <Page
+      size={opts.paper}
+      style={{
+        backgroundColor: p.BG,
+        paddingHorizontal: 48 * s,
+        paddingVertical: 42 * s,
+      }}
+    >
+      <TicketFrame
+        color={p.G}
+        w={size.w}
+        h={size.h}
+        inset={18 * s}
+        r={20 * s}
+      />
+      <PageCounter record={record} color={p.BG} />
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 13 * s,
+        }}
+      >
+        {/* Título */}
+        <View id="regulamento" {...mark} style={{ alignItems: "center" }}>
+          {logo ? (
+            <PdfImage
+              src={logo}
+              style={{ width: 70 * s, height: 70 * s, marginBottom: 8 * s }}
+            />
+          ) : null}
+          <Text
+            style={{
+              fontFamily: "Cinzel",
+              fontWeight: 600,
+              fontSize: 30 * s,
+              letterSpacing: 2 * s,
+              color: p.G,
+            }}
+            render={({ pageNumber }) => {
+              if (record) record.pages.regulamento = pageNumber;
+              return "REGULAMENTO";
+            }}
+          />
+          <Text
+            style={{
+              fontFamily: "Cinzel",
+              fontWeight: 600,
+              fontSize: 10.5 * s,
+              letterSpacing: 3 * s,
+              color: p.G,
+              marginTop: 4 * s,
+            }}
+          >
+            AVISOS LEGAIS & POLÍTICAS
+          </Text>
+        </View>
+
+        <Divider />
+
+        {/* Proibições legais, lado a lado */}
+        <View
+          style={{ width: width * 1.06, flexDirection: "row", gap: 22 * s }}
         >
-          {contacts.map((c) => (
-            <View key={c.label} style={{ alignItems: "center" }}>
-              <Text style={label}>{c.label.toUpperCase()}</Text>
-              <Text style={{ ...t.body, marginTop: 2, color: p.TEXT }}>
-                {c.value}
-              </Text>
+          {LEGAL_NOTICES.map((n) => (
+            <View
+              key={n.kind}
+              style={{ flex: 1, alignItems: "center", gap: 5 * s }}
+            >
+              <NoticeIcon kind={n.kind} color={p.G} size={32 * s} />
+              <Text style={heading}>{n.label.toUpperCase()}</Text>
+              <Text style={body}>{n.text}</Text>
+              <Text style={small}>{n.law}</Text>
             </View>
           ))}
         </View>
-        <Rule color={alpha(p.G, 0.25)}>
-          <Diamond color={p.G2} size={5} />
-        </Rule>
-        <View>
-          {rows(boxes, L.rulesCols).map((row, r) => (
-            <RowView
-              key={r}
-              row={{ lead: [], cells: row }}
-              cols={L.rulesCols}
-              gap={L.gap}
-            />
+
+        <Divider />
+
+        {/* Pagamento */}
+        <View style={{ alignItems: "center", gap: 5 * s }}>
+          <NoticeIcon kind="payment" color={p.G} size={32 * s} />
+          <Text style={heading}>{PAYMENT.label.toUpperCase()}</Text>
+          <Text style={body}>{PAYMENT.methods.join("  •  ")}</Text>
+          <Text style={small}>{PAYMENT.note}</Text>
+        </View>
+
+        <Divider />
+
+        {/* Bom saber */}
+        <View style={{ alignItems: "center", gap: 3 * s, width }}>
+          <Text style={{ ...heading, marginBottom: 2 * s }}>BOM SABER</Text>
+          {HOUSE_NOTES.map((n) => (
+            <Text key={n} style={body}>
+              {n}
+            </Text>
           ))}
         </View>
-        {/* Observações e PROCON sempre juntos (o PROCON não fica sozinho numa página) */}
-        <View wrap={false} style={{ gap: 16 }}>
+
+        {contacts || address ? (
+          <>
+            <Divider meeple={false} />
+            <View style={{ alignItems: "center", gap: 2 * s, width }}>
+              {contacts ? <Text style={body}>{contacts}</Text> : null}
+              {address ? <Text style={small}>{address}</Text> : null}
+            </View>
+          </>
+        ) : null}
+
+        <View
+          style={{
+            width: width * 0.9,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10 * s,
+            marginTop: 2 * s,
+          }}
+        >
           <View
-            style={{
-              // Sem "flex" (o do card zera a altura numa coluna e as linhas se sobrepõem)
-              borderWidth: 0.5,
-              borderColor: alpha(p.G, 0.22),
-              borderRadius: 5,
-              padding: 8,
-              gap: 4,
-            }}
-          >
-            {HOUSE_NOTES.map((n) => (
-              <Text key={n} style={{ ...t.body, marginTop: 0 }}>
-                • {n}
-              </Text>
-            ))}
-          </View>
+            style={{ flex: 1, height: 1, backgroundColor: alpha(p.G, 0.8) }}
+          />
           <Text
-            style={{ ...label, textAlign: "center", color: alpha(p.G, 0.5) }}
+            style={{
+              fontFamily: "Cinzel",
+              fontWeight: 600,
+              fontSize: 10 * s,
+              letterSpacing: 2 * s,
+              color: p.G,
+            }}
           >
             {PROCON}
           </Text>
+          <View
+            style={{ flex: 1, height: 1, backgroundColor: alpha(p.G, 0.8) }}
+          />
         </View>
       </View>
-    </ContentPage>
+    </Page>
   );
 }
 
@@ -1468,7 +1645,14 @@ function BackPage({
 
   const Divider = ({ meeple = true }: { meeple?: boolean }) =>
     meeple ? (
-      <View style={{ width, flexDirection: "row", alignItems: "center", gap: 6 * s }}>
+      <View
+        style={{
+          width,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6 * s,
+        }}
+      >
         <View style={{ flex: 1, height: 1, backgroundColor: p.G }} />
         <Meeple color={p.G} size={18 * s} />
         <View style={{ flex: 1, height: 1, backgroundColor: p.G }} />
@@ -1824,7 +2008,7 @@ export function MenuDocument(props: MenuDocProps) {
           </ContentPage>
         ) : null}
         {opts.rules ? (
-          <RulesPage p={p} opts={opts} pub={pub} record={record} />
+          <RulesPage p={p} opts={opts} pub={pub} logo={logo} record={record} />
         ) : null}
         {opts.backPage ? (
           <BackPage p={p} opts={opts} pub={pub} logo={logo} qr={qr} />

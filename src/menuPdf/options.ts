@@ -158,11 +158,12 @@ export function isQrUrl(url: string): boolean {
 
 /** Cardápio online do site (o endereço do site vem das configurações gerais). */
 export function defaultQrUrl(website: string): string {
+  // Só o domínio: o site pode estar cadastrado com um caminho (ex.: carcassonnepub.com.br/linktree)
   const host =
     website
       .trim()
       .replace(/^https?:\/\//i, "")
-      .replace(/\/+$/, "") || "www.carcassonnepub.com.br";
+      .split(/[/?#]/)[0] || "www.carcassonnepub.com.br";
   return `https://${host}/clientMenu`;
 }
 

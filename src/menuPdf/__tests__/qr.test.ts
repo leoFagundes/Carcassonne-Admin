@@ -16,6 +16,9 @@ describe("QR code do cardápio", () => {
     expect(defaultQrUrl("carcassonnepub.com.br")).toBe("https://carcassonnepub.com.br/clientMenu");
     expect(defaultQrUrl("https://www.carcassonnepub.com.br/")).toBe("https://www.carcassonnepub.com.br/clientMenu");
     expect(defaultQrUrl("")).toBe("https://www.carcassonnepub.com.br/clientMenu");
+    // Site cadastrado com caminho: o QR usa só o domínio
+    expect(defaultQrUrl("carcassonnepub.com.br/linktree")).toBe("https://carcassonnepub.com.br/clientMenu");
+    expect(defaultQrUrl("https://www.carcassonnepub.com.br/linktree?x=1")).toBe("https://www.carcassonnepub.com.br/clientMenu");
     expect(isQrUrl("https://instagram.com/carcassonnepub")).toBe(true);
     expect(isQrUrl("javascript:alert(1)")).toBe(false);
     expect(isQrUrl("https://com espaço.com")).toBe(false);
