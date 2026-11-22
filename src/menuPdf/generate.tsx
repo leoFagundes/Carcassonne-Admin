@@ -8,7 +8,7 @@
  */
 import type { PubInfo } from "@/types";
 import type { MenuModel } from "./model";
-import type { PdfTheme } from "./theme";
+import type { PdfOptions } from "./options";
 import { prepareThumbs, thumb } from "./images";
 
 export type GenerateStep = { phase: "fotos"; done: number; total: number } | { phase: "montando" };
@@ -20,15 +20,14 @@ const THUMB_PX = 168;
 
 export async function generateMenuPdf({
   model,
-  theme,
+  opts,
   pub,
-  sectionPerPage,
   onStep,
 }: {
+  /** Já filtrado pelas opções (applyOptions). */
   model: MenuModel;
-  theme: PdfTheme;
+  opts: PdfOptions;
   pub: PubInfo;
-  sectionPerPage: boolean;
   onStep?: (s: GenerateStep) => void;
 }): Promise<{ blob: Blob; pages: number }> {
   const [{ pdf, Font }, { MenuDocument }] = await Promise.all([import("@react-pdf/renderer"), import("./MenuDocument")]);
@@ -58,18 +57,19 @@ export async function generateMenuPdf({
   // Fotos: as dos itens; para as que não carregarem, a ilustração da categoria
   const all = model.sections.flatMap((s) => s.groups.flatMap((g) => g.items));
   const progress = (done: number, total: number) => onStep?.({ phase: "fotos", done, total });
-  const images = await prepareThumbs(all.map((i) => i.image), THUMB_PX, progress);
-  const missing = all.filter((i) => !images.has(i.image)).map((i) => i.fallback);
+  const images = opts.photos ? await prepareThumbs(all.map((i) => i.image), THUMB_PX, progress) : new Map<string, string>();
+  const missing = opts.photos ? all.filter((i) => !images.has(i.image)).map((i) => i.fallback) : [];
   if (missing.length) for (const [k, v] of await prepareThumbs(missing, THUMB_PX)) images.set(k, v);
   const logo = await thumb(LOGO, 360);
 
   onStep?.({ phase: "montando" });
   const generatedAt = new Date();
-  const base = { model, theme, pub, images, logo, sectionPerPage, generatedAt };
+  const base = { model, opts, pub, images, logo, generatedAt };
 
   const record = { pages: {} as Record<string, number>, total: 0 };
   const first = await pdf(<MenuDocument {...base} tocPages={null} record={record} />).toBlob();
-  if (!Object.keys(record.pages).length) return { blob: first, pages: record.total };
+  // Sem sumário não precisa da 2ª montagem
+  if (!opts.toc || !Object.keys(record.pages).length) return { blob: first, pages: record.total };
 
   const tocPages = { ...record.pages };
   const blob = await pdf(<MenuDocument {...base} tocPages={tocPages} record={record} />).toBlob();

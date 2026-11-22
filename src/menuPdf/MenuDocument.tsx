@@ -24,6 +24,7 @@ import {
   type PdfSection,
 } from "./model";
 import { PALETTES, alpha, type PdfTheme } from "./theme";
+import type { PdfOptions } from "./options";
 
 const PAGE = { top: 64, bottom: 60, side: 40 };
 const GAP = 9;
@@ -32,12 +33,11 @@ type Pal = (typeof PALETTES)[PdfTheme];
 
 export type MenuDocProps = {
   model: MenuModel;
-  theme: PdfTheme;
+  opts: PdfOptions;
   pub: PubInfo;
   /** src → data URL das miniaturas. */
   images: Map<string, string>;
   logo?: string | null;
-  sectionPerPage: boolean;
   /** Página de cada seção (passada da 1ª montagem); null mostra "…". */
   tocPages: Record<string, number> | null;
   /** Recebe a página de cada seção e o total, enquanto o PDF é montado. */
@@ -112,6 +112,132 @@ function Pill({
   );
 }
 
+/* ─── Sumário ─── */
+function Toc({
+  p,
+  model,
+  tocPages,
+}: { p: Pal } & Pick<MenuDocProps, "model" | "tocPages">) {
+  const entries = tocEntries(model);
+  const half = Math.ceil(entries.length / 2);
+  const cols =
+    entries.length > 9
+      ? [entries.slice(0, half), entries.slice(half)]
+      : [entries];
+  return (
+    <View
+      style={{
+        borderTopWidth: 0.6,
+        borderTopColor: alpha(p.G, 0.3),
+        paddingTop: 16,
+      }}
+    >
+      <Text
+        style={{
+          fontFamily: "Cinzel",
+          fontWeight: 600,
+          fontSize: 10,
+          letterSpacing: 3,
+          color: p.G2,
+          textAlign: "center",
+          marginBottom: 12,
+        }}
+      >
+        SUMÁRIO
+      </Text>
+      <View style={{ flexDirection: "row", gap: 28 }}>
+        {cols.map((col, c) => (
+          <View key={c} style={{ flex: 1, gap: 7 }}>
+            {col.map((e) => (
+              <Link
+                key={e.id}
+                src={"#" + e.id}
+                style={{ textDecoration: "none" }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "flex-end",
+                    gap: 4,
+                  }}
+                >
+                  <Text
+                    style={{ fontFamily: "Lato", fontSize: 9.5, color: p.TEXT }}
+                  >
+                    {e.title}
+                  </Text>
+                  <View
+                    style={{
+                      flex: 1,
+                      borderBottomWidth: 0.8,
+                      borderBottomColor: alpha(p.G, 0.35),
+                      borderBottomStyle: "dotted",
+                      marginBottom: 2.5,
+                    }}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: "Cinzel",
+                      fontWeight: 600,
+                      fontSize: 9.5,
+                      color: p.G,
+                    }}
+                  >
+                    {tocPages?.[e.id] ?? "…"}
+                  </Text>
+                </View>
+              </Link>
+            ))}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/* ─── Legenda (selos, moeda e data) ─── */
+function Legend({
+  p,
+  opts,
+  generatedAt,
+}: {
+  p: Pal;
+  opts: PdfOptions;
+  generatedAt: Date;
+}) {
+  const month = generatedAt.toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+  const note = {
+    fontFamily: "Lato",
+    fontSize: 7.5,
+    color: alpha(p.TEXT, 0.55),
+  };
+  return (
+    <View style={{ alignItems: "center", gap: 5 }}>
+      {opts.badges ? (
+        <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+          <Pill text="Destaque" color={p.G} bg={alpha(p.G, 0.16)} />
+          <Text style={note}>sugestão da casa</Text>
+          <Pill text="Vegano" color={p.GREEN} bg={alpha(p.GREEN, 0.16)} />
+          <Text style={note}>sem ingredientes de origem animal</Text>
+        </View>
+      ) : null}
+      <Text
+        style={{ fontFamily: "Lato", fontSize: 7, color: alpha(p.TEXT, 0.4) }}
+      >
+        Preços em reais (R$) · atualizado em {month}
+      </Text>
+    </View>
+  );
+}
+
+type HeadProps = { p: Pal } & Pick<
+  MenuDocProps,
+  "pub" | "logo" | "model" | "tocPages" | "generatedAt" | "opts"
+>;
+
 /* ─── Capa ─── */
 function Cover({
   p,
@@ -120,23 +246,9 @@ function Cover({
   model,
   tocPages,
   generatedAt,
-}: { p: Pal } & Pick<
-  MenuDocProps,
-  "pub" | "logo" | "model" | "tocPages" | "generatedAt"
->) {
-  const entries = tocEntries(model);
-  const twoCols = entries.length > 9;
-  const cols = twoCols
-    ? [
-        entries.slice(0, Math.ceil(entries.length / 2)),
-        entries.slice(Math.ceil(entries.length / 2)),
-      ]
-    : [entries];
-  const month = generatedAt.toLocaleDateString("pt-BR", {
-    month: "long",
-    year: "numeric",
-  });
-
+  opts,
+}: HeadProps) {
+  const logoSize = opts.toc ? 118 : 160;
   return (
     <Page
       size="A4"
@@ -144,7 +256,7 @@ function Cover({
         backgroundColor: p.BG,
         paddingHorizontal: 56,
         paddingTop: 54,
-        paddingBottom: 96,
+        paddingBottom: opts.legend ? 96 : 54,
       }}
     >
       {/* Moldura fina */}
@@ -175,12 +287,12 @@ function Cover({
         }}
       />
 
-      <View style={{ flex: 1, justifyContent: "center" }}>
+      <View style={{ flex: 1, justifyContent: "center", gap: 34 }}>
         <View style={{ alignItems: "center" }}>
           {logo ? (
             <PdfImage
               src={logo}
-              style={{ width: 118, height: 118, marginBottom: 14 }}
+              style={{ width: logoSize, height: logoSize, marginBottom: 14 }}
             />
           ) : null}
           <Text
@@ -235,122 +347,85 @@ function Cover({
             {pub.address}
           </Text>
         </View>
+        {opts.toc ? <Toc p={p} model={model} tocPages={tocPages} /> : null}
+      </View>
 
-        {/* Sumário */}
-        <View
-          style={{
-            marginTop: 34,
-            borderTopWidth: 0.6,
-            borderTopColor: alpha(p.G, 0.3),
-            paddingTop: 18,
-          }}
-        >
+      {opts.legend ? (
+        <View style={{ position: "absolute", left: 56, right: 56, bottom: 44 }}>
+          <Legend p={p} opts={opts} generatedAt={generatedAt} />
+        </View>
+      ) : null}
+    </Page>
+  );
+}
+
+/* ─── Sem capa: cabeçalho compacto no começo da 1ª página ─── */
+function Masthead({
+  p,
+  pub,
+  logo,
+  model,
+  tocPages,
+  generatedAt,
+  opts,
+}: HeadProps) {
+  return (
+    <View style={{ marginBottom: 22, gap: 16 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 14,
+        }}
+      >
+        {logo ? (
+          <PdfImage src={logo} style={{ width: 54, height: 54 }} />
+        ) : null}
+        <View>
+          <Text
+            style={{
+              fontFamily: "Cinzel",
+              fontWeight: 700,
+              fontSize: 22,
+              letterSpacing: 3,
+              color: p.G,
+            }}
+          >
+            CARCASSONNE PUB
+          </Text>
           <Text
             style={{
               fontFamily: "Cinzel",
               fontWeight: 600,
-              fontSize: 10,
-              letterSpacing: 3,
+              fontSize: 9.5,
+              letterSpacing: 4,
               color: p.G2,
-              textAlign: "center",
-              marginBottom: 12,
+              marginTop: 3,
             }}
           >
-            SUMÁRIO
+            CARDÁPIO
           </Text>
-          <View style={{ flexDirection: "row", gap: 28 }}>
-            {cols.map((col, c) => (
-              <View key={c} style={{ flex: 1, gap: 7 }}>
-                {col.map((e) => (
-                  <Link
-                    key={e.id}
-                    src={`#${e.id}`}
-                    style={{ textDecoration: "none" }}
-                  >
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "flex-end",
-                        gap: 4,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontFamily: "Lato",
-                          fontSize: 9.5,
-                          color: p.TEXT,
-                        }}
-                      >
-                        {e.title}
-                      </Text>
-                      <View
-                        style={{
-                          flex: 1,
-                          borderBottomWidth: 0.8,
-                          borderBottomColor: alpha(p.G, 0.35),
-                          borderBottomStyle: "dotted",
-                          marginBottom: 2.5,
-                        }}
-                      />
-                      <Text
-                        style={{
-                          fontFamily: "Cinzel",
-                          fontWeight: 600,
-                          fontSize: 9.5,
-                          color: p.G,
-                        }}
-                      >
-                        {tocPages?.[e.id] ?? "…"}
-                      </Text>
-                    </View>
-                  </Link>
-                ))}
-              </View>
-            ))}
-          </View>
-        </View>
-      </View>
-
-      {/* Rodapé da capa */}
-      <View
-        style={{
-          position: "absolute",
-          left: 56,
-          right: 56,
-          bottom: 44,
-          alignItems: "center",
-          gap: 5,
-        }}
-      >
-        <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
-          <Pill text="Destaque" color={p.G} bg={alpha(p.G, 0.16)} />
           <Text
             style={{
               fontFamily: "Lato",
               fontSize: 7.5,
               color: alpha(p.TEXT, 0.55),
+              marginTop: 3,
             }}
           >
-            sugestão da casa
-          </Text>
-          <Pill text="Vegano" color={p.GREEN} bg={alpha(p.GREEN, 0.16)} />
-          <Text
-            style={{
-              fontFamily: "Lato",
-              fontSize: 7.5,
-              color: alpha(p.TEXT, 0.55),
-            }}
-          >
-            sem ingredientes de origem animal
+            {pub.address}
           </Text>
         </View>
-        <Text
-          style={{ fontFamily: "Lato", fontSize: 7, color: alpha(p.TEXT, 0.4) }}
-        >
-          Preços em reais (R$) · atualizado em {month}
-        </Text>
       </View>
-    </Page>
+      {opts.toc ? <Toc p={p} model={model} tocPages={tocPages} /> : null}
+      {opts.legend ? (
+        <Legend p={p} opts={opts} generatedAt={generatedAt} />
+      ) : null}
+      <Rule color={alpha(p.G, 0.35)}>
+        <Diamond color={p.G} size={6} />
+      </Rule>
+    </View>
   );
 }
 
@@ -458,6 +533,26 @@ function Chrome({
   );
 }
 
+/** Conta as páginas mesmo sem rodapé (o total aparece na tela). */
+function PageCounter({
+  record,
+  color,
+}: {
+  record?: MenuDocProps["record"];
+  color: string;
+}) {
+  return (
+    <Text
+      fixed
+      style={{ position: "absolute", bottom: 4, left: 4, fontSize: 1, color }}
+      render={({ totalPages }) => {
+        if (record) record.total = totalPages;
+        return " ";
+      }}
+    />
+  );
+}
+
 /* ─── Título de seção ─── */
 function SectionHeader({
   p,
@@ -547,17 +642,20 @@ function ItemCard({
   p,
   item,
   images,
+  opts,
 }: {
   p: Pal;
   item: PdfItem;
   images: Map<string, string>;
+  opts: PdfOptions;
 }) {
   const src = images.get(item.image) ?? images.get(item.fallback);
+  const focus = opts.badges && item.isFocus;
   const prices = priceLines(item.value);
   const longPrice = prices.length > 1 || item.value.length > 16;
   return (
-    <View style={{ ...card(p, item.isFocus), flexDirection: "row", gap: 8 }}>
-      {src ? (
+    <View style={{ ...card(p, focus), flexDirection: "row", gap: 8 }}>
+      {!opts.photos ? null : src ? (
         <PdfImage
           src={src}
           style={{ width: 46, height: 46, borderRadius: 4 }}
@@ -621,7 +719,7 @@ function ItemCard({
             ))}
           </View>
         ) : null}
-        {item.isFocus || item.isVegan ? (
+        {opts.badges && (item.isFocus || item.isVegan) ? (
           <View style={{ flexDirection: "row", gap: 3, marginTop: 2.5 }}>
             {item.isFocus ? (
               <Pill text="Destaque" color={p.G} bg={alpha(p.G, 0.16)} />
@@ -631,7 +729,7 @@ function ItemCard({
             ) : null}
           </View>
         ) : null}
-        {item.description ? (
+        {opts.descriptions && item.description ? (
           <Text
             style={{
               fontFamily: "Lato",
@@ -644,7 +742,7 @@ function ItemCard({
             {item.description}
           </Text>
         ) : null}
-        {item.sideDish.length ? (
+        {opts.extras && item.sideDish.length ? (
           <Text
             style={{
               fontFamily: "Lato",
@@ -658,7 +756,7 @@ function ItemCard({
             {item.sideDish.join(", ")}
           </Text>
         ) : null}
-        {item.observation.length ? (
+        {opts.extras && item.observation.length ? (
           <Text
             style={{
               fontFamily: "Lato",
@@ -801,18 +899,10 @@ function ComboCard({ p, combo }: { p: Pal; combo: ComboType }) {
 
 /* ─── Documento ─── */
 export function MenuDocument(props: MenuDocProps) {
-  const {
-    model,
-    theme,
-    pub,
-    images,
-    logo,
-    sectionPerPage,
-    tocPages,
-    record,
-    generatedAt,
-  } = props;
-  const p = PALETTES[theme];
+  const { model, opts, pub, images, logo, tocPages, record, generatedAt } =
+    props;
+  const p = PALETTES[opts.theme];
+  const { sectionPerPage } = opts;
 
   type Block = {
     id: string;
@@ -847,11 +937,11 @@ export function MenuDocument(props: MenuDocProps) {
     blocks.push({
       id: s.id,
       title: s.title,
-      subtitle: s.subtitle,
+      subtitle: opts.subtitles ? s.subtitle : undefined,
       groups: s.groups.map((g) => ({
         name: g.name,
         cells: g.items.map((it) => (
-          <ItemCard key={it.key} p={p} item={it} images={images} />
+          <ItemCard key={it.key} p={p} item={it} images={images} opts={opts} />
         )),
       })),
     });
@@ -885,24 +975,42 @@ export function MenuDocument(props: MenuDocProps) {
       creator="Carcassonne Admin"
       producer="Carcassonne Admin"
     >
-      <Cover
-        p={p}
-        pub={pub}
-        logo={logo}
-        model={model}
-        tocPages={tocPages}
-        generatedAt={generatedAt}
-      />
+      {opts.cover ? (
+        <Cover
+          p={p}
+          pub={pub}
+          logo={logo}
+          model={model}
+          tocPages={tocPages}
+          generatedAt={generatedAt}
+          opts={opts}
+        />
+      ) : null}
       <Page
         size="A4"
         style={{
           backgroundColor: p.BG,
-          paddingTop: PAGE.top,
-          paddingBottom: PAGE.bottom,
+          paddingTop: opts.pageChrome ? PAGE.top : 42,
+          paddingBottom: opts.pageChrome ? PAGE.bottom : 42,
           paddingHorizontal: PAGE.side,
         }}
       >
-        <Chrome p={p} pub={pub} record={record} />
+        {opts.pageChrome ? (
+          <Chrome p={p} pub={pub} record={record} />
+        ) : (
+          <PageCounter record={record} color={p.BG} />
+        )}
+        {opts.cover ? null : (
+          <Masthead
+            p={p}
+            pub={pub}
+            logo={logo}
+            model={model}
+            tocPages={tocPages}
+            generatedAt={generatedAt}
+            opts={opts}
+          />
+        )}
         {blocks.map((b, i) => (
           <View
             key={b.id}
