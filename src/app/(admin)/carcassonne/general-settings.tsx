@@ -28,6 +28,7 @@ import {
   formatPhoneBR,
   mergeEffectsPrefs,
   mergePubInfo,
+  formatCep,
   mergeShareMeta,
   noticeActive,
   openStatus,
@@ -92,11 +93,12 @@ const INFO = {
       <p>
         <strong>Onde aparece:</strong> o endereço na página de reserva, no regulamento, no PDF do cardápio e no e-mail
         de confirmação do aluguel; WhatsApp, Instagram, Facebook e mapa nos contatos do regulamento e no botão de
-        WhatsApp das áreas desligadas; Instagram e site no rodapé do PDF do cardápio.
+        WhatsApp das áreas desligadas; Instagram e site no rodapé do PDF do cardápio. O CEP aparece no verso e no
+        regulamento do PDF do cardápio; o horário, também no verso do PDF.
       </p>
       <p>
-        <strong>Horário de funcionamento:</strong> serve só para o selo &quot;Aberto agora / Fechado&quot; (linktree e
-        página de reserva). Não muda os horários que o cliente pode reservar — esses ficam em{" "}
+        <strong>Horário de funcionamento:</strong> aparece no selo &quot;Aberto agora / Fechado&quot; (linktree e
+        página de reserva) e no verso do PDF do cardápio. Não muda os horários que o cliente pode reservar — esses ficam em{" "}
         <Link href="/carcassonne?tab=configuracoes&section=reservas" className="underline underline-offset-2">Configurações → Reservas</Link>.
       </p>
       <p>
@@ -226,6 +228,12 @@ function PubInfoSettings() {
         <div className="sm:col-span-2">{text("address", "Endereço", DEFAULT_PUB_INFO.address)}</div>
         <div className="sm:col-span-2">{text("mapsUrl", "Link do mapa", "https://maps.google.com/...")}</div>
         {text(
+          "cep",
+          "CEP",
+          "70855-550",
+          raw.cep.replace(/\D/g, "").length === 8 ? `Aparece como CEP ${formatCep(raw.cep)}` : "Aparece no verso do PDF do cardápio",
+        )}
+        {text(
           "whatsapp",
           "WhatsApp (com DDD)",
           "5561999999999",
@@ -242,8 +250,8 @@ function PubInfoSettings() {
           Horário de funcionamento
         </span>
         <p className="text-[11px] text-primary-gold/45 -mt-1 leading-relaxed">
-          Usado só pelo selo <strong className="text-primary-gold/70">&quot;Aberto agora / Fechado&quot;</strong>, que
-          aparece no linktree e na página de reserva (ligue embaixo). Não muda os horários em que o cliente pode reservar.
+          Usado pelo selo <strong className="text-primary-gold/70">&quot;Aberto agora / Fechado&quot;</strong>, que
+          aparece no linktree e na página de reserva (ligue embaixo), e no verso do PDF do cardápio. Não muda os horários em que o cliente pode reservar.
           Se fechar depois da meia-noite, use o horário da madrugada (ex.: 18:00 às 02:00).
         </p>
         <div className="flex flex-col gap-1.5">

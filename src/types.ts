@@ -130,6 +130,8 @@ export interface OpeningHours {
 
 export interface PubInfo {
   address: string;
+  /** CEP (ex.: 70855-550); vazio = não aparece. */
+  cep: string;
   mapsUrl: string;
   /** Só dígitos, com DDI e DDD (ex.: 5561999684186). */
   whatsapp: string;

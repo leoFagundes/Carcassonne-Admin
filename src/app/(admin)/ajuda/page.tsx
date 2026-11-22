@@ -903,7 +903,7 @@ const helpCards: HelpCard[] = [
     category: "configuracoes",
     title: "Informações do pub e horário de funcionamento",
     description:
-      "Em Configurações → 'Configurações' → 'Geral' → 'Informações do pub': endereço, link do mapa, WhatsApp, e-mail, Instagram, Facebook e site. Eles aparecem na página de reserva, no regulamento, no PDF do cardápio e no e-mail de confirmação do aluguel — mudou o telefone, muda aqui e vale em todo lugar. Campo vazio volta ao valor padrão. Logo abaixo, o horário de funcionamento de cada dia (se fechar depois da meia-noite, use o horário da madrugada, ex.: 18:00 às 02:00) e a opção de mostrar o selo 'Aberto agora · fecha às 2h' / 'Fechado · abre amanhã às 18h' no linktree e na página de reserva.",
+      "Em Configurações → 'Configurações' → 'Geral' → 'Informações do pub': endereço, CEP (aparece no verso e no regulamento do PDF do cardápio), link do mapa, WhatsApp, e-mail, Instagram, Facebook e site. Eles aparecem na página de reserva, no regulamento, no PDF do cardápio e no e-mail de confirmação do aluguel — mudou o telefone, muda aqui e vale em todo lugar. Campo vazio volta ao valor padrão. Logo abaixo, o horário de funcionamento de cada dia (se fechar depois da meia-noite, use o horário da madrugada, ex.: 18:00 às 02:00) e a opção de mostrar o selo 'Aberto agora · fecha às 2h' / 'Fechado · abre amanhã às 18h' no linktree e na página de reserva.",
   },
   {
     category: "configuracoes",

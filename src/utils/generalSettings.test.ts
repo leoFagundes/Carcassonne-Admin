@@ -4,6 +4,7 @@ import {
   DEFAULT_PUB_INFO,
   disabledAreaFor,
   effectsAllowed,
+  formatCep,
   formatHour,
   formatPhoneBR,
   mergeEffectsPrefs,
@@ -40,6 +41,13 @@ describe("mergePubInfo / formatPhoneBR", () => {
     expect(formatPhoneBR("5561999684186")).toBe("(61) 99968-4186");
     expect(formatPhoneBR("6133334444")).toBe("(61) 3333-4444");
     expect(formatPhoneBR("123")).toBe("123");
+  });
+
+  it("CEP: vazio por padrão; 8 números ganham o hífen", () => {
+    expect(mergePubInfo({}).cep).toBe("");
+    expect(mergePubInfo({ cep: "70855550" }).cep).toBe("70855-550");
+    expect(mergePubInfo({ cep: " 70.855-550 " }).cep).toBe("70855-550");
+    expect(formatCep("123")).toBe("123");
   });
 });
 

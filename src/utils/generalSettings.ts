@@ -17,6 +17,7 @@ import type {
 
 export const DEFAULT_PUB_INFO: PubInfo = {
   address: "CLN 407 Bloco E Loja 37 — Asa Norte, Brasília/DF",
+  cep: "",
   mapsUrl: "https://www.google.com/maps/place/CLN+407+Bloco+E+-+Loja+37+-+Asa+Norte,+Brasília+-+DF",
   whatsapp: "5561999684186",
   instagram: "carcassonnepub",
@@ -46,6 +47,7 @@ export function mergePubInfo(saved?: Partial<PubInfo>): PubInfo {
   };
   return {
     address: pick("address"),
+    cep: formatCep(pick("cep")),
     mapsUrl: pick("mapsUrl"),
     whatsapp: pick("whatsapp").replace(/\D/g, ""),
     instagram: pick("instagram").replace(/^@/, ""),
@@ -54,6 +56,12 @@ export function mergePubInfo(saved?: Partial<PubInfo>): PubInfo {
     website: pick("website"),
     hours: cleanHours(saved?.hours),
   };
+}
+
+/** "70855550" → "70855-550"; o que não tiver 8 números fica como foi digitado. */
+export function formatCep(value: string): string {
+  const d = value.replace(/\D/g, "");
+  return d.length === 8 ? `${d.slice(0, 5)}-${d.slice(5)}` : value.trim();
 }
 
 /** "5561999684186" → "(61) 99968-4186" (sem o DDI 55). */

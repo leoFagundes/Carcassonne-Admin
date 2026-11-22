@@ -1235,7 +1235,7 @@ function RulesPage({
     pub.instagram && { label: "Instagram", value: `@${pub.instagram}` },
     pub.facebook && { label: "Facebook", value: `/${pub.facebook}` },
     pub.website && { label: "Site", value: pub.website },
-    pub.address && { label: "Endereço", value: pub.address },
+    pub.address && { label: "Endereço", value: pub.cep ? `${pub.address} · CEP ${pub.cep}` : pub.address },
   ].filter(Boolean) as { label: string; value: string }[];
   const label = {
     fontFamily: "Cinzel",
@@ -1433,10 +1433,13 @@ function BackPage({
 }) {
   const size = PAGE_SIZE[opts.paper];
   const hours = hoursLines(pub.hours, { closedLast: true });
-  const address = pub.address
-    .split(/\s+[—–]\s+/)
-    .map((l) => l.trim())
-    .filter(Boolean);
+  const address = [
+    ...pub.address
+      .split(/\s+[—–]\s+/)
+      .map((l) => l.trim())
+      .filter(Boolean),
+    ...(pub.cep ? [`CEP ${pub.cep}`] : []),
+  ];
   // Muitas linhas (ou o QR) → tudo um pouco menor para caber numa página
   const dense = hours.length + address.length > 7 || !!qr;
   const s = (opts.paper === "A4" ? 1 : 0.7) * (dense ? 0.92 : 1);
