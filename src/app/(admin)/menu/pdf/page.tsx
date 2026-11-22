@@ -4,7 +4,7 @@ import LoaderFullscreen from "@/components/loaderFullscreen";
 import Loader from "@/components/loader";
 import { useAlert } from "@/contexts/alertProvider";
 import { usePubInfo, useSiteLogo } from "@/contexts/siteConfigProvider";
-import { SITE_LOGOS, type SiteLogo } from "@/utils/siteLogo";
+import { SITE_LOGOS, SITE_LOGO_ORDER, type SiteLogo } from "@/utils/siteLogo";
 import ComboRepository from "@/services/repositories/ComboRepository";
 import DescriptionRepository from "@/services/repositories/DescriptionTypeRepository";
 import InfoRepository from "@/services/repositories/InfoRepository";
@@ -944,7 +944,7 @@ export default function PDFPage() {
                   Logo
                 </span>
                 <div className="flex items-stretch gap-1 rounded-lg border border-primary-gold/20 bg-primary-black/30 p-1">
-                  {(Object.keys(SITE_LOGOS) as SiteLogo[]).map((key) => {
+                  {SITE_LOGO_ORDER.map((key) => {
                     const on = logoOf(opts) === key;
                     return (
                       <button

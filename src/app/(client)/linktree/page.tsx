@@ -4,6 +4,8 @@ import Loader from "@/components/loader";
 import ThemeLogoAccessory from "@/components/siteTheme/ThemeLogoAccessory";
 import OpenNowBadge from "@/components/openNowBadge";
 import { useSiteTheme } from "@/components/siteTheme/siteThemeContext";
+import { useSiteLogo } from "@/contexts/siteConfigProvider";
+import { SITE_LOGOS } from "@/utils/siteLogo";
 import LinksRepository from "@/services/repositories/LinksRepository";
 import { LinkType } from "@/types";
 import { getLucideIcon } from "@/utils/utilFunctions";
@@ -227,6 +229,7 @@ export default function LinktreePage() {
   const [mounted, setMounted] = useState(false);
   const [links, setLinks] = useState<(LinkType & { id: string })[]>([]);
   const siteTheme = useSiteTheme();
+  const logo = useSiteLogo();
 
   const fetchLinks = async () => {
     try {
@@ -347,8 +350,8 @@ export default function LinktreePage() {
                 }}
               >
                 <div className="w-full h-full rounded-full bg-primary-black flex items-center justify-center overflow-hidden">
-                  {/* Crown SVG as logo */}
-                  <img src={"images/logo-gold-2.png"} alt="logo" />
+                  {/* Logo padrão (Configurações → Geral → Logo); a folga evita cortar os cantos no círculo */}
+                  <img src={SITE_LOGOS[logo].src} alt="Carcassonne Pub" className="h-full w-full object-contain p-2" />
                 </div>
               </div>
 

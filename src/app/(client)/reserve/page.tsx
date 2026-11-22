@@ -33,7 +33,8 @@ import LoaderFullscreen from "@/components/loaderFullscreen";
 import Loader from "@/components/loader";
 import ThemeLogoAccessory from "@/components/siteTheme/ThemeLogoAccessory";
 import OpenNowBadge from "@/components/openNowBadge";
-import { usePubInfo } from "@/contexts/siteConfigProvider";
+import { usePubInfo, useSiteLogo } from "@/contexts/siteConfigProvider";
+import { SITE_LOGOS } from "@/utils/siteLogo";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
@@ -54,6 +55,7 @@ const STAR = (
 
 export default function Reserve() {
   const pub = usePubInfo();
+  const logo = useSiteLogo();
   const [page, setPage] = useState(1);
   const [adults, setAdults] = useState(2);
   // Distinção adultos/crianças removida da reserva — agora é só "pessoas".
@@ -420,8 +422,8 @@ export default function Reserve() {
             <span className="relative isolate shrink-0">
               <img
                 className="block rounded-lg w-[60px] sm:w-[72px] shadow-card"
-                src="images/real-logo.png"
-                alt="logo"
+                src={SITE_LOGOS[logo].src}
+                alt="Carcassonne Pub"
               />
               <ThemeLogoAccessory />
             </span>

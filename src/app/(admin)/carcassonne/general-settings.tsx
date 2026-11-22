@@ -36,7 +36,7 @@ import {
   sessionHours,
 } from "@/utils/generalSettings";
 import { SettingsPanel, useGeneralConfigSection } from "./settings-ui";
-import { SITE_LOGOS, siteLogo, type SiteLogo } from "@/utils/siteLogo";
+import { SITE_LOGOS, SITE_LOGO_ORDER, siteLogo } from "@/utils/siteLogo";
 
 // Painéis de Configurações → Geral. Cada um carrega e salva só os próprios campos.
 
@@ -159,12 +159,14 @@ const INFO = {
   logo: (
     <>
       <p>
-        <strong>O que é:</strong> qual das duas logos do Carcassonne é a padrão.
+        <strong>O que é:</strong> qual das duas logos do Carcassonne é a padrão: a <strong>Original</strong> (a
+        clássica, em vetor) ou a <strong>Variante</strong> (com as canecas e os dados).
       </p>
       <p>
-        <strong>Onde aparece:</strong> no menu lateral do admin e no PDF do cardápio (lá dá para trocar na hora, só para
-        aquele PDF). O linktree, a página de reserva e a impressão das reservas usam outras versões da logo e não mudam.
+        <strong>Onde aparece:</strong> no menu lateral do admin, no linktree, na página de reserva, na marca d&apos;água
+        da impressão das reservas e no PDF do cardápio. No PDF dá para trocar na hora, só para aquele arquivo.
       </p>
+      <p>Depois de salvar, o site do cliente passa a mostrar a escolhida ao abrir ou recarregar a página.</p>
     </>
   ),
   session: (
@@ -689,7 +691,7 @@ function LogoSettings() {
   return (
     <SettingsPanel title="Logo" info={INFO.logo} dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
       <div className="grid grid-cols-2 gap-3">
-        {(Object.keys(SITE_LOGOS) as SiteLogo[]).map((key) => {
+        {SITE_LOGO_ORDER.map((key) => {
           const logo = SITE_LOGOS[key];
           const on = value === key;
           return (

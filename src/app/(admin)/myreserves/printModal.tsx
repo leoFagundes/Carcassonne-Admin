@@ -4,6 +4,8 @@ import { ReactNode, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { PrintProps } from "./page";
 import { LuPrinter, LuSkipBack, LuX } from "react-icons/lu";
+import { useSiteLogo } from "@/contexts/siteConfigProvider";
+import { SITE_LOGOS } from "@/utils/siteLogo";
 
 interface PrintModalProps {
   isOpen: boolean;
@@ -20,6 +22,7 @@ export default function PrintModal({
   printConfigs,
   setPrintConfigs,
 }: PrintModalProps) {
+  const logo = useSiteLogo();
   useEffect(() => {
     const saved = localStorage.getItem("printConfigs");
     if (saved) {
@@ -48,8 +51,8 @@ export default function PrintModal({
       {/* Marca d'água */}
       {printConfigs.printWaterMark && (
         <img
-          src="images/logo-clean.png"
-          alt="logo"
+          src={SITE_LOGOS[logo].src}
+          alt=""
           className="absolute top-0 left-0 w-full h-full object-contain opacity-4 pointer-events-none"
           style={{ opacity: printConfigs.printWaterMarkOpacity }}
         />
