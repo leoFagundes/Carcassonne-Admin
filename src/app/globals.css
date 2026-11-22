@@ -1120,26 +1120,3 @@ html[data-site-theme]:not([data-site-theme="default"]):not([data-site-theme-styl
     transform: translateY(0);
   }
 }
-
-@media print {
-  @page {
-    size: A4 portrait;
-    margin: 0;
-  }
-
-  body * {
-    visibility: hidden;
-  }
-
-  #cardapio-pdf,
-  #cardapio-pdf * {
-    visibility: visible;
-  }
-
-  #cardapio-pdf {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 210mm;
-  }
-}

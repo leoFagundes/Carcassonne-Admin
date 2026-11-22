@@ -597,7 +597,7 @@ const helpCards: HelpCard[] = [
     category: "cardapio",
     title: "Como exportar o cardápio em PDF",
     description:
-      "Na página Cardápio, clique no botão 'PDF' no cabeçalho. Uma versão formatada do cardápio abrirá em uma nova aba, pronta para impressão. Use Ctrl+P no navegador para salvar como PDF ou imprimir diretamente.",
+      "Na página Cardápio, clique no botão 'PDF' no cabeçalho. O PDF é montado sozinho (leva alguns segundos por causa das fotos) e aparece na tela. Escolha o fundo (Preto, ou Branco para gastar menos tinta) e as seções (Seguidas, ou Uma por página). Depois toque em 'Baixar PDF' para salvar ou em 'Abrir' para ver numa aba nova e imprimir de lá. Tem capa com sumário (clicável), número em cada página e um marcador por seção na barra lateral do leitor de PDF. Funciona também no celular e no iPad. Se der erro, aparece a mensagem com o motivo e o navegador: mande um print dela.",
   },
 
   // ── MÚSICAS ───────────────────────────────────────────────────
