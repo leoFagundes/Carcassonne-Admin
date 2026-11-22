@@ -6,11 +6,19 @@ import type { MenuModel } from "./model";
 import type { PdfTheme } from "./theme";
 
 export type PdfPaper = "A4" | "A5";
+/** Cards (com foto) ou lista clássica (nome ······ preço, sem foto). */
+export type PdfStyle = "cards" | "list";
+/** Tamanho da letra dos itens: pequena, normal, grande, muito grande. */
+export type PdfFontSize = "S" | "M" | "L" | "XL";
+
+export const FONT_SCALE: Record<PdfFontSize, number> = { S: 0.9, M: 1, L: 1.15, XL: 1.32 };
 
 export type PdfOptions = {
   theme: PdfTheme;
   /** A4 (folha comum) ou A5 (meia folha: cardápio de mesa, folheto). */
   paper: PdfPaper;
+  style: PdfStyle;
+  fontSize: PdfFontSize;
   /** Cada seção começa numa página nova. */
   sectionPerPage: boolean;
   // Partes do PDF
@@ -27,6 +35,10 @@ export type PdfOptions = {
   qrUrl: string;
   infos: boolean;
   combos: boolean;
+  /** Página de regulamento e avisos legais (o mesmo texto do site). */
+  rules: boolean;
+  /** Última página minimalista, para o verso. */
+  backPage: boolean;
   // Nos itens
   /** Também os itens escondidos no site. */
   showHidden: boolean;
@@ -45,6 +57,8 @@ export type PdfOptions = {
 export const DEFAULT_OPTIONS: PdfOptions = {
   theme: "black",
   paper: "A4",
+  style: "cards",
+  fontSize: "M",
   sectionPerPage: false,
   cover: true,
   masthead: true,
@@ -55,6 +69,8 @@ export const DEFAULT_OPTIONS: PdfOptions = {
   qrUrl: "",
   infos: true,
   combos: true,
+  rules: false,
+  backPage: false,
   showHidden: false,
   photos: true,
   descriptions: true,
@@ -76,6 +92,8 @@ const FLAGS = [
   "qr",
   "infos",
   "combos",
+  "rules",
+  "backPage",
   "showHidden",
   "photos",
   "descriptions",
@@ -91,6 +109,8 @@ export function sanitizeOptions(raw: unknown): PdfOptions {
   const r = raw as Record<string, unknown>;
   if (r.theme === "black" || r.theme === "white") out.theme = r.theme;
   if (r.paper === "A4" || r.paper === "A5") out.paper = r.paper;
+  if (r.style === "cards" || r.style === "list") out.style = r.style;
+  if (typeof r.fontSize === "string" && r.fontSize in FONT_SCALE) out.fontSize = r.fontSize as PdfFontSize;
   if (typeof r.qrUrl === "string" && isQrUrl(r.qrUrl))
     out.qrUrl = r.qrUrl.trim();
   for (const k of FLAGS) if (typeof r[k] === "boolean") out[k] = r[k];

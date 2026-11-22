@@ -1,11 +1,12 @@
 /**
- * O PDF do cardápio (react-pdf): capa com logo e sumário, depois as seções.
+ * O PDF do cardápio (react-pdf): capa com logo e sumário, depois as seções,
+ * o regulamento e o verso (os dois últimos opcionais).
  * Cabeçalho e rodapé (com "Página X de Y") se repetem em toda página de
  * conteúdo; cada seção vira um marcador do PDF; um card nunca é cortado no
  * meio e o título de uma seção não fica sozinho no pé da página.
  *
- * As medidas mudam com o papel (A4 ou A5, ver LAYOUTS); o que entra ou não
- * vem das opções (options.ts).
+ * As medidas mudam com o papel (A4 ou A5, ver LAYOUTS) e o tamanho da letra
+ * (FONT_SCALE); o que entra ou não vem das opções (options.ts).
  */
 import React, { createContext, useContext } from "react";
 import {
@@ -20,6 +21,13 @@ import {
   Image as PdfImage,
 } from "@react-pdf/renderer";
 import type { ComboType, InfoType, PubInfo } from "@/types";
+import { formatPhoneBR } from "@/utils/generalSettings";
+import {
+  HOUSE_NOTES,
+  LEGAL_NOTICES,
+  PAYMENT,
+  PROCON,
+} from "@/utils/rulesContent";
 import {
   rows,
   tocEntries,
@@ -28,8 +36,9 @@ import {
   type PdfSection,
 } from "./model";
 import { PALETTES, alpha, type PdfTheme } from "./theme";
-import type { PdfOptions, PdfPaper } from "./options";
+import { FONT_SCALE, type PdfOptions, type PdfPaper } from "./options";
 import type { QrShape } from "./qr";
+import { hoursLines } from "./hours";
 
 type Pal = (typeof PALETTES)[PdfTheme];
 
@@ -65,6 +74,8 @@ const LAYOUTS = {
     qrCover: 66,
     qrSmall: 50,
     qrBesideName: true,
+    rulesCols: 3,
+    backLogo: 130,
   },
   A5: {
     side: 28,
@@ -90,18 +101,22 @@ const LAYOUTS = {
     sectionTitle: 13.5,
     groupPad: 50,
     subtitlePad: 14,
-    tocTwoColsFrom: 14,
+    tocTwoColsFrom: 9,
     tocTwoColsFromQr: 7,
     coverLogoQr: 66,
     qrCover: 56,
     qrSmall: 44,
     qrBesideName: false,
+    rulesCols: 1,
+    backLogo: 92,
   },
 } as const;
 
-type Layout = (typeof LAYOUTS)[PdfPaper];
-const LayoutContext = createContext<Layout>(LAYOUTS.A4);
+type Layout = (typeof LAYOUTS)[PdfPaper] & { k: number };
+const LayoutContext = createContext<Layout>({ ...LAYOUTS.A4, k: 1 });
 const useLayout = () => useContext(LayoutContext);
+
+type TocEntry = { id: string; title: string };
 
 export type MenuDocProps = {
   model: MenuModel;
@@ -167,12 +182,13 @@ function Pill({
   color: string;
   bg: string;
 }) {
+  const { k } = useLayout();
   return (
     <Text
       style={{
         fontFamily: "Lato",
         fontWeight: 700,
-        fontSize: 5.8,
+        fontSize: 5.8 * k,
         letterSpacing: 0.8,
         color,
         backgroundColor: bg,
@@ -184,6 +200,28 @@ function Pill({
     >
       {text.toUpperCase()}
     </Text>
+  );
+}
+
+function Badges({
+  p,
+  item,
+  opts,
+}: {
+  p: Pal;
+  item: PdfItem;
+  opts: PdfOptions;
+}) {
+  if (!opts.badges || (!item.isFocus && !item.isVegan)) return null;
+  return (
+    <View style={{ flexDirection: "row", gap: 3 }}>
+      {item.isFocus ? (
+        <Pill text="Destaque" color={p.G} bg={alpha(p.G, 0.16)} />
+      ) : null}
+      {item.isVegan ? (
+        <Pill text="Vegano" color={p.GREEN} bg={alpha(p.GREEN, 0.16)} />
+      ) : null}
+    </View>
   );
 }
 
@@ -263,18 +301,58 @@ function QrBlock({
   );
 }
 
+/** A moldura dupla da capa e do verso. */
+function Frame({ p }: { p: Pal }) {
+  const L = useLayout();
+  return (
+    <>
+      <View
+        fixed
+        style={{
+          position: "absolute",
+          top: L.frame[0],
+          left: L.frame[0],
+          right: L.frame[0],
+          bottom: L.frame[0],
+          borderWidth: 0.7,
+          borderColor: alpha(p.G, 0.35),
+          borderRadius: 3,
+        }}
+      />
+      <View
+        fixed
+        style={{
+          position: "absolute",
+          top: L.frame[1],
+          left: L.frame[1],
+          right: L.frame[1],
+          bottom: L.frame[1],
+          borderWidth: 0.4,
+          borderColor: alpha(p.G, 0.18),
+          borderRadius: 2,
+        }}
+      />
+    </>
+  );
+}
+
 /* ─── Sumário ─── */
 function Toc({
   p,
-  model,
+  entries,
   tocPages,
   twoColsFrom,
-}: { p: Pal; twoColsFrom?: number } & Pick<
-  MenuDocProps,
-  "model" | "tocPages"
->) {
+  scaled,
+}: {
+  p: Pal;
+  entries: TocEntry[];
+  tocPages: MenuDocProps["tocPages"];
+  twoColsFrom?: number;
+  scaled?: boolean;
+}) {
   const L = useLayout();
-  const entries = tocEntries(model);
+  // Na capa fica sempre no tamanho normal (com letra grande ela não caberia numa página)
+  const size = 9.5 * (scaled ? Math.min(L.k, 1.15) : 1);
   const half = Math.ceil(entries.length / 2);
   const cols =
     entries.length >= (twoColsFrom ?? L.tocTwoColsFrom)
@@ -318,7 +396,11 @@ function Toc({
                   }}
                 >
                   <Text
-                    style={{ fontFamily: "Lato", fontSize: 9.5, color: p.TEXT }}
+                    style={{
+                      fontFamily: "Lato",
+                      fontSize: size,
+                      color: p.TEXT,
+                    }}
                   >
                     {e.title}
                   </Text>
@@ -335,7 +417,7 @@ function Toc({
                     style={{
                       fontFamily: "Cinzel",
                       fontWeight: 600,
-                      fontSize: 9.5,
+                      fontSize: size,
                       color: p.G,
                     }}
                   >
@@ -402,9 +484,9 @@ function Legend({
   );
 }
 
-type HeadProps = { p: Pal } & Pick<
+type HeadProps = { p: Pal; entries: TocEntry[] } & Pick<
   MenuDocProps,
-  "pub" | "logo" | "model" | "tocPages" | "generatedAt" | "opts" | "qr"
+  "pub" | "logo" | "tocPages" | "generatedAt" | "opts" | "qr"
 >;
 
 /* ─── Capa ─── */
@@ -412,7 +494,7 @@ function Cover({
   p,
   pub,
   logo,
-  model,
+  entries,
   tocPages,
   generatedAt,
   opts,
@@ -434,34 +516,7 @@ function Cover({
         paddingBottom: opts.legend ? L.coverLegendBottom : L.coverPadY,
       }}
     >
-      {/* Moldura fina */}
-      <View
-        fixed
-        style={{
-          position: "absolute",
-          top: L.frame[0],
-          left: L.frame[0],
-          right: L.frame[0],
-          bottom: L.frame[0],
-          borderWidth: 0.7,
-          borderColor: alpha(p.G, 0.35),
-          borderRadius: 3,
-        }}
-      />
-      <View
-        fixed
-        style={{
-          position: "absolute",
-          top: L.frame[1],
-          left: L.frame[1],
-          right: L.frame[1],
-          bottom: L.frame[1],
-          borderWidth: 0.4,
-          borderColor: alpha(p.G, 0.18),
-          borderRadius: 2,
-        }}
-      />
-
+      <Frame p={p} />
       <View style={{ flex: 1, justifyContent: "center", gap: L.coverGap }}>
         <View style={{ alignItems: "center" }}>
           {logo ? (
@@ -525,7 +580,7 @@ function Cover({
         {opts.toc ? (
           <Toc
             p={p}
-            model={model}
+            entries={entries}
             tocPages={tocPages}
             twoColsFrom={qr ? L.tocTwoColsFromQr : undefined}
           />
@@ -552,14 +607,14 @@ function Masthead({
   p,
   pub,
   logo,
-  model,
+  entries,
   tocPages,
   generatedAt,
   opts,
   qr,
 }: HeadProps) {
   const L = useLayout();
-  // O QR vai ao lado do nome; sem abertura, vai no fim do cardápio
+  // O QR vai ao lado do nome (embaixo no A5); sem abertura, vai no fim do cardápio
   const qrHere = qr && opts.masthead ? qr : null;
   const qrBeside = qrHere && L.qrBesideName ? qrHere : null;
   const qrBelow = qrHere && !L.qrBesideName ? qrHere : null;
@@ -635,7 +690,9 @@ function Masthead({
           <QrBlock p={p} qr={qrBelow} size={L.qrSmall} />
         </View>
       ) : null}
-      {opts.toc ? <Toc p={p} model={model} tocPages={tocPages} /> : null}
+      {opts.toc ? (
+        <Toc p={p} entries={entries} tocPages={tocPages} scaled />
+      ) : null}
       {opts.legend ? (
         <Legend p={p} opts={opts} generatedAt={generatedAt} />
       ) : null}
@@ -758,6 +815,41 @@ function PageCounter({
   );
 }
 
+/** Página de conteúdo: margens, cabeçalho/rodapé (ou só o contador). */
+function ContentPage({
+  p,
+  opts,
+  pub,
+  record,
+  children,
+}: {
+  p: Pal;
+  opts: PdfOptions;
+  pub: PubInfo;
+  record?: MenuDocProps["record"];
+  children: React.ReactNode;
+}) {
+  const L = useLayout();
+  return (
+    <Page
+      size={opts.paper}
+      style={{
+        backgroundColor: p.BG,
+        paddingTop: opts.pageChrome ? L.top : L.side + 2,
+        paddingBottom: opts.pageChrome ? L.bottom : L.side + 2,
+        paddingHorizontal: L.side,
+      }}
+    >
+      {opts.pageChrome ? (
+        <Chrome p={p} pub={pub} record={record} />
+      ) : (
+        <PageCounter record={record} color={p.BG} />
+      )}
+      {children}
+    </Page>
+  );
+}
+
 /* ─── Título de seção ─── */
 function SectionHeader({
   p,
@@ -783,7 +875,7 @@ function SectionHeader({
           style={{
             fontFamily: "Cinzel",
             fontWeight: 700,
-            fontSize: L.sectionTitle,
+            fontSize: L.sectionTitle * (1 + (L.k - 1) * 0.6),
             letterSpacing: 2.4,
             color: p.G,
           }}
@@ -799,7 +891,7 @@ function SectionHeader({
           style={{
             fontFamily: "Lato",
             fontStyle: "italic",
-            fontSize: 8.5,
+            fontSize: 8.5 * L.k,
             color: alpha(p.TEXT, 0.62),
             textAlign: "center",
             marginTop: 5,
@@ -825,7 +917,7 @@ function GroupLabel({ p, name }: { p: Pal; name: string }) {
           style={{
             fontFamily: "Cinzel",
             fontWeight: 600,
-            fontSize: 8.5,
+            fontSize: 8.5 * L.k,
             letterSpacing: 2,
             color: p.G2,
           }}
@@ -837,7 +929,7 @@ function GroupLabel({ p, name }: { p: Pal; name: string }) {
   );
 }
 
-/* ─── Cards ─── */
+/* ─── Textos dos itens ─── */
 const card = (p: Pal, strong = false) => ({
   flex: 1,
   backgroundColor: p.BG2,
@@ -847,13 +939,54 @@ const card = (p: Pal, strong = false) => ({
   padding: 8,
 });
 
-const bodyText = (p: Pal) => ({
-  fontFamily: "Lato",
-  fontSize: 7.8,
-  color: alpha(p.TEXT, 0.74),
-  lineHeight: 1.38,
-  marginTop: 3,
-});
+function useText(p: Pal) {
+  const { k } = useLayout();
+  return {
+    name: {
+      fontFamily: "Lato",
+      fontWeight: 700,
+      fontSize: 9.5 * k,
+      color: p.G,
+      lineHeight: 1.25,
+    },
+    price: {
+      fontFamily: "Lato",
+      fontWeight: 700,
+      fontSize: 9 * k,
+      color: p.G2,
+      lineHeight: 1.25,
+    },
+    priceLine: {
+      fontFamily: "Lato",
+      fontWeight: 700,
+      fontSize: 8.2 * k,
+      color: p.G2,
+      lineHeight: 1.3,
+    },
+    body: {
+      fontFamily: "Lato",
+      fontSize: 7.8 * k,
+      color: alpha(p.TEXT, 0.74),
+      lineHeight: 1.38,
+      marginTop: 3,
+    },
+    side: {
+      fontFamily: "Lato",
+      fontSize: 7.3 * k,
+      color: alpha(p.G, 0.8),
+      marginTop: 2.5,
+      lineHeight: 1.3,
+    },
+    obs: {
+      fontFamily: "Lato",
+      fontStyle: "italic" as const,
+      fontSize: 7 * k,
+      color: alpha(p.TEXT, 0.55),
+      marginTop: 2,
+      lineHeight: 1.3,
+    },
+  };
+}
 
 /** Separa as opções de preço ("Broto R$ 49 / Grande R$ 79" → duas linhas). */
 function priceLines(value: string): string[] {
@@ -863,6 +996,35 @@ function priceLines(value: string): string[] {
     .filter(Boolean);
 }
 
+function ItemDetails({
+  p,
+  item,
+  opts,
+}: {
+  p: Pal;
+  item: PdfItem;
+  opts: PdfOptions;
+}) {
+  const t = useText(p);
+  return (
+    <>
+      {opts.descriptions && item.description ? (
+        <Text style={t.body}>{item.description}</Text>
+      ) : null}
+      {opts.extras && item.sideDish.length ? (
+        <Text style={t.side}>
+          <Text style={{ fontWeight: 700 }}>Acompanha: </Text>
+          {item.sideDish.join(", ")}
+        </Text>
+      ) : null}
+      {opts.extras && item.observation.length ? (
+        <Text style={t.obs}>{item.observation.join(" · ")}</Text>
+      ) : null}
+    </>
+  );
+}
+
+/* ─── Estilo "cards" ─── */
 function ItemCard({
   p,
   item,
@@ -874,22 +1036,25 @@ function ItemCard({
   images: Map<string, string>;
   opts: PdfOptions;
 }) {
+  const { k } = useLayout();
+  const t = useText(p);
   const src = images.get(item.image) ?? images.get(item.fallback);
   const focus = opts.badges && item.isFocus;
   const prices = priceLines(item.value);
   const longPrice = prices.length > 1 || item.value.length > 16;
+  const photo = 46 * Math.min(k, 1.15);
   return (
     <View style={{ ...card(p, focus), flexDirection: "row", gap: 8 }}>
       {!opts.photos ? null : src ? (
         <PdfImage
           src={src}
-          style={{ width: 46, height: 46, borderRadius: 4 }}
+          style={{ width: photo, height: photo, borderRadius: 4 }}
         />
       ) : (
         <View
           style={{
-            width: 46,
-            height: 46,
+            width: photo,
+            height: photo,
             borderRadius: 4,
             backgroundColor: alpha(p.G, 0.08),
           }}
@@ -899,123 +1064,88 @@ function ItemCard({
         <View
           style={{ flexDirection: "row", alignItems: "flex-start", gap: 6 }}
         >
-          <Text
-            style={{
-              flex: 1,
-              fontFamily: "Lato",
-              fontWeight: 700,
-              fontSize: 9.5,
-              color: p.G,
-              lineHeight: 1.25,
-            }}
-          >
-            {item.name}
-          </Text>
+          <Text style={{ ...t.name, flex: 1 }}>{item.name}</Text>
           {item.value && !longPrice ? (
-            <Text
-              style={{
-                fontFamily: "Lato",
-                fontWeight: 700,
-                fontSize: 9,
-                color: p.G2,
-                textAlign: "right",
-                lineHeight: 1.25,
-              }}
-            >
-              {item.value}
-            </Text>
+            <Text style={{ ...t.price, textAlign: "right" }}>{item.value}</Text>
           ) : null}
         </View>
         {longPrice ? (
           <View style={{ marginTop: 2 }}>
             {prices.map((line, i) => (
-              <Text
-                key={i}
-                style={{
-                  fontFamily: "Lato",
-                  fontWeight: 700,
-                  fontSize: 8.2,
-                  color: p.G2,
-                  lineHeight: 1.3,
-                }}
-              >
+              <Text key={i} style={t.priceLine}>
                 {line}
               </Text>
             ))}
           </View>
         ) : null}
         {opts.badges && (item.isFocus || item.isVegan) ? (
-          <View style={{ flexDirection: "row", gap: 3, marginTop: 2.5 }}>
-            {item.isFocus ? (
-              <Pill text="Destaque" color={p.G} bg={alpha(p.G, 0.16)} />
-            ) : null}
-            {item.isVegan ? (
-              <Pill text="Vegano" color={p.GREEN} bg={alpha(p.GREEN, 0.16)} />
-            ) : null}
+          <View style={{ marginTop: 2.5 }}>
+            <Badges p={p} item={item} opts={opts} />
           </View>
         ) : null}
-        {opts.descriptions && item.description ? (
-          <Text style={bodyText(p)}>{item.description}</Text>
-        ) : null}
-        {opts.extras && item.sideDish.length ? (
-          <Text
-            style={{
-              fontFamily: "Lato",
-              fontSize: 7.3,
-              color: alpha(p.G, 0.8),
-              marginTop: 2.5,
-              lineHeight: 1.3,
-            }}
-          >
-            <Text style={{ fontWeight: 700 }}>Acompanha: </Text>
-            {item.sideDish.join(", ")}
-          </Text>
-        ) : null}
-        {opts.extras && item.observation.length ? (
-          <Text
-            style={{
-              fontFamily: "Lato",
-              fontStyle: "italic",
-              fontSize: 7,
-              color: alpha(p.TEXT, 0.55),
-              marginTop: 2,
-              lineHeight: 1.3,
-            }}
-          >
-            {item.observation.join(" · ")}
-          </Text>
-        ) : null}
+        <ItemDetails p={p} item={item} opts={opts} />
       </View>
     </View>
   );
 }
 
+/* ─── Estilo "lista clássica": nome ······ preço, sem foto nem card ─── */
+function ListItem({
+  p,
+  item,
+  opts,
+}: {
+  p: Pal;
+  item: PdfItem;
+  opts: PdfOptions;
+}) {
+  const t = useText(p);
+  const prices = priceLines(item.value);
+  const longPrice = prices.length > 1 || item.value.length > 22;
+  const leader = {
+    flex: 1,
+    minWidth: 12,
+    borderBottomWidth: 0.8,
+    borderBottomColor: alpha(p.G, 0.35),
+    borderBottomStyle: "dotted" as const,
+    marginBottom: 3,
+  };
+  return (
+    <View style={{ flex: 1, paddingVertical: 2 }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 4 }}>
+        <Text style={{ ...t.name, flexShrink: 1 }}>{item.name}</Text>
+        {opts.badges && (item.isFocus || item.isVegan) ? (
+          <View style={{ marginBottom: 1.5 }}>
+            <Badges p={p} item={item} opts={opts} />
+          </View>
+        ) : null}
+        {item.value && !longPrice ? (
+          <>
+            <View style={leader} />
+            <Text style={t.price}>{item.value}</Text>
+          </>
+        ) : null}
+      </View>
+      {longPrice
+        ? prices.map((line, i) => (
+            <Text key={i} style={{ ...t.priceLine, marginTop: i ? 0 : 1.5 }}>
+              {line}
+            </Text>
+          ))
+        : null}
+      <ItemDetails p={p} item={item} opts={opts} />
+    </View>
+  );
+}
+
 function InfoCard({ p, info }: { p: Pal; info: InfoType }) {
+  const t = useText(p);
   return (
     <View style={{ ...card(p), borderLeftWidth: 2.5, borderLeftColor: p.G }}>
-      <Text
-        style={{
-          fontFamily: "Lato",
-          fontWeight: 700,
-          fontSize: 9.5,
-          color: p.G,
-        }}
-      >
-        {info.name}
-      </Text>
-      {info.description ? (
-        <Text style={bodyText(p)}>{info.description}</Text>
-      ) : null}
+      <Text style={t.name}>{info.name}</Text>
+      {info.description ? <Text style={t.body}>{info.description}</Text> : null}
       {info.values.length ? (
-        <Text
-          style={{
-            fontFamily: "Lato",
-            fontWeight: 700,
-            fontSize: 9,
-            color: p.G2,
-            marginTop: 4,
-          }}
-        >
+        <Text style={{ ...t.price, marginTop: 4 }}>
           {info.values.join("  ›  ")}
         </Text>
       ) : null}
@@ -1024,47 +1154,28 @@ function InfoCard({ p, info }: { p: Pal; info: InfoType }) {
 }
 
 function ComboCard({ p, combo }: { p: Pal; combo: ComboType }) {
+  const t = useText(p);
   return (
     <View style={card(p)}>
       <View style={{ flexDirection: "row", gap: 6, alignItems: "flex-start" }}>
-        <Text
-          style={{
-            flex: 1,
-            fontFamily: "Lato",
-            fontWeight: 700,
-            fontSize: 9.5,
-            color: p.G,
-            lineHeight: 1.25,
-          }}
-        >
-          {combo.name}
-        </Text>
+        <Text style={{ ...t.name, flex: 1 }}>{combo.name}</Text>
         {combo.value ? (
-          <Text
-            style={{
-              fontFamily: "Lato",
-              fontWeight: 700,
-              fontSize: 9,
-              color: p.G2,
-              maxWidth: 110,
-              textAlign: "right",
-            }}
-          >
+          <Text style={{ ...t.price, maxWidth: 110, textAlign: "right" }}>
             {combo.value}
           </Text>
         ) : null}
       </View>
       {combo.description ? (
-        <Text style={bodyText(p)}>{combo.description}</Text>
+        <Text style={t.body}>{combo.description}</Text>
       ) : null}
     </View>
   );
 }
 
-/* ─── Linhas de cards que não se partem ─── */
+/* ─── Linhas que não se partem ─── */
 type Row = { lead: React.ReactNode[]; cells: React.ReactNode[] };
 
-/** Cards em linhas de `cols`; `lead` (títulos) entra na 1ª linha para não ficar sozinho no pé da página. */
+/** Em linhas de `cols`; `lead` (títulos) entra na 1ª linha para não ficar sozinho no pé da página. */
 function gridRows(
   cells: React.ReactNode[],
   lead: React.ReactNode[],
@@ -1076,22 +1187,271 @@ function gridRows(
   }));
 }
 
-function RowView({ row }: { row: Row }) {
-  const L = useLayout();
+function RowView({
+  row,
+  cols,
+  gap,
+  colGap,
+}: {
+  row: Row;
+  cols: number;
+  gap: number;
+  colGap?: number;
+}) {
   return (
     <View wrap={false}>
       {row.lead}
-      <View style={{ flexDirection: "row", gap: L.gap, marginBottom: L.gap }}>
+      <View
+        style={{ flexDirection: "row", gap: colGap ?? gap, marginBottom: gap }}
+      >
         {row.cells.map((c, i) => (
           <View key={i} style={{ flex: 1, flexDirection: "row" }}>
             {c}
           </View>
         ))}
-        {Array.from({ length: L.cols - row.cells.length }, (_, i) => (
+        {Array.from({ length: cols - row.cells.length }, (_, i) => (
           <View key={`vazio-${i}`} style={{ flex: 1 }} />
         ))}
       </View>
     </View>
+  );
+}
+
+/* ─── Regulamento (o mesmo texto do site) ─── */
+function RulesPage({
+  p,
+  opts,
+  pub,
+  record,
+}: {
+  p: Pal;
+  opts: PdfOptions;
+  pub: PubInfo;
+  record?: MenuDocProps["record"];
+}) {
+  const L = useLayout();
+  const t = useText(p);
+  const contacts = [
+    pub.whatsapp && { label: "WhatsApp", value: formatPhoneBR(pub.whatsapp) },
+    pub.instagram && { label: "Instagram", value: `@${pub.instagram}` },
+    pub.facebook && { label: "Facebook", value: `/${pub.facebook}` },
+    pub.website && { label: "Site", value: pub.website },
+    pub.address && { label: "Endereço", value: pub.address },
+  ].filter(Boolean) as { label: string; value: string }[];
+  const label = {
+    fontFamily: "Cinzel",
+    fontWeight: 600,
+    fontSize: 7.5 * L.k,
+    letterSpacing: 1.6,
+    color: alpha(p.G, 0.75),
+  } as const;
+  const boxes = [
+    ...LEGAL_NOTICES.map((n) => (
+      <View key={n.kind} style={{ ...card(p), gap: 4 }}>
+        <Text style={label}>{n.label.toUpperCase()}</Text>
+        <Text style={{ ...t.body, marginTop: 0 }}>{n.text}</Text>
+        <Text style={{ ...t.obs, marginTop: 2 }}>{n.law}</Text>
+      </View>
+    )),
+    <View key="pagamento" style={{ ...card(p), gap: 4 }}>
+      <Text style={label}>{PAYMENT.label.toUpperCase()}</Text>
+      {PAYMENT.methods.map((m) => (
+        <Text key={m} style={{ ...t.body, marginTop: 0 }}>
+          • {m}
+        </Text>
+      ))}
+      <Text style={{ ...t.obs, marginTop: 2 }}>{PAYMENT.note}</Text>
+    </View>,
+  ];
+  return (
+    <ContentPage p={p} opts={opts} pub={pub} record={record}>
+      <SectionHeader
+        p={p}
+        id="regulamento"
+        title="Regulamento"
+        record={record}
+      />
+      <View style={{ gap: 16 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            columnGap: 22,
+            rowGap: 6,
+          }}
+        >
+          {contacts.map((c) => (
+            <View key={c.label} style={{ alignItems: "center" }}>
+              <Text style={label}>{c.label.toUpperCase()}</Text>
+              <Text style={{ ...t.body, marginTop: 2, color: p.TEXT }}>
+                {c.value}
+              </Text>
+            </View>
+          ))}
+        </View>
+        <Rule color={alpha(p.G, 0.25)}>
+          <Diamond color={p.G2} size={5} />
+        </Rule>
+        <View>
+          {rows(boxes, L.rulesCols).map((row, r) => (
+            <RowView
+              key={r}
+              row={{ lead: [], cells: row }}
+              cols={L.rulesCols}
+              gap={L.gap}
+            />
+          ))}
+        </View>
+        {/* Observações e PROCON sempre juntos (o PROCON não fica sozinho numa página) */}
+        <View wrap={false} style={{ gap: 16 }}>
+          <View
+            style={{
+              // Sem "flex" (o do card zera a altura numa coluna e as linhas se sobrepõem)
+              borderWidth: 0.5,
+              borderColor: alpha(p.G, 0.22),
+              borderRadius: 5,
+              padding: 8,
+              gap: 4,
+            }}
+          >
+            {HOUSE_NOTES.map((n) => (
+              <Text key={n} style={{ ...t.body, marginTop: 0 }}>
+                • {n}
+              </Text>
+            ))}
+          </View>
+          <Text
+            style={{ ...label, textAlign: "center", color: alpha(p.G, 0.5) }}
+          >
+            {PROCON}
+          </Text>
+        </View>
+      </View>
+    </ContentPage>
+  );
+}
+
+/* ─── Verso: última página, minimalista ─── */
+function BackPage({
+  p,
+  opts,
+  pub,
+  logo,
+  qr,
+}: {
+  p: Pal;
+  opts: PdfOptions;
+  pub: PubInfo;
+  logo?: string | null;
+  qr?: MenuDocProps["qr"];
+}) {
+  const L = useLayout();
+  const hours = hoursLines(pub.hours);
+  const contacts = [
+    pub.website,
+    pub.instagram && `@${pub.instagram}`,
+    pub.whatsapp && formatPhoneBR(pub.whatsapp),
+  ]
+    .filter(Boolean)
+    .join("   ·   ");
+  const small = {
+    fontFamily: "Lato",
+    fontSize: 8.5,
+    color: alpha(p.TEXT, 0.62),
+  };
+  return (
+    <Page
+      size={opts.paper}
+      style={{
+        backgroundColor: p.BG,
+        paddingHorizontal: L.coverPadX,
+        paddingVertical: L.coverPadY,
+      }}
+    >
+      <Frame p={p} />
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 18,
+        }}
+      >
+        {logo ? (
+          <PdfImage
+            src={logo}
+            style={{ width: L.backLogo, height: L.backLogo }}
+          />
+        ) : null}
+        <View style={{ alignItems: "center" }}>
+          <Text
+            style={{
+              fontFamily: "Cinzel",
+              fontWeight: 700,
+              fontSize: L.coverTitle * 0.75,
+              letterSpacing: L.coverTitleSpacing * 0.8,
+              color: p.G,
+            }}
+          >
+            CARCASSONNE PUB
+          </Text>
+          <Text
+            style={{
+              fontFamily: "Lato",
+              fontStyle: "italic",
+              fontSize: 9.5,
+              letterSpacing: 3,
+              color: p.G2,
+              marginTop: 5,
+            }}
+          >
+            Pub &amp; Luderia
+          </Text>
+        </View>
+        <View style={{ width: L.coverRule * 0.7 }}>
+          <Rule color={alpha(p.G, 0.45)}>
+            <Diamond color={p.G} size={6} />
+          </Rule>
+        </View>
+        {hours.length ? (
+          <View style={{ alignItems: "center", gap: 3 }}>
+            <Text
+              style={{
+                fontFamily: "Cinzel",
+                fontWeight: 600,
+                fontSize: 8,
+                letterSpacing: 2.4,
+                color: p.G2,
+                marginBottom: 3,
+              }}
+            >
+              HORÁRIO
+            </Text>
+            {hours.map((h) => (
+              <Text key={h.days} style={small}>
+                <Text style={{ color: p.TEXT }}>{h.days}</Text>
+                {"  ·  "}
+                {h.time}
+              </Text>
+            ))}
+          </View>
+        ) : null}
+        <View style={{ alignItems: "center", gap: 4 }}>
+          {contacts ? (
+            <Text style={{ ...small, color: alpha(p.TEXT, 0.8) }}>
+              {contacts}
+            </Text>
+          ) : null}
+          {pub.address ? (
+            <Text style={{ ...small, fontSize: 7.5, textAlign: "center" }}>
+              {pub.address}
+            </Text>
+          ) : null}
+        </View>
+        {qr ? <QrBlock p={p} qr={qr} size={L.qrCover} /> : null}
+      </View>
+    </Page>
   );
 }
 
@@ -1100,13 +1460,19 @@ export function MenuDocument(props: MenuDocProps) {
   const { model, opts, pub, images, logo, qr, tocPages, record, generatedAt } =
     props;
   const p = PALETTES[opts.theme];
-  const L = LAYOUTS[opts.paper];
-  const head = { p, pub, logo, model, tocPages, generatedAt, opts, qr };
+  const L: Layout = { ...LAYOUTS[opts.paper], k: FONT_SCALE[opts.fontSize] };
+  const list = opts.style === "list";
+  const entries: TocEntry[] = [
+    ...tocEntries(model),
+    ...(opts.rules ? [{ id: "regulamento", title: "Regulamento" }] : []),
+  ];
+  const head = { p, pub, logo, entries, tocPages, generatedAt, opts, qr };
 
   type Block = {
     id: string;
     title: string;
     subtitle?: string;
+    kind: "cards" | "items";
     groups: { name?: string; cells: React.ReactNode[] }[];
   };
   const blocks: Block[] = [];
@@ -1114,6 +1480,7 @@ export function MenuDocument(props: MenuDocProps) {
     blocks.push({
       id: "avisos",
       title: "Avisos",
+      kind: "cards",
       groups: [
         {
           cells: model.infos.map((i, k) => <InfoCard key={k} p={p} info={i} />),
@@ -1124,6 +1491,7 @@ export function MenuDocument(props: MenuDocProps) {
     blocks.push({
       id: "combos",
       title: "Combos",
+      kind: "cards",
       groups: [
         {
           cells: model.combos.map((c, k) => (
@@ -1137,11 +1505,22 @@ export function MenuDocument(props: MenuDocProps) {
       id: s.id,
       title: s.title,
       subtitle: opts.subtitles ? s.subtitle : undefined,
+      kind: "items",
       groups: s.groups.map((g) => ({
         name: g.name,
-        cells: g.items.map((it) => (
-          <ItemCard key={it.key} p={p} item={it} images={images} opts={opts} />
-        )),
+        cells: g.items.map((it) =>
+          list ? (
+            <ListItem key={it.key} p={p} item={it} opts={opts} />
+          ) : (
+            <ItemCard
+              key={it.key}
+              p={p}
+              item={it}
+              images={images}
+              opts={opts}
+            />
+          ),
+        ),
       })),
     });
 
@@ -1168,8 +1547,16 @@ export function MenuDocument(props: MenuDocProps) {
       ),
     );
 
-  // Sem capa e sem abertura, o QR fecha o cardápio
-  const qrAtEnd = qr && !opts.cover && !opts.masthead ? qr : null;
+  // Na lista clássica, as linhas ficam mais juntas e as colunas mais afastadas
+  const rowGap = (b: Block) => (list && b.kind === "items" ? 6 * L.k : L.gap);
+  const colGap = (b: Block) => (list && b.kind === "items" ? 26 : L.gap);
+
+  // Sem capa e sem abertura, o QR fecha o cardápio (se não houver verso, que também tem o QR)
+  const qrAtEnd =
+    qr && !opts.cover && !opts.masthead && !opts.backPage ? qr : null;
+  const hasContent =
+    blocks.length > 0 ||
+    (!opts.cover && (opts.masthead || opts.toc || opts.legend));
 
   return (
     <LayoutContext.Provider value={L}>
@@ -1183,48 +1570,49 @@ export function MenuDocument(props: MenuDocProps) {
         producer="Carcassonne Admin"
       >
         {opts.cover ? <Cover {...head} /> : null}
-        <Page
-          size={opts.paper}
-          style={{
-            backgroundColor: p.BG,
-            paddingTop: opts.pageChrome ? L.top : L.side + 2,
-            paddingBottom: opts.pageChrome ? L.bottom : L.side + 2,
-            paddingHorizontal: L.side,
-          }}
-        >
-          {opts.pageChrome ? (
-            <Chrome p={p} pub={pub} record={record} />
-          ) : (
-            <PageCounter record={record} color={p.BG} />
-          )}
-          {opts.cover ? null : <Masthead {...head} />}
-          {blocks.map((b, i) => (
-            <View
-              key={b.id}
-              break={opts.sectionPerPage && i > 0}
-              style={{
-                marginTop: i === 0 || opts.sectionPerPage ? 0 : L.sectionGap,
-              }}
-            >
-              {blockRows(b).map((row, r) => (
-                <RowView key={r} row={row} />
-              ))}
-            </View>
-          ))}
-          {qrAtEnd ? (
-            <View
-              wrap={false}
-              style={{ marginTop: 16, alignItems: "center", gap: 12 }}
-            >
-              <View style={{ width: "100%" }}>
-                <Rule color={alpha(p.G, 0.3)}>
-                  <Diamond color={p.G} size={6} />
-                </Rule>
+        {hasContent ? (
+          <ContentPage p={p} opts={opts} pub={pub} record={record}>
+            {opts.cover ? null : <Masthead {...head} />}
+            {blocks.map((b, i) => (
+              <View
+                key={b.id}
+                break={opts.sectionPerPage && i > 0}
+                style={{
+                  marginTop: i === 0 || opts.sectionPerPage ? 0 : L.sectionGap,
+                }}
+              >
+                {blockRows(b).map((row, r) => (
+                  <RowView
+                    key={r}
+                    row={row}
+                    cols={L.cols}
+                    gap={rowGap(b)}
+                    colGap={colGap(b)}
+                  />
+                ))}
               </View>
-              <QrBlock p={p} qr={qrAtEnd} size={L.qrCover} />
-            </View>
-          ) : null}
-        </Page>
+            ))}
+            {qrAtEnd ? (
+              <View
+                wrap={false}
+                style={{ marginTop: 16, alignItems: "center", gap: 12 }}
+              >
+                <View style={{ width: "100%" }}>
+                  <Rule color={alpha(p.G, 0.3)}>
+                    <Diamond color={p.G} size={6} />
+                  </Rule>
+                </View>
+                <QrBlock p={p} qr={qrAtEnd} size={L.qrCover} />
+              </View>
+            ) : null}
+          </ContentPage>
+        ) : null}
+        {opts.rules ? (
+          <RulesPage p={p} opts={opts} pub={pub} record={record} />
+        ) : null}
+        {opts.backPage ? (
+          <BackPage p={p} opts={opts} pub={pub} logo={logo} qr={qr} />
+        ) : null}
       </Document>
     </LayoutContext.Provider>
   );

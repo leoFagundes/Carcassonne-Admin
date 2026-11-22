@@ -9,7 +9,7 @@ import DescriptionRepository from "@/services/repositories/DescriptionTypeReposi
 import InfoRepository from "@/services/repositories/InfoRepository";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import TypesOrderRepository from "@/services/repositories/TypesOrderRepository";
-import { buildMenuModel, type MenuModel } from "@/menuPdf/model";
+import { buildMenuModel } from "@/menuPdf/model";
 import {
   browserLabel,
   generateMenuPdf,
@@ -19,10 +19,11 @@ import {
   applyOptions,
   DEFAULT_OPTIONS,
   defaultQrUrl,
-  isQrUrl,
   isEmpty,
+  isQrUrl,
   OPTIONS_STORAGE_KEY,
   sanitizeOptions,
+  type PdfFontSize,
   type PdfOptions,
 } from "@/menuPdf/options";
 import { useRouter } from "next/navigation";
@@ -46,8 +47,12 @@ type Status =
   | { kind: "error"; message: string };
 
 const FILE_NAME = "cardapio-carcassonne.pdf";
+const AUTO_STORAGE_KEY = "cardapio-pdf-atualizar-sozinho";
 
-type Flag = Exclude<keyof PdfOptions, "theme" | "hidden" | "paper" | "qrUrl">;
+type Flag = {
+  [K in keyof PdfOptions]: PdfOptions[K] extends boolean ? K : never;
+}[keyof PdfOptions];
+type Raw = Omit<Parameters<typeof buildMenuModel>[0], "includeHidden">;
 
 const PARTS: { key: Flag; label: string; hint: string }[] = [
   { key: "cover", label: "Capa", hint: "Página de abertura com o logo" },
@@ -78,6 +83,16 @@ const PARTS: { key: Flag; label: string; hint: string }[] = [
   },
   { key: "infos", label: "Avisos", hint: "Passaporte, promoções da semana…" },
   { key: "combos", label: "Combos", hint: "" },
+  {
+    key: "rules",
+    label: "Regulamento",
+    hint: "Contato, avisos legais e pagamento (o mesmo do site)",
+  },
+  {
+    key: "backPage",
+    label: "Verso",
+    hint: "Última página simples: logo, horário e contatos",
+  },
 ];
 
 const ITEM_PARTS: { key: Flag; label: string; hint: string }[] = [
@@ -97,6 +112,16 @@ const ITEM_PARTS: { key: Flag; label: string; hint: string }[] = [
   },
 ];
 
+const FONT_SIZES: { value: PdfFontSize; label: string; px: number }[] = [
+  { value: "S", label: "Pequena", px: 11 },
+  { value: "M", label: "Normal", px: 13 },
+  { value: "L", label: "Grande", px: 15.5 },
+  { value: "XL", label: "Muito grande", px: 18 },
+];
+
+const same = (a: PdfOptions | null, b: PdfOptions | null) =>
+  JSON.stringify(a) === JSON.stringify(b);
+
 function Segmented<T extends string>({
   label,
   value,
@@ -106,7 +131,7 @@ function Segmented<T extends string>({
 }: {
   label: string;
   value: T;
-  options: { value: T; label: string }[];
+  options: { value: T; label: React.ReactNode; title?: string }[];
   onChange: (v: T) => void;
   disabled?: boolean;
 }) {
@@ -121,9 +146,11 @@ function Segmented<T extends string>({
             key={o.value}
             type="button"
             disabled={disabled}
+            title={o.title}
+            aria-label={o.title}
             onClick={() => onChange(o.value)}
             aria-pressed={value === o.value}
-            className={`flex-1 cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all disabled:cursor-default ${
+            className={`flex h-8 flex-1 cursor-pointer items-center justify-center rounded-md px-2 text-xs font-medium whitespace-nowrap transition-all disabled:cursor-default ${
               value === o.value
                 ? "bg-primary-gold/20 text-primary-gold"
                 : "text-primary-gold/50 hover:text-primary-gold/80"
@@ -143,12 +170,14 @@ function Check({
   label,
   hint,
   disabled,
+  small,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   label: string;
   hint?: string;
   disabled?: boolean;
+  small?: boolean;
 }) {
   return (
     <label
@@ -177,7 +206,7 @@ function Check({
       </span>
       <span className="flex min-w-0 flex-col">
         <span
-          className={`text-[13px] leading-tight ${checked ? "text-primary-gold" : "text-primary-gold/55"}`}
+          className={`${small ? "text-xs" : "text-[13px]"} leading-tight ${checked ? "text-primary-gold" : "text-primary-gold/55"}`}
         >
           {label}
         </span>
@@ -208,7 +237,7 @@ function QrLinkField({
     if (valid && draft.trim() !== value) onChange(draft.trim());
   };
   return (
-    <div className="ml-8 mr-2 mb-1 flex flex-col gap-1">
+    <div className="mb-1 ml-8 mr-2 flex flex-col gap-1">
       <input
         type="url"
         inputMode="url"
@@ -219,7 +248,7 @@ function QrLinkField({
         onKeyDown={(e) => e.key === "Enter" && commit()}
         aria-label="Link do QR code"
         aria-invalid={!valid}
-        className={`w-full rounded-md border bg-primary-black/40 px-2 py-1.5 text-xs text-primary-gold placeholder:text-primary-gold/30 outline-none focus:border-primary-gold/60 ${
+        className={`w-full rounded-md border bg-primary-black/40 px-2 py-1.5 text-xs text-primary-gold outline-none placeholder:text-primary-gold/30 focus:border-primary-gold/60 ${
           valid ? "border-primary-gold/20" : "border-red-400/60"
         }`}
       />
@@ -269,12 +298,12 @@ function Group({
 }
 
 export default function PDFPage() {
-  const [raw, setRaw] = useState<Omit<
-    Parameters<typeof buildMenuModel>[0],
-    "includeHidden"
-  > | null>(null);
+  const [raw, setRaw] = useState<Raw | null>(null);
+  /** O que está marcado na tela. */
   const [opts, setOpts] = useState<PdfOptions>(DEFAULT_OPTIONS);
-  const [optsLoaded, setOptsLoaded] = useState(false);
+  /** O que está no PDF gerado (null até ler o salvo). */
+  const [applied, setApplied] = useState<PdfOptions | null>(null);
+  const [auto, setAuto] = useState(false);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [attempt, setAttempt] = useState(0);
   const run = useRef(0);
@@ -284,27 +313,40 @@ export default function PDFPage() {
   const { addAlert } = useAlert();
   const router = useRouter();
 
-  // Personalização salva neste navegador
+  // Personalização salva neste navegador; o 1º PDF já sai com ela
   useEffect(() => {
+    let saved = DEFAULT_OPTIONS;
     try {
-      const raw = localStorage.getItem(OPTIONS_STORAGE_KEY);
-      if (raw) setOpts(sanitizeOptions(JSON.parse(raw)));
+      const rawOpts = localStorage.getItem(OPTIONS_STORAGE_KEY);
+      if (rawOpts) saved = sanitizeOptions(JSON.parse(rawOpts));
+      setAuto(localStorage.getItem(AUTO_STORAGE_KEY) === "1");
     } catch {
       // sem acesso ao armazenamento: fica o padrão
     }
-    setOptsLoaded(true);
+    setOpts(saved);
+    setApplied(saved);
   }, []);
   useEffect(() => {
-    if (!optsLoaded) return;
+    if (!applied) return;
     try {
       localStorage.setItem(OPTIONS_STORAGE_KEY, JSON.stringify(opts));
+      localStorage.setItem(AUTO_STORAGE_KEY, auto ? "1" : "0");
     } catch {
       // ignora
     }
-  }, [opts, optsLoaded]);
+  }, [opts, auto, applied]);
 
   const set = <K extends keyof PdfOptions>(key: K, value: PdfOptions[K]) =>
     setOpts((o) => ({ ...o, [key]: value }));
+  const dirty = !!applied && !same(opts, applied);
+  const apply = () => setApplied(opts);
+
+  // "Atualizar sozinho": aplica depois de uma pausa curta (vários cliques seguidos viram uma geração só)
+  useEffect(() => {
+    if (!auto || !dirty) return;
+    const timer = setTimeout(() => setApplied(opts), 450);
+    return () => clearTimeout(timer);
+  }, [auto, dirty, opts]);
 
   useEffect(() => {
     (async () => {
@@ -328,53 +370,63 @@ export default function PDFPage() {
     })();
   }, []);
 
-  const model = useMemo<MenuModel | null>(
+  // O que aparece na tela (do que está marcado)
+  const model = useMemo(
     () =>
       raw ? buildMenuModel({ ...raw, includeHidden: opts.showHidden }) : null,
     [raw, opts.showHidden],
   );
-  const hiddenCount = raw
-    ? raw.items.filter((i) => !i.isVisible && i.name?.trim()).length
-    : 0;
-
   const filtered = useMemo(
     () => (model ? applyOptions(model, opts) : null),
     [model, opts],
   );
+  const hiddenCount = raw
+    ? raw.items.filter((i) => !i.isVisible && i.name?.trim()).length
+    : 0;
+  const nothingMarked =
+    !!filtered && isEmpty(filtered) && !opts.rules && !opts.backPage;
 
-  // Gera de novo quando muda qualquer opção (com uma pausa curta, para vários cliques seguidos)
+  // O que vai para o PDF (do que foi aplicado)
+  const pdfModel = useMemo(
+    () =>
+      raw && applied
+        ? applyOptions(
+            buildMenuModel({ ...raw, includeHidden: applied.showHidden }),
+            applied,
+          )
+        : null,
+    [raw, applied],
+  );
+
   useEffect(() => {
-    if (!filtered || !optsLoaded) return;
+    if (!pdfModel || !applied) return;
     const me = ++run.current;
-    if (isEmpty(filtered)) {
+    if (isEmpty(pdfModel) && !applied.rules && !applied.backPage) {
       setStatus({ kind: "empty" });
       return;
     }
     setStatus({ kind: "working", step: null });
-    const timer = setTimeout(() => {
-      generateMenuPdf({
-        model: filtered,
-        opts,
-        pub,
-        onStep: (step) =>
-          run.current === me && setStatus({ kind: "working", step }),
+    generateMenuPdf({
+      model: pdfModel,
+      opts: applied,
+      pub,
+      onStep: (step) =>
+        run.current === me && setStatus({ kind: "working", step }),
+    })
+      .then(({ blob, pages }) => {
+        if (run.current !== me) return;
+        if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+        const url = URL.createObjectURL(blob);
+        urlRef.current = url;
+        setStatus({ kind: "ready", url, pages, size: blob.size });
       })
-        .then(({ blob, pages }) => {
-          if (run.current !== me) return;
-          if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-          const url = URL.createObjectURL(blob);
-          urlRef.current = url;
-          setStatus({ kind: "ready", url, pages, size: blob.size });
-        })
-        .catch((err) => {
-          if (run.current !== me) return;
-          console.error("[cardápio PDF]", err);
-          const detail = err instanceof Error ? err.message : String(err);
-          setStatus({ kind: "error", message: detail || "erro desconhecido" });
-        });
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [filtered, opts, pub, optsLoaded, attempt]);
+      .catch((err) => {
+        if (run.current !== me) return;
+        console.error("[cardápio PDF]", err);
+        const detail = err instanceof Error ? err.message : String(err);
+        setStatus({ kind: "error", message: detail || "erro desconhecido" });
+      });
+  }, [pdfModel, applied, pub, attempt]);
 
   useEffect(
     () => () => {
@@ -383,10 +435,10 @@ export default function PDFPage() {
     [],
   );
 
-  const working =
-    status.kind === "working" || (status.kind === "idle" && !model);
+  const working = status.kind === "working" || (status.kind === "idle" && !raw);
   const ready = status.kind === "ready" ? status : null;
-  const isDefault = JSON.stringify(opts) === JSON.stringify(DEFAULT_OPTIONS);
+  const canDownload = !!ready && !dirty;
+  const isDefault = same(opts, DEFAULT_OPTIONS);
 
   const stepText = useMemo(() => {
     if (status.kind !== "working" || !status.step) return "Preparando…";
@@ -409,10 +461,13 @@ export default function PDFPage() {
       "hidden",
       on ? opts.hidden.filter((h) => h !== title) : [...opts.hidden, title],
     );
+  const list = opts.style === "list";
+
+  const disabledLink = "pointer-events-none opacity-40";
 
   return (
     <div className="flex min-h-full flex-col items-center text-primary-gold">
-      {!model && status.kind !== "error" && <LoaderFullscreen />}
+      {!raw && status.kind !== "error" && <LoaderFullscreen />}
 
       <div className="flex w-full max-w-[1280px] flex-col gap-4 py-2 sm:py-4">
         {/* Cabeçalho */}
@@ -439,19 +494,34 @@ export default function PDFPage() {
           <aside className="flex flex-col gap-5 rounded-xl border border-primary-gold/15 bg-secondary-black/60 p-4 lg:sticky lg:top-0 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto">
             {/* Ações */}
             <div className="flex flex-col gap-2">
+              {dirty ? (
+                <button
+                  type="button"
+                  onClick={apply}
+                  disabled={nothingMarked}
+                  className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-gradient-to-b from-[#f0d382] to-primary-gold px-4 py-2 text-sm font-semibold text-primary-black shadow-[0_8px_20px_-8px_rgba(230,197,107,0.6)] transition-all hover:brightness-105 disabled:cursor-default disabled:opacity-50"
+                >
+                  <LuRefreshCw size={15} /> Atualizar o PDF
+                </button>
+              ) : null}
               <div className="flex items-center gap-2">
                 <a
-                  href={ready?.url}
+                  href={canDownload ? ready?.url : undefined}
                   download={FILE_NAME}
-                  aria-disabled={!ready}
-                  onClick={(e) => !ready && e.preventDefault()}
-                  className={`flex flex-[2] items-center justify-center gap-2 rounded-lg bg-gradient-to-b from-[#f0d382] to-primary-gold px-4 py-2 text-sm font-semibold text-primary-black shadow-[0_8px_20px_-8px_rgba(230,197,107,0.6)] transition-all ${
-                    ready
-                      ? "cursor-pointer hover:brightness-105"
-                      : "pointer-events-none opacity-50"
-                  }`}
+                  aria-disabled={!canDownload}
+                  onClick={(e) => !canDownload && e.preventDefault()}
+                  title={
+                    dirty
+                      ? "Atualize o PDF para baixar com as mudanças"
+                      : undefined
+                  }
+                  className={`flex flex-[2] items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
+                    dirty
+                      ? "border border-primary-gold/30 text-primary-gold/70"
+                      : "bg-gradient-to-b from-[#f0d382] to-primary-gold text-primary-black shadow-[0_8px_20px_-8px_rgba(230,197,107,0.6)]"
+                  } ${canDownload ? "cursor-pointer hover:brightness-105" : disabledLink}`}
                 >
-                  {working ? (
+                  {working && !dirty ? (
                     <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary-black/25 border-t-primary-black" />
                   ) : (
                     <LuDownload size={15} />
@@ -459,15 +529,15 @@ export default function PDFPage() {
                   Baixar PDF
                 </a>
                 <a
-                  href={ready?.url}
+                  href={canDownload ? ready?.url : undefined}
                   target="_blank"
                   rel="noopener"
-                  aria-disabled={!ready}
-                  onClick={(e) => !ready && e.preventDefault()}
+                  aria-disabled={!canDownload}
+                  onClick={(e) => !canDownload && e.preventDefault()}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-lg border border-primary-gold/20 px-3 py-2 text-sm text-primary-gold/70 transition-all ${
-                    ready
+                    canDownload
                       ? "cursor-pointer hover:border-primary-gold/50 hover:text-primary-gold"
-                      : "pointer-events-none opacity-40"
+                      : disabledLink
                   }`}
                   title="Abre o PDF numa aba nova (dali dá para imprimir)"
                 >
@@ -478,32 +548,71 @@ export default function PDFPage() {
                 className="flex min-h-5 items-center gap-2 text-xs text-primary-gold/55"
                 aria-live="polite"
               >
-                {working && (
+                {nothingMarked ? (
+                  <span>
+                    Nada para mostrar: marque pelo menos uma parte ou categoria.
+                  </span>
+                ) : dirty ? (
+                  <span className="text-primary-gold/75">
+                    Há mudanças ainda não aplicadas no PDF.
+                  </span>
+                ) : working ? (
                   <>
                     <Loader />
                     <span>{stepText}</span>
                   </>
-                )}
-                {ready && (
+                ) : ready ? (
                   <span>
                     Pronto · {ready.pages}{" "}
                     {ready.pages === 1 ? "página" : "páginas"} · {sizeText}
                   </span>
-                )}
-                {status.kind === "empty" && (
-                  <span>
-                    Nada para mostrar: marque pelo menos uma parte ou categoria.
-                  </span>
-                )}
+                ) : null}
+              </div>
+              <div className="-mx-2">
+                <Check
+                  small
+                  checked={auto}
+                  onChange={setAuto}
+                  label="Atualizar sozinho a cada mudança"
+                />
               </div>
             </div>
 
+            {/* Aparência */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <Segmented
+                label="Estilo"
+                value={opts.style}
+                onChange={(v) => set("style", v)}
+                disabled={!raw}
+                options={[
+                  { value: "cards", label: "Cards com foto" },
+                  { value: "list", label: "Lista clássica" },
+                ]}
+              />
+              <Segmented
+                label="Tamanho da letra"
+                value={opts.fontSize}
+                onChange={(v) => set("fontSize", v)}
+                disabled={!raw}
+                options={FONT_SIZES.map((f) => ({
+                  value: f.value,
+                  title: f.label,
+                  label: (
+                    <span
+                      className="font-serif leading-none"
+                      style={{ fontSize: f.px }}
+                    >
+                      A
+                    </span>
+                  ),
+                }))}
+              />
               <Segmented
                 label="Fundo"
                 value={opts.theme}
                 onChange={(v) => set("theme", v)}
-                disabled={!model}
+                disabled={!raw}
                 options={[
                   { value: "black", label: "Preto" },
                   { value: "white", label: "Branco (menos tinta)" },
@@ -513,7 +622,7 @@ export default function PDFPage() {
                 label="Papel"
                 value={opts.paper}
                 onChange={(v) => set("paper", v)}
-                disabled={!model}
+                disabled={!raw}
                 options={[
                   { value: "A4", label: "A4" },
                   { value: "A5", label: "A5 (meia folha)" },
@@ -523,7 +632,7 @@ export default function PDFPage() {
                 label="Seções"
                 value={opts.sectionPerPage ? "page" : "flow"}
                 onChange={(v) => set("sectionPerPage", v === "page")}
-                disabled={!model}
+                disabled={!raw}
                 options={[
                   { value: "flow", label: "Seguidas" },
                   { value: "page", label: "Uma por página" },
@@ -581,15 +690,20 @@ export default function PDFPage() {
                           ? hiddenCount
                             ? `${hiddenCount} ${hiddenCount === 1 ? "item escondido" : "itens escondidos"} no site`
                             : "Nenhum item escondido no site agora"
-                          : o.hint
+                          : o.key === "photos" && list
+                            ? "A lista clássica não usa fotos"
+                            : o.hint
                       }
-                      checked={opts[o.key]}
+                      checked={
+                        o.key === "photos" ? opts.photos && !list : opts[o.key]
+                      }
                       onChange={(v) => set(o.key, v)}
                       disabled={
                         !model ||
                         (o.key === "showHidden" &&
                           !hiddenCount &&
-                          !opts.showHidden)
+                          !opts.showHidden) ||
+                        (o.key === "photos" && list)
                       }
                     />
                   ))}
@@ -700,7 +814,7 @@ export default function PDFPage() {
                   key={ready.url}
                   src={`${ready.url}#view=FitH`}
                   title="Pré-visualização do cardápio em PDF"
-                  className="h-full w-full"
+                  className={`h-full w-full transition-opacity ${dirty || working ? "opacity-40" : ""}`}
                 />
               ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-3 text-sm text-primary-gold/45">
@@ -714,6 +828,37 @@ export default function PDFPage() {
                       {stepText}
                     </>
                   )}
+                </div>
+              )}
+              {/* Aviso de mudanças pendentes, por cima da pré-visualização */}
+              {(dirty || (ready && working)) && (
+                <div className="absolute inset-x-0 top-0 flex items-center justify-center p-4">
+                  <div className="flex items-center gap-3 rounded-xl border border-primary-gold/30 bg-primary-black/90 px-4 py-2.5 text-sm shadow-xl backdrop-blur">
+                    {dirty ? (
+                      <>
+                        <span className="text-primary-gold/80">
+                          {auto
+                            ? "Atualizando…"
+                            : "Esta pré-visualização está desatualizada"}
+                        </span>
+                        {!auto && (
+                          <button
+                            type="button"
+                            onClick={apply}
+                            disabled={nothingMarked}
+                            className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-primary-gold px-3 py-1.5 text-xs font-semibold text-primary-black hover:brightness-105 disabled:opacity-50"
+                          >
+                            <LuRefreshCw size={13} /> Atualizar o PDF
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Loader />
+                        <span className="text-primary-gold/80">{stepText}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

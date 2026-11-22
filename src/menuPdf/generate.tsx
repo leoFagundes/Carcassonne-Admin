@@ -58,8 +58,9 @@ export async function generateMenuPdf({
   // Fotos: as dos itens; para as que não carregarem, a ilustração da categoria
   const all = model.sections.flatMap((s) => s.groups.flatMap((g) => g.items));
   const progress = (done: number, total: number) => onStep?.({ phase: "fotos", done, total });
-  const images = opts.photos ? await prepareThumbs(all.map((i) => i.image), THUMB_PX, progress) : new Map<string, string>();
-  const missing = opts.photos ? all.filter((i) => !images.has(i.image)).map((i) => i.fallback) : [];
+  const photos = opts.photos && opts.style === "cards";
+  const images = photos ? await prepareThumbs(all.map((i) => i.image), THUMB_PX, progress) : new Map<string, string>();
+  const missing = photos ? all.filter((i) => !images.has(i.image)).map((i) => i.fallback) : [];
   if (missing.length) for (const [k, v] of await prepareThumbs(missing, THUMB_PX)) images.set(k, v);
   const logo = await thumb(LOGO, 360);
 

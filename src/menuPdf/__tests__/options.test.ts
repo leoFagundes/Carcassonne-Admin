@@ -50,3 +50,18 @@ describe("abertura e itens ocultos", () => {
     expect(o.showHidden).toBe(true);
   });
 });
+
+describe("estilo, letra, regulamento e verso", () => {
+  it("padrão: cards, letra normal, sem regulamento e sem verso", () => {
+    expect(DEFAULT_OPTIONS).toMatchObject({ style: "cards", fontSize: "M", rules: false, backPage: false });
+  });
+  it("lê os valores salvos e ignora os inválidos", () => {
+    expect(sanitizeOptions({ style: "list", fontSize: "XL", rules: true, backPage: true })).toMatchObject({
+      style: "list",
+      fontSize: "XL",
+      rules: true,
+      backPage: true,
+    });
+    expect(sanitizeOptions({ style: "grade", fontSize: "XXL", rules: "sim" })).toMatchObject({ style: "cards", fontSize: "M", rules: false });
+  });
+});

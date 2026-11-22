@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { usePubInfo } from "@/contexts/siteConfigProvider";
 import { facebookUrl, formatPhoneBR, instagramUrl, whatsappUrl } from "@/utils/generalSettings";
 import { FaWhatsapp, FaSmokingBan } from "react-icons/fa";
+import { HOUSE_NOTES, LEGAL_NOTICES, PAYMENT, PROCON } from "@/utils/rulesContent";
 import {
   FiClipboard,
   FiFacebook,
@@ -216,48 +217,26 @@ export default function RulesPage() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-            <motion.div
-              variants={itemVariants}
-              whileHover={{ y: -3 }}
-              className="bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3 transition-colors hover:border-primary-gold/35"
-            >
-              <div className="flex items-center gap-2">
-                <FaSmokingBan size={14} className="text-primary-gold/50 shrink-0" />
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">
-                  Proibição
-                </span>
-              </div>
-              <p className="text-sm text-primary-gold/80 leading-relaxed">
-                É proibido o uso de cigarros, cigarrilhas, charutos, cachimbos
-                ou qualquer outro produto fumígeno, derivado ou não do tabaco,
-                em recinto coletivo fechado, privado ou público.
-              </p>
-              <span className="text-xs text-primary-gold/40 mt-auto">
-                Lei 9.294/1996 Art. 2º
-              </span>
-            </motion.div>
-
-            <motion.div
-              variants={itemVariants}
-              whileHover={{ y: -3 }}
-              className="bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3 transition-colors hover:border-primary-gold/35"
-            >
-              <div className="flex items-center gap-2">
-                <FiAlertTriangle size={14} className="text-primary-gold/50 shrink-0" />
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">
-                  Menores de Idade
-                </span>
-              </div>
-              <p className="text-sm text-primary-gold/80 leading-relaxed">
-                É proibido vender, fornecer, servir, ministrar ou entregar,
-                ainda que gratuitamente, de qualquer forma, a criança ou o
-                adolescente, bebida alcoólica ou produtos que causem
-                dependência.
-              </p>
-              <span className="text-xs text-primary-gold/40 mt-auto">
-                Lei 8.069/1990, Art. 243
-              </span>
-            </motion.div>
+            {LEGAL_NOTICES.map((notice) => {
+              const Icon = notice.kind === "smoking" ? FaSmokingBan : FiAlertTriangle;
+              return (
+                <motion.div
+                  key={notice.kind}
+                  variants={itemVariants}
+                  whileHover={{ y: -3 }}
+                  className="bg-secondary-black/60 border border-primary-gold/15 rounded-xl p-4 flex flex-col gap-3 transition-colors hover:border-primary-gold/35"
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon size={14} className="text-primary-gold/50 shrink-0" />
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">
+                      {notice.label}
+                    </span>
+                  </div>
+                  <p className="text-sm text-primary-gold/80 leading-relaxed">{notice.text}</p>
+                  <span className="text-xs text-primary-gold/40 mt-auto">{notice.law}</span>
+                </motion.div>
+              );
+            })}
 
             <motion.div
               variants={itemVariants}
@@ -267,26 +246,17 @@ export default function RulesPage() {
               <div className="flex items-center gap-2">
                 <FiCreditCard size={14} className="text-primary-gold/50 shrink-0" />
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">
-                  Pagamento
+                  {PAYMENT.label}
                 </span>
               </div>
               <ul className="text-sm text-primary-gold/80 flex flex-col gap-1.5">
-                <li className="flex items-center gap-2">
-                  <span className="w-1 h-1 rounded-full bg-primary-gold/50 shrink-0" />{" "}
-                  Dinheiro
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1 h-1 rounded-full bg-primary-gold/50 shrink-0" />{" "}
-                  Cartões de crédito e débito
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1 h-1 rounded-full bg-primary-gold/50 shrink-0" />{" "}
-                  Mastercard, Visa, Elo
-                </li>
+                {PAYMENT.methods.map((method) => (
+                  <li key={method} className="flex items-center gap-2">
+                    <span className="w-1 h-1 rounded-full bg-primary-gold/50 shrink-0" /> {method}
+                  </li>
+                ))}
               </ul>
-              <p className="text-xs text-primary-gold/50 mt-auto">
-                Não aceitamos cheque.
-              </p>
+              <p className="text-xs text-primary-gold/50 mt-auto">{PAYMENT.note}</p>
             </motion.div>
           </div>
 
@@ -295,12 +265,7 @@ export default function RulesPage() {
             variants={itemVariants}
             className="w-full bg-primary-black/40 border border-primary-gold/10 rounded-xl p-4 flex flex-col gap-2"
           >
-            {[
-              "Cobramos taxa de rolha. Contate um de nossos atendentes.",
-              "Proibido o consumo de produtos alimentícios não fornecidos pela casa.",
-              "Os preços praticados são em Reais (BRL, R$).",
-              "Se beber, não dirija. Disque Saúde: 136.",
-            ].map((text, i) => (
+            {HOUSE_NOTES.map((text, i) => (
               <p
                 key={i}
                 className="text-sm text-primary-gold/65 flex items-start gap-2 leading-relaxed"
@@ -315,7 +280,7 @@ export default function RulesPage() {
             variants={itemVariants}
             className="text-xs text-primary-gold/35 tracking-widest uppercase"
           >
-            PROCON 151
+            {PROCON}
           </motion.p>
         </motion.div>
       </motion.div>
