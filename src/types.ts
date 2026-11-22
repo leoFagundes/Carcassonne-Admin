@@ -120,6 +120,8 @@ export interface GeneralConfigsType {
   effectsPrefs?: Partial<EffectsPrefs>;
   /** E-mails que recebem o aviso de nova reserva. */
   staffReserveEmails?: string[];
+  /** Logo padrão: "current" (atual) ou "original". Ausente = atual. */
+  siteLogo?: "current" | "original";
 }
 
 /** Horário de um dia ("HH:MM"); `close` menor ou igual a `open` = fecha depois da meia-noite. */

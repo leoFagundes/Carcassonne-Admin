@@ -11,30 +11,78 @@ import type { MenuModel } from "./model";
 import { qrTarget, type PdfOptions } from "./options";
 import { qrShape } from "./qr";
 import { prepareThumbs, thumb } from "./images";
+import { PALETTES } from "./theme";
+import {
+  ORIGINAL_LOGO_FILL,
+  SITE_LOGOS,
+  type SiteLogo,
+} from "@/utils/siteLogo";
 
-export type GenerateStep = { phase: "fotos"; done: number; total: number } | { phase: "montando" };
+export type GenerateStep =
+  | { phase: "fotos"; done: number; total: number }
+  | { phase: "montando" };
 
 let fontsReady = false;
 
-const LOGO = "/images/[oficial]-logo.png";
+const LOGO_PX = 720;
+
+/** A logo original é um SVG dourado: no PDF ela vai na cor do tema (no fundo branco, o dourado escuro). */
+const tintedCache = new Map<string, Promise<string | null>>();
+function originalLogo(color: string): Promise<string | null> {
+  let p = tintedCache.get(color);
+  if (!p) {
+    p = (async () => {
+      const res = await fetch(SITE_LOGOS.original.src);
+      if (!res.ok) throw new Error(`logo: HTTP ${res.status}`);
+      const svg = (await res.text())
+        .split(ORIGINAL_LOGO_FILL)
+        .join(color)
+        .replace(
+          /width="\d+" height="\d+"/,
+          `width="${LOGO_PX}" height="${LOGO_PX}"`,
+        );
+      const url = URL.createObjectURL(
+        new Blob([svg], { type: "image/svg+xml" }),
+      );
+      try {
+        return await thumb(url, LOGO_PX);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    })().catch((err) => {
+      console.warn("[cardápio PDF] logo original não carregou:", err);
+      tintedCache.delete(color);
+      return null;
+    });
+    tintedCache.set(color, p);
+  }
+  return p;
+}
 const THUMB_PX = 168;
 
 export async function generateMenuPdf({
   model,
   opts,
   pub,
+  logo: logoChoice = "current",
   onStep,
 }: {
   /** Já filtrado pelas opções (applyOptions). */
   model: MenuModel;
   opts: PdfOptions;
   pub: PubInfo;
+  /** Qual logo vai no PDF (já resolvida: a escolhida ou a padrão das configurações). */
+  logo?: SiteLogo;
   onStep?: (s: GenerateStep) => void;
 }): Promise<{ blob: Blob; pages: number }> {
-  const [{ pdf, Font }, { MenuDocument }] = await Promise.all([import("@react-pdf/renderer"), import("./MenuDocument")]);
+  const [{ pdf, Font }, { MenuDocument }] = await Promise.all([
+    import("@react-pdf/renderer"),
+    import("./MenuDocument"),
+  ]);
 
   if (!fontsReady) {
-    const f = (name: string) => `${window.location.origin}/fonts/pdf/${name}.woff`;
+    const f = (name: string) =>
+      `${window.location.origin}/fonts/pdf/${name}.woff`;
     Font.register({
       family: "Cinzel",
       fonts: [
@@ -47,7 +95,11 @@ export async function generateMenuPdf({
       fonts: [
         { src: f("lato-latin-400-normal"), fontWeight: 400 },
         { src: f("lato-latin-700-normal"), fontWeight: 700 },
-        { src: f("lato-latin-400-italic"), fontWeight: 400, fontStyle: "italic" },
+        {
+          src: f("lato-latin-400-italic"),
+          fontWeight: 400,
+          fontStyle: "italic",
+        },
       ],
     });
     // Serifada clássica do verso (como o verso que o gerente desenhou)
@@ -65,43 +117,69 @@ export async function generateMenuPdf({
 
   // Fotos: as dos itens; para as que não carregarem, a ilustração da categoria
   const all = model.sections.flatMap((s) => s.groups.flatMap((g) => g.items));
-  const progress = (done: number, total: number) => onStep?.({ phase: "fotos", done, total });
+  const progress = (done: number, total: number) =>
+    onStep?.({ phase: "fotos", done, total });
   const photos = opts.photos && opts.style === "cards";
-  const images = photos ? await prepareThumbs(all.map((i) => i.image), THUMB_PX, progress) : new Map<string, string>();
-  const missing = photos ? all.filter((i) => !images.has(i.image)).map((i) => i.fallback) : [];
-  if (missing.length) for (const [k, v] of await prepareThumbs(missing, THUMB_PX)) images.set(k, v);
-  const logo = await thumb(LOGO, 360);
+  const images = photos
+    ? await prepareThumbs(
+        all.map((i) => i.image),
+        THUMB_PX,
+        progress,
+      )
+    : new Map<string, string>();
+  const missing = photos
+    ? all.filter((i) => !images.has(i.image)).map((i) => i.fallback)
+    : [];
+  if (missing.length)
+    for (const [k, v] of await prepareThumbs(missing, THUMB_PX))
+      images.set(k, v);
+  const logo =
+    logoChoice === "original"
+      ? await originalLogo(PALETTES[opts.theme].G)
+      : await thumb(SITE_LOGOS.current.src, LOGO_PX);
 
   onStep?.({ phase: "montando" });
   const generatedAt = new Date();
   const qrUrl = opts.qr ? qrTarget(opts, pub.website) : null;
-  const qr = qrUrl ? { shape: qrShape(qrUrl), label: qrUrl.replace(/^https?:\/\/(www\.)?/i, "") } : null;
+  const qr = qrUrl
+    ? {
+        shape: qrShape(qrUrl),
+        label: qrUrl.replace(/^https?:\/\/(www\.)?/i, ""),
+      }
+    : null;
   const base = { model, opts, pub, images, logo, qr, generatedAt };
 
   const record = { pages: {} as Record<string, number>, total: 0 };
-  const first = await pdf(<MenuDocument {...base} tocPages={null} record={record} />).toBlob();
+  const first = await pdf(
+    <MenuDocument {...base} tocPages={null} record={record} />,
+  ).toBlob();
   // Sem sumário não precisa da 2ª montagem
-  if (!opts.toc || !Object.keys(record.pages).length) return { blob: first, pages: record.total };
+  if (!opts.toc || !Object.keys(record.pages).length)
+    return { blob: first, pages: record.total };
 
   const tocPages = { ...record.pages };
-  const blob = await pdf(<MenuDocument {...base} tocPages={tocPages} record={record} />).toBlob();
+  const blob = await pdf(
+    <MenuDocument {...base} tocPages={tocPages} record={record} />,
+  ).toBlob();
   return { blob, pages: record.total };
 }
 
 /** Texto curto do navegador, para a mensagem de erro (ajuda a descobrir o que falhou). */
 export function browserLabel(): string {
   const ua = navigator.userAgent;
-  const os = /iPad|Macintosh.*Mobile|Macintosh(?=.*Safari)(?!.*Chrome)/.test(ua) && navigator.maxTouchPoints > 1
-    ? "iPad"
-    : /iPhone/.test(ua)
-      ? "iPhone"
-      : /Android/.test(ua)
-        ? "Android"
-        : /Windows/.test(ua)
-          ? "Windows"
-          : /Mac OS X/.test(ua)
-            ? "Mac"
-            : "outro sistema";
+  const os =
+    /iPad|Macintosh.*Mobile|Macintosh(?=.*Safari)(?!.*Chrome)/.test(ua) &&
+    navigator.maxTouchPoints > 1
+      ? "iPad"
+      : /iPhone/.test(ua)
+        ? "iPhone"
+        : /Android/.test(ua)
+          ? "Android"
+          : /Windows/.test(ua)
+            ? "Windows"
+            : /Mac OS X/.test(ua)
+              ? "Mac"
+              : "outro sistema";
   const browser = /Edg\//.test(ua)
     ? "Edge"
     : /OPR\//.test(ua)

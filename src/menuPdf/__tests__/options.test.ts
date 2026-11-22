@@ -98,3 +98,12 @@ describe("ocultos de fora", () => {
     expect(sanitizeOptions({ hiddenSkip: "abc" }).hiddenSkip).toEqual([]);
   });
 });
+
+describe("logo do PDF", () => {
+  it("padrão segue as configurações; aceita só as duas logos", () => {
+    expect(DEFAULT_OPTIONS.logo).toBe("site");
+    expect(sanitizeOptions({ logo: "original" }).logo).toBe("original");
+    expect(sanitizeOptions({ logo: "current" }).logo).toBe("current");
+    expect(sanitizeOptions({ logo: "outra" }).logo).toBe("site");
+  });
+});

@@ -27,6 +27,8 @@ import MusicRecommendationRepository from "@/services/repositories/MusicRecommen
 import EventRepository from "@/services/repositories/EventRepository";
 import AdminRepository from "@/services/repositories/AdminRepository";
 import { useAlert } from "@/contexts/alertProvider";
+import { useSiteLogo } from "@/contexts/siteConfigProvider";
+import { SITE_LOGOS } from "@/utils/siteLogo";
 import { useLogoEasterEgg } from "@/hooks/useLogoEasterEgg";
 import ThemeLogoAccessory from "@/components/siteTheme/ThemeLogoAccessory";
 import ThemeBand from "@/components/siteTheme/ThemeBand";
@@ -162,6 +164,7 @@ export default function Sidebar() {
   const { addAlert } = useAlert();
   const router = useRouter();
   const pathname = usePathname();
+  const logo = useSiteLogo();
   const pathnameRef = useRef(pathname);
   const toggleSidebar = () => setIsOpen(!isOpen);
   const onLogoClick = useLogoEasterEgg();
@@ -371,7 +374,7 @@ export default function Sidebar() {
             <div className="relative isolate">
               <img
                 className="w-[140px] contrast-[1.1] brightness-90 cursor-pointer"
-                src="images/[oficial]-logo.png"
+                src={SITE_LOGOS[logo].src}
                 alt="meeple"
                 onClick={onLogoClick}
               />

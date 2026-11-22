@@ -4,6 +4,10 @@
  */
 import type { MenuModel } from "./model";
 import type { PdfTheme } from "./theme";
+import type { SiteLogo } from "@/utils/siteLogo";
+
+/** Logo do PDF: a padrão das configurações ("site") ou uma escolhida só para o PDF. */
+export type PdfLogo = "site" | SiteLogo;
 
 export type PdfPaper = "A4" | "A5";
 /** Cards (com foto) ou lista clássica (nome ······ preço, sem foto). */
@@ -11,7 +15,12 @@ export type PdfStyle = "cards" | "list";
 /** Tamanho da letra dos itens: pequena, normal, grande, muito grande. */
 export type PdfFontSize = "S" | "M" | "L" | "XL";
 
-export const FONT_SCALE: Record<PdfFontSize, number> = { S: 0.9, M: 1, L: 1.15, XL: 1.32 };
+export const FONT_SCALE: Record<PdfFontSize, number> = {
+  S: 0.9,
+  M: 1,
+  L: 1.15,
+  XL: 1.32,
+};
 
 export type PdfOptions = {
   theme: PdfTheme;
@@ -54,6 +63,7 @@ export type PdfOptions = {
   subtitles: boolean;
   /** Categorias que ficam de fora (pelo nome). */
   hidden: string[];
+  logo: PdfLogo;
   /** Borda de cada tipo de página. */
   frames: PdfFrames;
 };
@@ -65,14 +75,20 @@ export type PdfFrames = Record<FramePage, FrameStyle>;
 
 export const FRAME_STYLES: FrameStyle[] = ["none", "double", "ticket"];
 export const FRAME_PAGES: FramePage[] = ["cover", "content", "rules", "back"];
-export const DEFAULT_FRAMES: PdfFrames = { cover: "double", content: "none", rules: "ticket", back: "ticket" };
+export const DEFAULT_FRAMES: PdfFrames = {
+  cover: "double",
+  content: "none",
+  rules: "ticket",
+  back: "ticket",
+};
 
 export function sanitizeFrames(raw: unknown): PdfFrames {
   const out = { ...DEFAULT_FRAMES };
   if (!raw || typeof raw !== "object") return out;
   for (const page of FRAME_PAGES) {
     const v = (raw as Record<string, unknown>)[page];
-    if (typeof v === "string" && (FRAME_STYLES as string[]).includes(v)) out[page] = v as FrameStyle;
+    if (typeof v === "string" && (FRAME_STYLES as string[]).includes(v))
+      out[page] = v as FrameStyle;
   }
   return out;
 }
@@ -103,6 +119,7 @@ export const DEFAULT_OPTIONS: PdfOptions = {
   subtitles: true,
   hidden: [],
   frames: DEFAULT_FRAMES,
+  logo: "site",
 };
 
 export const OPTIONS_STORAGE_KEY = "cardapio-pdf-opcoes";
@@ -113,14 +130,18 @@ export const OPTIONS_VERSION = 2;
 /** Lê o salvo no navegador (com as migrações de versão). */
 export function loadSavedOptions(raw: unknown): PdfOptions {
   const out = sanitizeOptions(raw);
-  const version = raw && typeof raw === "object" ? (raw as { v?: unknown }).v : undefined;
+  const version =
+    raw && typeof raw === "object" ? (raw as { v?: unknown }).v : undefined;
   // v2: o verso passou a vir ligado
   if (version !== OPTIONS_VERSION) out.backPage = true;
   return out;
 }
 
 /** O que vai para o navegador. */
-export const optionsToSave = (opts: PdfOptions) => ({ ...opts, v: OPTIONS_VERSION });
+export const optionsToSave = (opts: PdfOptions) => ({
+  ...opts,
+  v: OPTIONS_VERSION,
+});
 
 const FLAGS = [
   "sectionPerPage",
@@ -144,17 +165,31 @@ const FLAGS = [
 
 /** Lê o que veio do navegador; o que faltar ou estiver estranho volta ao padrão. */
 export function sanitizeOptions(raw: unknown): PdfOptions {
-  const out: PdfOptions = { ...DEFAULT_OPTIONS, hidden: [], frames: { ...DEFAULT_FRAMES } };
+  const out: PdfOptions = {
+    ...DEFAULT_OPTIONS,
+    hidden: [],
+    frames: { ...DEFAULT_FRAMES },
+  };
   if (!raw || typeof raw !== "object") return out;
   const r = raw as Record<string, unknown>;
   out.frames = sanitizeFrames(r.frames);
+  if (r.logo === "site" || r.logo === "current" || r.logo === "original")
+    out.logo = r.logo;
   out.hiddenSkip = Array.isArray(r.hiddenSkip)
-    ? [...new Set(r.hiddenSkip.filter((h): h is string => typeof h === "string" && /^[\w-]{1,128}$/.test(h)))].slice(0, 1000)
+    ? [
+        ...new Set(
+          r.hiddenSkip.filter(
+            (h): h is string =>
+              typeof h === "string" && /^[\w-]{1,128}$/.test(h),
+          ),
+        ),
+      ].slice(0, 1000)
     : [];
   if (r.theme === "black" || r.theme === "white") out.theme = r.theme;
   if (r.paper === "A4" || r.paper === "A5") out.paper = r.paper;
   if (r.style === "cards" || r.style === "list") out.style = r.style;
-  if (typeof r.fontSize === "string" && r.fontSize in FONT_SCALE) out.fontSize = r.fontSize as PdfFontSize;
+  if (typeof r.fontSize === "string" && r.fontSize in FONT_SCALE)
+    out.fontSize = r.fontSize as PdfFontSize;
   if (typeof r.qrUrl === "string" && isQrUrl(r.qrUrl))
     out.qrUrl = r.qrUrl.trim();
   for (const k of FLAGS) if (typeof r[k] === "boolean") out[k] = r[k];

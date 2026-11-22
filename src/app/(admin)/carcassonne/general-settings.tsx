@@ -36,6 +36,7 @@ import {
   sessionHours,
 } from "@/utils/generalSettings";
 import { SettingsPanel, useGeneralConfigSection } from "./settings-ui";
+import { SITE_LOGOS, siteLogo, type SiteLogo } from "@/utils/siteLogo";
 
 // Painéis de Configurações → Geral. Cada um carrega e salva só os próprios campos.
 
@@ -152,6 +153,17 @@ const INFO = {
       <p>
         A mudança leva até 5 minutos. O WhatsApp guarda a prévia de um link por um tempo; para testar, mande o link com
         algo no final, ex.: carcassonnepub.com.br/?v=2.
+      </p>
+    </>
+  ),
+  logo: (
+    <>
+      <p>
+        <strong>O que é:</strong> qual das duas logos do Carcassonne é a padrão.
+      </p>
+      <p>
+        <strong>Onde aparece:</strong> no menu lateral do admin e no PDF do cardápio (lá dá para trocar na hora, só para
+        aquele PDF). O linktree, a página de reserva e a impressão das reservas usam outras versões da logo e não mudam.
       </p>
     </>
   ),
@@ -666,6 +678,43 @@ function StaffEmailsSettings() {
   );
 }
 
+// ---------- Logo ----------
+
+const LOGO_FIELDS = ["siteLogo"] as const satisfies readonly (keyof GeneralConfigsType)[];
+
+function LogoSettings() {
+  const s = useGeneralConfigSection(LOGO_FIELDS);
+  if (!s.loaded) return <Loading />;
+  const value = siteLogo(s.configs.siteLogo);
+  return (
+    <SettingsPanel title="Logo" info={INFO.logo} dirty={s.dirty} saving={s.saving} saved={s.saved} onSave={s.save}>
+      <div className="grid grid-cols-2 gap-3">
+        {(Object.keys(SITE_LOGOS) as SiteLogo[]).map((key) => {
+          const logo = SITE_LOGOS[key];
+          const on = value === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={on}
+              onClick={() => s.set({ siteLogo: key })}
+              className={`flex cursor-pointer flex-col items-center gap-2 rounded-xl border p-3 transition-all ${
+                on ? "border-primary-gold/70 bg-primary-gold/10" : "border-primary-gold/15 hover:border-primary-gold/40"
+              }`}
+            >
+              <span className="flex aspect-square w-full max-w-[120px] items-center justify-center rounded-lg bg-primary-black/60 p-2">
+                <img src={logo.src} alt={`Logo ${logo.label.toLowerCase()}`} className="h-full w-full object-contain" />
+              </span>
+              <span className={`text-sm font-semibold ${on ? "text-primary-gold" : "text-primary-gold/60"}`}>{logo.label}</span>
+              <span className="text-[11px] leading-snug text-primary-gold/40">{logo.hint}</span>
+            </button>
+          );
+        })}
+      </div>
+    </SettingsPanel>
+  );
+}
+
 /** Configurações → Geral. */
 export default function GeneralSettings() {
   return (
@@ -675,6 +724,7 @@ export default function GeneralSettings() {
         <ShareSettings />
       </div>
       <div className="flex flex-col gap-4">
+        <LogoSettings />
         <SiteNoticeSettings />
         <AreasSettings />
         <StaffEmailsSettings />

@@ -3,7 +3,8 @@
 import LoaderFullscreen from "@/components/loaderFullscreen";
 import Loader from "@/components/loader";
 import { useAlert } from "@/contexts/alertProvider";
-import { usePubInfo } from "@/contexts/siteConfigProvider";
+import { usePubInfo, useSiteLogo } from "@/contexts/siteConfigProvider";
+import { SITE_LOGOS, type SiteLogo } from "@/utils/siteLogo";
 import ComboRepository from "@/services/repositories/ComboRepository";
 import DescriptionRepository from "@/services/repositories/DescriptionTypeRepository";
 import InfoRepository from "@/services/repositories/InfoRepository";
@@ -577,9 +578,16 @@ function HiddenItemsPicker({
                       {box(on ? "on" : "off")}
                       {/* Preço numa linha pequena embaixo (os longos, tipo "Broto … / Grande …", não cabem do lado) */}
                       <span className="flex min-w-0 flex-1 flex-col">
-                        <span className={`text-xs leading-snug ${on ? "text-primary-gold" : "text-primary-gold/50"}`}>{it.name}</span>
+                        <span
+                          className={`text-xs leading-snug ${on ? "text-primary-gold" : "text-primary-gold/50"}`}
+                        >
+                          {it.name}
+                        </span>
                         {it.value && (
-                          <span className="truncate text-[11px] leading-snug text-primary-gold/35" title={it.value}>
+                          <span
+                            className="truncate text-[11px] leading-snug text-primary-gold/35"
+                            title={it.value}
+                          >
                             {it.value}
                           </span>
                         )}
@@ -631,6 +639,10 @@ export default function PDFPage() {
   const urlRef = useRef<string | null>(null);
 
   const pub = usePubInfo();
+  /** Logo padrão (Configurações → Geral → Logo); o PDF usa ela, a não ser que se escolha outra aqui. */
+  const siteDefaultLogo = useSiteLogo();
+  const logoOf = (o: PdfOptions): SiteLogo =>
+    o.logo === "site" ? siteDefaultLogo : o.logo;
   const { addAlert } = useAlert();
   const router = useRouter();
 
@@ -755,6 +767,7 @@ export default function PDFPage() {
       model: pdfModel,
       opts: applied,
       pub,
+      logo: logoOf(applied),
       onStep: (step) =>
         run.current === me && setStatus({ kind: "working", step }),
     })
@@ -771,7 +784,8 @@ export default function PDFPage() {
         const detail = err instanceof Error ? err.message : String(err);
         setStatus({ kind: "error", message: detail || "erro desconhecido" });
       });
-  }, [pdfModel, applied, pub, attempt]);
+     
+  }, [pdfModel, applied, pub, attempt, siteDefaultLogo]);
 
   useEffect(
     () => () => {
@@ -925,6 +939,47 @@ export default function PDFPage() {
 
             {/* Aparência */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">
+                  Logo
+                </span>
+                <div className="flex items-stretch gap-1 rounded-lg border border-primary-gold/20 bg-primary-black/30 p-1">
+                  {(Object.keys(SITE_LOGOS) as SiteLogo[]).map((key) => {
+                    const on = logoOf(opts) === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        disabled={!raw}
+                        aria-pressed={on}
+                        onClick={() =>
+                          set("logo", key === siteDefaultLogo ? "site" : key)
+                        }
+                        className={`flex flex-1 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium transition-all disabled:cursor-default ${
+                          on
+                            ? "bg-primary-gold/20 text-primary-gold"
+                            : "text-primary-gold/50 hover:text-primary-gold/80"
+                        }`}
+                      >
+                        { }
+                        <img
+                          src={SITE_LOGOS[key].src}
+                          alt=""
+                          className="h-7 w-7 shrink-0 object-contain"
+                        />
+                        <span className="flex flex-col items-start leading-tight">
+                          {SITE_LOGOS[key].label}
+                          {key === siteDefaultLogo && (
+                            <span className="text-[10px] font-normal text-primary-gold/40">
+                              padrão
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <Segmented
                 label="Estilo"
                 value={opts.style}
@@ -1047,7 +1102,11 @@ export default function PDFPage() {
                       <Check
                         key={o.key}
                         label={o.label}
-                        hint={o.key === "photos" && list ? "A lista clássica não usa fotos" : o.hint}
+                        hint={
+                          o.key === "photos" && list
+                            ? "A lista clássica não usa fotos"
+                            : o.hint
+                        }
                         checked={
                           o.key === "photos"
                             ? opts.photos && !list
