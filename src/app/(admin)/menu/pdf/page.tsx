@@ -10,10 +10,16 @@ import InfoRepository from "@/services/repositories/InfoRepository";
 import MenuItemRepository from "@/services/repositories/MenuItemRepository";
 import TypesOrderRepository from "@/services/repositories/TypesOrderRepository";
 import { buildMenuModel, type MenuModel } from "@/menuPdf/model";
-import { browserLabel, generateMenuPdf, type GenerateStep } from "@/menuPdf/generate";
+import {
+  browserLabel,
+  generateMenuPdf,
+  type GenerateStep,
+} from "@/menuPdf/generate";
 import {
   applyOptions,
   DEFAULT_OPTIONS,
+  defaultQrUrl,
+  isQrUrl,
   isEmpty,
   OPTIONS_STORAGE_KEY,
   sanitizeOptions,
@@ -41,25 +47,54 @@ type Status =
 
 const FILE_NAME = "cardapio-carcassonne.pdf";
 
-type Flag = Exclude<keyof PdfOptions, "theme" | "hidden">;
+type Flag = Exclude<keyof PdfOptions, "theme" | "hidden" | "paper" | "qrUrl">;
 
 const PARTS: { key: Flag; label: string; hint: string }[] = [
   { key: "cover", label: "Capa", hint: "Página de abertura com o logo" },
-  { key: "masthead", label: "Abertura", hint: "Logo, nome e endereço no topo da 1ª página" },
-  { key: "toc", label: "Sumário", hint: "Lista das seções com a página (clicável)" },
-  { key: "legend", label: "Legenda", hint: "O que é Destaque e Vegano, moeda e data" },
-  { key: "pageChrome", label: "Cabeçalho e rodapé", hint: "Nome, contatos e “Página X de Y”" },
+  {
+    key: "masthead",
+    label: "Abertura",
+    hint: "Logo, nome e endereço no topo da 1ª página",
+  },
+  {
+    key: "toc",
+    label: "Sumário",
+    hint: "Lista das seções com a página (clicável)",
+  },
+  {
+    key: "legend",
+    label: "Legenda",
+    hint: "O que é Destaque e Vegano, moeda e data",
+  },
+  {
+    key: "pageChrome",
+    label: "Cabeçalho e rodapé",
+    hint: "Nome, contatos e “Página X de Y”",
+  },
+  {
+    key: "qr",
+    label: "QR code",
+    hint: "Leva ao cardápio online; vai na capa, na abertura ou no fim",
+  },
   { key: "infos", label: "Avisos", hint: "Passaporte, promoções da semana…" },
   { key: "combos", label: "Combos", hint: "" },
 ];
 
 const ITEM_PARTS: { key: Flag; label: string; hint: string }[] = [
   { key: "showHidden", label: "Itens ocultos", hint: "" },
-  { key: "photos", label: "Fotos", hint: "Sem fotos o PDF fica menor e mais rápido" },
+  {
+    key: "photos",
+    label: "Fotos",
+    hint: "Sem fotos o PDF fica menor e mais rápido",
+  },
   { key: "descriptions", label: "Descrições", hint: "" },
   { key: "extras", label: "Acompanhamentos e observações", hint: "" },
   { key: "badges", label: "Selos Destaque e Vegano", hint: "" },
-  { key: "subtitles", label: "Frase de cada categoria", hint: "Ex.: “Life is too short for bad snacks”" },
+  {
+    key: "subtitles",
+    label: "Frase de cada categoria",
+    hint: "Ex.: “Life is too short for bad snacks”",
+  },
 ];
 
 function Segmented<T extends string>({
@@ -77,7 +112,9 @@ function Segmented<T extends string>({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">{label}</span>
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">
+        {label}
+      </span>
       <div className="flex items-center gap-1 rounded-lg border border-primary-gold/20 bg-primary-black/30 p-1">
         {options.map((o) => (
           <button
@@ -87,7 +124,9 @@ function Segmented<T extends string>({
             onClick={() => onChange(o.value)}
             aria-pressed={value === o.value}
             className={`flex-1 cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all disabled:cursor-default ${
-              value === o.value ? "bg-primary-gold/20 text-primary-gold" : "text-primary-gold/50 hover:text-primary-gold/80"
+              value === o.value
+                ? "bg-primary-gold/20 text-primary-gold"
+                : "text-primary-gold/50 hover:text-primary-gold/80"
             }`}
           >
             {o.label}
@@ -114,7 +153,9 @@ function Check({
   return (
     <label
       className={`group flex items-start gap-2.5 rounded-lg px-2 py-1.5 transition-colors ${
-        disabled ? "cursor-default opacity-40" : "cursor-pointer hover:bg-primary-gold/5"
+        disabled
+          ? "cursor-default opacity-40"
+          : "cursor-pointer hover:bg-primary-gold/5"
       }`}
     >
       <input
@@ -127,24 +168,99 @@ function Check({
       <span
         aria-hidden="true"
         className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-primary-gold/50 ${
-          checked ? "border-primary-gold bg-primary-gold text-primary-black" : "border-primary-gold/35 bg-primary-black/40"
+          checked
+            ? "border-primary-gold bg-primary-gold text-primary-black"
+            : "border-primary-gold/35 bg-primary-black/40"
         }`}
       >
         {checked && <LuCheck size={11} strokeWidth={3.5} />}
       </span>
       <span className="flex min-w-0 flex-col">
-        <span className={`text-[13px] leading-tight ${checked ? "text-primary-gold" : "text-primary-gold/55"}`}>{label}</span>
-        {hint ? <span className="mt-0.5 text-[11px] leading-snug text-primary-gold/35">{hint}</span> : null}
+        <span
+          className={`text-[13px] leading-tight ${checked ? "text-primary-gold" : "text-primary-gold/55"}`}
+        >
+          {label}
+        </span>
+        {hint ? (
+          <span className="mt-0.5 text-[11px] leading-snug text-primary-gold/35">
+            {hint}
+          </span>
+        ) : null}
       </span>
     </label>
   );
 }
 
-function Group({ title, children, aside }: { title: string; children: React.ReactNode; aside?: React.ReactNode }) {
+/** Link do QR: vazio usa o cardápio online; só salva quando o link é válido. */
+function QrLinkField({
+  value,
+  fallback,
+  onChange,
+}: {
+  value: string;
+  fallback: string;
+  onChange: (v: string) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  useEffect(() => setDraft(value), [value]);
+  const valid = !draft.trim() || isQrUrl(draft);
+  const commit = () => {
+    if (valid && draft.trim() !== value) onChange(draft.trim());
+  };
+  return (
+    <div className="ml-8 mr-2 mb-1 flex flex-col gap-1">
+      <input
+        type="url"
+        inputMode="url"
+        value={draft}
+        placeholder={fallback}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === "Enter" && commit()}
+        aria-label="Link do QR code"
+        aria-invalid={!valid}
+        className={`w-full rounded-md border bg-primary-black/40 px-2 py-1.5 text-xs text-primary-gold placeholder:text-primary-gold/30 outline-none focus:border-primary-gold/60 ${
+          valid ? "border-primary-gold/20" : "border-red-400/60"
+        }`}
+      />
+      <span
+        className={`text-[11px] leading-snug ${valid ? "text-primary-gold/35" : "text-red-300/80"}`}
+      >
+        {valid ? (
+          <>
+            Vazio = cardápio online.{" "}
+            <a
+              href={draft.trim() || fallback}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline-offset-2 hover:text-primary-gold hover:underline"
+            >
+              Testar o link
+            </a>
+          </>
+        ) : (
+          "Link inválido: comece com https:// e não use espaços"
+        )}
+      </span>
+    </div>
+  );
+}
+
+function Group({
+  title,
+  children,
+  aside,
+}: {
+  title: string;
+  children: React.ReactNode;
+  aside?: React.ReactNode;
+}) {
   return (
     <section className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">{title}</span>
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-gold/45">
+          {title}
+        </span>
         {aside}
       </div>
       {children}
@@ -153,7 +269,10 @@ function Group({ title, children, aside }: { title: string; children: React.Reac
 }
 
 export default function PDFPage() {
-  const [raw, setRaw] = useState<Omit<Parameters<typeof buildMenuModel>[0], "includeHidden"> | null>(null);
+  const [raw, setRaw] = useState<Omit<
+    Parameters<typeof buildMenuModel>[0],
+    "includeHidden"
+  > | null>(null);
   const [opts, setOpts] = useState<PdfOptions>(DEFAULT_OPTIONS);
   const [optsLoaded, setOptsLoaded] = useState(false);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
@@ -184,33 +303,44 @@ export default function PDFPage() {
     }
   }, [opts, optsLoaded]);
 
-  const set = <K extends keyof PdfOptions>(key: K, value: PdfOptions[K]) => setOpts((o) => ({ ...o, [key]: value }));
+  const set = <K extends keyof PdfOptions>(key: K, value: PdfOptions[K]) =>
+    setOpts((o) => ({ ...o, [key]: value }));
 
   useEffect(() => {
     (async () => {
       try {
-        const [typesOrder, items, combos, infos, descriptions] = await Promise.all([
-          TypesOrderRepository.getAll(),
-          MenuItemRepository.getAll(),
-          ComboRepository.getAll(),
-          InfoRepository.getAll(),
-          DescriptionRepository.getAll(),
-        ]);
+        const [typesOrder, items, combos, infos, descriptions] =
+          await Promise.all([
+            TypesOrderRepository.getAll(),
+            MenuItemRepository.getAll(),
+            ComboRepository.getAll(),
+            InfoRepository.getAll(),
+            DescriptionRepository.getAll(),
+          ]);
         setRaw({ items, combos, infos, descriptions, typesOrder });
       } catch (error) {
         addAlert(`Erro ao carregar o cardápio: ${error}`);
-        setStatus({ kind: "error", message: `Não carregou o cardápio (${error instanceof Error ? error.message : String(error)}).` });
+        setStatus({
+          kind: "error",
+          message: `Não carregou o cardápio (${error instanceof Error ? error.message : String(error)}).`,
+        });
       }
     })();
   }, []);
 
   const model = useMemo<MenuModel | null>(
-    () => (raw ? buildMenuModel({ ...raw, includeHidden: opts.showHidden }) : null),
+    () =>
+      raw ? buildMenuModel({ ...raw, includeHidden: opts.showHidden }) : null,
     [raw, opts.showHidden],
   );
-  const hiddenCount = raw ? raw.items.filter((i) => !i.isVisible && i.name?.trim()).length : 0;
+  const hiddenCount = raw
+    ? raw.items.filter((i) => !i.isVisible && i.name?.trim()).length
+    : 0;
 
-  const filtered = useMemo(() => (model ? applyOptions(model, opts) : null), [model, opts]);
+  const filtered = useMemo(
+    () => (model ? applyOptions(model, opts) : null),
+    [model, opts],
+  );
 
   // Gera de novo quando muda qualquer opção (com uma pausa curta, para vários cliques seguidos)
   useEffect(() => {
@@ -226,7 +356,8 @@ export default function PDFPage() {
         model: filtered,
         opts,
         pub,
-        onStep: (step) => run.current === me && setStatus({ kind: "working", step }),
+        onStep: (step) =>
+          run.current === me && setStatus({ kind: "working", step }),
       })
         .then(({ blob, pages }) => {
           if (run.current !== me) return;
@@ -252,14 +383,17 @@ export default function PDFPage() {
     [],
   );
 
-  const working = status.kind === "working" || (status.kind === "idle" && !model);
+  const working =
+    status.kind === "working" || (status.kind === "idle" && !model);
   const ready = status.kind === "ready" ? status : null;
   const isDefault = JSON.stringify(opts) === JSON.stringify(DEFAULT_OPTIONS);
 
   const stepText = useMemo(() => {
     if (status.kind !== "working" || !status.step) return "Preparando…";
     if (status.step.phase === "fotos")
-      return status.step.total ? `Preparando as fotos (${status.step.done} de ${status.step.total})…` : "Preparando as fotos…";
+      return status.step.total
+        ? `Preparando as fotos (${status.step.done} de ${status.step.total})…`
+        : "Preparando as fotos…";
     return "Montando as páginas…";
   }, [status]);
 
@@ -271,7 +405,10 @@ export default function PDFPage() {
 
   const hidden = new Set(opts.hidden);
   const toggleCategory = (title: string, on: boolean) =>
-    set("hidden", on ? opts.hidden.filter((h) => h !== title) : [...opts.hidden, title]);
+    set(
+      "hidden",
+      on ? opts.hidden.filter((h) => h !== title) : [...opts.hidden, title],
+    );
 
   return (
     <div className="flex min-h-full flex-col items-center text-primary-gold">
@@ -309,7 +446,9 @@ export default function PDFPage() {
                   aria-disabled={!ready}
                   onClick={(e) => !ready && e.preventDefault()}
                   className={`flex flex-[2] items-center justify-center gap-2 rounded-lg bg-gradient-to-b from-[#f0d382] to-primary-gold px-4 py-2 text-sm font-semibold text-primary-black shadow-[0_8px_20px_-8px_rgba(230,197,107,0.6)] transition-all ${
-                    ready ? "cursor-pointer hover:brightness-105" : "pointer-events-none opacity-50"
+                    ready
+                      ? "cursor-pointer hover:brightness-105"
+                      : "pointer-events-none opacity-50"
                   }`}
                 >
                   {working ? (
@@ -326,14 +465,19 @@ export default function PDFPage() {
                   aria-disabled={!ready}
                   onClick={(e) => !ready && e.preventDefault()}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-lg border border-primary-gold/20 px-3 py-2 text-sm text-primary-gold/70 transition-all ${
-                    ready ? "cursor-pointer hover:border-primary-gold/50 hover:text-primary-gold" : "pointer-events-none opacity-40"
+                    ready
+                      ? "cursor-pointer hover:border-primary-gold/50 hover:text-primary-gold"
+                      : "pointer-events-none opacity-40"
                   }`}
                   title="Abre o PDF numa aba nova (dali dá para imprimir)"
                 >
                   <LuExternalLink size={15} /> Abrir
                 </a>
               </div>
-              <div className="flex min-h-5 items-center gap-2 text-xs text-primary-gold/55" aria-live="polite">
+              <div
+                className="flex min-h-5 items-center gap-2 text-xs text-primary-gold/55"
+                aria-live="polite"
+              >
                 {working && (
                   <>
                     <Loader />
@@ -342,10 +486,15 @@ export default function PDFPage() {
                 )}
                 {ready && (
                   <span>
-                    Pronto · {ready.pages} {ready.pages === 1 ? "página" : "páginas"} · {sizeText}
+                    Pronto · {ready.pages}{" "}
+                    {ready.pages === 1 ? "página" : "páginas"} · {sizeText}
                   </span>
                 )}
-                {status.kind === "empty" && <span>Nada para mostrar: marque pelo menos uma parte ou categoria.</span>}
+                {status.kind === "empty" && (
+                  <span>
+                    Nada para mostrar: marque pelo menos uma parte ou categoria.
+                  </span>
+                )}
               </div>
             </div>
 
@@ -358,6 +507,16 @@ export default function PDFPage() {
                 options={[
                   { value: "black", label: "Preto" },
                   { value: "white", label: "Branco (menos tinta)" },
+                ]}
+              />
+              <Segmented
+                label="Papel"
+                value={opts.paper}
+                onChange={(v) => set("paper", v)}
+                disabled={!model}
+                options={[
+                  { value: "A4", label: "A4" },
+                  { value: "A5", label: "A5 (meia folha)" },
                 ]}
               />
               <Segmented
@@ -376,25 +535,37 @@ export default function PDFPage() {
               <Group title="Partes do PDF">
                 <div className="-mx-2 flex flex-col">
                   {PARTS.map((o) => (
-                    <Check
-                      key={o.key}
-                      label={o.label}
-                      hint={
-                        o.key === "toc" && !opts.cover && opts.toc
-                          ? "Sem capa, vai no começo da 1ª página"
-                          : o.key === "masthead" && opts.cover
-                            ? "Só aparece quando está sem capa"
-                            : o.hint
-                      }
-                      checked={o.key === "masthead" ? opts.masthead && !opts.cover : opts[o.key]}
-                      onChange={(v) => set(o.key, v)}
-                      disabled={
-                        !model ||
-                        (o.key === "masthead" && opts.cover) ||
-                        (o.key === "infos" && !model.infos.length) ||
-                        (o.key === "combos" && !model.combos.length)
-                      }
-                    />
+                    <React.Fragment key={o.key}>
+                      <Check
+                        label={o.label}
+                        hint={
+                          o.key === "toc" && !opts.cover && opts.toc
+                            ? "Sem capa, vai no começo da 1ª página"
+                            : o.key === "masthead" && opts.cover
+                              ? "Só aparece quando está sem capa"
+                              : o.hint
+                        }
+                        checked={
+                          o.key === "masthead"
+                            ? opts.masthead && !opts.cover
+                            : opts[o.key]
+                        }
+                        onChange={(v) => set(o.key, v)}
+                        disabled={
+                          !model ||
+                          (o.key === "masthead" && opts.cover) ||
+                          (o.key === "infos" && !model.infos.length) ||
+                          (o.key === "combos" && !model.combos.length)
+                        }
+                      />
+                      {o.key === "qr" && opts.qr && (
+                        <QrLinkField
+                          value={opts.qrUrl}
+                          fallback={defaultQrUrl(pub.website)}
+                          onChange={(v) => set("qrUrl", v)}
+                        />
+                      )}
+                    </React.Fragment>
                   ))}
                 </div>
               </Group>
@@ -414,7 +585,12 @@ export default function PDFPage() {
                       }
                       checked={opts[o.key]}
                       onChange={(v) => set(o.key, v)}
-                      disabled={!model || (o.key === "showHidden" && !hiddenCount && !opts.showHidden)}
+                      disabled={
+                        !model ||
+                        (o.key === "showHidden" &&
+                          !hiddenCount &&
+                          !opts.showHidden)
+                      }
                     />
                   ))}
                 </div>
@@ -436,7 +612,12 @@ export default function PDFPage() {
                     <span className="text-primary-gold/20">·</span>
                     <button
                       type="button"
-                      onClick={() => set("hidden", model.sections.map((s) => s.title))}
+                      onClick={() =>
+                        set(
+                          "hidden",
+                          model.sections.map((s) => s.title),
+                        )
+                      }
                       className="cursor-pointer text-primary-gold/50 hover:text-primary-gold"
                     >
                       Nenhuma
@@ -461,7 +642,13 @@ export default function PDFPage() {
                       >
                         {on && <LuCheck size={11} strokeWidth={3} />}
                         {s.title}
-                        <span className={on ? "text-primary-gold/55" : "text-primary-gold/30"}>{s.count}</span>
+                        <span
+                          className={
+                            on ? "text-primary-gold/55" : "text-primary-gold/30"
+                          }
+                        >
+                          {s.count}
+                        </span>
                       </button>
                     );
                   })}
@@ -489,9 +676,13 @@ export default function PDFPage() {
                 <p className="text-xs leading-relaxed text-red-200/80">
                   Se acontecer de novo, mande um print desta mensagem:
                   <br />
-                  <code className="break-all text-red-100">{status.message}</code>
+                  <code className="break-all text-red-100">
+                    {status.message}
+                  </code>
                   <br />
-                  <span className="text-red-200/60">{typeof navigator !== "undefined" ? browserLabel() : ""}</span>
+                  <span className="text-red-200/60">
+                    {typeof navigator !== "undefined" ? browserLabel() : ""}
+                  </span>
                 </p>
                 <button
                   onClick={() => setAttempt((n) => n + 1)}
@@ -527,8 +718,11 @@ export default function PDFPage() {
               )}
             </div>
             <p className="text-xs leading-relaxed text-primary-gold/45 lg:hidden">
-              No celular, toque em <strong className="text-primary-gold/70">Abrir</strong> para ver o PDF ou em{" "}
-              <strong className="text-primary-gold/70">Baixar PDF</strong> para salvar.
+              No celular, toque em{" "}
+              <strong className="text-primary-gold/70">Abrir</strong> para ver o
+              PDF ou em{" "}
+              <strong className="text-primary-gold/70">Baixar PDF</strong> para
+              salvar.
             </p>
           </div>
         </div>

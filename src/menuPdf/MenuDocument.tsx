@@ -3,13 +3,17 @@
  * Cabeçalho e rodapé (com "Página X de Y") se repetem em toda página de
  * conteúdo; cada seção vira um marcador do PDF; um card nunca é cortado no
  * meio e o título de uma seção não fica sozinho no pé da página.
+ *
+ * As medidas mudam com o papel (A4 ou A5, ver LAYOUTS); o que entra ou não
+ * vem das opções (options.ts).
  */
-import React from "react";
+import React, { createContext, useContext } from "react";
 import {
   Document,
   Link,
   Page,
   Path,
+  Rect,
   Svg,
   Text,
   View,
@@ -24,12 +28,80 @@ import {
   type PdfSection,
 } from "./model";
 import { PALETTES, alpha, type PdfTheme } from "./theme";
-import type { PdfOptions } from "./options";
-
-const PAGE = { top: 64, bottom: 60, side: 40 };
-const GAP = 9;
+import type { PdfOptions, PdfPaper } from "./options";
+import type { QrShape } from "./qr";
 
 type Pal = (typeof PALETTES)[PdfTheme];
+
+/* ─── Medidas por papel (em pontos; A4 = 595 × 842, A5 = 420 × 595) ─── */
+const LAYOUTS = {
+  A4: {
+    side: 40,
+    top: 64,
+    bottom: 60,
+    chromeTop: 26,
+    chromeBottom: 24,
+    cols: 2,
+    gap: 9,
+    sectionGap: 18,
+    coverPadX: 56,
+    coverPadY: 54,
+    coverLegendBottom: 44,
+    frame: [20, 24],
+    coverLogo: 118,
+    coverLogoBig: 160,
+    coverTitle: 30,
+    coverTitleSpacing: 4,
+    coverRule: 260,
+    coverGap: 34,
+    mastLogo: 54,
+    mastTitle: 22,
+    sectionTitle: 16,
+    groupPad: 90,
+    subtitlePad: 40,
+    tocTwoColsFrom: 10,
+    tocTwoColsFromQr: 10,
+    coverLogoQr: 118,
+    qrCover: 66,
+    qrSmall: 50,
+    qrBesideName: true,
+  },
+  A5: {
+    side: 28,
+    top: 50,
+    bottom: 46,
+    chromeTop: 19,
+    chromeBottom: 17,
+    cols: 1,
+    gap: 7,
+    sectionGap: 14,
+    coverPadX: 36,
+    coverPadY: 40,
+    coverLegendBottom: 30,
+    frame: [14, 17],
+    coverLogo: 84,
+    coverLogoBig: 118,
+    coverTitle: 21,
+    coverTitleSpacing: 2.6,
+    coverRule: 180,
+    coverGap: 24,
+    mastLogo: 42,
+    mastTitle: 16,
+    sectionTitle: 13.5,
+    groupPad: 50,
+    subtitlePad: 14,
+    tocTwoColsFrom: 14,
+    tocTwoColsFromQr: 7,
+    coverLogoQr: 66,
+    qrCover: 56,
+    qrSmall: 44,
+    qrBesideName: false,
+  },
+} as const;
+
+type Layout = (typeof LAYOUTS)[PdfPaper];
+const LayoutContext = createContext<Layout>(LAYOUTS.A4);
+const useLayout = () => useContext(LayoutContext);
 
 export type MenuDocProps = {
   model: MenuModel;
@@ -38,6 +110,8 @@ export type MenuDocProps = {
   /** src → data URL das miniaturas. */
   images: Map<string, string>;
   logo?: string | null;
+  /** Desenho do QR e o link escrito embaixo (null = sem QR). */
+  qr?: { shape: QrShape; label: string } | null;
   /** Página de cada seção (passada da 1ª montagem); null mostra "…". */
   tocPages: Record<string, number> | null;
   /** Recebe a página de cada seção e o total, enquanto o PDF é montado. */
@@ -45,6 +119,7 @@ export type MenuDocProps = {
   generatedAt: Date;
 };
 
+/* ─── Peças pequenas ─── */
 function Diamond({
   color,
   size = 7,
@@ -112,16 +187,97 @@ function Pill({
   );
 }
 
+/** O QR sempre escuro num quadro claro (o celular lê melhor do que invertido). */
+function QrCode({ shape, size }: { shape: QrShape; size: number }) {
+  const quiet = 2;
+  const box = shape.size + quiet * 2;
+  return (
+    <Svg width={size} height={size} viewBox={`0 0 ${box} ${box}`}>
+      <Rect x={0} y={0} width={box} height={box} rx={1.4} fill="#fbf8f0" />
+      <Path
+        d={shape.path}
+        fill="#141210"
+        transform={`translate(${quiet} ${quiet})`}
+      />
+    </Svg>
+  );
+}
+
+function QrBlock({
+  p,
+  qr,
+  size,
+  compact = false,
+}: {
+  p: Pal;
+  qr: NonNullable<MenuDocProps["qr"]>;
+  size: number;
+  compact?: boolean;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: compact ? 8 : 12,
+      }}
+    >
+      <QrCode shape={qr.shape} size={size} />
+      <View style={{ maxWidth: compact ? 92 : 170 }}>
+        <Text
+          style={{
+            fontFamily: "Cinzel",
+            fontWeight: 600,
+            fontSize: compact ? 7.5 : 8.5,
+            letterSpacing: 1.6,
+            color: p.G,
+          }}
+        >
+          CARDÁPIO ONLINE
+        </Text>
+        <Text
+          style={{
+            fontFamily: "Lato",
+            fontSize: compact ? 6.8 : 7.5,
+            color: alpha(p.TEXT, 0.6),
+            marginTop: 2,
+            lineHeight: 1.35,
+          }}
+        >
+          Aponte a câmera do celular
+        </Text>
+        {compact ? null : (
+          <Text
+            style={{
+              fontFamily: "Lato",
+              fontSize: 6.8,
+              color: alpha(p.TEXT, 0.4),
+              marginTop: 2,
+            }}
+          >
+            {qr.label}
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
 /* ─── Sumário ─── */
 function Toc({
   p,
   model,
   tocPages,
-}: { p: Pal } & Pick<MenuDocProps, "model" | "tocPages">) {
+  twoColsFrom,
+}: { p: Pal; twoColsFrom?: number } & Pick<
+  MenuDocProps,
+  "model" | "tocPages"
+>) {
+  const L = useLayout();
   const entries = tocEntries(model);
   const half = Math.ceil(entries.length / 2);
   const cols =
-    entries.length > 9
+    entries.length >= (twoColsFrom ?? L.tocTwoColsFrom)
       ? [entries.slice(0, half), entries.slice(half)]
       : [entries];
   return (
@@ -129,7 +285,7 @@ function Toc({
       style={{
         borderTopWidth: 0.6,
         borderTopColor: alpha(p.G, 0.3),
-        paddingTop: 16,
+        paddingTop: 14,
       }}
     >
       <Text
@@ -140,14 +296,14 @@ function Toc({
           letterSpacing: 3,
           color: p.G2,
           textAlign: "center",
-          marginBottom: 12,
+          marginBottom: 11,
         }}
       >
         SUMÁRIO
       </Text>
-      <View style={{ flexDirection: "row", gap: 28 }}>
+      <View style={{ flexDirection: "row", gap: 24 }}>
         {cols.map((col, c) => (
-          <View key={c} style={{ flex: 1, gap: 7 }}>
+          <View key={c} style={{ flex: 1, gap: 6.5 }}>
             {col.map((e) => (
               <Link
                 key={e.id}
@@ -217,11 +373,24 @@ function Legend({
   return (
     <View style={{ alignItems: "center", gap: 5 }}>
       {opts.badges ? (
-        <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
-          <Pill text="Destaque" color={p.G} bg={alpha(p.G, 0.16)} />
-          <Text style={note}>sugestão da casa</Text>
-          <Pill text="Vegano" color={p.GREEN} bg={alpha(p.GREEN, 0.16)} />
-          <Text style={note}>sem ingredientes de origem animal</Text>
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            columnGap: 12,
+            rowGap: 4,
+            alignItems: "center",
+          }}
+        >
+          <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
+            <Pill text="Destaque" color={p.G} bg={alpha(p.G, 0.16)} />
+            <Text style={note}>sugestão da casa</Text>
+          </View>
+          <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
+            <Pill text="Vegano" color={p.GREEN} bg={alpha(p.GREEN, 0.16)} />
+            <Text style={note}>sem ingredientes de origem animal</Text>
+          </View>
         </View>
       ) : null}
       <Text
@@ -235,7 +404,7 @@ function Legend({
 
 type HeadProps = { p: Pal } & Pick<
   MenuDocProps,
-  "pub" | "logo" | "model" | "tocPages" | "generatedAt" | "opts"
+  "pub" | "logo" | "model" | "tocPages" | "generatedAt" | "opts" | "qr"
 >;
 
 /* ─── Capa ─── */
@@ -247,16 +416,22 @@ function Cover({
   tocPages,
   generatedAt,
   opts,
+  qr,
 }: HeadProps) {
-  const logoSize = opts.toc ? 118 : 160;
+  const L = useLayout();
+  const logoSize = !opts.toc
+    ? L.coverLogoBig
+    : qr
+      ? L.coverLogoQr
+      : L.coverLogo;
   return (
     <Page
-      size="A4"
+      size={opts.paper}
       style={{
         backgroundColor: p.BG,
-        paddingHorizontal: 56,
-        paddingTop: 54,
-        paddingBottom: opts.legend ? 96 : 54,
+        paddingHorizontal: L.coverPadX,
+        paddingTop: L.coverPadY,
+        paddingBottom: opts.legend ? L.coverLegendBottom : L.coverPadY,
       }}
     >
       {/* Moldura fina */}
@@ -264,10 +439,10 @@ function Cover({
         fixed
         style={{
           position: "absolute",
-          top: 20,
-          left: 20,
-          right: 20,
-          bottom: 20,
+          top: L.frame[0],
+          left: L.frame[0],
+          right: L.frame[0],
+          bottom: L.frame[0],
           borderWidth: 0.7,
           borderColor: alpha(p.G, 0.35),
           borderRadius: 3,
@@ -277,17 +452,17 @@ function Cover({
         fixed
         style={{
           position: "absolute",
-          top: 24,
-          left: 24,
-          right: 24,
-          bottom: 24,
+          top: L.frame[1],
+          left: L.frame[1],
+          right: L.frame[1],
+          bottom: L.frame[1],
           borderWidth: 0.4,
           borderColor: alpha(p.G, 0.18),
           borderRadius: 2,
         }}
       />
 
-      <View style={{ flex: 1, justifyContent: "center", gap: 34 }}>
+      <View style={{ flex: 1, justifyContent: "center", gap: L.coverGap }}>
         <View style={{ alignItems: "center" }}>
           {logo ? (
             <PdfImage
@@ -299,8 +474,8 @@ function Cover({
             style={{
               fontFamily: "Cinzel",
               fontWeight: 700,
-              fontSize: 30,
-              letterSpacing: 4,
+              fontSize: L.coverTitle,
+              letterSpacing: L.coverTitleSpacing,
               color: p.G,
               textAlign: "center",
             }}
@@ -319,7 +494,7 @@ function Cover({
           >
             Pub &amp; Luderia
           </Text>
-          <View style={{ width: 260, marginTop: 16, marginBottom: 14 }}>
+          <View style={{ width: L.coverRule, marginTop: 16, marginBottom: 14 }}>
             <Rule color={alpha(p.G, 0.55)}>
               <Diamond color={p.G} size={8} />
             </Rule>
@@ -347,11 +522,24 @@ function Cover({
             {pub.address}
           </Text>
         </View>
-        {opts.toc ? <Toc p={p} model={model} tocPages={tocPages} /> : null}
+        {opts.toc ? (
+          <Toc
+            p={p}
+            model={model}
+            tocPages={tocPages}
+            twoColsFrom={qr ? L.tocTwoColsFromQr : undefined}
+          />
+        ) : null}
+        {qr ? (
+          <View style={{ alignItems: "center" }}>
+            <QrBlock p={p} qr={qr} size={L.qrCover} />
+          </View>
+        ) : null}
       </View>
 
+      {/* Legenda no pé da capa, no fluxo normal (presa por posição, ela abria uma 2ª página no A5) */}
       {opts.legend ? (
-        <View style={{ position: "absolute", left: 56, right: 56, bottom: 44 }}>
+        <View style={{ marginTop: 16 }}>
           <Legend p={p} opts={opts} generatedAt={generatedAt} />
         </View>
       ) : null}
@@ -359,7 +547,7 @@ function Cover({
   );
 }
 
-/* ─── Sem capa: cabeçalho compacto no começo da 1ª página ─── */
+/* ─── Sem capa: abertura compacta no começo da 1ª página ─── */
 function Masthead({
   p,
   pub,
@@ -368,29 +556,37 @@ function Masthead({
   tocPages,
   generatedAt,
   opts,
+  qr,
 }: HeadProps) {
-  // Nada para abrir a página: o cardápio começa direto na 1ª seção
+  const L = useLayout();
+  // O QR vai ao lado do nome; sem abertura, vai no fim do cardápio
+  const qrHere = qr && opts.masthead ? qr : null;
+  const qrBeside = qrHere && L.qrBesideName ? qrHere : null;
+  const qrBelow = qrHere && !L.qrBesideName ? qrHere : null;
   if (!opts.masthead && !opts.toc && !opts.legend) return null;
   return (
-    <View style={{ marginBottom: 22, gap: 16 }}>
+    <View style={{ marginBottom: 20, gap: 14 }}>
       {opts.masthead ? (
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
-            gap: 14,
+            gap: 12,
           }}
         >
           {logo ? (
-            <PdfImage src={logo} style={{ width: 54, height: 54 }} />
+            <PdfImage
+              src={logo}
+              style={{ width: L.mastLogo, height: L.mastLogo }}
+            />
           ) : null}
-          <View>
+          <View style={{ flexShrink: 1 }}>
             <Text
               style={{
                 fontFamily: "Cinzel",
                 fontWeight: 700,
-                fontSize: 22,
+                fontSize: L.mastTitle,
                 letterSpacing: 3,
                 color: p.G,
               }}
@@ -420,6 +616,23 @@ function Masthead({
               {pub.address}
             </Text>
           </View>
+          {qrBeside ? (
+            <View
+              style={{
+                marginLeft: 10,
+                paddingLeft: 12,
+                borderLeftWidth: 0.6,
+                borderLeftColor: alpha(p.G, 0.3),
+              }}
+            >
+              <QrBlock p={p} qr={qrBeside} size={L.qrSmall} compact />
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+      {qrBelow ? (
+        <View style={{ alignItems: "center" }}>
+          <QrBlock p={p} qr={qrBelow} size={L.qrSmall} />
         </View>
       ) : null}
       {opts.toc ? <Toc p={p} model={model} tocPages={tocPages} /> : null}
@@ -443,18 +656,26 @@ function Chrome({
   pub: PubInfo;
   record?: MenuDocProps["record"];
 }) {
+  const L = useLayout();
   const contact = [pub.website, pub.instagram && `@${pub.instagram}`]
     .filter(Boolean)
     .join("  ·  ");
+  const label = {
+    fontFamily: "Cinzel",
+    fontWeight: 600,
+    fontSize: 7.5,
+    letterSpacing: 2.2,
+    color: alpha(p.G, 0.8),
+  } as const;
   return (
     <>
       <View
         fixed
         style={{
           position: "absolute",
-          top: 26,
-          left: PAGE.side,
-          right: PAGE.side,
+          top: L.chromeTop,
+          left: L.side,
+          right: L.side,
         }}
       >
         <View
@@ -467,38 +688,18 @@ function Chrome({
             borderBottomColor: alpha(p.G, 0.3),
           }}
         >
-          <Text
-            style={{
-              fontFamily: "Cinzel",
-              fontWeight: 600,
-              fontSize: 7.5,
-              letterSpacing: 2.2,
-              color: alpha(p.G, 0.8),
-            }}
-          >
-            CARCASSONNE PUB
-          </Text>
+          <Text style={label}>CARCASSONNE PUB</Text>
           <Diamond color={p.G} opacity={0.6} size={5} />
-          <Text
-            style={{
-              fontFamily: "Cinzel",
-              fontWeight: 600,
-              fontSize: 7.5,
-              letterSpacing: 2.2,
-              color: alpha(p.G, 0.8),
-            }}
-          >
-            CARDÁPIO
-          </Text>
+          <Text style={label}>CARDÁPIO</Text>
         </View>
       </View>
       <View
         fixed
         style={{
           position: "absolute",
-          bottom: 24,
-          left: PAGE.side,
-          right: PAGE.side,
+          bottom: L.chromeBottom,
+          left: L.side,
+          right: L.side,
         }}
       >
         <View
@@ -571,6 +772,7 @@ function SectionHeader({
   subtitle?: string;
   record?: MenuDocProps["record"];
 }) {
+  const L = useLayout();
   // O marcador (bookmark) aparece na barra lateral do leitor de PDF
   const mark = { bookmark: { title, fit: true } } as Record<string, unknown>;
   return (
@@ -581,7 +783,7 @@ function SectionHeader({
           style={{
             fontFamily: "Cinzel",
             fontWeight: 700,
-            fontSize: 16,
+            fontSize: L.sectionTitle,
             letterSpacing: 2.4,
             color: p.G,
           }}
@@ -601,7 +803,7 @@ function SectionHeader({
             color: alpha(p.TEXT, 0.62),
             textAlign: "center",
             marginTop: 5,
-            paddingHorizontal: 40,
+            paddingHorizontal: L.subtitlePad,
             lineHeight: 1.4,
           }}
         >
@@ -613,8 +815,11 @@ function SectionHeader({
 }
 
 function GroupLabel({ p, name }: { p: Pal; name: string }) {
+  const L = useLayout();
   return (
-    <View style={{ marginTop: 6, marginBottom: 8, paddingHorizontal: 90 }}>
+    <View
+      style={{ marginTop: 6, marginBottom: 8, paddingHorizontal: L.groupPad }}
+    >
       <Rule color={alpha(p.G, 0.22)} gap={8}>
         <Text
           style={{
@@ -641,6 +846,22 @@ const card = (p: Pal, strong = false) => ({
   borderRadius: 5,
   padding: 8,
 });
+
+const bodyText = (p: Pal) => ({
+  fontFamily: "Lato",
+  fontSize: 7.8,
+  color: alpha(p.TEXT, 0.74),
+  lineHeight: 1.38,
+  marginTop: 3,
+});
+
+/** Separa as opções de preço ("Broto R$ 49 / Grande R$ 79" → duas linhas). */
+function priceLines(value: string): string[] {
+  return value
+    .split(/\s+\/\s+|\s*;\s*/)
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
 
 function ItemCard({
   p,
@@ -734,17 +955,7 @@ function ItemCard({
           </View>
         ) : null}
         {opts.descriptions && item.description ? (
-          <Text
-            style={{
-              fontFamily: "Lato",
-              fontSize: 7.8,
-              color: alpha(p.TEXT, 0.74),
-              lineHeight: 1.38,
-              marginTop: 3,
-            }}
-          >
-            {item.description}
-          </Text>
+          <Text style={bodyText(p)}>{item.description}</Text>
         ) : null}
         {opts.extras && item.sideDish.length ? (
           <Text
@@ -779,37 +990,6 @@ function ItemCard({
   );
 }
 
-/** Separa as opções de preço ("Broto R$ 49 / Grande R$ 79" → duas linhas). */
-function priceLines(value: string): string[] {
-  return value
-    .split(/\s+\/\s+|\s*;\s*/)
-    .map((v) => v.trim())
-    .filter(Boolean);
-}
-
-type Row = { lead: React.ReactNode[]; cells: React.ReactNode[] };
-
-/** Cards de dois em dois; `lead` (títulos) entra na 1ª linha para não ficar sozinho no pé da página. */
-function gridRows(cells: React.ReactNode[], lead: React.ReactNode[]): Row[] {
-  return rows(cells).map((r, i) => ({ lead: i === 0 ? lead : [], cells: r }));
-}
-
-function RowView({ row }: { row: Row }) {
-  return (
-    <View wrap={false}>
-      {row.lead}
-      <View style={{ flexDirection: "row", gap: GAP, marginBottom: GAP }}>
-        {row.cells.map((c, i) => (
-          <View key={i} style={{ flex: 1, flexDirection: "row" }}>
-            {c}
-          </View>
-        ))}
-        {row.cells.length === 1 ? <View style={{ flex: 1 }} /> : null}
-      </View>
-    </View>
-  );
-}
-
 function InfoCard({ p, info }: { p: Pal; info: InfoType }) {
   return (
     <View style={{ ...card(p), borderLeftWidth: 2.5, borderLeftColor: p.G }}>
@@ -824,17 +1004,7 @@ function InfoCard({ p, info }: { p: Pal; info: InfoType }) {
         {info.name}
       </Text>
       {info.description ? (
-        <Text
-          style={{
-            fontFamily: "Lato",
-            fontSize: 7.8,
-            color: alpha(p.TEXT, 0.74),
-            lineHeight: 1.38,
-            marginTop: 3,
-          }}
-        >
-          {info.description}
-        </Text>
+        <Text style={bodyText(p)}>{info.description}</Text>
       ) : null}
       {info.values.length ? (
         <Text
@@ -885,28 +1055,53 @@ function ComboCard({ p, combo }: { p: Pal; combo: ComboType }) {
         ) : null}
       </View>
       {combo.description ? (
-        <Text
-          style={{
-            fontFamily: "Lato",
-            fontSize: 7.8,
-            color: alpha(p.TEXT, 0.74),
-            lineHeight: 1.38,
-            marginTop: 3,
-          }}
-        >
-          {combo.description}
-        </Text>
+        <Text style={bodyText(p)}>{combo.description}</Text>
       ) : null}
+    </View>
+  );
+}
+
+/* ─── Linhas de cards que não se partem ─── */
+type Row = { lead: React.ReactNode[]; cells: React.ReactNode[] };
+
+/** Cards em linhas de `cols`; `lead` (títulos) entra na 1ª linha para não ficar sozinho no pé da página. */
+function gridRows(
+  cells: React.ReactNode[],
+  lead: React.ReactNode[],
+  cols: number,
+): Row[] {
+  return rows(cells, cols).map((r, i) => ({
+    lead: i === 0 ? lead : [],
+    cells: r,
+  }));
+}
+
+function RowView({ row }: { row: Row }) {
+  const L = useLayout();
+  return (
+    <View wrap={false}>
+      {row.lead}
+      <View style={{ flexDirection: "row", gap: L.gap, marginBottom: L.gap }}>
+        {row.cells.map((c, i) => (
+          <View key={i} style={{ flex: 1, flexDirection: "row" }}>
+            {c}
+          </View>
+        ))}
+        {Array.from({ length: L.cols - row.cells.length }, (_, i) => (
+          <View key={`vazio-${i}`} style={{ flex: 1 }} />
+        ))}
+      </View>
     </View>
   );
 }
 
 /* ─── Documento ─── */
 export function MenuDocument(props: MenuDocProps) {
-  const { model, opts, pub, images, logo, tocPages, record, generatedAt } =
+  const { model, opts, pub, images, logo, qr, tocPages, record, generatedAt } =
     props;
   const p = PALETTES[opts.theme];
-  const { sectionPerPage } = opts;
+  const L = LAYOUTS[opts.paper];
+  const head = { p, pub, logo, model, tocPages, generatedAt, opts, qr };
 
   type Block = {
     id: string;
@@ -952,81 +1147,85 @@ export function MenuDocument(props: MenuDocProps) {
 
   const blockRows = (b: Block): Row[] =>
     b.groups.flatMap((g, gi) =>
-      gridRows(g.cells, [
-        ...(gi === 0
-          ? [
-              <SectionHeader
-                key="h"
-                p={p}
-                id={b.id}
-                title={b.title}
-                subtitle={b.subtitle}
-                record={record}
-              />,
-            ]
-          : []),
-        ...(g.name ? [<GroupLabel key="g" p={p} name={g.name} />] : []),
-      ]),
+      gridRows(
+        g.cells,
+        [
+          ...(gi === 0
+            ? [
+                <SectionHeader
+                  key="h"
+                  p={p}
+                  id={b.id}
+                  title={b.title}
+                  subtitle={b.subtitle}
+                  record={record}
+                />,
+              ]
+            : []),
+          ...(g.name ? [<GroupLabel key="g" p={p} name={g.name} />] : []),
+        ],
+        L.cols,
+      ),
     );
 
+  // Sem capa e sem abertura, o QR fecha o cardápio
+  const qrAtEnd = qr && !opts.cover && !opts.masthead ? qr : null;
+
   return (
-    <Document
-      title="Cardápio · Carcassonne Pub"
-      author="Carcassonne Pub"
-      subject="Cardápio"
-      language="pt-BR"
-      pageMode="useOutlines"
-      creator="Carcassonne Admin"
-      producer="Carcassonne Admin"
-    >
-      {opts.cover ? (
-        <Cover
-          p={p}
-          pub={pub}
-          logo={logo}
-          model={model}
-          tocPages={tocPages}
-          generatedAt={generatedAt}
-          opts={opts}
-        />
-      ) : null}
-      <Page
-        size="A4"
-        style={{
-          backgroundColor: p.BG,
-          paddingTop: opts.pageChrome ? PAGE.top : 42,
-          paddingBottom: opts.pageChrome ? PAGE.bottom : 42,
-          paddingHorizontal: PAGE.side,
-        }}
+    <LayoutContext.Provider value={L}>
+      <Document
+        title="Cardápio · Carcassonne Pub"
+        author="Carcassonne Pub"
+        subject="Cardápio"
+        language="pt-BR"
+        pageMode="useOutlines"
+        creator="Carcassonne Admin"
+        producer="Carcassonne Admin"
       >
-        {opts.pageChrome ? (
-          <Chrome p={p} pub={pub} record={record} />
-        ) : (
-          <PageCounter record={record} color={p.BG} />
-        )}
-        {opts.cover ? null : (
-          <Masthead
-            p={p}
-            pub={pub}
-            logo={logo}
-            model={model}
-            tocPages={tocPages}
-            generatedAt={generatedAt}
-            opts={opts}
-          />
-        )}
-        {blocks.map((b, i) => (
-          <View
-            key={b.id}
-            break={sectionPerPage && i > 0}
-            style={{ marginTop: i === 0 || sectionPerPage ? 0 : 18 }}
-          >
-            {blockRows(b).map((row, r) => (
-              <RowView key={r} row={row} />
-            ))}
-          </View>
-        ))}
-      </Page>
-    </Document>
+        {opts.cover ? <Cover {...head} /> : null}
+        <Page
+          size={opts.paper}
+          style={{
+            backgroundColor: p.BG,
+            paddingTop: opts.pageChrome ? L.top : L.side + 2,
+            paddingBottom: opts.pageChrome ? L.bottom : L.side + 2,
+            paddingHorizontal: L.side,
+          }}
+        >
+          {opts.pageChrome ? (
+            <Chrome p={p} pub={pub} record={record} />
+          ) : (
+            <PageCounter record={record} color={p.BG} />
+          )}
+          {opts.cover ? null : <Masthead {...head} />}
+          {blocks.map((b, i) => (
+            <View
+              key={b.id}
+              break={opts.sectionPerPage && i > 0}
+              style={{
+                marginTop: i === 0 || opts.sectionPerPage ? 0 : L.sectionGap,
+              }}
+            >
+              {blockRows(b).map((row, r) => (
+                <RowView key={r} row={row} />
+              ))}
+            </View>
+          ))}
+          {qrAtEnd ? (
+            <View
+              wrap={false}
+              style={{ marginTop: 16, alignItems: "center", gap: 12 }}
+            >
+              <View style={{ width: "100%" }}>
+                <Rule color={alpha(p.G, 0.3)}>
+                  <Diamond color={p.G} size={6} />
+                </Rule>
+              </View>
+              <QrBlock p={p} qr={qrAtEnd} size={L.qrCover} />
+            </View>
+          ) : null}
+        </Page>
+      </Document>
+    </LayoutContext.Provider>
   );
 }

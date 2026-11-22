@@ -8,7 +8,8 @@
  */
 import type { PubInfo } from "@/types";
 import type { MenuModel } from "./model";
-import type { PdfOptions } from "./options";
+import { qrTarget, type PdfOptions } from "./options";
+import { qrShape } from "./qr";
 import { prepareThumbs, thumb } from "./images";
 
 export type GenerateStep = { phase: "fotos"; done: number; total: number } | { phase: "montando" };
@@ -64,7 +65,9 @@ export async function generateMenuPdf({
 
   onStep?.({ phase: "montando" });
   const generatedAt = new Date();
-  const base = { model, opts, pub, images, logo, generatedAt };
+  const qrUrl = opts.qr ? qrTarget(opts, pub.website) : null;
+  const qr = qrUrl ? { shape: qrShape(qrUrl), label: qrUrl.replace(/^https?:\/\/(www\.)?/i, "") } : null;
+  const base = { model, opts, pub, images, logo, qr, generatedAt };
 
   const record = { pages: {} as Record<string, number>, total: 0 };
   const first = await pdf(<MenuDocument {...base} tocPages={null} record={record} />).toBlob();
