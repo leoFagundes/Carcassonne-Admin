@@ -35,6 +35,9 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FiSkipBack } from "react-icons/fi";
 import {
   LuCheck,
+  LuChevronDown,
+  LuMinus,
+  LuSearch,
   LuDownload,
   LuExternalLink,
   LuFileText,
@@ -56,7 +59,10 @@ const AUTO_STORAGE_KEY = "cardapio-pdf-atualizar-sozinho";
 type Flag = {
   [K in keyof PdfOptions]: PdfOptions[K] extends boolean ? K : never;
 }[keyof PdfOptions];
-type Raw = Omit<Parameters<typeof buildMenuModel>[0], "includeHidden">;
+type Raw = Omit<
+  Parameters<typeof buildMenuModel>[0],
+  "includeHidden" | "skipHidden"
+>;
 
 const PARTS: { key: Flag; label: string; hint: string }[] = [
   { key: "cover", label: "Capa", hint: "Página de abertura com o logo" },
@@ -392,6 +398,204 @@ function FrameRow({
   );
 }
 
+type HiddenItem = { id: string; name: string; type: string; value: string };
+
+const plain = (t: string) =>
+  t
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+/**
+ * "Itens ocultos": a caixa liga/desliga todos; a setinha abre a lista para
+ * escolher quais entram. Guarda os que ficam de fora (os escondidos depois
+ * entram marcados).
+ */
+function HiddenItemsPicker({
+  items,
+  typeOrder,
+  show,
+  skip,
+  onChange,
+  disabled,
+}: {
+  items: HiddenItem[];
+  typeOrder: (type: string) => number;
+  show: boolean;
+  skip: string[];
+  onChange: (show: boolean, skip: string[]) => void;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const skipSet = new Set(skip);
+  const ids = items.map((i) => i.id);
+  const picked = show ? ids.filter((id) => !skipSet.has(id)).length : 0;
+  const all = items.length > 0 && picked === items.length;
+  const some = picked > 0 && !all;
+
+  const setAll = (on: boolean) => onChange(on, []);
+  const toggle = (id: string) => {
+    if (!show)
+      return onChange(
+        true,
+        ids.filter((x) => x !== id),
+      );
+    const next = skipSet.has(id) ? skip.filter((x) => x !== id) : [...skip, id];
+    // Todos desmarcados: desliga de vez
+    if (ids.every((x) => next.includes(x))) return onChange(false, []);
+    onChange(true, next);
+  };
+
+  const term = plain(q.trim());
+  const shown = term
+    ? items.filter(
+        (i) => plain(i.name).includes(term) || plain(i.type).includes(term),
+      )
+    : items;
+  const groups = [...new Set(shown.map((i) => i.type))]
+    .sort((a, b) => typeOrder(a) - typeOrder(b) || a.localeCompare(b, "pt-BR"))
+    .map((type) => ({
+      type,
+      items: shown
+        .filter((i) => i.type === type)
+        .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
+    }));
+
+  const box = (state: "on" | "off" | "some") => (
+    <span
+      aria-hidden="true"
+      className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-all ${
+        state === "off"
+          ? "border-primary-gold/35 bg-primary-black/40"
+          : "border-primary-gold bg-primary-gold text-primary-black"
+      }`}
+    >
+      {state === "on" && <LuCheck size={11} strokeWidth={3.5} />}
+      {state === "some" && <LuMinus size={11} strokeWidth={3.5} />}
+    </span>
+  );
+
+  return (
+    <div className={disabled ? "opacity-40" : ""}>
+      <div className="flex items-start gap-1">
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={some ? "mixed" : all}
+          disabled={disabled}
+          onClick={() => setAll(!(all || some))}
+          className="flex flex-1 cursor-pointer items-start gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-primary-gold/5 disabled:cursor-default"
+        >
+          {box(all ? "on" : some ? "some" : "off")}
+          <span className="flex min-w-0 flex-col">
+            <span
+              className={`text-[13px] leading-tight ${picked ? "text-primary-gold" : "text-primary-gold/55"}`}
+            >
+              Itens ocultos
+            </span>
+            <span className="mt-0.5 text-[11px] leading-snug text-primary-gold/35">
+              {items.length
+                ? `${items.length} ${items.length === 1 ? "item escondido" : "itens escondidos"} no site`
+                : "Nenhum item escondido no site agora"}
+            </span>
+          </span>
+        </button>
+        {items.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            disabled={disabled}
+            aria-expanded={open}
+            className="mt-1 flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-primary-gold/20 px-2 py-1 text-[11px] text-primary-gold/60 transition-colors hover:border-primary-gold/45 hover:text-primary-gold disabled:cursor-default"
+            title="Escolher quais itens ocultos entram no PDF"
+          >
+            {picked} de {items.length}
+            <LuChevronDown
+              size={13}
+              className={`transition-transform ${open ? "rotate-180" : ""}`}
+            />
+          </button>
+        )}
+      </div>
+
+      {open && items.length > 0 && (
+        <div className="mx-2 mb-2 mt-1 flex flex-col gap-2 rounded-lg border border-primary-gold/15 bg-primary-black/40 p-2">
+          <div className="flex items-center gap-2">
+            {items.length > 8 && (
+              <label className="flex flex-1 items-center gap-1.5 rounded-md border border-primary-gold/15 bg-primary-black/40 px-2 py-1">
+                <LuSearch size={12} className="shrink-0 text-primary-gold/40" />
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Buscar"
+                  aria-label="Buscar item oculto"
+                  className="w-full bg-transparent text-xs text-primary-gold outline-none placeholder:text-primary-gold/30"
+                />
+              </label>
+            )}
+            <div className="ml-auto flex shrink-0 items-center gap-2 text-[11px]">
+              <button
+                type="button"
+                onClick={() => setAll(true)}
+                className="cursor-pointer text-primary-gold/50 hover:text-primary-gold"
+              >
+                Todos
+              </button>
+              <span className="text-primary-gold/20">·</span>
+              <button
+                type="button"
+                onClick={() => setAll(false)}
+                className="cursor-pointer text-primary-gold/50 hover:text-primary-gold"
+              >
+                Nenhum
+              </button>
+            </div>
+          </div>
+          <div className="flex max-h-72 flex-col gap-2 overflow-y-auto pr-1">
+            {groups.length === 0 && (
+              <span className="px-1 py-2 text-xs text-primary-gold/40">
+                Nada encontrado.
+              </span>
+            )}
+            {groups.map((g) => (
+              <div key={g.type} className="flex flex-col">
+                <span className="px-1 pb-0.5 text-[10px] font-semibold uppercase tracking-widest text-primary-gold/40">
+                  {g.type}
+                </span>
+                {g.items.map((it) => {
+                  const on = show && !skipSet.has(it.id);
+                  return (
+                    <button
+                      key={it.id}
+                      type="button"
+                      role="checkbox"
+                      aria-checked={on}
+                      onClick={() => toggle(it.id)}
+                      className="flex cursor-pointer items-start gap-2 rounded-md px-1 py-1 text-left transition-colors hover:bg-primary-gold/5"
+                    >
+                      {box(on ? "on" : "off")}
+                      {/* Preço numa linha pequena embaixo (os longos, tipo "Broto … / Grande …", não cabem do lado) */}
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className={`text-xs leading-snug ${on ? "text-primary-gold" : "text-primary-gold/50"}`}>{it.name}</span>
+                        {it.value && (
+                          <span className="truncate text-[11px] leading-snug text-primary-gold/35" title={it.value}>
+                            {it.value}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Group({
   title,
   children,
@@ -493,16 +697,33 @@ export default function PDFPage() {
   // O que aparece na tela (do que está marcado)
   const model = useMemo(
     () =>
-      raw ? buildMenuModel({ ...raw, includeHidden: opts.showHidden }) : null,
-    [raw, opts.showHidden],
+      raw
+        ? buildMenuModel({
+            ...raw,
+            includeHidden: opts.showHidden,
+            skipHidden: new Set(opts.hiddenSkip),
+          })
+        : null,
+    [raw, opts.showHidden, opts.hiddenSkip],
   );
   const filtered = useMemo(
     () => (model ? applyOptions(model, opts) : null),
     [model, opts],
   );
-  const hiddenCount = raw
-    ? raw.items.filter((i) => !i.isVisible && i.name?.trim()).length
-    : 0;
+  const hiddenItems = useMemo<HiddenItem[]>(
+    () =>
+      (raw?.items ?? [])
+        .filter((i) => !i.isVisible && i.id && i.name?.trim())
+        .map((i) => ({
+          id: i.id!,
+          name: i.name.trim(),
+          type: i.type || "Sem categoria",
+          value: i.value?.trim() ?? "",
+        })),
+    [raw],
+  );
+  const typeOrder = (type: string) =>
+    raw?.typesOrder.find((t) => t.type.name === type)?.type.order ?? 999;
   const nothingMarked =
     !!filtered && isEmpty(filtered) && !opts.rules && !opts.backPage;
 
@@ -511,7 +732,11 @@ export default function PDFPage() {
     () =>
       raw && applied
         ? applyOptions(
-            buildMenuModel({ ...raw, includeHidden: applied.showHidden }),
+            buildMenuModel({
+              ...raw,
+              includeHidden: applied.showHidden,
+              skipHidden: new Set(applied.hiddenSkip),
+            }),
             applied,
           )
         : null,
@@ -801,32 +1026,38 @@ export default function PDFPage() {
 
               <Group title="Nos itens">
                 <div className="-mx-2 flex flex-col">
-                  {ITEM_PARTS.map((o) => (
-                    <Check
-                      key={o.key}
-                      label={o.label}
-                      hint={
-                        o.key === "showHidden"
-                          ? hiddenCount
-                            ? `${hiddenCount} ${hiddenCount === 1 ? "item escondido" : "itens escondidos"} no site`
-                            : "Nenhum item escondido no site agora"
-                          : o.key === "photos" && list
-                            ? "A lista clássica não usa fotos"
-                            : o.hint
-                      }
-                      checked={
-                        o.key === "photos" ? opts.photos && !list : opts[o.key]
-                      }
-                      onChange={(v) => set(o.key, v)}
-                      disabled={
-                        !model ||
-                        (o.key === "showHidden" &&
-                          !hiddenCount &&
-                          !opts.showHidden) ||
-                        (o.key === "photos" && list)
-                      }
-                    />
-                  ))}
+                  {ITEM_PARTS.map((o) =>
+                    o.key === "showHidden" ? (
+                      <HiddenItemsPicker
+                        key={o.key}
+                        items={hiddenItems}
+                        typeOrder={typeOrder}
+                        show={opts.showHidden}
+                        skip={opts.hiddenSkip}
+                        onChange={(show, skip) =>
+                          setOpts((cur) => ({
+                            ...cur,
+                            showHidden: show,
+                            hiddenSkip: skip,
+                          }))
+                        }
+                        disabled={!model}
+                      />
+                    ) : (
+                      <Check
+                        key={o.key}
+                        label={o.label}
+                        hint={o.key === "photos" && list ? "A lista clássica não usa fotos" : o.hint}
+                        checked={
+                          o.key === "photos"
+                            ? opts.photos && !list
+                            : opts[o.key]
+                        }
+                        onChange={(v) => set(o.key, v)}
+                        disabled={!model || (o.key === "photos" && list)}
+                      />
+                    ),
+                  )}
                 </div>
               </Group>
             </div>

@@ -42,6 +42,8 @@ export type PdfOptions = {
   // Nos itens
   /** Também os itens escondidos no site. */
   showHidden: boolean;
+  /** Dos itens ocultos, os que ficam de fora (ids). Os escondidos depois entram marcados. */
+  hiddenSkip: string[];
   photos: boolean;
   descriptions: boolean;
   /** Acompanhamentos e observações. */
@@ -93,6 +95,7 @@ export const DEFAULT_OPTIONS: PdfOptions = {
   rules: false,
   backPage: true,
   showHidden: false,
+  hiddenSkip: [],
   photos: true,
   descriptions: true,
   extras: true,
@@ -145,6 +148,9 @@ export function sanitizeOptions(raw: unknown): PdfOptions {
   if (!raw || typeof raw !== "object") return out;
   const r = raw as Record<string, unknown>;
   out.frames = sanitizeFrames(r.frames);
+  out.hiddenSkip = Array.isArray(r.hiddenSkip)
+    ? [...new Set(r.hiddenSkip.filter((h): h is string => typeof h === "string" && /^[\w-]{1,128}$/.test(h)))].slice(0, 1000)
+    : [];
   if (r.theme === "black" || r.theme === "white") out.theme = r.theme;
   if (r.paper === "A4" || r.paper === "A5") out.paper = r.paper;
   if (r.style === "cards" || r.style === "list") out.style = r.style;

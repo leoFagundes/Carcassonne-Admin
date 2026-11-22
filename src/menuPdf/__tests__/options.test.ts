@@ -90,3 +90,11 @@ describe("bordas", () => {
     expect(sanitizeOptions({}).frames).not.toBe(DEFAULT_OPTIONS.frames);
   });
 });
+
+describe("ocultos de fora", () => {
+  it("guarda só ids válidos, sem repetir", () => {
+    expect(DEFAULT_OPTIONS.hiddenSkip).toEqual([]);
+    expect(sanitizeOptions({ hiddenSkip: ["abc123", "abc123", "x y", 5, "ok-1_a"] }).hiddenSkip).toEqual(["abc123", "ok-1_a"]);
+    expect(sanitizeOptions({ hiddenSkip: "abc" }).hiddenSkip).toEqual([]);
+  });
+});

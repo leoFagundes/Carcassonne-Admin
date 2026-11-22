@@ -73,6 +73,7 @@ export function buildMenuModel({
   descriptions,
   typesOrder,
   includeHidden = false,
+  skipHidden,
 }: {
   items: MenuItemType[];
   combos: ComboType[];
@@ -81,8 +82,11 @@ export function buildMenuModel({
   typesOrder: TypeOrderType[];
   /** Também os itens escondidos no site. */
   includeHidden?: boolean;
+  /** Dos escondidos, os que ficam de fora mesmo assim (pelo id). */
+  skipHidden?: ReadonlySet<string>;
 }): MenuModel {
-  const visible = items.filter((i) => (includeHidden || i.isVisible) && i.name?.trim());
+  const shows = (i: MenuItemType) => i.isVisible || (includeHidden && !(i.id && skipHidden?.has(i.id)));
+  const visible = items.filter((i) => shows(i) && i.name?.trim());
   const typeOrder = (name: string) => typesOrder.find((t) => t.type.name === name)?.type.order ?? 999;
   const subOrder = (type: string, sub: string) =>
     typesOrder.find((t) => t.type.name === type)?.type.subtypes.find((s) => s.name === sub)?.order ?? 999;

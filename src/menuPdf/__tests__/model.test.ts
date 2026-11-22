@@ -91,3 +91,17 @@ describe("itens ocultos", () => {
     expect(all.sections[0].groups[0].items.map((i) => i.name)).toEqual(["Oculto", "Visível"]);
   });
 });
+
+describe("escolher quais ocultos entram", () => {
+  it("com os ocultos ligados, os da lista de fora não entram; os visíveis sempre entram", () => {
+    const items = [
+      item({ id: "v", name: "Visível" }),
+      item({ id: "o1", name: "Oculto 1", isVisible: false }),
+      item({ id: "o2", name: "Oculto 2", isVisible: false }),
+    ];
+    const base = { items, combos: [], infos: [], descriptions: [], typesOrder: [] };
+    const names = (m: ReturnType<typeof buildMenuModel>) => m.sections.flatMap((s) => s.groups.flatMap((g) => g.items.map((i) => i.name)));
+    expect(names(buildMenuModel({ ...base, includeHidden: true, skipHidden: new Set(["o2", "v"]) }))).toEqual(["Oculto 1", "Visível"]);
+    expect(names(buildMenuModel({ ...base, includeHidden: false, skipHidden: new Set() }))).toEqual(["Visível"]);
+  });
+});
