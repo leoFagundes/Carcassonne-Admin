@@ -1,0 +1,213 @@
+import type { Guide } from "../types";
+
+const USERS = { href: "/usuarios", label: "Abrir Usuários" };
+const TEMAS = { href: "/carcassonne?tab=temas", label: "Abrir Temas" };
+
+export const usuariosGuides: Guide[] = [
+  {
+    id: "conhecer-usuarios",
+    area: "usuarios",
+    section: "Acesso ao admin",
+    title: "Conhecer a página de Usuários",
+    summary: "Quem pode entrar no admin e quem está pedindo acesso.",
+    points: [
+      "Só entra no admin quem está na lista de administradores — estar logado não basta.",
+      "**Pedidos de acesso**: contas criadas esperando aprovação. **Administradores**: quem já tem acesso.",
+      "O item **Usuários** do menu mostra um contador quando há pedidos esperando.",
+    ],
+    keywords: ["usuários", "administradores", "acesso", "equipe"],
+    link: USERS,
+    related: ["aprovar-admin"],
+  },
+  {
+    id: "aprovar-admin",
+    area: "usuarios",
+    section: "Acesso ao admin",
+    title: "Dar acesso ao admin para alguém novo",
+    summary: "A pessoa cria a conta e você aprova.",
+    steps: [
+      "Peça para a pessoa criar a conta em **Criar conta**, na tela de login (/signup), e confirmar o e-mail.",
+      "Em **Usuários → Pedidos de acesso**, toque em **Aprovar** (ou **Recusar**).",
+    ],
+    points: ["Até ser aprovada, ela vê \"Seu acesso está aguardando a aprovação de um administrador.\""],
+    warning: "Só aprove quem você conhece.",
+    keywords: ["novo admin", "aprovar", "liberar acesso", "gerente", "funcionário"],
+    link: USERS,
+  },
+  {
+    id: "remover-admin",
+    area: "usuarios",
+    section: "Acesso ao admin",
+    title: "Tirar o acesso de um administrador",
+    summary: "A conta continua existindo; a pessoa só deixa de entrar no admin.",
+    steps: ["Em **Usuários → Administradores**, toque em **Remover acesso** ao lado da pessoa."],
+    points: ["Ninguém consegue remover o próprio acesso."],
+    keywords: ["remover", "tirar acesso", "demitido", "bloquear admin"],
+    link: USERS,
+    related: ["excluir-conta-admin"],
+  },
+  {
+    id: "excluir-conta-admin",
+    area: "usuarios",
+    section: "Acesso ao admin",
+    title: "Excluir uma conta de vez",
+    summary: "Apaga o login e todos os dados da conta.",
+    steps: ["Em **Usuários**, toque na **lixeira** ao lado do administrador ou do pedido de acesso e confirme."],
+    points: [
+      "Se a pessoa alugou jogos, os aluguéis encerrados saem junto; com aluguel em andamento ou reembolso pendente, a exclusão é recusada.",
+      "Contas **master** (com a coroa) só são removidas por outro master; para os outros aparece **Protegido**.",
+    ],
+    warning: "Não tem como desfazer. Ninguém exclui a própria conta.",
+    keywords: ["excluir conta", "apagar conta", "deletar usuário"],
+    link: USERS,
+  },
+  {
+    id: "contas-cliente-vs-admin",
+    area: "usuarios",
+    section: "Contas e senhas",
+    title: "Conta de cliente do aluguel × conta de administrador",
+    summary: "A conta do aluguel não dá acesso ao admin.",
+    points: [
+      "Cliente tentando entrar no admin vê \"Esta conta não tem acesso à área do administrador.\"",
+      "Um administrador pode alugar jogos com a própria conta, completando o perfil de cliente (nome, WhatsApp e CPF) no aluguel.",
+    ],
+    keywords: ["cliente", "conta", "login"],
+    link: USERS,
+  },
+  {
+    id: "emails-senha",
+    area: "usuarios",
+    section: "Contas e senhas",
+    title: "Confirmação de e-mail e \"esqueci minha senha\"",
+    summary: "Os e-mails saem com o visual do pub e o link abre uma página do próprio site.",
+    points: [
+      "O link de nova senha vale por 1 hora.",
+      "Por segurança, \"Esqueci minha senha\" mostra sempre a mesma mensagem, mesmo para e-mails que não existem.",
+      "Cada endereço recebe no máximo um e-mail por minuto.",
+    ],
+    keywords: ["senha", "esqueci a senha", "redefinir", "confirmar e-mail"],
+  },
+];
+
+export const temasGuides: Guide[] = [
+  {
+    id: "trocar-tema",
+    area: "temas",
+    section: "Temas do site",
+    title: "Trocar o tema do site (Natal, Halloween…)",
+    summary: "Decorações de datas especiais no site e no admin.",
+    steps: [
+      "Em Configurações → **Temas**, toque no card do tema.",
+      "Confira a lista **O que aparece no site** e a prévia no celular ao lado.",
+      "Toque em **Aplicar no site**.",
+    ],
+    points: [
+      "São 12 temas: Padrão, Carnaval, St. Patrick's Day, Páscoa, Aniversário do Carcassonne, Dia dos Namorados, Festa Junina, Oktoberfest, Halloween, Natal, Réveillon e Noite de Torneio.",
+      "A troca é na hora para quem estiver com o site aberto. O selo **No ar** mostra o tema valendo.",
+      "O login do admin e a página de confirmação de e-mail/senha ficam sempre no visual padrão.",
+    ],
+    tips: ["Para voltar ao normal, escolha **Padrão** e aplique."],
+    keywords: ["tema", "natal", "halloween", "carnaval", "decoração", "festa junina"],
+    link: TEMAS,
+    related: ["tema-minimalista", "aviso-tema"],
+  },
+  {
+    id: "tema-minimalista",
+    area: "temas",
+    section: "Temas do site",
+    title: "Usar a versão minimalista de um tema",
+    summary: "Menos decoração: só o topo, poucas partículas e a cor de destaque.",
+    steps: ["Em **Temas**, toque no card do tema e, em **Versão do tema**, escolha **Completa** ou **Minimalista**."],
+    points: [
+      "Minimalista tira a muralha do rodapé e as coisas passando pela tela.",
+      "Se o tema está no ar, o site muda na hora; se não, a escolha vale quando ele for aplicado.",
+    ],
+    keywords: ["minimalista", "menos decoração", "versão"],
+    link: TEMAS,
+  },
+  {
+    id: "aviso-tema",
+    area: "temas",
+    section: "Temas do site",
+    title: "Criar um lembrete para ativar um tema",
+    summary: "Um aviso no menu quando chega a época do tema.",
+    steps: [
+      "Em **Temas**, toque no card do tema e vá em **Aviso para ativar**.",
+      "Escolha **De** e **Até** e toque em **Criar aviso**.",
+      "Deixe **Repetir todo ano** ligado (só dia e mês) ou desligue para datas que mudam, como Carnaval e Páscoa.",
+    ],
+    points: [
+      "No período, se o tema não estiver no ar, aparece um selo laranja em **Configurações** no menu. Tocar abre direto a aba Temas, com **Ver prévia**, **Aplicar agora** e **Silenciar**.",
+      "O aviso some quando o tema é aplicado ou o período acaba.",
+      "**Notificações ligadas/desligadas** silencia sem perder o período; **Remover** apaga o aviso.",
+    ],
+    keywords: ["lembrete", "aviso", "agendar tema"],
+    link: TEMAS,
+  },
+];
+
+export const extrasGuides: Guide[] = [
+  {
+    id: "pagina-adicionar",
+    area: "extras",
+    section: "Atalhos",
+    title: "Usar a página Adicionar",
+    summary: "Atalhos para criar qualquer coisa: cada card leva à página certa, com o formulário aberto.",
+    points: [
+      "**Reservas**: Nova Reserva e Freelancers.",
+      "**Jogos**: Jogo da Coleção e Jogo para Aluguel.",
+      "**Cardápio**: Item, Combo, Aviso, Descrição de Tipo, Categorias e Avisos e Popup.",
+      "**Site e eventos**: Evento, Link e Música.",
+      "**Configurações**: E-mail de Reserva.",
+      "Nada é criado na própria página Adicionar; o rodapé de cada card mostra para onde vai.",
+    ],
+    keywords: ["adicionar", "criar", "atalho", "novo"],
+    link: { href: "/add", label: "Abrir Adicionar" },
+  },
+  {
+    id: "easter-egg-login",
+    area: "extras",
+    section: "Segredos",
+    title: "O segredo da tela de login",
+    summary: "Sete pontinhos escondidos e uma senha montada com letras douradas.",
+    steps: [
+      "Na tela de login, procure 7 pontinhos quase invisíveis. Seis têm curiosidades sobre a cidade de Carcassonne, numeradas de 1 a 6, com letras destacadas em dourado.",
+      "O 7º (lado esquerdo, no meio da altura) mostra a sequência \"4 - 1 - 3 - espaço - 6 - 2 - 5\" e um campo para a resposta.",
+      "Junte as letras douradas na ordem da sequência e digite no campo do 7º ponto.",
+    ],
+    points: [
+      "Resposta: **Klaus Jürgen**.",
+      "Acertando, o fundo vira a arte do jogo Carcassonne e aparecem (no computador) as histórias de Klaus-Jürgen Wrede, criador do jogo, e de Fábio Almeida e Salimar Morais, fundadores do pub em 2013.",
+      "**Voltar à visão padrão**, no rodapé, desfaz.",
+    ],
+    keywords: ["easter egg", "segredo", "login", "klaus"],
+  },
+  {
+    id: "easter-egg-snake",
+    area: "extras",
+    section: "Segredos",
+    title: "O jogo da cobrinha escondido",
+    summary: "Cinco cliques rápidos na logo do menu.",
+    steps: [
+      "Toque 5 vezes bem rápido (menos de 1 segundo entre cada) na logo do topo do menu lateral.",
+      "Jogue com as setas ou W A S D (no celular, arraste ou use os botões). **Espaço** ou toque pausa.",
+    ],
+    points: ["Quem bate o recorde pode salvar o nome no placar geral; só recordes entram na lista."],
+    keywords: ["snake", "cobrinha", "jogo escondido", "segredo"],
+    link: { href: "/snake", label: "Abrir a cobrinha" },
+  },
+  {
+    id: "tecnologias",
+    area: "extras",
+    section: "O projeto",
+    title: "Tecnologias usadas no projeto",
+    summary: "Para quem vai mexer no código.",
+    points: [
+      "Next.js (App Router) com React e TypeScript; Tailwind CSS, HeroUI e Radix; ícones Lucide (react-icons); Framer Motion.",
+      "Dados no Firebase (Firestore e Storage), com Firebase Admin no servidor.",
+      "FullCalendar e react-calendar, Recharts, e e-mails com Resend e React Email.",
+    ],
+    keywords: ["código", "desenvolvedor", "programação", "stack"],
+    link: { href: "https://github.com/leoFagundes/Carcassonne-Admin", label: "Ver o código no GitHub" },
+  },
+];
