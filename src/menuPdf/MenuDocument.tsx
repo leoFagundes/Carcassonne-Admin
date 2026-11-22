@@ -15,6 +15,7 @@ import {
   Page,
   Path,
   Rect,
+  Circle,
   Svg,
   Text,
   View,
@@ -75,7 +76,6 @@ const LAYOUTS = {
     qrSmall: 50,
     qrBesideName: true,
     rulesCols: 3,
-    backLogo: 130,
   },
   A5: {
     side: 28,
@@ -108,7 +108,6 @@ const LAYOUTS = {
     qrSmall: 44,
     qrBesideName: false,
     rulesCols: 1,
-    backLogo: 92,
   },
 } as const;
 
@@ -1332,7 +1331,93 @@ function RulesPage({
   );
 }
 
-/* ─── Verso: última página, minimalista ─── */
+/* ─── Verso: no estilo do verso que o gerente desenhou ─── */
+const PAGE_SIZE: Record<PdfPaper, { w: number; h: number }> = {
+  A4: { w: 595.28, h: 841.89 },
+  A5: { w: 419.53, h: 595.28 },
+};
+
+/** Moldura de uma linha só, com os cantos recortados para dentro (como um ingresso). */
+function TicketFrame({
+  color,
+  w,
+  h,
+  inset,
+  r,
+}: {
+  color: string;
+  w: number;
+  h: number;
+  inset: number;
+  r: number;
+}) {
+  const x0 = inset;
+  const y0 = inset;
+  const x1 = w - inset;
+  const y1 = h - inset;
+  const d = [
+    `M ${x0 + r} ${y0}`,
+    `L ${x1 - r} ${y0}`,
+    `A ${r} ${r} 0 0 0 ${x1} ${y0 + r}`,
+    `L ${x1} ${y1 - r}`,
+    `A ${r} ${r} 0 0 0 ${x1 - r} ${y1}`,
+    `L ${x0 + r} ${y1}`,
+    `A ${r} ${r} 0 0 0 ${x0} ${y1 - r}`,
+    `L ${x0} ${y0 + r}`,
+    `A ${r} ${r} 0 0 0 ${x0 + r} ${y0}`,
+    "Z",
+  ].join(" ");
+  return (
+    <Svg
+      fixed
+      width={w}
+      height={h}
+      viewBox={`0 0 ${w} ${h}`}
+      style={{ position: "absolute", top: 0, left: 0 }}
+    >
+      <Path d={d} stroke={color} strokeWidth={1.3} fill="none" />
+    </Svg>
+  );
+}
+
+/** O meeple (o bonequinho do Carcassonne) no meio das divisórias. */
+function Meeple({ color, size }: { color: string; size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d="M12 2 C10.3 2 9 3.3 9 5 C9 6 9.4 6.8 10 7.3 L3.5 9.5 C2.6 9.8 2 10.6 2 11.6 C2 12.9 3.2 13.8 4.4 13.5 L7.5 12.7 L5 20.5 C4.7 21.3 5.3 22 6.1 22 L10.2 22 L12 18 L13.8 22 L17.9 22 C18.7 22 19.3 21.3 19 20.5 L16.5 12.7 L19.6 13.5 C20.8 13.8 22 12.9 22 11.6 C22 10.6 21.4 9.8 20.5 9.5 L14 7.3 C14.6 6.8 15 6 15 5 C15 3.3 13.7 2 12 2 Z"
+        fill={color}
+      />
+    </Svg>
+  );
+}
+
+function InstagramIcon({ color, size }: { color: string; size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Rect
+        x={2.5}
+        y={2.5}
+        width={19}
+        height={19}
+        rx={5.5}
+        stroke={color}
+        strokeWidth={2}
+        fill="none"
+      />
+      <Circle
+        cx={12}
+        cy={12}
+        r={4.4}
+        stroke={color}
+        strokeWidth={2}
+        fill="none"
+      />
+      <Circle cx={17.3} cy={6.7} r={1.3} fill={color} />
+    </Svg>
+  );
+}
+
 function BackPage({
   p,
   opts,
@@ -1346,110 +1431,238 @@ function BackPage({
   logo?: string | null;
   qr?: MenuDocProps["qr"];
 }) {
-  const L = useLayout();
-  const hours = hoursLines(pub.hours);
-  const contacts = [
-    pub.website,
-    pub.instagram && `@${pub.instagram}`,
-    pub.whatsapp && formatPhoneBR(pub.whatsapp),
-  ]
-    .filter(Boolean)
-    .join("   ·   ");
-  const small = {
-    fontFamily: "Lato",
-    fontSize: 8.5,
-    color: alpha(p.TEXT, 0.62),
+  const size = PAGE_SIZE[opts.paper];
+  const hours = hoursLines(pub.hours, { closedLast: true });
+  const address = pub.address
+    .split(/\s+[—–]\s+/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  // Muitas linhas (ou o QR) → tudo um pouco menor para caber numa página
+  const dense = hours.length + address.length > 7 || !!qr;
+  const s = (opts.paper === "A4" ? 1 : 0.7) * (dense ? 0.92 : 1);
+  const site = pub.website
+    ? /^www\./i.test(pub.website)
+      ? pub.website
+      : `www.${pub.website}`
+    : "";
+
+  const title = {
+    fontFamily: "Cinzel",
+    fontWeight: 700,
+    fontSize: 20 * s,
+    letterSpacing: 1.2 * s,
+    color: p.G,
+    textAlign: "center" as const,
   };
+  const body = {
+    fontFamily: "Garamond",
+    fontSize: 16.5 * s,
+    color: alpha(p.G, 0.92),
+    textAlign: "center" as const,
+    lineHeight: 1.22,
+  };
+  const width = 390 * s;
+
+  const Divider = ({ meeple = true }: { meeple?: boolean }) =>
+    meeple ? (
+      <View style={{ width, flexDirection: "row", alignItems: "center", gap: 6 * s }}>
+        <View style={{ flex: 1, height: 1, backgroundColor: p.G }} />
+        <Meeple color={p.G} size={18 * s} />
+        <View style={{ flex: 1, height: 1, backgroundColor: p.G }} />
+      </View>
+    ) : (
+      <View style={{ width, height: 1, backgroundColor: p.G }} />
+    );
+
   return (
     <Page
       size={opts.paper}
       style={{
         backgroundColor: p.BG,
-        paddingHorizontal: L.coverPadX,
-        paddingVertical: L.coverPadY,
+        paddingHorizontal: 44 * s,
+        paddingVertical: 40 * s,
       }}
     >
-      <Frame p={p} />
+      <TicketFrame
+        color={p.G}
+        w={size.w}
+        h={size.h}
+        inset={18 * s}
+        r={20 * s}
+      />
       <View
         style={{
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
-          gap: 18,
+          gap: 12 * s,
         }}
       >
-        {logo ? (
-          <PdfImage
-            src={logo}
-            style={{ width: L.backLogo, height: L.backLogo }}
-          />
-        ) : null}
+        {/* Marca */}
         <View style={{ alignItems: "center" }}>
+          {logo ? (
+            <PdfImage
+              src={logo}
+              style={{ width: 140 * s, height: 140 * s, marginBottom: 8 * s }}
+            />
+          ) : null}
           <Text
             style={{
               fontFamily: "Cinzel",
-              fontWeight: 700,
-              fontSize: L.coverTitle * 0.75,
-              letterSpacing: L.coverTitleSpacing * 0.8,
+              fontWeight: 600,
+              fontSize: 40 * s,
+              letterSpacing: 2 * s,
               color: p.G,
             }}
           >
-            CARCASSONNE PUB
+            CARCASSONNE
           </Text>
           <Text
             style={{
-              fontFamily: "Lato",
-              fontStyle: "italic",
-              fontSize: 9.5,
-              letterSpacing: 3,
-              color: p.G2,
-              marginTop: 5,
+              fontFamily: "Cinzel",
+              fontWeight: 600,
+              fontSize: 15 * s,
+              letterSpacing: 10 * s,
+              color: p.G,
+              marginTop: 2 * s,
             }}
           >
-            Pub &amp; Luderia
+            PUB
+          </Text>
+          <Text
+            style={{
+              fontFamily: "Cinzel",
+              fontWeight: 600,
+              fontSize: 13 * s,
+              letterSpacing: 3 * s,
+              color: p.G,
+              marginTop: 7 * s,
+            }}
+          >
+            COMA • JOGUE • REPITA
           </Text>
         </View>
-        <View style={{ width: L.coverRule * 0.7 }}>
-          <Rule color={alpha(p.G, 0.45)}>
-            <Diamond color={p.G} size={6} />
-          </Rule>
-        </View>
+
+        {address.length ? (
+          <>
+            <Divider />
+            <View style={{ alignItems: "center", gap: 2 * s }}>
+              <Text style={title}>VENHA NOS VISITAR</Text>
+              {address.map((line) => (
+                <Text key={line} style={body}>
+                  {line}
+                </Text>
+              ))}
+            </View>
+          </>
+        ) : null}
+
         {hours.length ? (
-          <View style={{ alignItems: "center", gap: 3 }}>
-            <Text
+          <>
+            <Divider />
+            <View style={{ alignItems: "center", gap: 2 * s }}>
+              <Text style={title}>HORÁRIO DE FUNCIONAMENTO</Text>
+              {hours.map((h) => (
+                <Text key={h.days} style={body}>
+                  {h.days}
+                  {"  •  "}
+                  {h.time}
+                </Text>
+              ))}
+            </View>
+          </>
+        ) : null}
+
+        {pub.whatsapp ? (
+          <>
+            <Divider />
+            <View style={{ alignItems: "center", gap: 1 * s }}>
+              <Text style={title}>FALE COM A GENTE</Text>
+              <Text
+                style={{
+                  ...body,
+                  fontWeight: 600,
+                  fontSize: 23 * s,
+                  color: p.G,
+                }}
+              >
+                {formatPhoneBR(pub.whatsapp)}
+              </Text>
+              <Text style={{ ...body, fontSize: 15 * s }}>WhatsApp</Text>
+            </View>
+          </>
+        ) : null}
+
+        {pub.instagram || site || qr ? (
+          <>
+            <Divider meeple={false} />
+            <View
               style={{
-                fontFamily: "Cinzel",
-                fontWeight: 600,
-                fontSize: 8,
-                letterSpacing: 2.4,
-                color: p.G2,
-                marginBottom: 3,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 14 * s,
               }}
             >
-              HORÁRIO
+              {qr ? <QrCode shape={qr.shape} size={62 * s} /> : null}
+              <View
+                style={{ alignItems: qr ? "flex-start" : "center", gap: 3 * s }}
+              >
+                {pub.instagram ? (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8 * s,
+                    }}
+                  >
+                    <InstagramIcon color={p.G} size={17 * s} />
+                    <Text style={body}>@{pub.instagram}</Text>
+                  </View>
+                ) : null}
+                {site ? <Text style={body}>{site}</Text> : null}
+                {qr ? (
+                  <Text
+                    style={{
+                      ...body,
+                      fontSize: 11 * s,
+                      color: alpha(p.G, 0.7),
+                    }}
+                  >
+                    Cardápio online: aponte a câmera
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          </>
+        ) : null}
+
+        {pub.whatsapp ? (
+          <View
+            style={{
+              width: width * 1.15,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10 * s,
+              marginTop: 4 * s,
+            }}
+          >
+            <View style={{ width: 34 * s, height: 1, backgroundColor: p.G }} />
+            <Text
+              style={{
+                flex: 1,
+                fontFamily: "Cinzel",
+                fontWeight: 600,
+                fontSize: 10 * s,
+                letterSpacing: 1.4 * s,
+                color: p.G,
+                textAlign: "center",
+              }}
+            >
+              RESERVAS E INFORMAÇÕES PELO WHATSAPP
             </Text>
-            {hours.map((h) => (
-              <Text key={h.days} style={small}>
-                <Text style={{ color: p.TEXT }}>{h.days}</Text>
-                {"  ·  "}
-                {h.time}
-              </Text>
-            ))}
+            <View style={{ width: 34 * s, height: 1, backgroundColor: p.G }} />
           </View>
         ) : null}
-        <View style={{ alignItems: "center", gap: 4 }}>
-          {contacts ? (
-            <Text style={{ ...small, color: alpha(p.TEXT, 0.8) }}>
-              {contacts}
-            </Text>
-          ) : null}
-          {pub.address ? (
-            <Text style={{ ...small, fontSize: 7.5, textAlign: "center" }}>
-              {pub.address}
-            </Text>
-          ) : null}
-        </View>
-        {qr ? <QrBlock p={p} qr={qr} size={L.qrCover} /> : null}
       </View>
     </Page>
   );

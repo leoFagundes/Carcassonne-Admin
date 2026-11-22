@@ -22,7 +22,8 @@ import {
   isEmpty,
   isQrUrl,
   OPTIONS_STORAGE_KEY,
-  sanitizeOptions,
+  loadSavedOptions,
+  optionsToSave,
   type PdfFontSize,
   type PdfOptions,
 } from "@/menuPdf/options";
@@ -318,7 +319,7 @@ export default function PDFPage() {
     let saved = DEFAULT_OPTIONS;
     try {
       const rawOpts = localStorage.getItem(OPTIONS_STORAGE_KEY);
-      if (rawOpts) saved = sanitizeOptions(JSON.parse(rawOpts));
+      if (rawOpts) saved = loadSavedOptions(JSON.parse(rawOpts));
       setAuto(localStorage.getItem(AUTO_STORAGE_KEY) === "1");
     } catch {
       // sem acesso ao armazenamento: fica o padrão
@@ -329,7 +330,7 @@ export default function PDFPage() {
   useEffect(() => {
     if (!applied) return;
     try {
-      localStorage.setItem(OPTIONS_STORAGE_KEY, JSON.stringify(opts));
+      localStorage.setItem(OPTIONS_STORAGE_KEY, JSON.stringify(optionsToSave(opts)));
       localStorage.setItem(AUTO_STORAGE_KEY, auto ? "1" : "0");
     } catch {
       // ignora

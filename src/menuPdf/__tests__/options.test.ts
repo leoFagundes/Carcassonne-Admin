@@ -52,8 +52,8 @@ describe("abertura e itens ocultos", () => {
 });
 
 describe("estilo, letra, regulamento e verso", () => {
-  it("padrão: cards, letra normal, sem regulamento e sem verso", () => {
-    expect(DEFAULT_OPTIONS).toMatchObject({ style: "cards", fontSize: "M", rules: false, backPage: false });
+  it("padrão: cards, letra normal, sem regulamento e com verso", () => {
+    expect(DEFAULT_OPTIONS).toMatchObject({ style: "cards", fontSize: "M", rules: false, backPage: true });
   });
   it("lê os valores salvos e ignora os inválidos", () => {
     expect(sanitizeOptions({ style: "list", fontSize: "XL", rules: true, backPage: true })).toMatchObject({
@@ -63,5 +63,16 @@ describe("estilo, letra, regulamento e verso", () => {
       backPage: true,
     });
     expect(sanitizeOptions({ style: "grade", fontSize: "XXL", rules: "sim" })).toMatchObject({ style: "cards", fontSize: "M", rules: false });
+  });
+});
+
+describe("verso ligado por padrão (versão 2 do salvo)", () => {
+  it("quem tinha o salvo antigo (sem versão) recebe o verso ligado uma vez", async () => {
+    const { loadSavedOptions, optionsToSave } = await import("../options");
+    expect(DEFAULT_OPTIONS.backPage).toBe(true);
+    expect(loadSavedOptions({ backPage: false, theme: "white" })).toMatchObject({ backPage: true, theme: "white" });
+    // Depois de salvo na versão nova, vale o que a pessoa escolheu
+    const saved = JSON.parse(JSON.stringify(optionsToSave({ ...DEFAULT_OPTIONS, backPage: false })));
+    expect(loadSavedOptions(saved).backPage).toBe(false);
   });
 });

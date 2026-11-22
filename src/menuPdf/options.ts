@@ -70,7 +70,7 @@ export const DEFAULT_OPTIONS: PdfOptions = {
   infos: true,
   combos: true,
   rules: false,
-  backPage: false,
+  backPage: true,
   showHidden: false,
   photos: true,
   descriptions: true,
@@ -81,6 +81,21 @@ export const DEFAULT_OPTIONS: PdfOptions = {
 };
 
 export const OPTIONS_STORAGE_KEY = "cardapio-pdf-opcoes";
+
+/** Versão do que fica salvo: quando um padrão muda, quem tinha o antigo salvo recebe o novo uma vez. */
+export const OPTIONS_VERSION = 2;
+
+/** Lê o salvo no navegador (com as migrações de versão). */
+export function loadSavedOptions(raw: unknown): PdfOptions {
+  const out = sanitizeOptions(raw);
+  const version = raw && typeof raw === "object" ? (raw as { v?: unknown }).v : undefined;
+  // v2: o verso passou a vir ligado
+  if (version !== OPTIONS_VERSION) out.backPage = true;
+  return out;
+}
+
+/** O que vai para o navegador. */
+export const optionsToSave = (opts: PdfOptions) => ({ ...opts, v: OPTIONS_VERSION });
 
 const FLAGS = [
   "sectionPerPage",

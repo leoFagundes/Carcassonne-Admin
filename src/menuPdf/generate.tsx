@@ -50,6 +50,14 @@ export async function generateMenuPdf({
         { src: f("lato-latin-400-italic"), fontWeight: 400, fontStyle: "italic" },
       ],
     });
+    // Serifada clássica do verso (como o verso que o gerente desenhou)
+    Font.register({
+      family: "Garamond",
+      fonts: [
+        { src: f("eb-garamond-latin-400-normal"), fontWeight: 400 },
+        { src: f("eb-garamond-latin-600-normal"), fontWeight: 600 },
+      ],
+    });
     // Sem hifenizar palavras (a regra padrão é do inglês)
     Font.registerHyphenationCallback((word) => [word]);
     fontsReady = true;

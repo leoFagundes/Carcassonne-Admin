@@ -1,4 +1,5 @@
 Fontes do PDF do cardápio (src/menuPdf), embutidas no arquivo gerado.
-Cinzel (Natanael Gama) e Lato (Łukasz Dziedzic), licença SIL Open Font License 1.1
-(https://openfontlicense.org). Arquivos baixados do Fontsource (@fontsource/cinzel e
-@fontsource/lato 5.2.6), subconjunto latino em WOFF.
+Cinzel (Natanael Gama), Lato (Łukasz Dziedzic) e EB Garamond (Georg Duffner, Octavio Pardo),
+licença SIL Open Font License 1.1 (https://openfontlicense.org). Arquivos baixados do
+Fontsource (@fontsource/cinzel, @fontsource/lato e @fontsource/eb-garamond 5.2.6),
+subconjunto latino em WOFF.
