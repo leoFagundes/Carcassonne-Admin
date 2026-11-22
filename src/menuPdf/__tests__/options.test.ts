@@ -40,3 +40,13 @@ describe("opções do PDF do cardápio", () => {
     expect(m.itemCount).toBe(0);
   });
 });
+
+describe("abertura e itens ocultos", () => {
+  it("padrão: com abertura, sem ocultos; lê o salvo", () => {
+    expect(DEFAULT_OPTIONS.masthead).toBe(true);
+    expect(DEFAULT_OPTIONS.showHidden).toBe(false);
+    const o = sanitizeOptions({ masthead: false, showHidden: true });
+    expect(o.masthead).toBe(false);
+    expect(o.showHidden).toBe(true);
+  });
+});

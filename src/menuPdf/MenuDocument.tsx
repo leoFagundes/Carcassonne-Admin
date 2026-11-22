@@ -369,55 +369,59 @@ function Masthead({
   generatedAt,
   opts,
 }: HeadProps) {
+  // Nada para abrir a página: o cardápio começa direto na 1ª seção
+  if (!opts.masthead && !opts.toc && !opts.legend) return null;
   return (
     <View style={{ marginBottom: 22, gap: 16 }}>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 14,
-        }}
-      >
-        {logo ? (
-          <PdfImage src={logo} style={{ width: 54, height: 54 }} />
-        ) : null}
-        <View>
-          <Text
-            style={{
-              fontFamily: "Cinzel",
-              fontWeight: 700,
-              fontSize: 22,
-              letterSpacing: 3,
-              color: p.G,
-            }}
-          >
-            CARCASSONNE PUB
-          </Text>
-          <Text
-            style={{
-              fontFamily: "Cinzel",
-              fontWeight: 600,
-              fontSize: 9.5,
-              letterSpacing: 4,
-              color: p.G2,
-              marginTop: 3,
-            }}
-          >
-            CARDÁPIO
-          </Text>
-          <Text
-            style={{
-              fontFamily: "Lato",
-              fontSize: 7.5,
-              color: alpha(p.TEXT, 0.55),
-              marginTop: 3,
-            }}
-          >
-            {pub.address}
-          </Text>
+      {opts.masthead ? (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 14,
+          }}
+        >
+          {logo ? (
+            <PdfImage src={logo} style={{ width: 54, height: 54 }} />
+          ) : null}
+          <View>
+            <Text
+              style={{
+                fontFamily: "Cinzel",
+                fontWeight: 700,
+                fontSize: 22,
+                letterSpacing: 3,
+                color: p.G,
+              }}
+            >
+              CARCASSONNE PUB
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Cinzel",
+                fontWeight: 600,
+                fontSize: 9.5,
+                letterSpacing: 4,
+                color: p.G2,
+                marginTop: 3,
+              }}
+            >
+              CARDÁPIO
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Lato",
+                fontSize: 7.5,
+                color: alpha(p.TEXT, 0.55),
+                marginTop: 3,
+              }}
+            >
+              {pub.address}
+            </Text>
+          </View>
         </View>
-      </View>
+      ) : null}
       {opts.toc ? <Toc p={p} model={model} tocPages={tocPages} /> : null}
       {opts.legend ? (
         <Legend p={p} opts={opts} generatedAt={generatedAt} />

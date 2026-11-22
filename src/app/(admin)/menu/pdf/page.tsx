@@ -45,6 +45,7 @@ type Flag = Exclude<keyof PdfOptions, "theme" | "hidden">;
 
 const PARTS: { key: Flag; label: string; hint: string }[] = [
   { key: "cover", label: "Capa", hint: "Página de abertura com o logo" },
+  { key: "masthead", label: "Abertura", hint: "Logo, nome e endereço no topo da 1ª página" },
   { key: "toc", label: "Sumário", hint: "Lista das seções com a página (clicável)" },
   { key: "legend", label: "Legenda", hint: "O que é Destaque e Vegano, moeda e data" },
   { key: "pageChrome", label: "Cabeçalho e rodapé", hint: "Nome, contatos e “Página X de Y”" },
@@ -53,6 +54,7 @@ const PARTS: { key: Flag; label: string; hint: string }[] = [
 ];
 
 const ITEM_PARTS: { key: Flag; label: string; hint: string }[] = [
+  { key: "showHidden", label: "Itens ocultos", hint: "" },
   { key: "photos", label: "Fotos", hint: "Sem fotos o PDF fica menor e mais rápido" },
   { key: "descriptions", label: "Descrições", hint: "" },
   { key: "extras", label: "Acompanhamentos e observações", hint: "" },
@@ -151,7 +153,7 @@ function Group({ title, children, aside }: { title: string; children: React.Reac
 }
 
 export default function PDFPage() {
-  const [model, setModel] = useState<MenuModel | null>(null);
+  const [raw, setRaw] = useState<Omit<Parameters<typeof buildMenuModel>[0], "includeHidden"> | null>(null);
   const [opts, setOpts] = useState<PdfOptions>(DEFAULT_OPTIONS);
   const [optsLoaded, setOptsLoaded] = useState(false);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
@@ -194,13 +196,19 @@ export default function PDFPage() {
           InfoRepository.getAll(),
           DescriptionRepository.getAll(),
         ]);
-        setModel(buildMenuModel({ items, combos, infos, descriptions, typesOrder }));
+        setRaw({ items, combos, infos, descriptions, typesOrder });
       } catch (error) {
         addAlert(`Erro ao carregar o cardápio: ${error}`);
         setStatus({ kind: "error", message: `Não carregou o cardápio (${error instanceof Error ? error.message : String(error)}).` });
       }
     })();
   }, []);
+
+  const model = useMemo<MenuModel | null>(
+    () => (raw ? buildMenuModel({ ...raw, includeHidden: opts.showHidden }) : null),
+    [raw, opts.showHidden],
+  );
+  const hiddenCount = raw ? raw.items.filter((i) => !i.isVisible && i.name?.trim()).length : 0;
 
   const filtered = useMemo(() => (model ? applyOptions(model, opts) : null), [model, opts]);
 
@@ -283,7 +291,7 @@ export default function PDFPage() {
           {model && filtered && (
             <span className="text-xs whitespace-nowrap text-primary-gold/40">
               {filtered.itemCount === model.itemCount
-                ? `${model.itemCount} itens visíveis`
+                ? `${model.itemCount} ${opts.showHidden ? "itens (com os ocultos)" : "itens visíveis"}`
                 : `${filtered.itemCount} de ${model.itemCount} itens`}
             </span>
           )}
@@ -371,10 +379,21 @@ export default function PDFPage() {
                     <Check
                       key={o.key}
                       label={o.label}
-                      hint={o.key === "toc" && !opts.cover && opts.toc ? "Sem capa, vai no começo da 1ª página" : o.hint}
-                      checked={opts[o.key]}
+                      hint={
+                        o.key === "toc" && !opts.cover && opts.toc
+                          ? "Sem capa, vai no começo da 1ª página"
+                          : o.key === "masthead" && opts.cover
+                            ? "Só aparece quando está sem capa"
+                            : o.hint
+                      }
+                      checked={o.key === "masthead" ? opts.masthead && !opts.cover : opts[o.key]}
                       onChange={(v) => set(o.key, v)}
-                      disabled={!model || (o.key === "infos" && !model.infos.length) || (o.key === "combos" && !model.combos.length)}
+                      disabled={
+                        !model ||
+                        (o.key === "masthead" && opts.cover) ||
+                        (o.key === "infos" && !model.infos.length) ||
+                        (o.key === "combos" && !model.combos.length)
+                      }
                     />
                   ))}
                 </div>
@@ -386,10 +405,16 @@ export default function PDFPage() {
                     <Check
                       key={o.key}
                       label={o.label}
-                      hint={o.hint}
+                      hint={
+                        o.key === "showHidden"
+                          ? hiddenCount
+                            ? `${hiddenCount} ${hiddenCount === 1 ? "item escondido" : "itens escondidos"} no site`
+                            : "Nenhum item escondido no site agora"
+                          : o.hint
+                      }
                       checked={opts[o.key]}
                       onChange={(v) => set(o.key, v)}
-                      disabled={!model}
+                      disabled={!model || (o.key === "showHidden" && !hiddenCount && !opts.showHidden)}
                     />
                   ))}
                 </div>

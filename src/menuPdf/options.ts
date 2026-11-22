@@ -11,6 +11,8 @@ export type PdfOptions = {
   sectionPerPage: boolean;
   // Partes do PDF
   cover: boolean;
+  /** Sem capa: logo, nome e endereço no topo da 1ª página. */
+  masthead: boolean;
   toc: boolean;
   legend: boolean;
   /** Cabeçalho e rodapé (com o número das páginas). */
@@ -18,6 +20,8 @@ export type PdfOptions = {
   infos: boolean;
   combos: boolean;
   // Nos itens
+  /** Também os itens escondidos no site. */
+  showHidden: boolean;
   photos: boolean;
   descriptions: boolean;
   /** Acompanhamentos e observações. */
@@ -34,11 +38,13 @@ export const DEFAULT_OPTIONS: PdfOptions = {
   theme: "black",
   sectionPerPage: false,
   cover: true,
+  masthead: true,
   toc: true,
   legend: true,
   pageChrome: true,
   infos: true,
   combos: true,
+  showHidden: false,
   photos: true,
   descriptions: true,
   extras: true,
@@ -52,11 +58,13 @@ export const OPTIONS_STORAGE_KEY = "cardapio-pdf-opcoes";
 const FLAGS = [
   "sectionPerPage",
   "cover",
+  "masthead",
   "toc",
   "legend",
   "pageChrome",
   "infos",
   "combos",
+  "showHidden",
   "photos",
   "descriptions",
   "extras",

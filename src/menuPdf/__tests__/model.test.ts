@@ -80,3 +80,14 @@ describe("texto do PDF", () => {
     expect(clean(undefined)).toBe("");
   });
 });
+
+describe("itens ocultos", () => {
+  it("só entram quando pedido", () => {
+    const items = [item({ id: "a", name: "Visível" }), item({ id: "b", name: "Oculto", isVisible: false })];
+    const base = { items, combos: [], infos: [], descriptions: [], typesOrder: [] };
+    expect(buildMenuModel(base).itemCount).toBe(1);
+    const all = buildMenuModel({ ...base, includeHidden: true });
+    expect(all.itemCount).toBe(2);
+    expect(all.sections[0].groups[0].items.map((i) => i.name)).toEqual(["Oculto", "Visível"]);
+  });
+});
